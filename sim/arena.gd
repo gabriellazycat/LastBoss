@@ -20,6 +20,9 @@ var altar_pos: Array = []
 var altar_alive: Array = []
 var altar_hp: Array = []
 var altar := -1
+var pillar_pos: Array = []
+var pillar_hp: Array = []
+var pillar_r := 0.9
 var tp_cd := 0.0
 var arm_t := 0.0
 var fury_t := 0.0
@@ -47,6 +50,12 @@ func setup(s: Sim, center: Vector2, dir: Vector2) -> void:
 		altar_pos.append(center + Vector2(cos(a), sin(a)) * float(A["altar_ring"]))
 		altar_alive.append(true)
 		altar_hp.append(float(A["altar_hp"]))
+	var np := int(A.get("pillars", 0))
+	pillar_r = float(A.get("pillar_radius", 0.9))
+	for k in np:
+		var a := TAU * (k + 0.5) / np + PI * 0.5
+		pillar_pos.append(center + Vector2(cos(a), sin(a)) * float(A.get("pillar_ring", 6.0)))
+		pillar_hp.append(float(A.get("pillar_hp", 350)))
 	active = true
 
 
@@ -99,6 +108,46 @@ func damage_altar(k: int, dmg: float) -> void:
 		sim.emit(K.Ev.PART_DESTROYED, p.x, p.y, -1, k)
 
 
+func pillar_alive(k: int) -> bool:
+	return pillar_hp[k] > 0.0
+
+
+func damage_pillar(k: int, dmg: float) -> void:
+	if pillar_hp[k] <= 0.0:
+		return
+	pillar_hp[k] -= dmg
+	if pillar_hp[k] <= 0.0:
+		var p: Vector2 = pillar_pos[k]
+		sim.emit(K.Ev.PART_DESTROYED, p.x, p.y, -3, k)
+
+
+## Pilares são obstáculos: empurram o herói e os monstros para fora.
+func _collide() -> void:
+	var h := sim.hero
+	var U := sim.units
+	for k in pillar_pos.size():
+		if pillar_hp[k] <= 0.0:
+			continue
+		var p: Vector2 = pillar_pos[k]
+		var v := Vector2(h.x - p.x, h.y - p.y)
+		var minr := pillar_r + h.radius
+		if v.length() < minr and v.length() > 0.001:
+			v = v.normalized() * minr
+			h.x = p.x + v.x
+			h.y = p.y + v.y
+		for i in U.hi:
+			if U.alive[i] == 0 or (U.flags[i] & K.F_FLY):
+				continue
+			var dx := U.px[i] - p.x
+			var dy := U.py[i] - p.y
+			var mr := pillar_r + U.rad[i]
+			var d2 := dx * dx + dy * dy
+			if d2 < mr * mr and d2 > 0.000001:
+				var d := sqrt(d2)
+				U.px[i] = p.x + dx / d * mr
+				U.py[i] = p.y + dy / d * mr
+
+
 func can_teleport(k: int) -> bool:
 	return active and tp_cd <= 0.0 and k >= 0 and k < altar_pos.size() and altar_alive[k] and k != altar \
 		and sim.elixir >= float(A["teleport_cost"])
@@ -122,6 +171,7 @@ func teleport(k: int) -> bool:
 
 func update(dt: float) -> void:
 	tp_cd = maxf(0.0, tp_cd - dt)
+	_collide()
 	fury_t = maxf(0.0, fury_t - dt)
 	if part_alive("right_arm"):
 		arm_t -= dt

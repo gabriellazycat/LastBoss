@@ -27,6 +27,22 @@ O MVP está jogável do começo ao fim, com arte, áudio e interface polidos. Os
 - `main`: tudo, com os números da planilha mais as mudanças de regra.
 - `balance`: o mesmo, com os números do ajustador. Pelo DECISOES.md, ela só entra na `main` depois que você jogar uma run com ela. Para jogar: `git checkout balance`, abrir na Godot e apertar F5. Os relatórios de cada ciclo ficam em `balance_reports/`.
 
+## Balanceamento: onde parou
+
+O ajustador baixou a nota (distância às metas) de 1,93 para 1,11 e empacou. Ciclos aceitos:
+- primeiro level-up do jogador: 900 → 375 de dano;
+- elixir do Tesouro ×1,16;
+- vida do Escudeiro: 1500 → 1950.
+
+O lote final na `balance` (450 runs, 5 bots) está em `balance_reports/final_5bots.md`.
+- **Perto das metas:** chegada à arena (530–790 s), nível do jogador (4–9) e elixir desperdiçado (≤ 7%).
+- **Fora das metas:**
+  - **Tesouro:** 0% para todos os bots; o herói chega no nível 17–18. O deck joga muitas unidades baratas que alimentam o herói, e a regra própria dele (8 de elixir inicial) quase não pesa.
+  - **Ruína:** forte demais; até o Aleatório vence 53%.
+  - **Heurístico:** vence 0–37% (meta: 50–65%).
+
+  Os três pedem mudança de regra (regra própria do Tesouro, XP de feitiço no Ruína), não só de número.
+
 ## Como rodar
 
 O executável da Godot fica em `C:\Users\gabri\AppData\Local\Microsoft\WinGet\Packages\GodotEngine...\Godot_v4.7.2-stable_win64_console.exe` (abaixo, `godot`).

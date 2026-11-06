@@ -7,6 +7,7 @@ signal card_sacrificed(i: int)
 signal offer_chosen(k: int)
 signal deck_chosen(id: String)
 signal restart
+signal continue_run
 signal minimap_clicked(pos: Vector2)
 signal card_dropped(i: int, screen_pos: Vector2)
 
@@ -269,12 +270,13 @@ func _build() -> void:
 
 
 func _build_menu() -> void:
-	menu_panel = _panel(Color(0.04, 0.03, 0.07, 0.72), Color(0.6, 0.4, 0.9))
+	menu_panel = _panel(Color(0.04, 0.03, 0.07, 0.55), Color(0.6, 0.4, 0.9))
 	menu_panel.position = Vector2(-520, -230)
 	menu_panel.custom_minimum_size = Vector2(1040, 0)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 18)
-	var t := _label(56, Color(0.85, 0.6, 1.0))
+	v.add_theme_constant_override("separation", 8)
+	var t := _label(64, Color(1.0, 0.75, 0.35))
+	t.add_theme_constant_override("outline_size", 10)
 	t.text = "UI_TITLE"
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var st := _label(22)
@@ -291,7 +293,7 @@ func _build_menu() -> void:
 	row.add_theme_constant_override("separation", 16)
 	for id in ["horde", "ruin", "treasure"]:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(320, 300)
+		b.custom_minimum_size = Vector2(330, 230)
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD
 		b.text = tr("DECK_" + id) + "\n\n" + tr("DECKDESC_" + id)
 		b.set_meta("deck", id)
@@ -299,6 +301,12 @@ func _build_menu() -> void:
 		b.pressed.connect(func(): deck_chosen.emit(id))
 		row.add_child(b)
 	v.add_child(row)
+	var cont := Button.new()
+	cont.name = "Continue"
+	cont.text = "UI_CONTINUE"
+	cont.custom_minimum_size = Vector2(0, 46)
+	cont.pressed.connect(func(): continue_run.emit())
+	v.add_child(cont)
 	menu_panel.add_child(v)
 	add_child(menu_panel)
 
@@ -329,7 +337,11 @@ func show_menu(on: bool) -> void:
 	if on:
 		sim = null
 	var data := GameData.load_dir()
+	var cont: Button = menu_panel.find_child("Continue", true, false)
+	cont.visible = SaveGame.exists()
 	for b in menu_panel.find_children("*", "Button", true, false):
+		if not b.has_meta("deck"):
+			continue
 		var id: String = b.get_meta("deck")
 		var names: Array = []
 		for cid in data.deck(id)["cards"]:
@@ -337,8 +349,24 @@ func show_menu(on: bool) -> void:
 		b.text = "%s
 
 %s
+%s
 
-%s" % [tr("DECK_" + id).to_upper(), tr("DECKDESC_" + id), tr("UI_DECK_CARDS").format({"list": ", ".join(names)})]
+%s" % [tr("DECK_" + id).to_upper(), tr("DECKSTYLE_" + id), deck_rules_text(data.deck(id)["rules"]), tr("UI_DECK_CARDS").format({"list": ", ".join(names)})]
+
+
+## Regras próprias do deck, montadas dos dados (o ajustador muda os números).
+static func deck_rules_text(rules: Dictionary) -> String:
+	var lines: Array = []
+	for k in rules:
+		var v = rules[k]
+		if typeof(v) == TYPE_FLOAT and (k.ends_with("_mult")):
+			if is_equal_approx(v, 1.0):
+				continue
+			lines.append("• " + TranslationServer.translate("RULE_" + k).format({"p": int(round(v * 100.0))}))
+		else:
+			lines.append("• " + TranslationServer.translate("RULE_" + k).format({"n": int(v)}))
+	return "
+".join(lines)
 
 
 func bind(s: Sim) -> void:

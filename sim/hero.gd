@@ -11,6 +11,7 @@ const TGT_UNIT := 1
 const TGT_LOC := 2
 const TGT_PART := 3
 const TGT_ALTAR := 4
+const TGT_PILLAR := 5
 
 var sim: Sim
 var H: Dictionary
@@ -258,6 +259,8 @@ func attack_reach() -> float:
 			r += 0.9
 		TGT_ALTAR:
 			r += 0.8
+		TGT_PILLAR:
+			r += sim.arena.pillar_r
 	return r
 
 
@@ -271,6 +274,8 @@ func _target_pos() -> Vector2:
 			return sim.arena.part_pos(target)
 		TGT_ALTAR:
 			return sim.arena.altar_pos[target]
+		TGT_PILLAR:
+			return sim.arena.pillar_pos[target]
 	return Vector2(x, y)
 
 
@@ -287,6 +292,9 @@ func _validate_target() -> void:
 				target_kind = TGT_NONE
 		TGT_ALTAR:
 			if not sim.arena.altar_alive[target]:
+				target_kind = TGT_NONE
+		TGT_PILLAR:
+			if not sim.arena.pillar_alive(target):
 				target_kind = TGT_NONE
 
 
@@ -330,6 +338,9 @@ func _attack(dt: float) -> void:
 		TGT_ALTAR:
 			var m2 := 2.0 if has("stone_hammer") else 1.0
 			sim.arena.damage_altar(target, dmg * m2)
+		TGT_PILLAR:
+			var m3 := 2.0 if has("stone_hammer") else 1.0
+			sim.arena.damage_pillar(target, dmg * m3)
 
 
 ## Golpe em arco: atinge também quem está à frente, no alcance.
@@ -527,6 +538,18 @@ func _choose_target() -> void:
 					best_score = sc
 					best = k
 					best_kind = TGT_PART
+			# Pilar no caminho até o chefe: quebrar.
+			var to_boss := Vector2(ar.bx - x, ar.by - y).normalized()
+			for k in ar.pillar_pos.size():
+				if not ar.pillar_alive(k):
+					continue
+				var pv: Vector2 = ar.pillar_pos[k] - Vector2(x, y)
+				if pv.length() < 2.6 and pv.normalized().dot(to_boss) > 0.75:
+					var sc := 4.0 - pv.length()
+					if sc > best_score:
+						best_score = sc
+						best = k
+						best_kind = TGT_PILLAR
 			for k in ar.altar_pos.size():
 				if not ar.altar_alive[k] or k == ar.altar:
 					continue
