@@ -30,6 +30,9 @@ KNOBS = [
     ("rules.json", ["hero_xp", "per_elixir"], "+level"),
     ("rules.json", ["hero_xp", "passive_per_s"], "+level"),
     ("rules.json", ["road", "target_length"], "+time"),
+    ("rules.json", ["units", "damage_mult"], "-hero"),
+    ("rules.json", ["units", "projectile_damage_mult"], "-hero"),
+    ("hero_escudeiro.json", ["cleave_arc"], "+hero"),
 ]
 METRIC_KNOBS = {
     "smart_win": ("+hero", "-hero"),
@@ -115,9 +118,16 @@ def deck_candidates(s):
     hi = max(avg, key=avg.get)
     lo = min(avg, key=avg.get)
     out = []
-    for step in (0.08, 0.16):
-        out.append(("boss_lorde.json", ["decks", DECK_IDX[hi], "rules", "elixir_mult"], 1.0 - step))
-        out.append(("boss_lorde.json", ["decks", DECK_IDX[lo], "rules", "elixir_mult"], 1.0 + step))
+    b = load("boss_lorde.json")
+    for step in (0.1, 0.2):
+        for d, sign in ((hi, -1), (lo, 1)):
+            rules = b["decks"][DECK_IDX[d]]["rules"]
+            out.append(("boss_lorde.json", ["decks", DECK_IDX[d], "rules", "elixir_mult"], 1.0 + sign * step))
+            # Mais XP para o herói = deck mais fraco.
+            if "hero_xp_mult" in rules:
+                out.append(("boss_lorde.json", ["decks", DECK_IDX[d], "rules", "hero_xp_mult"], 1.0 - sign * step))
+            if "hero_passive_mult" in rules:
+                out.append(("boss_lorde.json", ["decks", DECK_IDX[d], "rules", "hero_passive_mult"], 1.0 - sign * step))
     return out
 
 

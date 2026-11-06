@@ -39,6 +39,8 @@ var uid := PackedInt32Array()
 
 var free := PackedInt32Array()
 var free_n := 0
+var dmg_mult := 1.0
+var proj_mult := 1.0
 
 # Contagens do último tick.
 var n_pack := 0
@@ -85,6 +87,8 @@ func setup(s: Sim, capacity: int) -> void:
 	g_start.resize(GN * GN + 1)
 	g_items.resize(cap)
 	var D := sim.data
+	dmg_mult = float(D.rules.get("units", {}).get("damage_mult", 1.0))
+	proj_mult = float(D.rules.get("units", {}).get("projectile_damage_mult", dmg_mult))
 	d_nest = _di(D, "bat_nest"); d_totem = _di(D, "bone_totem"); d_mimic = _di(D, "mimic")
 	d_tower = _di(D, "gargoyle_tower"); d_king = _di(D, "rat_king"); d_cultist = _di(D, "cultists")
 	d_werewolf = _di(D, "werewolf"); d_ghost = _di(D, "ghost"); d_ogre = _di(D, "ogre")
@@ -109,7 +113,7 @@ func spawn(d: CardDef, x: float, y: float, xp_val: float, share: float, uflags: 
 	hp[i] = d.hp * hp_mult
 	max_hp[i] = hp[i]
 	atk_int[i] = d.attack_interval
-	dmg[i] = d.dps * d.attack_interval
+	dmg[i] = d.dps * d.attack_interval * (proj_mult if d.projectile else dmg_mult)
 	atk_t[i] = d.attack_interval * fmod(i * 0.618034, 1.0)
 	spd[i] = d.speed
 	rng[i] = d.range

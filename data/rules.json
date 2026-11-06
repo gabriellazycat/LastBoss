@@ -192,6 +192,8 @@
   ]
  },
  "units": {
-  "retreat_speed": 0.55
+  "retreat_speed": 0.55,
+  "damage_mult": 2.5,
+  "projectile_damage_mult": 1.2
  }
 }

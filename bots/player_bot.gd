@@ -137,6 +137,14 @@ func _smart_value(sim: Sim, c: Sim.CardInst) -> float:
 		v += 1.0
 	if d.id == "soul_feast" and not _feast_ok(sim):
 		return -1.0
+	if d.id == "gold_bait":
+		var mimic := false
+		for i in sim.units.hi:
+			if sim.units.alive[i] == 1 and sim.units.def[i] == sim.units.d_mimic:
+				mimic = true
+		if not mimic:
+			return -1.0
+		v += combo
 	return v
 
 
