@@ -69,7 +69,7 @@
    "rules": {
     "spell_damage_mult": 1.15,
     "monster_cost_add": 1,
-    "elixir_mult": 1.0,
+    "elixir_mult": 1.1,
     "hero_passive_mult": 2.0
    }
   },
