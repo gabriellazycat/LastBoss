@@ -159,7 +159,7 @@ func _road() -> void:
 	if road.complete and hero.s >= road.length() - 1.5:
 		enter_arena()
 		return
-	var pxp := float(R["hero_xp"].get("passive_per_s", 0.0))
+	var pxp := float(R["hero_xp"].get("passive_per_s", 0.0)) * float(deck_rules.get("hero_passive_mult", 1.0))
 	if pxp > 0.0:
 		hero.xp += pxp * dt
 		if hero.xp >= hero.xp_needed():
@@ -401,7 +401,7 @@ func kill_unit(i: int, cause: int) -> void:
 					units.gen[j] = g + 1
 					units.hp[j] = float(s["hp"]) * _forge()
 					units.max_hp[j] = units.hp[j]
-					units.dmg[j] = float(s["dps"]) * units.atk_int[j]
+					units.dmg[j] = float(s["dps"]) * units.atk_int[j] * units.dmg_mult
 					units.rad[j] = c.radius * (0.75 if g == 0 else 0.55)
 		if c.fx.has("death_spawn"):
 			var sd: CardDef = data.card(str(c.fx["death_spawn"]))
@@ -795,7 +795,7 @@ func _army(fx: Dictionary) -> void:
 			if j >= 0:
 				units.hp[j] = fx["hp"]
 				units.max_hp[j] = fx["hp"]
-				units.dmg[j] = float(fx["dps"]) * units.atk_int[j]
+				units.dmg[j] = float(fx["dps"]) * units.atk_int[j] * units.dmg_mult
 				ids.append(j)
 			n += 1
 	zones.append({"kind": "army", "x": hero.x, "y": hero.y, "r": 0.0, "t": fx["duration"], "ids": ids})
