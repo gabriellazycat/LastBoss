@@ -36,11 +36,22 @@ reports/              saída dos lotes (ignorada no git, exceto os relatórios d
 
 Cada carta é um objeto com `id`, `category` (field/route/lair/finisher), `type`, `tags`, `archetype`, `rarity`, `cost`, `count` (unidades que nascem), `xp_parts` (divisor do XP, ex.: Slime 7), `hp`, `dps`, `attack_interval`, `speed`, `range` e um bloco `fx` com os parâmetros do efeito. Valores derivados (XP por unidade, limiares de nível) são calculados ao carregar, nunca gravados, para o ajustador mexer só nas causas.
 
+## Arte e áudio
+
+- **Pipeline de arte** (GDD): uma única paleta (cor por vértice) e um único material com shader estilizado (`game/art/toon.gdshader`: luz em degraus, rim light, brilho de impacto, animação de enxame no shader via `INSTANCE_CUSTOM`). Os modelos low-poly são montados por código em `game/art/models.gd` (monstros, herói, chefe em 4 partes, cenário, ícones das cartas sem unidade). Para trocar por modelos do Blender, basta devolver outra `Mesh` em `Models.unit()` / `Models.prop()`.
+- **Arte das cartas**: `game/art/card_art.gd` renderiza o modelo de cada carta numa SubViewport ao abrir o jogo.
+- **Áudio**: `tools/make_audio.py` sintetiza os efeitos e a trilha provisória (numpy) em `assets/audio/`. `game/audio.gd` toca os efeitos com pool e recarga por som. A trilha da estrada tem duas camadas: a de percussão e melodia cresce conforme o herói se aproxima do covil. A arena tem uma trilha própria.
+
 ## Como o bot roda
 
 1. `godot --headless --path . res://headless/batch.tscn -- --bot=greedy --deck=horda --seeds=1-50 --out=reports/x.json`
 2. `python tools/run_batch.py --bots random,greedy --decks horda,ruina,tesouro --runs 200` divide as sementes entre processos (um por núcleo), junta os JSON e gera `reports/<data>/report.md` + `summary.json` com as métricas contra as metas do DECISOES.md (nota única = distância às metas).
 3. Cada run registra semente, deck, bot, resultado, tempo até a arena, níveis, cartas oferecidas/escolhidas, dano por carta, elixir desperdiçado e tempo de parede.
+
+## Bots e ajustador
+
+- Perfis em `data/bots/`: `random`, `greedy` e o tipo `smart`, com 3 personalidades (`heuristic`, `economist`, `swarm`). Criar um bot = criar um arquivo.
+- `tools/tuner.py` (branch `balance`): mede a nota, testa candidatos (±15% e ±30%) nos botões ligados às 2 metas mais distantes, fica com o melhor e faz um commit por ciclo com o relatório em `balance_reports/`. Não toca nos caminhos de `data/locked.json`. Uso: `python -I tools/tuner.py --cycles 15 --runs 8`.
 
 ## Decisões que tomei no seu lugar (AFK) e riscos
 
@@ -57,6 +68,8 @@ Cada carta é um objeto com `id`, `category` (field/route/lair/finisher), `type`
 - **Sustentação do herói** (a planilha prevê ~18 mil de dano no herói na fase 1 e ele tem 1500–4000 de vida): regeneração de 1,2% da vida máx./s em combate e 3%/s fora de combate, e golpe em arco de 110° (o Escudeiro corta o que está à frente). Tudo em `hero_escudeiro.json`.
 - **Atiradores recuam a 55% da velocidade** (`rules.units.retreat_speed`); senão faziam kiting infinito no herói. Enquanto persegue um alvo, a coleira do herói até a estrada estica até 18 m.
 - **XP de treino do herói** (`rules.hero_xp.passive_per_s` = 1,8/s): sem isso, não jogar quase nada vencia (o herói chegava no nível 3 à arena). Agora ele chega por volta do nível 8 mesmo sem ser alimentado.
+- **Na arena o herói não regenera** (`regen_in_arena: false`): ele chega "com a vida atual" (GDD), e com regeneração a luta final era quase invencível.
+- **Dano absorvido pelo escudo conta para o seu nível** (`player_xp.count_shield`): bater no escudo é causar dano no herói.
 - **A IA do herói não mira a Torre de Gárgula** (ela vira pedra quando ele chega perto): ele passa direto.
 - **Pilares quebráveis da arena** e **salvamento no meio da run** ficam para depois do marco 1.
 - Risco de desempenho: 15 min em < 5 s com GDScript. Se não bater, o laço das unidades vai para C# ou GDExtension (o plano B do GDD).

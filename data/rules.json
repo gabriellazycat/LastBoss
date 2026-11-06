@@ -28,7 +28,8 @@
  "player_xp": {
   "first_level": 536,
   "growth": 0.15,
-  "_note": "first_level = ROUND(dano total estimado * g / ((1+g)^10 - 1), -1) da aba Base"
+  "_note": "first_level = ROUND(dano total estimado * g / ((1+g)^10 - 1), -1) da aba Base",
+  "count_shield": true
  },
  "phase1_target_s": 720,
  "rarity_by_time": {

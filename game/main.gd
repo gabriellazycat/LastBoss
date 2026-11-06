@@ -23,7 +23,15 @@ var life := 0.0
 
 func _ready() -> void:
 	TranslationServer.set_locale("pt")
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--") and a.contains("="):
+			var kv := a.substr(2).split("=", true, 1)
+			auto_args[kv[0]] = kv[1]
+	for t in str(auto_args.get("shots", "")).split(",", false):
+		shots.append(float(t))
 	data = GameData.load_dir()
+	audio = GameAudio.new()
+	add_child(audio)
 	_env()
 	world = WorldView.new()
 	add_child(world)
@@ -38,16 +46,21 @@ func _ready() -> void:
 	hud.restart.connect(func():
 		running = false
 		hud.result_panel.visible = false
+		world.build_empty()
+		_build_menu_scene()
 		hud.show_menu(true))
 	hud.minimap_clicked.connect(_minimap_click)
+	if DisplayServer.get_name() != "headless":
+		var art := CardArt.new()
+		add_child(art)
+		await art.render_all(data)
+	_build_menu_scene()
 	hud.show_menu(true)
+	audio.music("music_road")
+	audio.set_intensity(0.0)
 	_pad_actions()
 	cursor = get_viewport().get_visible_rect().size * 0.5
 	# Modo de teste: --autoplay=greedy --deck=horde --speed=4 --quit=60 --shots=10,30 --out=user://
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--") and a.contains("="):
-			var kv := a.substr(2).split("=", true, 1)
-			auto_args[kv[0]] = kv[1]
 	if auto_args.has("uitest"):
 		_start("horde")
 		_ui_test()
@@ -61,36 +74,51 @@ func _ready() -> void:
 			auto_bot.think(sim)
 			sim.step()
 		sim.record_events = true
-		for t in str(auto_args.get("shots", "")).split(",", false):
-			shots.append(float(t))
 
 
 func _env() -> void:
 	cam = Camera3D.new()
 	cam.fov = 42
-	cam.far = 600
+	cam.far = 500
 	add_child(cam)
 	cam.position = Vector3(0, 20, 14)
-	var light := DirectionalLight3D.new()
-	light.rotation_degrees = Vector3(-55, 35, 0)
-	light.light_energy = 1.1
-	light.light_color = Color(0.85, 0.8, 1.0)
-	light.shadow_enabled = true
-	add_child(light)
+	var moon := DirectionalLight3D.new()
+	moon.rotation_degrees = Vector3(-52, 30, 0)
+	moon.light_energy = 1.1
+	moon.light_color = Color(0.7, 0.75, 1.0)
+	moon.shadow_enabled = true
+	moon.directional_shadow_max_distance = 90.0
+	add_child(moon)
 	var we := WorldEnvironment.new()
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.05, 0.04, 0.08)
+	var sky := Sky.new()
+	var sm := ProceduralSkyMaterial.new()
+	sm.sky_top_color = Color(0.06, 0.04, 0.12)
+	sm.sky_horizon_color = Color(0.22, 0.14, 0.3)
+	sm.ground_bottom_color = Color(0.03, 0.03, 0.05)
+	sm.ground_horizon_color = Color(0.22, 0.14, 0.3)
+	sky.sky_material = sm
+	env.sky = sky
+	env.background_mode = Environment.BG_SKY
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.35, 0.32, 0.5)
-	env.ambient_light_energy = 0.8
-	env.glow_enabled = true
-	env.glow_intensity = 0.6
-	env.glow_bloom = 0.1
-	env.fog_enabled = true
-	env.fog_light_color = Color(0.12, 0.1, 0.2)
-	env.fog_density = 0.006
+	env.ambient_light_color = Color(0.38, 0.33, 0.55)
+	env.ambient_light_energy = 0.55
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.05
+	env.glow_enabled = true
+	env.glow_intensity = 0.9
+	env.glow_bloom = 0.08
+	env.glow_hdr_threshold = 0.9
+	env.ssao_enabled = true
+	env.ssao_radius = 1.5
+	env.ssao_intensity = 1.6
+	env.fog_enabled = true
+	env.fog_light_color = Color(0.16, 0.11, 0.26)
+	env.fog_density = 0.008
+	env.fog_sky_affect = 0.4
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.1
+	env.adjustment_contrast = 1.05
 	we.environment = env
 	add_child(we)
 
@@ -107,14 +135,77 @@ func _pad_actions() -> void:
 			InputMap.action_add_event(a, e)
 
 
+var audio: GameAudio
+var result_played := false
+var menu_root: Node3D
+var menu_t := 0.0
+
+
+## Covil do chefe em 3D atrás do menu.
+func _build_menu_scene() -> void:
+	if menu_root:
+		menu_root.queue_free()
+	menu_root = Node3D.new()
+	add_child(menu_root)
+	var k := Models.Kit.new()
+	k.add(Models.cyl(14.0, 14.5, 0.4, 32), Vector3(0, -0.2, 0), Color(0.16, 0.12, 0.2))
+	for i in 3:
+		var tm := TorusMesh.new()
+		tm.inner_radius = 3.0 + i * 3.5
+		tm.outer_radius = 3.2 + i * 3.5
+		tm.rings = 48
+		tm.ring_segments = 3
+		k.add(tm, Vector3(0, 0.02, 0), Color(0.35, 0.2, 0.45), Vector3.ZERO, Vector3(1, 0.1, 1))
+	var floor_ := MeshInstance3D.new()
+	floor_.mesh = k.done()
+	floor_.material_override = Models.material()
+	menu_root.add_child(floor_)
+	var throne := MeshInstance3D.new()
+	throne.mesh = Models.prop("throne")
+	throne.material_override = Models.glow_material(0.1)
+	throne.position = Vector3(0, 0, -1.5)
+	menu_root.add_child(throne)
+	var boss := Models.boss_full()
+	boss.position = Vector3(0, 1.0, -1.0)
+	boss.scale = Vector3.ONE * 0.8
+	menu_root.add_child(boss)
+	for i in 6:
+		var a := TAU * i / 6.0 + 0.5
+		var pp := Vector3(cos(a), 0, sin(a)) * 9.0
+		var mi := MeshInstance3D.new()
+		mi.mesh = Models.prop("brazier" if i % 2 == 0 else "pillar")
+		mi.material_override = Models.glow_material(0.6 if i % 2 == 0 else 0.0)
+		mi.position = pp
+		menu_root.add_child(mi)
+		if i % 2 == 0:
+			var l := OmniLight3D.new()
+			l.light_color = Color(1.0, 0.55, 0.2)
+			l.light_energy = 3.0
+			l.omni_range = 12.0
+			l.position = pp + Vector3(0, 2.5, 0)
+			menu_root.add_child(l)
+	var core_l := OmniLight3D.new()
+	core_l.light_color = Color(0.8, 0.3, 1.0)
+	core_l.light_energy = 4.0
+	core_l.omni_range = 10.0
+	core_l.position = Vector3(0, 3, 1)
+	menu_root.add_child(core_l)
+
+
 func _start(deck: String) -> void:
+	if menu_root:
+		menu_root.queue_free()
+		menu_root = null
 	sim = Sim.new()
 	sim.setup(data, int(Time.get_unix_time_from_system()) % 1000000, deck)
 	sim.record_events = true
+	result_played = false
+	audio.music("music_road")
+	audio.set_intensity(0.0)
 	world.build(sim, cam)
 	arena_built = false
-	hud.bind(sim)
 	hud.show_menu(false)
+	hud.bind(sim)
 	running = true
 	paused = false
 	acc = 0.0
@@ -124,8 +215,13 @@ func _start(deck: String) -> void:
 
 func _process(delta: float) -> void:
 	life += delta
+	if menu_root and not running:
+		menu_t += delta * 0.15
+		cam.position = Vector3(sin(menu_t) * 13.0, 6.5, cos(menu_t) * 13.0 + 2.0)
+		cam.look_at(Vector3(0, 3.0, -1.0), Vector3.UP)
 	if auto_args.has("quit") and life >= float(auto_args["quit"]):
-		print("autoplay fim: t=%.0f fase=%d resultado=%s unidades=%d fps=%d" % [sim.t, sim.phase, sim.stats["result"], sim.units.count, Engine.get_frames_per_second()])
+		if sim:
+			print("autoplay fim: t=%.0f fase=%d resultado=%s unidades=%d fps=%d" % [sim.t, sim.phase, sim.stats["result"], sim.units.count, Engine.get_frames_per_second()])
 		get_tree().quit(0)
 		return
 	if shots.size() > 0 and life >= float(shots[0]):
@@ -147,6 +243,7 @@ func _process(delta: float) -> void:
 			sim.step()
 			acc -= sim.dt
 			world.handle_events(sim.events)
+			audio.handle_events(sim.events, sim)
 			sim.events.clear()
 			if sim.offers.size() > 0:
 				acc = 0.0
@@ -155,6 +252,12 @@ func _process(delta: float) -> void:
 		arena_built = true
 		world.build_arena()
 		hud.say(tr("UI_ARENA"))
+	if sim.phase == K.Phase.ROAD:
+		audio.set_intensity(sim.hero.s / maxf(sim.road.length(), 1.0) * (0.6 if not sim.road.complete else 1.0))
+	elif sim.phase == K.Phase.OVER and not result_played:
+		result_played = true
+		audio.music("")
+		audio.play("victory" if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] else "defeat", 0.0)
 	var alpha := clampf(acc / sim.dt, 0.0, 1.0)
 	world.draw(alpha, delta)
 	_update_placement()
@@ -278,6 +381,9 @@ func _select(i: int) -> void:
 	if ci == null:
 		return
 	hud.selected = -1 if hud.selected == i else i
+	var big := hud.minimap.size.x > 400
+	if (hud.selected >= 0 and ci.def.category == "route") != big:
+		_toggle_map()
 	# Cartas sem alvo (covil, finalização) saem na hora.
 	if hud.selected >= 0 and (ci.def.category == "lair" or ci.def.category == "finisher"):
 		_play_at(Vector2(sim.hero.x, sim.hero.y))
@@ -295,6 +401,8 @@ func _play_at(p: Vector2) -> void:
 	var b := sim.play(i, p.x, p.y)
 	if b == K.Block.OK:
 		hud.selected = -1
+		if hud.minimap.size.x > 400:
+			_toggle_map()
 	else:
 		hud.say(tr("UI_BLOCK_%d" % mini(b, 5)))
 		if b != K.Block.NO_ELIXIR and b != K.Block.BAD_TARGET:
@@ -355,11 +463,13 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_X:
 				sac_mode = true
 			KEY_ESCAPE:
-				hud.selected = -1
-				sac_mode = false
+				if hud.selected >= 0 or sac_mode:
+					hud.selected = -1
+					sac_mode = false
+				else:
+					_toggle_pause()
 			KEY_SPACE:
-				paused = not paused
-				hud.say(tr("UI_PAUSED") if paused else "")
+				_toggle_pause()
 			KEY_F:
 				speed = 1.0 if speed >= 8.0 else speed * 2.0
 				hud.say(tr("UI_SPEED").format({"n": int(speed)}))
@@ -372,6 +482,13 @@ func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventKey and not e.pressed and e.keycode == KEY_X:
 		sac_mode = false
 	_pad_input(e)
+
+
+func _toggle_pause() -> void:
+	if sim == null or sim.phase == K.Phase.OVER:
+		return
+	paused = not paused
+	hud.show_pause(paused)
 
 
 func _toggle_map() -> void:
@@ -388,7 +505,7 @@ func _pad_input(e: InputEvent) -> void:
 		return
 	pad_active = true
 	if e.is_action_pressed("pad_pause"):
-		paused = not paused
+		_toggle_pause()
 	if sim.offers.size() > 0:
 		if e.is_action_pressed("pad_prev") or e.is_action_pressed("pad_next"):
 			var d := -1 if e.is_action_pressed("pad_prev") else 1

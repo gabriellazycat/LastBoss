@@ -37,7 +37,9 @@ METRIC_KNOBS = {
     "hero_level": ("+level",),
     "arena_time": ("+time",),
     "player_levels": ("-plevel",),
+    "deck_spread": ("deck",),
 }
+DECK_IDX = {"horde": 0, "ruin": 1, "treasure": 2}
 
 
 def load(f):
@@ -101,8 +103,28 @@ def metric_error(s, name):
     return 0
 
 
-def candidates(metric, sign):
+def deck_candidates(s):
+    """Deck que mais vence perde elixir; o que menos vence ganha."""
+    heur = [r for r in s["rows"] if r["bot"] == "heuristic"] or s["rows"]
+    wins = {}
+    for r in heur:
+        wins.setdefault(r["deck"], []).append(r["win"])
+    avg = {d: sum(v) / len(v) for d, v in wins.items()}
+    if len(avg) < 2:
+        return []
+    hi = max(avg, key=avg.get)
+    lo = min(avg, key=avg.get)
+    out = []
+    for step in (0.08, 0.16):
+        out.append(("boss_lorde.json", ["decks", DECK_IDX[hi], "rules", "elixir_mult"], 1.0 - step))
+        out.append(("boss_lorde.json", ["decks", DECK_IDX[lo], "rules", "elixir_mult"], 1.0 + step))
+    return out
+
+
+def candidates(metric, sign, s=None):
     """Botões e multiplicadores que empurram a métrica de volta para a meta."""
+    if metric == "deck_spread":
+        return deck_candidates(s)
     out = []
     lk = locked()
     for f, path, eff in KNOBS:
@@ -155,8 +177,13 @@ def main():
         return 1
     print("nota inicial:", base["score"], base["score_parts"])
     tried = set()
+    stuck = set()
     for cyc in range(1, args.cycles + 1):
-        parts = {k: v for k, v in base["score_parts"].items() if k in METRIC_KNOBS and v > 0}
+        parts = {k: v for k, v in base["score_parts"].items() if k in METRIC_KNOBS and v > 0 and k not in stuck}
+        if not parts and stuck:
+            stuck.clear()
+            tried.clear()
+            parts = {k: v for k, v in base["score_parts"].items() if k in METRIC_KNOBS and v > 0}
         if not parts:
             print("todas as metas ajustáveis cumpridas")
             break
@@ -164,11 +191,11 @@ def main():
         metric = ranked[0]
         cands = []
         for mt in ranked:
-            for c in candidates(mt, metric_error(base, mt)):
+            for c in candidates(mt, metric_error(base, mt), base):
                 cands.append((mt,) + c)
         best = None
         for metric, f, path, mult in cands:
-            key = (knob_id(f, path), mult, round(base["score"], 3))
+            key = (knob_id(f, path), mult, round(base["score"], 4))
             if key in tried:
                 continue
             tried.add(key)
@@ -179,8 +206,10 @@ def main():
             if not errs and (best is None or s["score"] < best[0]["score"]):
                 best = (s, f, path, mult, old, new, metric)
         if best is None or best[0]["score"] >= base["score"]:
-            print("ciclo %d: nenhum candidato melhorou %s" % (cyc, metric))
+            print("ciclo %d: nenhum candidato melhorou %s" % (cyc, ", ".join(ranked)))
+            stuck.update(ranked)
             continue
+        stuck.clear()
         s, f, path, mult, old, new, metric = best
         obj = load(f)
         put(obj, path, new)

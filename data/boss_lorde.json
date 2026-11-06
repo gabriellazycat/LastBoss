@@ -52,7 +52,8 @@
    ],
    "rules": {
     "hand_size": 6,
-    "hero_xp_mult": 1.1
+    "hero_xp_mult": 1.1,
+    "elixir_mult": 1.0
    }
   },
   {
@@ -67,7 +68,8 @@
    ],
    "rules": {
     "spell_damage_mult": 1.15,
-    "monster_cost_add": 1
+    "monster_cost_add": 1,
+    "elixir_mult": 1.0
    }
   },
   {
@@ -82,7 +84,8 @@
    ],
    "rules": {
     "elixir_start": 8,
-    "offer_options": 2
+    "offer_options": 2,
+    "elixir_mult": 1.0
    }
   }
  ]

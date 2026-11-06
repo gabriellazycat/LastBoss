@@ -69,6 +69,7 @@ var taken: Dictionary = {}
 var taken_total := 0.0
 var leash_mult := 1.0
 var last_hit_t := -100.0
+var last_absorbed := 0.0
 var danger := PackedFloat32Array()
 var dn := 16
 var dcell := 2.0
@@ -403,7 +404,7 @@ func _abilities() -> void:
 			dash_y = dir.y
 			dash_left = p["distance"]
 			slow_t = 0.0
-	if hp > 0.0 and hp < max_hp():
+	if hp > 0.0 and hp < max_hp() and (sim.phase == K.Phase.ROAD or H.get("regen_in_arena", true)):
 		var rg: float = H.get("regen_combat", 0.0)
 		if near_count == 0 and sim.t - last_hit_t > float(H.get("regen_delay", 3.0)):
 			rg = H.get("regen_per_s", 0.0)
@@ -601,6 +602,7 @@ func note(key: String, v: float) -> void:
 
 ## Aplica dano vindo de (sx, sy). Devolve o dano que chegou à vida.
 func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) -> float:
+	last_absorbed = 0.0
 	if amount <= 0.0 or hp <= 0.0:
 		return 0.0
 	if src_tags & K.TAG_FIRE:
@@ -619,6 +621,7 @@ func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) 
 			to = to.normalized()
 			if to.x * face_x + to.y * face_y >= shield_cos:
 				var ab := minf(shield_hp, amount)
+				last_absorbed = ab
 				shield_hp -= ab
 				amount -= ab
 				if shield_hp <= 0.0:
