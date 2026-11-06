@@ -202,5 +202,5 @@
  "cleave_arc": 110.0,
  "regen_per_s": 0.03,
  "regen_delay": 3.0,
- "regen_combat": 0.012
+ "regen_combat": 0.0102
 }
