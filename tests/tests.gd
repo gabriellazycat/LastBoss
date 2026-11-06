@@ -21,6 +21,7 @@ func _ready() -> void:
 	t_costs()
 	t_sacrifice_and_cycle()
 	t_determinism()
+	t_save()
 	t_full_runs()
 	t_translations()
 	print("falhas: ", fails)
@@ -98,6 +99,29 @@ func t_determinism() -> void:
 	check(a.state_hash() == b.state_hash(), "mesma semente → mesmo estado")
 	var c := _run(8, "horde", "greedy", 3000)
 	check(a.state_hash() != c.state_hash(), "semente diferente → estado diferente")
+
+
+func t_save() -> void:
+	# Salva no meio da run (estrada e arena) e confere que a retomada é idêntica.
+	for skip in [1500, 13000]:
+		var a := _sim(11, "ruin")
+		var b := PlayerBot.load_bot("greedy", 11)
+		for i in skip:
+			b.think(a)
+			a.step()
+		check(SaveGame.save(a, "user://test.save"), "salvou (tick %d, fase %d)" % [skip, a.phase])
+		var c := SaveGame.load_run(data, "user://test.save")
+		check(c != null and c.state_hash() == a.state_hash(), "carregou com o mesmo estado (tick %d)" % skip)
+		var b2 := PlayerBot.load_bot("greedy", 11)
+		b2.rng.state = b.rng.state
+		b2.next_t = b.next_t
+		for i in 2000:
+			b.think(a)
+			a.step()
+			b2.think(c)
+			c.step()
+		check(a.state_hash() == c.state_hash() and a.result == c.result, "retomada idêntica 2000 ticks depois (tick %d)" % skip)
+	SaveGame.erase("user://test.save")
 
 
 func t_full_runs() -> void:

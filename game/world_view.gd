@@ -82,6 +82,8 @@ var bubble_t := 0.0
 var bubble_on_boss := false
 var soft_tex: GradientTexture2D
 var frame := 0
+# Orçamento de efeitos por quadro (com centenas de unidades, o excesso vira ruído e custo).
+var budget := {"hit": 0, "death": 0, "num": 0}
 
 
 func _unshaded(c: Color, emit := 1.0) -> StandardMaterial3D:
@@ -824,6 +826,7 @@ func draw(alpha: float, delta: float) -> void:
 	if sim == null:
 		return
 	frame += 1
+	budget = {"hit": 6, "death": 6, "num": 10}
 	_draw_units(alpha, delta)
 	_draw_bars(alpha)
 	_draw_hero(alpha, delta)
@@ -1302,6 +1305,13 @@ func say(key_prefix: String, n: int, on_boss: bool, col: Color) -> void:
 	bubble_t = 2.6
 
 
+func _spend(k: String) -> bool:
+	if budget[k] <= 0:
+		return false
+	budget[k] -= 1
+	return true
+
+
 func _stop(t: float) -> void:
 	hitstop = maxf(hitstop, t)
 
@@ -1334,17 +1344,19 @@ func handle_events(evs: Array) -> void:
 					var d := Vector2(U.px[i] - sim.hero.x, U.py[i] - sim.hero.y).normalized() * 0.45
 					kx[i] = d.x
 					ky[i] = d.y
-					emit_fx("hit", p + Vector3(0, 0.8, 0), 0.8)
+					if _spend("hit"):
+						emit_fx("hit", p + Vector3(0, 0.8, 0), 0.8)
 				else:
 					var part_i := -1 - i
 					if part_i >= 0 and part_i < part_flash.size():
 						part_flash[part_i] = 1.0
 					emit_fx("spark", p + Vector3(0, 2.0, 0), 1.0)
 					add_trauma(0.08)
-				number(p, str(int(ev[3])), Color(1, 1, 1, 0.95), 38)
+				if _spend("num"):
+					number(p, str(int(ev[3])), Color(1, 1, 1, 0.95), 38)
 			K.Ev.DEATH:
 				var i: int = ev[4]
-				if i >= 0 and i < U.cap:
+				if i >= 0 and i < U.cap and _spend("death"):
 					var cid: String = sim.data.cards[int(ev[3])].id
 					emit_fx("death", p + Vector3(0, 0.5, 0), 0.9, UNIT_COLORS.get(cid, Color(0.7, 0.6, 0.8)))
 					if not (U.flags[i] & K.F_NO_XP) and U.xp[i] > 0.0:

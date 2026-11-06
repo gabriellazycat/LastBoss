@@ -221,3 +221,4 @@ RULE_elixir_start,Começa com {n} de elixir,Starts with {n} elixir
 RULE_offer_options,Level-ups oferecem {n} opções,Level-ups offer {n} choices
 RULE_hero_passive_mult,O herói treina {p}% do normal,The hero trains at {p}% of normal
 RULE_elixir_mult,Elixir regenera a {p}%,Elixir regenerates at {p}%
+UI_CONTINUE,Continuar run salva,Continue saved run

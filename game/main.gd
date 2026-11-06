@@ -59,6 +59,7 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.85, lengt
 	hud = Hud.new()
 	layer.add_child(hud)
 	hud.deck_chosen.connect(_start)
+	hud.continue_run.connect(_continue)
 	hud.card_pressed.connect(_select)
 	hud.card_sacrificed.connect(_sacrifice)
 	hud.offer_chosen.connect(func(k): if sim: sim.choose(k))
@@ -227,18 +228,41 @@ func _build_menu_scene() -> void:
 	menu_root.add_child(core_l)
 
 
+var save_t := 0.0
+
+
+func _continue() -> void:
+	var s := SaveGame.load_run(data)
+	if s == null:
+		SaveGame.erase()
+		hud.show_menu(true)
+		return
+	_begin(s)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and running and sim and sim.phase != K.Phase.OVER and not auto_args.has("autoplay"):
+		SaveGame.save(sim)
+
+
 func _start(deck: String) -> void:
+	var s := Sim.new()
+	s.setup(data, int(Time.get_unix_time_from_system()) % 1000000, deck)
+	_begin(s)
+
+
+func _begin(s: Sim) -> void:
 	if menu_root:
 		menu_root.queue_free()
 		menu_root = null
-	sim = Sim.new()
-	sim.setup(data, int(Time.get_unix_time_from_system()) % 1000000, deck)
+	sim = s
 	sim.record_events = true
 	result_played = false
 	audio.music("music_road")
 	audio.set_intensity(0.0)
 	world.build(sim, cam)
 	arena_built = false
+	save_t = sim.t
 	hud.show_menu(false)
 	hud.bind(sim)
 	running = true
@@ -295,8 +319,12 @@ func _process(delta: float) -> void:
 		hud.say(tr("UI_ARENA"))
 	if sim.phase == K.Phase.ROAD:
 		audio.set_intensity(sim.hero.s / maxf(sim.road.length(), 1.0) * (0.6 if not sim.road.complete else 1.0))
-	elif sim.phase == K.Phase.OVER and not result_played:
+	if sim.phase != K.Phase.OVER and sim.t - save_t > 10.0 and not auto_args.has("autoplay"):
+		save_t = sim.t
+		SaveGame.save(sim)
+	if sim.phase == K.Phase.OVER and not result_played:
 		result_played = true
+		SaveGame.erase()
 		audio.music("")
 		audio.play("victory" if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] else "defeat", 0.0)
 	var alpha := clampf(acc / sim.dt, 0.0, 1.0)

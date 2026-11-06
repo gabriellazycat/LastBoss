@@ -7,6 +7,7 @@ signal card_sacrificed(i: int)
 signal offer_chosen(k: int)
 signal deck_chosen(id: String)
 signal restart
+signal continue_run
 signal minimap_clicked(pos: Vector2)
 signal card_dropped(i: int, screen_pos: Vector2)
 
@@ -300,6 +301,12 @@ func _build_menu() -> void:
 		b.pressed.connect(func(): deck_chosen.emit(id))
 		row.add_child(b)
 	v.add_child(row)
+	var cont := Button.new()
+	cont.name = "Continue"
+	cont.text = "UI_CONTINUE"
+	cont.custom_minimum_size = Vector2(0, 46)
+	cont.pressed.connect(func(): continue_run.emit())
+	v.add_child(cont)
 	menu_panel.add_child(v)
 	add_child(menu_panel)
 
@@ -330,7 +337,11 @@ func show_menu(on: bool) -> void:
 	if on:
 		sim = null
 	var data := GameData.load_dir()
+	var cont: Button = menu_panel.find_child("Continue", true, false)
+	cont.visible = SaveGame.exists()
 	for b in menu_panel.find_children("*", "Button", true, false):
+		if not b.has_meta("deck"):
+			continue
 		var id: String = b.get_meta("deck")
 		var names: Array = []
 		for cid in data.deck(id)["cards"]:
