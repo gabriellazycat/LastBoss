@@ -2,7 +2,7 @@
  "id": "escudeiro",
  "hp": 1500,
  "hp_growth": 0.08,
- "damage": 40,
+ "damage": 35,
  "damage_growth": 0.08,
  "attack_interval": 1.0,
  "attack_range": 1.8,
