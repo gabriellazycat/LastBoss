@@ -94,7 +94,7 @@ func _env() -> void:
 	moon.light_energy = 1.1
 	moon.light_color = Color(0.7, 0.75, 1.0)
 	moon.shadow_enabled = true
-	moon.directional_shadow_max_distance = 90.0
+	moon.directional_shadow_max_distance = 60.0
 	add_child(moon)
 	var we := WorldEnvironment.new()
 	var env := Environment.new()

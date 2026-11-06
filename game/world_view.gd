@@ -45,6 +45,8 @@ var boss_face: MeshInstance3D
 var cam_pos := Vector3.ZERO
 var zoom := 0.0
 var shake := 0.0
+var bar_mm: MultiMesh
+var bar_buf := PackedFloat32Array()
 var bubble: Label3D
 var bubble_t := 0.0
 var bubble_on_boss := false
@@ -103,6 +105,7 @@ func build(s: Sim, camera: Camera3D) -> void:
 	_build_units()
 	_build_hero()
 	_build_pools()
+	_build_bars()
 	cam_pos = Vector3(sim.hero.x, 0, sim.hero.y)
 
 
@@ -368,6 +371,8 @@ func _build_units() -> void:
 		mmi.multimesh = mm
 		mmi.material_override = Models.glow_material(0.35) if c.id in ["ghost", "spectre", "slime"] else Models.material()
 		mmi.custom_aabb = AABB(Vector3(-3000, -10, -3000), Vector3(6000, 40, 6000))
+		# Enxames e unidades pequenas não projetam sombra (custo com 500 unidades).
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if cap > 96 or c.radius < 0.5 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		add_child(mmi)
 		var buf := PackedFloat32Array()
 		buf.resize(cap * STRIDE)
@@ -416,6 +421,61 @@ func _build_hero() -> void:
 	bubble.outline_modulate = Color(0.1, 0.05, 0.15)
 	bubble.visible = false
 	add_child(bubble)
+
+
+## Barras de vida (billboard) das unidades com 300+ de vida: uma MultiMesh, duas instâncias por unidade.
+func _build_bars() -> void:
+	bar_mm = MultiMesh.new()
+	bar_mm.transform_format = MultiMesh.TRANSFORM_3D
+	bar_mm.use_colors = true
+	var q := QuadMesh.new()
+	q.size = Vector2(1.4, 0.16)
+	bar_mm.mesh = q
+	bar_mm.instance_count = 256
+	bar_mm.visible_instance_count = 0
+	bar_buf.resize(256 * 16)
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = bar_mm
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	m.billboard_keep_scale = true
+	m.vertex_color_use_as_albedo = true
+	m.no_depth_test = true
+	m.render_priority = 2
+	mmi.material_override = m
+	mmi.custom_aabb = AABB(Vector3(-3000, -10, -3000), Vector3(6000, 40, 6000))
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mmi)
+
+
+func _draw_bars(alpha: float) -> void:
+	var U := sim.units
+	var n := 0
+	var buf := bar_buf
+	bar_buf = PackedFloat32Array()
+	for i in U.hi:
+		if n >= 254:
+			break
+		if U.alive[i] == 0 or U.max_hp[i] < 300.0:
+			continue
+		var f := clampf(U.hp[i] / U.max_hp[i], 0.0, 1.0)
+		var x := lerpf(U.ox[i], U.px[i], alpha)
+		var z := lerpf(U.oy[i], U.py[i], alpha)
+		var y := 3.0 if U.arch[i] != K.Arch.STRUCTURE else 3.6
+		for pass_ in 2:
+			var o := n * 16
+			var sx := 1.0 if pass_ == 0 else maxf(f, 0.02)
+			var c := Color(0.05, 0.03, 0.08, 0.85) if pass_ == 0 else Color(0.9, 0.25, 0.25).lerp(Color(0.4, 1.0, 0.45), f)
+			buf[o] = sx; buf[o + 1] = 0.0; buf[o + 2] = 0.0; buf[o + 3] = x
+			buf[o + 4] = 0.0; buf[o + 5] = 1.0 if pass_ == 0 else 0.6; buf[o + 6] = 0.0; buf[o + 7] = y
+			buf[o + 8] = 0.0; buf[o + 9] = 0.0; buf[o + 10] = 1.0; buf[o + 11] = z
+			buf[o + 12] = c.r; buf[o + 13] = c.g; buf[o + 14] = c.b; buf[o + 15] = c.a
+			n += 1
+	bar_mm.visible_instance_count = n
+	if n > 0:
+		bar_mm.buffer = buf
+	bar_buf = buf
 
 
 func _circle(r: float, col: Color) -> MeshInstance3D:
@@ -663,6 +723,7 @@ func draw(alpha: float, delta: float) -> void:
 			buf[o + 16] = flash[i]; buf[o + 17] = hop * maxf(moving, 0.25 if hop > 0.0 else 0.0); buf[o + 18] = float(i) * 1.7; buf[o + 19] = 0.0
 		mm.buffer = buf
 		e["buf"] = buf
+	_draw_bars(alpha)
 	_draw_hero(alpha, delta)
 	_draw_road_state()
 	_draw_zones()
