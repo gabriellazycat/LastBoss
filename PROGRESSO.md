@@ -19,7 +19,7 @@ O MVP está jogável do começo ao fim, com arte, áudio e interface polidos. Os
 | Áudio: efeitos e trilha em camadas que cresce até o covil, trilha da arena | ✓ sintetizados (provisórios) |
 | Controles: mouse (clique ou arrastar), teclado, controle | ✓ |
 | pt/en pela tradução da Godot | ✓ |
-| 500 unidades | ✓ 166 FPS em média (RTX 2060) |
+| 500 unidades | ✓ 90 FPS em média, 74 no mínimo, com a arte final (RTX 2060) |
 | Testes, teste da entrada real, executável exportado | ✓ |
 
 ## Qual versão jogar
@@ -29,19 +29,12 @@ O MVP está jogável do começo ao fim, com arte, áudio e interface polidos. Os
 
 ## Balanceamento: onde parou
 
-O ajustador baixou a nota (distância às metas) de 1,93 para 1,11 e empacou. Ciclos aceitos:
-- primeiro level-up do jogador: 900 → 375 de dano;
-- elixir do Tesouro ×1,16;
-- vida do Escudeiro: 1500 → 1950.
+Mudanças de regra (medidas pelo bot): herói sem regeneração passiva (vilas, fontes e upgrades curam), monstros causam 2,5× de dano corpo a corpo e 1,2× à distância (a planilha previa 70 de dano por elixir; a simulação media 10), Tesouro dá 45% menos XP ao herói, Ruína dá treino dobrado ao herói.
 
-O lote final na `balance` (450 runs, 5 bots) está em `balance_reports/final_5bots.md`.
-- **Perto das metas:** chegada à arena (530–790 s), nível do jogador (4–9) e elixir desperdiçado (≤ 7%).
-- **Fora das metas:**
-  - **Tesouro:** 0% para todos os bots; o herói chega no nível 17–18. O deck joga muitas unidades baratas que alimentam o herói, e a regra própria dele (8 de elixir inicial) quase não pesa.
-  - **Ruína:** forte demais; até o Aleatório vence 53%.
-  - **Heurístico:** vence 0–37% (meta: 50–65%).
-
-  Os três pedem mudança de regra (regra própria do Tesouro, XP de feitiço no Ruína), não só de número.
+O ajustador baixou a nota de 1,14 para 0,28 nas suas metas. No lote final com os 5 bots (360 runs, `balance_reports/final_5bots_v2.md`), a nota é 0,89:
+- **Na meta:** chegada à arena e nível do herói; nível do jogador 5–12.
+- **Ainda fora:** o Heurístico vence 17–42% (meta 50–65%); o Aleatório ainda vence 21–42% (meta < 10%); com o Tesouro a run chega tarde à arena (até 950 s).
+- Próxima rodada: melhorar o Heurístico (um bot melhor separa "jogar bem" de "jogar ao acaso") e rodar o ajustador por mais ciclos.
 
 ## Como rodar
 
@@ -64,5 +57,5 @@ Controles: teclas 1–6 escolhem a carta e o clique posiciona, ou arraste a cart
 1. Modelos e animações do Blender (Quaternius/Kenney) no lugar das peças por código, começando pelo herói e pelo chefe.
 2. Trilha e efeitos sonoros finais (os atuais são sintetizados).
 3. Exploradores (bots que evoluem procurando estratégias que quebram o jogo).
-4. Pilares quebráveis da arena, salvamento no meio da run, tutorial guiado.
+4. Tutorial guiado (as dicas da primeira vez já existem).
 5. Testes com pessoas: o bot mede equilíbrio, não diversão.
