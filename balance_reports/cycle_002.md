@@ -1,69 +1,69 @@
-Mudança: `rules.player_xp.first_level` 765 → 536 (meta: player_levels)
+Mudança: `boss_lorde.decks.2.rules.elixir_mult` 1.0 → 1.16 (meta: deck_spread)
 
 # Relatório de balanceamento — ciclo 2
 
-Runs: 48 · processos: 12 · tempo total: 0.0 s · nota (distância às metas, 0 = ideal): **1.6855**
+Runs: 48 · processos: 12 · tempo total: 0.0 s · nota (distância às metas, 0 = ideal): **1.2384**
 
 | bot | deck | n | vitória | antecipada | derrota | arena (s) | herói nv | jogador nv | elixir perdido | ms/run |
 |---|---|---|---|---|---|---|---|---|---|---|
-| heuristic | horde | 8 | 0% | 0% | 100% | 603 | 10.4 | 1.2 | 0% | 2827 |
-| heuristic | ruin | 8 | 0% | 0% | 100% | 541 | 9.0 | 4.6 | 0% | 4356 |
-| heuristic | treasure | 8 | 0% | 0% | 88% | 731 | 16.1 | 2.6 | 1% | 4405 |
-| random | horde | 8 | 12% | 12% | 88% | 631 | 14.0 | 1.9 | 0% | 2566 |
-| random | ruin | 8 | 12% | 0% | 88% | 534 | 9.9 | 4.4 | 0% | 4451 |
-| random | treasure | 8 | 0% | 0% | 100% | 728 | 16.5 | 2.8 | 0% | 4191 |
+| heuristic | horde | 8 | 25% | 0% | 75% | 642 | 11.8 | 3.5 | 0% | 2068 |
+| heuristic | ruin | 8 | 50% | 0% | 50% | 560 | 9.6 | 6.5 | 0% | 1708 |
+| heuristic | treasure | 8 | 12% | 0% | 88% | 756 | 16.2 | 5.5 | 0% | 2374 |
+| random | horde | 8 | 12% | 0% | 88% | 645 | 14.4 | 5.0 | 0% | 2008 |
+| random | ruin | 8 | 38% | 0% | 62% | 541 | 10.1 | 6.1 | 0% | 1600 |
+| random | treasure | 8 | 0% | 0% | 100% | 758 | 17.4 | 9.0 | 0% | 2128 |
 
 ## Metas
 
 | meta | distância |
 |---|---|
-| smart_win | 1.000 |
-| deck_spread | 0.000 |
-| random_win | 0.000 |
-| arena_time | 0.049 |
+| smart_win | 0.417 |
+| deck_spread | 0.325 |
+| random_win | 0.067 |
+| arena_time | 0.015 |
 | hero_level | 0.000 |
 | waste | 0.000 |
-| player_levels | 0.637 |
-| card_dominance | 0.000 |
+| player_levels | 0.258 |
+| card_dominance | 0.157 |
 
 ## Cartas (bots não aleatórios)
 
 | carta | oferecida | escolha | vitória quando escolhida | nas vitórias |
 |---|---|---|---|---|
-| lair_walls | 8 | 100% | 0% | — |
-| ogre | 6 | 100% | 0% | — |
-| cosmic_ray | 9 | 100% | 0% | — |
-| damned_army | 12 | 83% | 0% | — |
-| forbidden_library | 6 | 83% | 0% | — |
-| soul_collector | 6 | 83% | 0% | — |
-| dark_fury | 12 | 67% | 0% | — |
-| petrifying_gaze | 6 | 67% | 0% | — |
-| false_sign | 9 | 67% | 0% | — |
-| bat_nest | 8 | 62% | 0% | — |
-| slime | 18 | 61% | 0% | — |
-| burn_village | 10 | 60% | 0% | — |
-| scrap_golem | 7 | 57% | 0% | — |
-| rat_king | 11 | 55% | 0% | — |
-| dark_forge | 15 | 53% | 0% | — |
-| bone_prison | 10 | 50% | 0% | — |
-| cultists | 4 | 50% | 0% | — |
-| mod:shadowy | 26 | 46% | 0% | — |
-| ghost | 8 | 38% | 0% | — |
-| gargoyle_tower | 8 | 38% | 0% | — |
-| mimic | 11 | 36% | 0% | — |
-| werewolf | 3 | 33% | 0% | — |
-| boiling_oil | 9 | 33% | 0% | — |
-| soul_feast | 7 | 29% | 0% | — |
-| bone_totem | 8 | 25% | 0% | — |
-| mod:cheap | 36 | 25% | 0% | — |
-| skeleton_archers | 17 | 24% | 0% | — |
-| mod:explosive | 28 | 18% | 0% | — |
-| goblin_dynamiter | 17 | 18% | 0% | — |
-| mod:veteran | 12 | 17% | 0% | — |
-| broken_bridge | 13 | 15% | 0% | — |
-| dark_pact | 9 | 11% | 0% | — |
-| mod:cursed | 20 | 10% | 0% | — |
-| gold_bait | 15 | 7% | 0% | — |
-| rat_horde | 16 | 6% | 0% | — |
-| shadow_bolt | 16 | 0% | — | — |
-| web | 16 | 0% | — | — |
+| lair_walls | 6 | 100% | 0% | 0% |
+| slime | 4 | 100% | 0% | 0% |
+| damned_army | 13 | 92% | 33% | 43% |
+| bat_nest | 10 | 90% | 50% | 71% |
+| cosmic_ray | 9 | 89% | 29% | 29% |
+| ogre | 9 | 89% | 25% | 29% |
+| soul_collector | 9 | 78% | 29% | 43% |
+| forbidden_library | 8 | 75% | 17% | 14% |
+| rat_king | 12 | 75% | 25% | 29% |
+| dark_fury | 12 | 67% | 14% | 14% |
+| burn_village | 12 | 67% | 25% | 29% |
+| bone_totem | 14 | 64% | 11% | 14% |
+| mod:shadowy | 39 | 64% | 33% | 0% |
+| scrap_golem | 8 | 62% | 40% | 29% |
+| bone_prison | 8 | 62% | 20% | 14% |
+| false_sign | 13 | 62% | 50% | 57% |
+| petrifying_gaze | 15 | 60% | 50% | 57% |
+| gargoyle_tower | 9 | 56% | 20% | 71% |
+| werewolf | 6 | 50% | 0% | 0% |
+| mimic | 4 | 50% | 0% | 14% |
+| dark_forge | 15 | 47% | 43% | 43% |
+| ghost | 10 | 40% | 33% | 14% |
+| broken_bridge | 22 | 36% | 0% | 0% |
+| goblin_dynamiter | 23 | 35% | 14% | 71% |
+| cultists | 9 | 33% | 67% | 57% |
+| mod:veteran | 20 | 25% | 25% | 0% |
+| mod:cheap | 45 | 24% | 43% | 0% |
+| mod:cursed | 40 | 22% | 38% | 0% |
+| mod:explosive | 39 | 18% | 43% | 0% |
+| boiling_oil | 23 | 17% | 0% | 57% |
+| skeleton_archers | 35 | 14% | 20% | 57% |
+| soul_feast | 7 | 14% | 0% | 29% |
+| gold_bait | 24 | 0% | — | 14% |
+| rat_horde | 16 | 0% | — | 43% |
+| shadow_bolt | 28 | 0% | — | 57% |
+| web | 25 | 0% | — | 86% |
+| dark_pact | 6 | 0% | — | 0% |
