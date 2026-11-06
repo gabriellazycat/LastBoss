@@ -199,7 +199,7 @@
    }
   }
  ],
- "cleave_arc": 80.0,
+ "cleave_arc": 104.0,
  "regen_per_s": 0.0,
  "regen_delay": 3.0,
  "regen_combat": 0.0,
