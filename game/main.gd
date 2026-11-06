@@ -48,6 +48,9 @@ func _ready() -> void:
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
 			auto_args[kv[0]] = kv[1]
+	if auto_args.has("uitest"):
+		_start("horde")
+		_ui_test()
 	if auto_args.has("autoplay"):
 		_start(str(auto_args.get("deck", "horde")))
 		auto_bot = PlayerBot.load_bot(str(auto_args["autoplay"]), sim.run_seed)
@@ -156,6 +159,64 @@ func _process(delta: float) -> void:
 	world.draw(alpha, delta)
 	_update_placement()
 	hud.refresh(delta, Engine.get_frames_per_second())
+
+
+## Teste da entrada real: injeta teclas e cliques e confere o efeito no Sim.
+func _ui_test() -> void:
+	var ok := true
+	await get_tree().create_timer(0.5).timeout
+	sim.elixir = 10.0
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_1
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	ok = ok and hud.selected == 0
+	print("uitest selecionar com tecla 1: ", hud.selected == 0)
+	var f := Vector3(0, 0, -6)
+	var target := Vector3(sim.hero.x, 0, sim.hero.y) + f
+	var sp := cam.unproject_position(target)
+	var mb := InputEventMouseButton.new()
+	mb.button_index = MOUSE_BUTTON_LEFT
+	mb.pressed = true
+	mb.position = sp
+	Input.parse_input_event(mb)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var played := 0
+	for k in sim.stats["played"]:
+		played += int(sim.stats["played"][k])
+	print("uitest clique no mundo jogou a carta: ", played == 1, " unidades=", sim.units.count)
+	ok = ok and played == 1
+	var e0 := sim.elixir
+	var x := InputEventKey.new()
+	x.keycode = KEY_X
+	x.pressed = true
+	Input.parse_input_event(x)
+	var two := InputEventKey.new()
+	two.keycode = KEY_2
+	two.pressed = true
+	Input.parse_input_event(two)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("uitest X+2 sacrificou: ", sim.stats["sacrifices"] == 1)
+	ok = ok and sim.stats["sacrifices"] == 1
+	sim.player_xp = sim._player_next() + 1.0
+	sim.damage_hero(1.0, sim.hero.x, sim.hero.y + 5.0, 0, SimHero.DMG_PIERCE, "test")
+	await get_tree().process_frame
+	var had_offer := sim.offers.size() > 0
+	var n0 := sim.cards.size()
+	var one := InputEventKey.new()
+	one.keycode = KEY_1
+	one.pressed = true
+	Input.parse_input_event(one)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("uitest oferta escolhida com tecla 1: ", had_offer and sim.offers.is_empty())
+	ok = ok and had_offer and sim.offers.is_empty()
+	print("uitest resultado: ", "OK" if ok else "FALHOU")
+	get_tree().quit(0 if ok else 1)
 
 
 ## Teste de estresse: mantém N unidades vivas e o herói imortal; mede o FPS.

@@ -54,6 +54,9 @@ Cada carta é um objeto com `id`, `category` (field/route/lair/finisher), `type`
 - **Esqueleto do Totem:** 60 de vida, 6 de DPS, perseguidor. **Morcego:** 30 de vida, 5 de DPS, 5 m/s. **Explosivo:** 40 de dano em 2 m. **Amaldiçoado:** 1 maldição por unidade a cada 5 s de acertos.
 - **Contrato "Sem Testemunhas":** o contador de dano zera quando o herói ganha XP.
 - **Recompensa "rara" de uma tag sem cartas raras** (Fogo, Sombra): cai para qualquer raridade daquela tag.
+- **Sustentação do herói** (a planilha prevê ~18 mil de dano no herói na fase 1 e ele tem 1500–4000 de vida): regeneração de 1,2% da vida máx./s em combate e 3%/s fora de combate, e golpe em arco de 110° (o Escudeiro corta o que está à frente). Tudo em `hero_escudeiro.json`.
+- **Atiradores recuam a 55% da velocidade** (`rules.units.retreat_speed`); senão faziam kiting infinito no herói. Enquanto persegue um alvo, a coleira do herói até a estrada estica até 18 m.
+- **A IA do herói não mira a Torre de Gárgula** (ela vira pedra quando ele chega perto): ele passa direto.
 - **Pilares quebráveis da arena** e **salvamento no meio da run** ficam para depois do marco 1.
 - Risco de desempenho: 15 min em < 5 s com GDScript. Se não bater, o laço das unidades vai para C# ou GDExtension (o plano B do GDD).
 
