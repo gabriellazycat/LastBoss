@@ -35,7 +35,26 @@ func _ready() -> void:
 	_env()
 	world = WorldView.new()
 	add_child(world)
+	var fx_layer := CanvasLayer.new()
+	fx_layer.layer = 0
+	add_child(fx_layer)
+	var vignette := ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vs := Shader.new()
+	vs.code = "shader_type canvas_item;
+void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.85, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.02, 0.0, 0.05, v * 0.75); }"
+	var vm := ShaderMaterial.new()
+	vm.shader = vs
+	vignette.material = vm
+	fx_layer.add_child(vignette)
+	flash_rect = ColorRect.new()
+	flash_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_rect.color = Color(1, 1, 1, 0)
+	fx_layer.add_child(flash_rect)
 	var layer := CanvasLayer.new()
+	layer.layer = 1
 	add_child(layer)
 	hud = Hud.new()
 	layer.add_child(hud)
@@ -113,16 +132,24 @@ func _env() -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 1.05
 	env.glow_enabled = true
-	env.glow_intensity = 0.9
-	env.glow_bloom = 0.08
+	env.glow_intensity = 1.0
+	env.glow_bloom = 0.12
 	env.glow_hdr_threshold = 0.9
 	env.ssao_enabled = true
 	env.ssao_radius = 1.5
 	env.ssao_intensity = 1.6
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.16, 0.11, 0.26)
-	env.fog_density = 0.008
+	env.fog_density = 0.004
 	env.fog_sky_affect = 0.4
+	env.fog_height = 1.5
+	env.fog_height_density = 0.05
+	env.volumetric_fog_enabled = true
+	env.volumetric_fog_density = 0.0035
+	env.volumetric_fog_albedo = Color(0.55, 0.5, 0.75)
+	env.volumetric_fog_emission = Color(0.03, 0.02, 0.06)
+	env.volumetric_fog_length = 80.0
+	env.volumetric_fog_ambient_inject = 0.15
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.1
 	env.adjustment_contrast = 1.05
@@ -143,6 +170,7 @@ func _pad_actions() -> void:
 
 
 var audio: GameAudio
+var flash_rect: ColorRect
 var result_played := false
 var menu_root: Node3D
 var menu_t := 0.0
@@ -224,8 +252,9 @@ func _process(delta: float) -> void:
 	life += delta
 	if menu_root and not running:
 		menu_t += delta * 0.15
-		cam.position = Vector3(sin(menu_t) * 13.0, 6.5, cos(menu_t) * 13.0 + 2.0)
-		cam.look_at(Vector3(0, 3.0, -1.0), Vector3.UP)
+		var a := sin(menu_t * 2.0) * 0.55
+		cam.position = Vector3(sin(a) * 12.0, 2.6, -cos(a) * 12.0 - 1.0)
+		cam.look_at(Vector3(0, 1.2, -1.0), Vector3.UP)
 	if auto_args.has("quit") and life >= float(auto_args["quit"]):
 		if sim:
 			print("autoplay fim: t=%.0f fase=%d resultado=%s unidades=%d fps=%d" % [sim.t, sim.phase, sim.stats["result"], sim.units.count, Engine.get_frames_per_second()])
@@ -244,7 +273,12 @@ func _process(delta: float) -> void:
 	if auto_args.has("stress"):
 		_stress(int(auto_args["stress"]))
 	_pad_cursor(delta)
-	if not paused:
+	# Hit-stop: congela a simulação por alguns milissegundos em impactos grandes.
+	var stopped := false
+	if world.hitstop > 0.0:
+		world.hitstop -= delta
+		stopped = true
+	if not paused and not stopped:
 		acc = minf(acc + delta * speed, sim.dt * 12.0)
 		while acc >= sim.dt:
 			sim.step()
@@ -266,7 +300,8 @@ func _process(delta: float) -> void:
 		audio.music("")
 		audio.play("victory" if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] else "defeat", 0.0)
 	var alpha := clampf(acc / sim.dt, 0.0, 1.0)
-	world.draw(alpha, delta)
+	world.draw(alpha, delta * (0.15 if stopped else 1.0))
+	flash_rect.color = world.screen_flash
 	_update_placement()
 	hud.refresh(delta, Engine.get_frames_per_second())
 

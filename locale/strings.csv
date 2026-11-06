@@ -210,3 +210,14 @@ SAY_BOSS_TP_1,Me pega se puder!,Catch me if you can!
 SAY_BOSS_TP_2,Plim! Errou!,Poof! Missed!
 SAY_BOSS_FIN_1,CONTEMPLE O MEU PODER!,BEHOLD MY POWER!
 SAY_BOSS_FIN_2,Hora do grande final!,Time for the grand finale!
+DECKSTYLE_horde,Muitas unidades baratas.,Many cheap units.
+DECKSTYLE_ruin,Feitiços e estruturas.,Spells and structures.
+DECKSTYLE_treasure,Economia e enganação.,Economy and trickery.
+RULE_hand_size,Mão de {n} cartas,Hand of {n} cards
+RULE_hero_xp_mult,Monstros dão {p}% do XP normal ao herói,Monsters give the hero {p}% of normal XP
+RULE_spell_damage_mult,Feitiços causam {p}% de dano,Spells deal {p}% damage
+RULE_monster_cost_add,Monstros custam +{n} de elixir,Monsters cost +{n} elixir
+RULE_elixir_start,Começa com {n} de elixir,Starts with {n} elixir
+RULE_offer_options,Level-ups oferecem {n} opções,Level-ups offer {n} choices
+RULE_hero_passive_mult,O herói treina {p}% do normal,The hero trains at {p}% of normal
+RULE_elixir_mult,Elixir regenera a {p}%,Elixir regenerates at {p}%

@@ -2,6 +2,7 @@ class_name WorldView
 extends Node3D
 ## Desenha o estado do Sim. Só lê; nunca altera a simulação.
 ## Unidades: uma MultiMesh por tipo, preenchida por buffer (transform + cor + dados do shader).
+## Game feel: hit-stop, trauma de câmera, flash de tela, recuo, investida, partículas em camadas.
 
 const UP := Vector3.UP
 const STRIDE := 20
@@ -10,20 +11,39 @@ const LOC_COLORS := {
 	"ritual": Color(0.8, 0.25, 1.0), "shrine": Color(0.3, 1.0, 0.6), "bridge": Color(0.65, 0.6, 0.55),
 }
 const PART_OFFSETS := {"core": Vector3(0, 0, 0), "head": Vector3(0, 4.3, 0), "left_arm": Vector3(-1.6, 2.4, 0), "right_arm": Vector3(1.6, 2.4, 0)}
+const UNIT_COLORS := {
+	"rat_horde": Color(0.55, 0.45, 0.42), "rat": Color(0.55, 0.45, 0.42), "bat": Color(0.55, 0.3, 0.75), "rat_king": Color(0.9, 0.7, 0.25),
+	"skeleton_archers": Color(0.9, 0.86, 0.74), "skeleton": Color(0.9, 0.86, 0.74), "goblin_dynamiter": Color(0.45, 0.75, 0.28),
+	"slime": Color(0.3, 0.95, 0.55), "cultists": Color(0.6, 0.15, 0.4), "ogre": Color(0.55, 0.62, 0.34), "ghost": Color(0.7, 0.88, 1.0),
+	"spectre": Color(0.35, 1.0, 0.85), "werewolf": Color(0.4, 0.32, 0.28), "scrap_golem": Color(0.62, 0.4, 0.24),
+}
 
 var sim: Sim
 var cam: Camera3D
 var mm_by_def: Dictionary = {}
 var flash := PackedFloat32Array()
+var kx := PackedFloat32Array()
+var ky := PackedFloat32Array()
 var hero_root: Node3D
-var hero_body: MeshInstance3D
+var body: Node3D
 var hero_mat: ShaderMaterial
-var sword_pivot: Node3D
-var shield_node: MeshInstance3D
-var hero_light: OmniLight3D
+var leg_l: Node3D
+var leg_r: Node3D
+var arm_s: Node3D
+var arm_h: Node3D
+var cape: Node3D
+var head: Node3D
+var walk_phase := 0.0
 var swing_t := 0.0
+var hero_flash := 0.0
+var level_jump := 0.0
+var slash: MeshInstance3D
+var slash_mat: StandardMaterial3D
+var hero_light: OmniLight3D
 var road_meshes: Array = []
 var loc_nodes: Array = []
+var lanterns: Array = []
+var lantern_lights: Array = []
 var zone_pool: Array = []
 var number_pool: Array = []
 var number_i := 0
@@ -33,26 +53,35 @@ var shot_pool: Array = []
 var shot_i := 0
 var orb_pool: Array = []
 var orb_i := 0
-var particles: Dictionary = {}
+var decal_pool: Array = []
+var decal_i := 0
+var fx: Dictionary = {}
+var fireflies: GPUParticles3D
 var ring_min: MeshInstance3D
 var ring_max: MeshInstance3D
 var ghost: MeshInstance3D
 var ghost_mat: StandardMaterial3D
 var arena_root: Node3D
 var part_nodes: Array = []
+var part_flash: Array = []
+var falling: Array = []
 var altar_nodes: Array = []
 var pillar_nodes: Array = []
 var boss_face: MeshInstance3D
 var cam_pos := Vector3.ZERO
 var zoom := 0.0
-var shake := 0.0
+var trauma := 0.0
+var hitstop := 0.0
+var screen_flash := Color(1, 1, 1, 0)
+var flash_light: OmniLight3D
+var flash_t := 0.0
 var bar_mm: MultiMesh
 var bar_buf := PackedFloat32Array()
 var bubble: Label3D
 var bubble_t := 0.0
 var bubble_on_boss := false
-var flash_light: OmniLight3D
-var flash_t := 0.0
+var soft_tex: GradientTexture2D
+var frame := 0
 
 
 func _unshaded(c: Color, emit := 1.0) -> StandardMaterial3D:
@@ -83,21 +112,41 @@ func _light(pos: Vector3, col: Color, energy: float, rng_m: float) -> OmniLight3
 	l.light_energy = energy
 	l.omni_range = rng_m
 	l.position = pos
+	l.light_volumetric_fog_energy = 0.2
 	return l
 
 
-func build(s: Sim, camera: Camera3D) -> void:
-	sim = s
-	cam = camera
+func build_empty() -> void:
 	for c in get_children():
 		c.queue_free()
-	for a in [road_meshes, loc_nodes, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, part_nodes, altar_nodes, pillar_nodes]:
+	sim = null
+
+
+func build(s: Sim, camera: Camera3D) -> void:
+	build_empty()
+	sim = s
+	cam = camera
+	for a in [road_meshes, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
 		a.clear()
 	mm_by_def.clear()
-	particles.clear()
+	fx.clear()
 	arena_root = null
 	flash.resize(sim.units.cap)
 	flash.fill(0.0)
+	kx.resize(sim.units.cap)
+	kx.fill(0.0)
+	ky.resize(sim.units.cap)
+	ky.fill(0.0)
+	soft_tex = GradientTexture2D.new()
+	var gr := Gradient.new()
+	gr.offsets = PackedFloat32Array([0.0, 1.0])
+	gr.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
+	soft_tex.gradient = gr
+	soft_tex.fill = GradientTexture2D.FILL_RADIAL
+	soft_tex.fill_from = Vector2(0.5, 0.5)
+	soft_tex.fill_to = Vector2(0.5, 0.0)
+	soft_tex.width = 64
+	soft_tex.height = 64
 	_build_ground()
 	_build_road()
 	_build_scatter()
@@ -108,12 +157,6 @@ func build(s: Sim, camera: Camera3D) -> void:
 	_build_pools()
 	_build_bars()
 	cam_pos = Vector3(sim.hero.x, 0, sim.hero.y)
-
-
-func build_empty() -> void:
-	for c in get_children():
-		c.queue_free()
-	sim = null
 
 
 # ---------------------------------------------------------------- terreno e estrada
@@ -129,7 +172,7 @@ func _road_bounds() -> Rect2:
 
 func _build_ground() -> void:
 	var b := _road_bounds()
-	var cell := 8.0
+	var cell := 6.0
 	var nx := int(b.size.x / cell) + 1
 	var ny := int(b.size.y / cell) + 1
 	var rng := RandomNumberGenerator.new()
@@ -138,9 +181,10 @@ func _build_ground() -> void:
 	cols.resize((nx + 1) * (ny + 1))
 	for j in ny + 1:
 		for i in nx + 1:
-			var n := sin(i * 0.37 + j * 0.11) * 0.5 + sin(i * 0.09 - j * 0.23) * 0.5
-			var base := Color(0.2, 0.3, 0.22).lerp(Color(0.27, 0.33, 0.2), n * 0.5 + 0.5)
-			cols[j * (nx + 1) + i] = base.lerp(Color(0.24, 0.2, 0.3), rng.randf() * 0.4)
+			var n := sin(i * 0.31 + j * 0.13) * 0.5 + sin(i * 0.07 - j * 0.19) * 0.5
+			var m := sin(i * 0.9 + j * 1.3) * 0.5 + 0.5
+			var base := Color(0.2, 0.3, 0.22).lerp(Color(0.28, 0.34, 0.21), n * 0.5 + 0.5)
+			cols[j * (nx + 1) + i] = base.lerp(Color(0.26, 0.22, 0.32), m * 0.35 * rng.randf())
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for j in ny:
@@ -177,10 +221,10 @@ func _ribbon(pts: PackedVector2Array, width: float, col: Color, edge: Color) -> 
 		var w := width * 0.5
 		L.append(Vector3(p.x + o.x * w, 0.0, p.y + o.y * w))
 		R.append(Vector3(p.x - o.x * w, 0.0, p.y - o.y * w))
-		LE.append(Vector3(p.x + o.x * (w + 0.9), -0.01, p.y + o.y * (w + 0.9)))
-		RE.append(Vector3(p.x - o.x * (w + 0.9), -0.01, p.y - o.y * (w + 0.9)))
+		LE.append(Vector3(p.x + o.x * (w + 1.0), -0.015, p.y + o.y * (w + 1.0)))
+		RE.append(Vector3(p.x - o.x * (w + 1.0), -0.015, p.y - o.y * (w + 1.0)))
 	for i in n - 1:
-		var shade := 0.92 + 0.08 * sin(i * 1.7)
+		var shade := 0.9 + 0.1 * sin(i * 1.7) + 0.05 * sin(i * 0.37)
 		for q in [[L, R, Color(col.r * shade, col.g * shade, col.b * shade)], [LE, L, edge], [R, RE, edge]]:
 			var A: PackedVector3Array = q[0]
 			var B: PackedVector3Array = q[1]
@@ -196,9 +240,7 @@ func _build_road() -> void:
 	for li in sim.road.legs.size():
 		var leg: Dictionary = sim.road.legs[li]
 		for b in leg["pts"].size():
-			var mat := Models.glow_material(0.0)
-			mat.render_priority = 0
-			var r := _mi(_ribbon(leg["pts"][b], 4.2, Color(0.55, 0.43, 0.3), Color(0.36, 0.3, 0.22)), Vector3.ZERO, mat)
+			var r := _mi(_ribbon(leg["pts"][b], 4.2, Color(0.56, 0.44, 0.31), Color(0.34, 0.29, 0.22)), Vector3.ZERO, Models.glow_material(0.0))
 			r.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			r.set_meta("leg", li)
 			r.set_meta("branch", b)
@@ -206,7 +248,6 @@ func _build_road() -> void:
 			road_meshes.append(r)
 
 
-## Grade de ocupação da estrada, dos locais e da arena: o cenário não nasce em cima deles.
 func _road_cells() -> Dictionary:
 	var cells := {}
 	for leg in sim.road.legs:
@@ -252,27 +293,62 @@ func _build_scatter() -> void:
 	var b := _road_bounds()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sim.run_seed + 77
-	var sets := {"tree": [], "dead_tree": [], "rock": [], "grass": [], "mushroom": []}
-	var n := int(b.size.x * b.size.y / 40.0)
+	var sets := {"tree": [], "tree_round": [], "dead_tree": [], "rock": [], "grass": [], "mushroom": [], "bush": [], "flowers": [], "gravestone": [], "road_stone": [], "lantern": []}
+	var n := int(b.size.x * b.size.y / 34.0)
 	for i in n:
 		var p := Vector2(rng.randf_range(b.position.x, b.end.x), rng.randf_range(b.position.y, b.end.y))
 		if cells.has(Vector2i(int(floor(p.x / 6.0)), int(floor(p.y / 6.0)))):
 			continue
 		var r := rng.randf()
 		var kind := "grass"
-		if r < 0.22:
+		if r < 0.14:
 			kind = "tree"
-		elif r < 0.27:
+		elif r < 0.22:
+			kind = "tree_round"
+		elif r < 0.25:
 			kind = "dead_tree"
-		elif r < 0.36:
+		elif r < 0.31:
 			kind = "rock"
-		elif r < 0.385:
+		elif r < 0.4:
+			kind = "bush"
+		elif r < 0.46:
+			kind = "flowers"
+		elif r < 0.475:
 			kind = "mushroom"
-		var s := rng.randf_range(0.7, 1.4) if kind != "grass" else rng.randf_range(0.8, 1.6)
+		elif r < 0.485:
+			kind = "gravestone"
+		var s := rng.randf_range(0.75, 1.45) if kind != "grass" else rng.randf_range(0.8, 1.7)
 		sets[kind].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.85, 1.2), s)), Vector3(p.x, 0, p.y)))
+	# Pedras na beira da estrada e lanternas a cada ~38 m, alternando os lados.
+	for leg in sim.road.legs:
+		for pts in leg["pts"]:
+			var acc := 0.0
+			var side := 1.0
+			for i in range(1, pts.size()):
+				var d: Vector2 = pts[i] - pts[i - 1]
+				acc += d.length()
+				var o := d.normalized().orthogonal()
+				if rng.randf() < 0.35:
+					var q: Vector2 = pts[i] + o * (rng.randf_range(2.6, 3.4) * (1.0 if rng.randf() < 0.5 else -1.0))
+					sets["road_stone"].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.6, 1.4)), Vector3(q.x, 0, q.y)))
+				if acc > 38.0:
+					acc = 0.0
+					side = -side
+					var q2: Vector2 = pts[i] + o * 3.4 * side
+					var yaw := atan2(-o.x * side, -o.y * side) + PI * 0.5
+					sets["lantern"].append(Transform3D(Basis(UP, yaw), Vector3(q2.x, 0, q2.y)))
+					lanterns.append(Vector3(q2.x, 0, q2.y) + Basis(UP, yaw) * Vector3(0.5, 2.15, 0))
 	for k in sets:
-		var mat: Material = Models.material() if k != "mushroom" else Models.glow_material(1.5)
-		_scatter_mm(Models.prop(k), sets[k], mat, k in ["tree", "dead_tree", "rock"])
+		var mat: Material = Models.material()
+		if k in ["tree", "tree_round", "bush", "grass", "flowers"]:
+			var sm := Models.glow_material(0.0)
+			sm.set_shader_parameter("sway", 1.0)
+			mat = sm
+		_scatter_mm(Models.prop(k), sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"])
+	for i in 6:
+		var l := _light(Vector3.ZERO, Color(1.0, 0.7, 0.35), 1.6, 9.0)
+		add_child(l)
+		lantern_lights.append(l)
 
 
 # ---------------------------------------------------------------- locais e covil
@@ -309,16 +385,21 @@ func _build_locations() -> void:
 				n.add_child(_mi(Models.prop("house"), off * 6.5, null, yaw + PI * 0.5))
 				n.add_child(_mi(Models.prop("house"), -off * 6.5 + fwd * 3.0, null, yaw - PI * 0.5))
 				n.add_child(_mi(Models.prop("house"), off * 7.0 + fwd * 7.0, null, yaw + PI * 0.5))
+				n.add_child(_mi(Models.prop("fence"), off * 4.2 - fwd * 3.0, null, yaw))
+				n.add_child(_mi(Models.prop("fence"), -off * 4.2 - fwd * 4.0, null, yaw))
 			"tavern":
 				n.add_child(_mi(Models.prop("tavern"), off * 7.0, null, yaw + PI * 0.5))
+				n.add_child(_mi(Models.prop("fence"), off * 4.0 + fwd * 4.0, null, yaw))
 			"fountain":
-				n.add_child(_mi(Models.prop("fountain"), off * 5.0, Models.glow_material(0.15)))
+				n.add_child(_mi(Models.prop("fountain"), off * 5.0))
 			"ritual":
-				n.add_child(_mi(Models.prop("ritual"), Vector3.ZERO, Models.glow_material(1.2)))
+				n.add_child(_mi(Models.prop("ritual"), Vector3.ZERO))
+				for i in 3:
+					n.add_child(_mi(Models.prop("gravestone"), off * (7.0 + i) + fwd * (i * 3.0 - 3.0), null, yaw + 0.3 * i))
 			"shrine":
-				n.add_child(_mi(Models.prop("shrine"), off * 3.5, Models.glow_material(0.25)))
+				n.add_child(_mi(Models.prop("shrine"), off * 3.5))
 			"bridge":
-				n.add_child(_mi(Models.prop("water"), Vector3.ZERO, Models.glow_material(0.25), yaw + PI * 0.5))
+				n.add_child(_mi(Models.prop("water"), Vector3.ZERO, Models.glow_material(0.2), yaw + PI * 0.5))
 				n.add_child(_mi(Models.prop("bridge"), Vector3.ZERO, null, yaw))
 		if t in ["shrine", "ritual", "village"]:
 			var ring := MeshInstance3D.new()
@@ -333,7 +414,7 @@ func _build_locations() -> void:
 			ring.position.y = 0.05
 			n.add_child(ring)
 			n.set_meta("ring", ring)
-		n.add_child(_light(Vector3(0, 3.5, 0) + off * 2.0, col, 2.2, 14.0))
+		n.add_child(_light(Vector3(0, 3.5, 0) + off * 2.0, col, 2.4, 15.0))
 		var lab := Label3D.new()
 		lab.text = tr("LOC_" + t)
 		lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -350,7 +431,7 @@ func _build_locations() -> void:
 func _build_lair() -> void:
 	var lp := sim.road.lair + sim.road.lair_dir * 34.0
 	var yaw := atan2(-sim.road.lair_dir.x, -sim.road.lair_dir.y)
-	add_child(_mi(Models.prop("castle"), Vector3(lp.x, 0, lp.y), Models.glow_material(0.12), yaw + PI))
+	add_child(_mi(Models.prop("castle"), Vector3(lp.x, 0, lp.y), Models.glow_material(0.05), yaw + PI))
 	add_child(_light(Vector3(lp.x, 8, lp.y), Color(0.8, 0.3, 1.0), 4.0, 40.0))
 
 
@@ -370,9 +451,11 @@ func _build_units() -> void:
 		mm.visible_instance_count = 0
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
-		mmi.material_override = Models.glow_material(0.35) if c.id in ["ghost", "spectre", "slime"] else Models.material()
+		var mat := Models.glow_material(0.3 if c.id in ["ghost", "spectre"] else 0.0)
+		if c.fly:
+			mat.set_shader_parameter("flap", 1.0)
+		mmi.material_override = mat
 		mmi.custom_aabb = AABB(Vector3(-3000, -10, -3000), Vector3(6000, 40, 6000))
-		# Enxames e unidades pequenas não projetam sombra (custo com 500 unidades).
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if cap > 96 or c.radius < 0.5 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		add_child(mmi)
 		var buf := PackedFloat32Array()
@@ -380,23 +463,51 @@ func _build_units() -> void:
 		var hop := 1.0 if c.arch == K.Arch.SWARM else (0.5 if c.arch != K.Arch.STRUCTURE else 0.0)
 		if c.id == "slime":
 			hop = 1.2
-		mm_by_def[c.idx] = {"mm": mm, "buf": buf, "cap": cap, "hop": hop, "fly": c.fly}
+		if c.fly:
+			hop = 0.0
+		mm_by_def[c.idx] = {"mm": mm, "buf": buf, "cap": cap, "hop": hop, "fly": c.fly, "struct": c.arch == K.Arch.STRUCTURE}
+
+
+func _part(parent: Node3D, id: String, pos: Vector3) -> Node3D:
+	var pivot := Node3D.new()
+	pivot.position = pos
+	parent.add_child(pivot)
+	var mi := MeshInstance3D.new()
+	mi.mesh = Models.hero_part(id)
+	mi.material_override = hero_mat
+	pivot.add_child(mi)
+	return pivot
 
 
 func _build_hero() -> void:
 	hero_root = Node3D.new()
+	hero_root.scale = Vector3.ONE * 1.3
 	add_child(hero_root)
 	hero_mat = Models.glow_material(0.05)
-	hero_body = _mi(Models.hero_body(), Vector3.ZERO, hero_mat)
-	hero_root.add_child(hero_body)
-	sword_pivot = Node3D.new()
-	sword_pivot.position = Vector3(0.55, 1.15, -0.1)
-	hero_root.add_child(sword_pivot)
-	sword_pivot.add_child(_mi(Models.hero_sword(), Vector3(0, 0, -0.2), Models.glow_material(0.25)))
-	shield_node = _mi(Models.hero_shield(), Vector3(-0.5, 1.1, -0.45), Models.glow_material(0.3))
-	hero_root.add_child(shield_node)
-	hero_light = _light(Vector3(0, 3.0, 0), Color(1.0, 0.72, 0.42), 1.6, 13.0)
+	body = Node3D.new()
+	hero_root.add_child(body)
+	leg_l = _part(body, "leg", Vector3(-0.16, 0.72, 0))
+	leg_r = _part(body, "leg", Vector3(0.16, 0.72, 0))
+	_part(body, "torso", Vector3(0, 0.75, 0))
+	head = _part(body, "head", Vector3(0, 1.4, 0))
+	arm_s = _part(body, "arm_sword", Vector3(0.48, 1.33, 0))
+	arm_h = _part(body, "arm_shield", Vector3(-0.48, 1.33, 0))
+	cape = _part(body, "cape", Vector3(0, 1.4, 0.24))
+	hero_light = _light(Vector3(0, 3.0, 0), Color(1.0, 0.72, 0.42), 1.8, 14.0)
 	hero_root.add_child(hero_light)
+	slash = MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 1.2
+	tm.outer_radius = 1.9
+	tm.rings = 24
+	tm.ring_segments = 3
+	slash.mesh = tm
+	slash_mat = _unshaded(Color(0.85, 0.92, 1.0, 0.0), 2.5)
+	slash_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	slash.material_override = slash_mat
+	slash.scale = Vector3(1, 0.05, 1)
+	slash.position = Vector3(0, 1.1, -0.4)
+	hero_root.add_child(slash)
 	ring_min = _circle(3.0, Color(1, 0.4, 0.4, 0.75))
 	ring_max = _circle(12.0, Color(0.75, 0.55, 1.0, 0.75))
 	add_child(ring_min)
@@ -412,7 +523,7 @@ func _build_hero() -> void:
 	ghost.material_override = ghost_mat
 	add_child(ghost)
 	show_placement(false, Vector3.ZERO, true, 1.0)
-	flash_light = _light(Vector3.ZERO, Color(1, 0.6, 0.3), 0.0, 14.0)
+	flash_light = _light(Vector3.ZERO, Color(1, 0.6, 0.3), 0.0, 16.0)
 	add_child(flash_light)
 	bubble = Label3D.new()
 	bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -424,7 +535,191 @@ func _build_hero() -> void:
 	add_child(bubble)
 
 
-## Barras de vida (billboard) das unidades com 300+ de vida: uma MultiMesh, duas instâncias por unidade.
+func _circle(r: float, col: Color) -> MeshInstance3D:
+	var tm := TorusMesh.new()
+	tm.inner_radius = r - 0.07
+	tm.outer_radius = r + 0.07
+	tm.rings = 72
+	tm.ring_segments = 4
+	var mi := MeshInstance3D.new()
+	mi.mesh = tm
+	mi.material_override = _unshaded(col, 1.2)
+	return mi
+
+
+# ---------------------------------------------------------------- partículas
+
+func _ramp(cols: Array) -> GradientTexture1D:
+	var g := Gradient.new()
+	var offs := PackedFloat32Array()
+	for i in cols.size():
+		offs.append(float(i) / (cols.size() - 1))
+	g.offsets = offs
+	g.colors = PackedColorArray(cols)
+	var t := GradientTexture1D.new()
+	t.gradient = g
+	return t
+
+
+func _emitter(d: Dictionary) -> GPUParticles3D:
+	var p := GPUParticles3D.new()
+	p.amount = d["amount"]
+	p.lifetime = d["life"]
+	p.one_shot = true
+	p.explosiveness = d.get("expl", 0.95)
+	p.emitting = false
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0, 1, 0)
+	pm.spread = 180.0
+	pm.initial_velocity_min = d["speed"][0]
+	pm.initial_velocity_max = d["speed"][1]
+	pm.gravity = Vector3(0, -float(d.get("grav", 0.0)), 0)
+	pm.damping_min = d.get("damp", 0.0)
+	pm.damping_max = d.get("damp", 0.0)
+	pm.scale_min = d["size"][0]
+	pm.scale_max = d["size"][1]
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	pm.emission_sphere_radius = d.get("radius", 0.3)
+	pm.color_ramp = _ramp(d["ramp"])
+	var cv := Curve.new()
+	if d.get("grow", false):
+		cv.add_point(Vector2(0, 0.4))
+		cv.add_point(Vector2(1, 1.0))
+	else:
+		cv.add_point(Vector2(0, 1))
+		cv.add_point(Vector2(0.6, 0.8))
+		cv.add_point(Vector2(1, 0))
+	var ct := CurveTexture.new()
+	ct.curve = cv
+	pm.scale_curve = ct
+	p.process_material = pm
+	var q := QuadMesh.new()
+	q.size = Vector2(0.5, 0.5)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.vertex_color_use_as_albedo = true
+	m.albedo_texture = soft_tex
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	if d.get("add", true):
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	q.material = m
+	p.draw_pass_1 = q
+	p.visibility_aabb = AABB(Vector3(-12, -3, -12), Vector3(24, 16, 24))
+	return p
+
+
+func _build_pools() -> void:
+	var W := Color(1, 1, 1, 1)
+	var Z := Color(1, 1, 1, 0)
+	var defs := {
+		"spark": {"amount": 20, "life": 0.45, "speed": [6.0, 13.0], "grav": 16.0, "size": [0.25, 0.5], "ramp": [Color(1, 1, 0.9), Color(1, 0.7, 0.3), Color(1, 0.3, 0.1, 0)], "n": 10},
+		"hit": {"amount": 8, "life": 0.3, "speed": [3.0, 7.0], "grav": 10.0, "size": [0.25, 0.45], "ramp": [W, Color(1, 0.9, 0.7), Z], "n": 16},
+		"fire": {"amount": 34, "life": 0.75, "speed": [2.0, 6.0], "grav": -4.0, "damp": 3.0, "size": [1.4, 2.6], "radius": 0.8, "ramp": [Color(1, 0.95, 0.6), Color(1, 0.55, 0.15), Color(0.8, 0.15, 0.05), Color(0.3, 0.05, 0.02, 0)], "n": 10},
+		"smoke": {"amount": 16, "life": 1.6, "speed": [1.0, 3.0], "grav": -1.6, "damp": 1.0, "size": [1.6, 3.0], "radius": 0.9, "grow": true, "add": false, "ramp": [Color(0.25, 0.2, 0.25, 0.7), Color(0.18, 0.15, 0.2, 0.4), Color(0.1, 0.1, 0.12, 0)], "n": 8},
+		"death": {"amount": 14, "life": 0.6, "speed": [2.0, 5.0], "grav": 8.0, "size": [0.35, 0.7], "add": false, "ramp": [W, Color(1, 1, 1, 0.8), Z], "n": 18},
+		"soul": {"amount": 6, "life": 1.1, "speed": [0.5, 1.5], "grav": -3.0, "size": [0.5, 0.9], "ramp": [Color(0.5, 1, 0.85), Color(0.3, 0.9, 1.0, 0.6), Color(0.2, 0.5, 1.0, 0)], "n": 16},
+		"level": {"amount": 70, "life": 1.3, "speed": [3.0, 8.0], "grav": -3.0, "damp": 1.5, "size": [0.4, 0.9], "radius": 1.2, "ramp": [Color(1, 1, 0.8), Color(1, 0.85, 0.3), Color(1, 0.5, 0.1, 0)], "n": 4},
+		"magic": {"amount": 36, "life": 0.8, "speed": [2.0, 6.0], "grav": -1.0, "damp": 2.0, "size": [0.5, 1.1], "radius": 0.8, "ramp": [Color(1, 0.8, 1), Color(0.75, 0.3, 1.0), Color(0.3, 0.1, 0.6, 0)], "n": 8},
+		"shield": {"amount": 26, "life": 0.6, "speed": [5.0, 10.0], "grav": 12.0, "size": [0.3, 0.6], "ramp": [W, Color(0.6, 0.85, 1.0), Color(0.3, 0.5, 1.0, 0)], "n": 4},
+		"heal": {"amount": 22, "life": 1.1, "speed": [1.0, 3.0], "grav": -3.5, "size": [0.4, 0.8], "radius": 0.8, "ramp": [Color(0.8, 1, 0.8), Color(0.4, 1.0, 0.5), Color(0.2, 0.8, 0.3, 0)], "n": 4},
+	}
+	for k in defs:
+		var d: Dictionary = defs[k]
+		var list: Array = []
+		for i in int(d["n"]):
+			var p := _emitter(d)
+			add_child(p)
+			list.append(p)
+		fx[k] = {"list": list, "i": 0}
+	# Vaga-lumes: partículas ambientes que acompanham o herói.
+	fireflies = _emitter({"amount": 140, "life": 7.0, "speed": [0.2, 0.6], "grav": 0.0, "size": [0.08, 0.16], "radius": 1.0,
+		"ramp": [Color(0.6, 1.0, 0.5, 0), Color(0.75, 1.0, 0.45, 1), Color(0.6, 1.0, 0.5, 0)], "expl": 0.0})
+	fireflies.one_shot = false
+	var fpm: ParticleProcessMaterial = fireflies.process_material
+	fpm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	fpm.emission_box_extents = Vector3(40, 3, 40)
+	fpm.turbulence_enabled = true
+	fpm.turbulence_noise_strength = 1.5
+	fireflies.visibility_aabb = AABB(Vector3(-60, -5, -60), Vector3(120, 20, 120))
+	fireflies.emitting = true
+	add_child(fireflies)
+	var dtex := GradientTexture2D.new()
+	var dg := Gradient.new()
+	dg.offsets = PackedFloat32Array([0.0, 1.0])
+	dg.colors = PackedColorArray([Color(0.05, 0.03, 0.03, 0.85), Color(0.05, 0.03, 0.03, 0.0)])
+	dtex.gradient = dg
+	dtex.fill = GradientTexture2D.FILL_RADIAL
+	dtex.fill_from = Vector2(0.5, 0.5)
+	dtex.fill_to = Vector2(0.5, 0.0)
+	for i in 12:
+		var dc := Decal.new()
+		dc.texture_albedo = dtex
+		dc.size = Vector3(4, 2, 4)
+		dc.visible = false
+		add_child(dc)
+		decal_pool.append({"n": dc, "t": 0.0})
+	for i in 24:
+		var z := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 1.0
+		cm.bottom_radius = 1.0
+		cm.height = 0.05
+		cm.radial_segments = 32
+		z.mesh = cm
+		z.material_override = _unshaded(Color.WHITE, 0.3)
+		z.visible = false
+		add_child(z)
+		var coins := _mi(Models.prop("coins"), Vector3.ZERO, Models.glow_material(0.6))
+		coins.visible = false
+		add_child(coins)
+		zone_pool.append({"disc": z, "coins": coins})
+	for i in 64:
+		var l := Label3D.new()
+		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		l.no_depth_test = true
+		l.font_size = 52
+		l.outline_size = 12
+		l.visible = false
+		add_child(l)
+		number_pool.append({"n": l, "t": 0.0, "v": Vector3.ZERO})
+	for i in 16:
+		var e := MeshInstance3D.new()
+		var tm := TorusMesh.new()
+		tm.inner_radius = 0.85
+		tm.outer_radius = 1.0
+		tm.rings = 32
+		tm.ring_segments = 4
+		e.mesh = tm
+		var bm := _unshaded(Color(1, 0.6, 0.2, 0.8), 2.5)
+		bm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		e.material_override = bm
+		e.visible = false
+		add_child(e)
+		burst_pool.append({"n": e, "t": 0.0, "r": 1.0})
+	for i in 32:
+		var s := MeshInstance3D.new()
+		var bx := BoxMesh.new()
+		bx.size = Vector3(0.08, 0.08, 1.0)
+		s.mesh = bx
+		s.material_override = _unshaded(Color(1, 0.95, 0.7), 3.0)
+		s.visible = false
+		add_child(s)
+		shot_pool.append({"n": s, "t": 0.0})
+	var om := SphereMesh.new()
+	om.radius = 0.16
+	om.height = 0.32
+	om.radial_segments = 8
+	om.rings = 4
+	for i in 48:
+		var o := MeshInstance3D.new()
+		o.mesh = om
+		o.material_override = _unshaded(Color(0.6, 1.0, 0.85), 4.0)
+		o.visible = false
+		add_child(o)
+		orb_pool.append({"n": o, "t": 0.0, "from": Vector3.ZERO})
+
+
 func _build_bars() -> void:
 	bar_mm = MultiMesh.new()
 	bar_mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -450,155 +745,6 @@ func _build_bars() -> void:
 	add_child(mmi)
 
 
-func _draw_bars(alpha: float) -> void:
-	var U := sim.units
-	var n := 0
-	var buf := bar_buf
-	bar_buf = PackedFloat32Array()
-	for i in U.hi:
-		if n >= 254:
-			break
-		if U.alive[i] == 0 or U.max_hp[i] < 300.0:
-			continue
-		var f := clampf(U.hp[i] / U.max_hp[i], 0.0, 1.0)
-		var x := lerpf(U.ox[i], U.px[i], alpha)
-		var z := lerpf(U.oy[i], U.py[i], alpha)
-		var y := 3.0 if U.arch[i] != K.Arch.STRUCTURE else 3.6
-		for pass_ in 2:
-			var o := n * 16
-			var sx := 1.0 if pass_ == 0 else maxf(f, 0.02)
-			var c := Color(0.05, 0.03, 0.08, 0.85) if pass_ == 0 else Color(0.9, 0.25, 0.25).lerp(Color(0.4, 1.0, 0.45), f)
-			buf[o] = sx; buf[o + 1] = 0.0; buf[o + 2] = 0.0; buf[o + 3] = x
-			buf[o + 4] = 0.0; buf[o + 5] = 1.0 if pass_ == 0 else 0.6; buf[o + 6] = 0.0; buf[o + 7] = y
-			buf[o + 8] = 0.0; buf[o + 9] = 0.0; buf[o + 10] = 1.0; buf[o + 11] = z
-			buf[o + 12] = c.r; buf[o + 13] = c.g; buf[o + 14] = c.b; buf[o + 15] = c.a
-			n += 1
-	bar_mm.visible_instance_count = n
-	if n > 0:
-		bar_mm.buffer = buf
-	bar_buf = buf
-
-
-func _circle(r: float, col: Color) -> MeshInstance3D:
-	var tm := TorusMesh.new()
-	tm.inner_radius = r - 0.07
-	tm.outer_radius = r + 0.07
-	tm.rings = 72
-	tm.ring_segments = 4
-	var mi := MeshInstance3D.new()
-	mi.mesh = tm
-	mi.material_override = _unshaded(col, 1.2)
-	return mi
-
-
-func _particles(col: Color, amount: int, life: float, speed: float, grav: float, size: float) -> GPUParticles3D:
-	var p := GPUParticles3D.new()
-	p.amount = amount
-	p.lifetime = life
-	p.one_shot = true
-	p.explosiveness = 0.95
-	p.emitting = false
-	var pm := ParticleProcessMaterial.new()
-	pm.direction = Vector3(0, 1, 0)
-	pm.spread = 180.0
-	pm.initial_velocity_min = speed * 0.5
-	pm.initial_velocity_max = speed
-	pm.gravity = Vector3(0, -grav, 0)
-	pm.scale_min = size * 0.6
-	pm.scale_max = size
-	pm.color = col
-	var cv := Curve.new()
-	cv.add_point(Vector2(0, 1))
-	cv.add_point(Vector2(1, 0))
-	var curve := CurveTexture.new()
-	curve.curve = cv
-	pm.scale_curve = curve
-	p.process_material = pm
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.12
-	mesh.height = 0.24
-	mesh.radial_segments = 6
-	mesh.rings = 3
-	var mat := _unshaded(Color.WHITE, 2.0)
-	mat.vertex_color_use_as_albedo = true
-	mesh.material = mat
-	p.draw_pass_1 = mesh
-	p.visibility_aabb = AABB(Vector3(-10, -2, -10), Vector3(20, 14, 20))
-	return p
-
-
-func _build_pools() -> void:
-	var defs := {"explosion": [Color(1.0, 0.55, 0.15), 48, 0.7, 9.0, 6.0, 2.2], "hit": [Color(1.0, 0.95, 0.8), 10, 0.3, 5.0, 8.0, 0.6],
-		"death": [Color(0.7, 0.5, 1.0), 14, 0.8, 3.0, -1.5, 1.0], "level": [Color(1.0, 0.9, 0.4), 60, 1.2, 7.0, -2.0, 1.2],
-		"magic": [Color(0.7, 0.3, 1.0), 30, 0.7, 5.0, 0.0, 1.0], "shield": [Color(0.6, 0.85, 1.0), 24, 0.6, 6.0, 9.0, 0.8],
-		"heal": [Color(0.4, 1.0, 0.5), 20, 1.0, 2.0, -3.0, 0.9]}
-	for k in defs:
-		var d: Array = defs[k]
-		var list: Array = []
-		for i in (16 if k == "hit" or k == "death" else 6):
-			var p := _particles(d[0], d[1], d[2], d[3], d[4], d[5])
-			add_child(p)
-			list.append(p)
-		particles[k] = {"list": list, "i": 0}
-	for i in 24:
-		var z := MeshInstance3D.new()
-		var cm := CylinderMesh.new()
-		cm.top_radius = 1.0
-		cm.bottom_radius = 1.0
-		cm.height = 0.05
-		cm.radial_segments = 32
-		z.mesh = cm
-		z.material_override = _unshaded(Color.WHITE, 0.3)
-		z.visible = false
-		add_child(z)
-		var coins := _mi(Models.prop("coins"), Vector3.ZERO, Models.glow_material(0.6))
-		coins.visible = false
-		add_child(coins)
-		zone_pool.append({"disc": z, "coins": coins})
-	for i in 64:
-		var l := Label3D.new()
-		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		l.no_depth_test = true
-		l.font_size = 52
-		l.outline_size = 12
-		l.visible = false
-		add_child(l)
-		number_pool.append({"n": l, "t": 0.0})
-	for i in 16:
-		var e := MeshInstance3D.new()
-		var tm := TorusMesh.new()
-		tm.inner_radius = 0.9
-		tm.outer_radius = 1.0
-		tm.rings = 32
-		tm.ring_segments = 4
-		e.mesh = tm
-		e.material_override = _unshaded(Color(1, 0.6, 0.2, 0.8), 2.0)
-		e.visible = false
-		add_child(e)
-		burst_pool.append({"n": e, "t": 0.0, "r": 1.0})
-	for i in 32:
-		var s := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.07, 0.07, 1.0)
-		s.mesh = bm
-		s.material_override = _unshaded(Color(1, 0.95, 0.7), 3.0)
-		s.visible = false
-		add_child(s)
-		shot_pool.append({"n": s, "t": 0.0})
-	var om := SphereMesh.new()
-	om.radius = 0.16
-	om.height = 0.32
-	om.radial_segments = 8
-	om.rings = 4
-	for i in 48:
-		var o := MeshInstance3D.new()
-		o.mesh = om
-		o.material_override = _unshaded(Color(0.6, 1.0, 0.85), 3.0)
-		o.visible = false
-		add_child(o)
-		orb_pool.append({"n": o, "t": 0.0, "from": Vector3.ZERO})
-
-
 func build_arena() -> void:
 	arena_root = Node3D.new()
 	add_child(arena_root)
@@ -606,30 +752,34 @@ func build_arena() -> void:
 	var c := Vector3(A.cx, 0, A.cy)
 	var r: float = sim.data.rules["arena"]["radius"]
 	var k := Models.Kit.new()
-	k.add(Models.cyl(r + 1.0, r + 1.2, 0.3, 40), Vector3(0, -0.12, 0), Color(0.16, 0.13, 0.2))
+	k.add(Models.cyl(r + 1.0, r + 1.2, 0.3, 40), Vector3(0, -0.12, 0), Color(0.18, 0.14, 0.22))
 	for ring in 4:
 		var tm := TorusMesh.new()
 		tm.inner_radius = r * (ring + 1) / 4.5 - 0.15
 		tm.outer_radius = r * (ring + 1) / 4.5
 		tm.rings = 48
 		tm.ring_segments = 3
-		k.add(tm, Vector3(0, 0.04, 0), Color(0.3, 0.2, 0.38), Vector3.ZERO, Vector3(1, 0.1, 1))
+		k.add(tm, Vector3(0, 0.04, 0), Models.G(Color(0.45, 0.2, 0.6)) if ring == 3 else Color(0.32, 0.22, 0.4), Vector3.ZERO, Vector3(1, 0.1, 1))
+	for i in 24:
+		var a := TAU * i / 24.0
+		k.add(Models.box(0.12, 0.05, r * 0.95), Vector3(cos(a), 0, sin(a)) * r * 0.5 + Vector3(0, 0.03, 0), Color(0.25, 0.18, 0.32), Vector3(0, -rad_to_deg(a) + 90, 0))
 	arena_root.add_child(_mi(k.done(), c))
 	var n := 10
 	for i in n:
 		var a := TAU * i / n
 		var pp := c + Vector3(cos(a), 0, sin(a)) * (r + 2.5)
-		arena_root.add_child(_mi(Models.prop("pillar" if i % 2 == 0 else "brazier"), pp, Models.glow_material(0.0 if i % 2 == 0 else 0.6)))
+		arena_root.add_child(_mi(Models.prop("pillar" if i % 2 == 0 else "brazier"), pp))
 		if i % 2 == 1:
-			arena_root.add_child(_light(pp + Vector3(0, 2.5, 0), Color(1.0, 0.55, 0.2), 2.5, 14.0))
+			arena_root.add_child(_light(pp + Vector3(0, 2.5, 0), Color(1.0, 0.55, 0.2), 3.0, 14.0))
 	arena_root.add_child(_light(c + Vector3(0, 7, 0), Color(0.75, 0.35, 1.0), 3.0, 26.0))
 	for id in A.part_ids:
-		var p := _mi(Models.boss_part(id), Vector3(A.bx, 0, A.by) + PART_OFFSETS[id], Models.glow_material(0.25))
+		var p := _mi(Models.boss_part(id), Vector3(A.bx, 0, A.by) + PART_OFFSETS[id], Models.glow_material(0.15))
 		arena_root.add_child(p)
 		part_nodes.append(p)
+		part_flash.append(0.0)
 	for i in A.altar_pos.size():
 		var ap: Vector2 = A.altar_pos[i]
-		var a := _mi(Models.prop("altar"), Vector3(ap.x, 0, ap.y), Models.glow_material(0.5))
+		var a2 := _mi(Models.prop("altar"), Vector3(ap.x, 0, ap.y))
 		var lab := Label3D.new()
 		lab.text = str(i + 1)
 		lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -638,12 +788,12 @@ func build_arena() -> void:
 		lab.modulate = Color(0.85, 0.7, 1.0)
 		lab.position = Vector3(0, 2.2, 0)
 		lab.no_depth_test = true
-		a.add_child(lab)
-		arena_root.add_child(a)
-		altar_nodes.append(a)
+		a2.add_child(lab)
+		arena_root.add_child(a2)
+		altar_nodes.append(a2)
 	for i in A.pillar_pos.size():
-		var pp: Vector2 = A.pillar_pos[i]
-		var pn := _mi(Models.prop("pillar"), Vector3(pp.x, 0, pp.y))
+		var pp2: Vector2 = A.pillar_pos[i]
+		var pn := _mi(Models.prop("pillar"), Vector3(pp2.x, 0, pp2.y))
 		pn.scale = Vector3(1.1, 0.75, 1.1)
 		arena_root.add_child(pn)
 		pillar_nodes.append(pn)
@@ -673,15 +823,32 @@ func show_placement(on: bool, pos: Vector3, valid: bool, radius: float) -> void:
 func draw(alpha: float, delta: float) -> void:
 	if sim == null:
 		return
+	frame += 1
+	_draw_units(alpha, delta)
+	_draw_bars(alpha)
+	_draw_hero(alpha, delta)
+	_draw_road_state()
+	_draw_zones()
+	_draw_arena(delta)
+	_tick_pools(delta, alpha)
+	_lanterns()
+	_camera(alpha, delta)
+	screen_flash.a = maxf(0.0, screen_flash.a - delta * 2.5)
+
+
+func _draw_units(alpha: float, delta: float) -> void:
 	var U := sim.units
 	var lists := {}
 	for k in mm_by_def:
 		lists[k] = []
+	var decay := exp(-delta * 9.0)
 	for i in U.hi:
 		if U.alive[i] == 1 and lists.has(U.def[i]):
 			lists[U.def[i]].append(i)
 		if flash[i] > 0.0:
 			flash[i] = maxf(0.0, flash[i] - delta * 6.0)
+		kx[i] *= decay
+		ky[i] *= decay
 	var hx := sim.hero.x
 	var hy := sim.hero.y
 	for k in mm_by_def:
@@ -696,22 +863,28 @@ func draw(alpha: float, delta: float) -> void:
 		e["buf"] = PackedFloat32Array()
 		var hop: float = e["hop"]
 		var fly: bool = e["fly"]
+		var is_struct: bool = e["struct"]
 		for q in n:
 			var i: int = ids[q]
 			var s := 1.0
 			if U.gen[i] > 0:
 				s = 0.72 if U.gen[i] == 1 else 0.5
-			var x := lerpf(U.ox[i], U.px[i], alpha)
-			var z := lerpf(U.oy[i], U.py[i], alpha)
+			# Surgir com "pop": passa um pouco do tamanho e volta (back-out).
+			var age := U.timer[i]
+			if age < 0.3:
+				var t := age / 0.3 - 1.0
+				s *= maxf(0.05, 1.0 + 2.70158 * t * t * t + 1.70158 * t * t)
+			var x := lerpf(U.ox[i], U.px[i], alpha) + kx[i]
+			var z := lerpf(U.oy[i], U.py[i], alpha) + ky[i]
 			var vx := U.px[i] - U.ox[i]
 			var vz := U.py[i] - U.oy[i]
 			var moving := clampf(sqrt(vx * vx + vz * vz) / (sim.dt * 1.5), 0.0, 1.0)
-			var fx := hx - x
+			var fx_ := hx - x
 			var fz := hy - z
 			if U.fear_t[i] > 0.0:
-				fx = -fx
+				fx_ = -fx_
 				fz = -fz
-			var a := atan2(-fx, -fz)
+			var a := atan2(-fx_, -fz)
 			var ca := cos(a) * s
 			var sa := sin(a) * s
 			var col := Color.WHITE
@@ -722,21 +895,46 @@ func draw(alpha: float, delta: float) -> void:
 			var y := 0.0
 			if fly:
 				y = 1.6 + sin(sim.t * 7.0 + i) * 0.25
+			var lunge := 0.0
+			if not is_struct and U.atk_int[i] > 0.0:
+				lunge = clampf((U.atk_t[i] - (U.atk_int[i] - 0.2)) / 0.2, 0.0, 1.0)
 			var o := q * STRIDE
 			buf[o] = ca; buf[o + 1] = 0.0; buf[o + 2] = sa; buf[o + 3] = x
 			buf[o + 4] = 0.0; buf[o + 5] = s; buf[o + 6] = 0.0; buf[o + 7] = y
 			buf[o + 8] = -sa; buf[o + 9] = 0.0; buf[o + 10] = ca; buf[o + 11] = z
 			buf[o + 12] = col.r; buf[o + 13] = col.g; buf[o + 14] = col.b; buf[o + 15] = 1.0
-			buf[o + 16] = flash[i]; buf[o + 17] = hop * maxf(moving, 0.25 if hop > 0.0 else 0.0); buf[o + 18] = float(i) * 1.7; buf[o + 19] = 0.0
+			buf[o + 16] = flash[i]; buf[o + 17] = hop * maxf(moving, 0.25 if hop > 0.0 else 0.0); buf[o + 18] = float(i) * 1.7; buf[o + 19] = lunge
 		mm.buffer = buf
 		e["buf"] = buf
-	_draw_bars(alpha)
-	_draw_hero(alpha, delta)
-	_draw_road_state()
-	_draw_zones()
-	_draw_arena(delta)
-	_tick_pools(delta, alpha)
-	_camera(alpha, delta)
+
+
+func _draw_bars(alpha: float) -> void:
+	var U := sim.units
+	var n := 0
+	var buf := bar_buf
+	bar_buf = PackedFloat32Array()
+	for i in U.hi:
+		if n >= 254:
+			break
+		if U.alive[i] == 0 or U.max_hp[i] < 300.0 or U.hp[i] >= U.max_hp[i]:
+			continue
+		var f := clampf(U.hp[i] / U.max_hp[i], 0.0, 1.0)
+		var x := lerpf(U.ox[i], U.px[i], alpha)
+		var z := lerpf(U.oy[i], U.py[i], alpha)
+		var y := 3.0 if U.arch[i] != K.Arch.STRUCTURE else 3.9
+		for pass_ in 2:
+			var o := n * 16
+			var sx := 1.0 if pass_ == 0 else maxf(f, 0.02)
+			var c := Color(0.05, 0.03, 0.08, 0.85) if pass_ == 0 else Color(0.9, 0.25, 0.25).lerp(Color(0.4, 1.0, 0.45), f)
+			buf[o] = sx; buf[o + 1] = 0.0; buf[o + 2] = 0.0; buf[o + 3] = x
+			buf[o + 4] = 0.0; buf[o + 5] = 1.0 if pass_ == 0 else 0.6; buf[o + 6] = 0.0; buf[o + 7] = y
+			buf[o + 8] = 0.0; buf[o + 9] = 0.0; buf[o + 10] = 1.0; buf[o + 11] = z
+			buf[o + 12] = c.r; buf[o + 13] = c.g; buf[o + 14] = c.b; buf[o + 15] = c.a
+			n += 1
+	bar_mm.visible_instance_count = n
+	if n > 0:
+		bar_mm.buffer = buf
+	bar_buf = buf
 
 
 func hero_pos(alpha: float) -> Vector3:
@@ -747,25 +945,64 @@ func hero_pos(alpha: float) -> Vector3:
 func _draw_hero(alpha: float, delta: float) -> void:
 	var h := sim.hero
 	var p := hero_pos(alpha)
-	var moved := Vector2(h.x - h.ox, h.y - h.oy).length() / sim.dt
+	var speed := Vector2(h.x - h.ox, h.y - h.oy).length() / sim.dt
+	var walk := clampf(speed / 3.0, 0.0, 1.0)
+	var frozen := h.petrify_t > 0.0 or h.root_t > 0.0
 	hero_root.position = p
 	var f := Vector3(h.face_x, 0, h.face_y)
 	if f.length() > 0.01:
-		hero_root.rotation.y = atan2(-f.x, -f.z)
-	hero_body.position.y = absf(sin(sim.t * 9.0)) * 0.12 * clampf(moved / 3.0, 0.0, 1.0)
+		hero_root.rotation.y = lerp_angle(hero_root.rotation.y, atan2(-f.x, -f.z), clampf(delta * 14.0, 0.0, 1.0))
+	if not frozen:
+		walk_phase += delta * (4.0 + speed * 2.6) * maxf(walk, 0.2)
+	var sp := sin(walk_phase)
+	leg_l.rotation.x = sp * 0.7 * walk
+	leg_r.rotation.x = -sp * 0.7 * walk
+	level_jump = maxf(0.0, level_jump - delta)
+	var jump := sin(clampf(level_jump / 0.6, 0.0, 1.0) * PI) * 0.8
+	body.position.y = absf(sp) * 0.1 * walk + jump
+	body.rotation.x = -0.12 * walk - hero_flash * 0.25
+	head.rotation.x = sin(walk_phase * 2.0) * 0.04
+	# Golpe: preparo e corte com rastro.
 	swing_t = maxf(0.0, swing_t - delta)
-	var sw := sin((1.0 - swing_t / 0.28) * PI) if swing_t > 0.0 else 0.0
-	sword_pivot.rotation = Vector3(-0.3 - sw * 1.4, -sw * 1.2, 0)
-	# O herói brilha mais a cada nível (GDD).
-	var glow := 0.05 + h.level * 0.035
-	if h.petrify_t > 0.0:
-		glow = 0.0
-	hero_mat.set_shader_parameter("emission_boost", glow)
-	shield_node.visible = h.shield_hp > 0.0 and h.petrify_t <= 0.0
-	shield_node.scale = Vector3(1.6, 1.3, 1) if h.shield_cos < 0.6 else Vector3.ONE
-	hero_light.light_energy = 1.4 + h.level * 0.08
+	if swing_t > 0.0:
+		var k := 1.0 - swing_t / 0.26
+		var e := 1.0 - pow(1.0 - k, 3)
+		arm_s.rotation = Vector3(lerpf(2.4, -0.3, e), lerpf(0.9, -0.9, e), sin(k * PI) * -0.4)
+		slash_mat.albedo_color.a = sin(k * PI) * 0.75
+		slash.rotation = Vector3(0, lerpf(0.8, -0.8, e), 0)
+	else:
+		arm_s.rotation = Vector3(-sp * 0.5 * walk + 0.3, 0, 0)
+		slash_mat.albedo_color.a = 0.0
+	# Escudo erguido enquanto existe.
+	var up := 1.2 if h.shield_hp > 0.0 else 0.2
+	arm_h.rotation = Vector3(lerpf(arm_h.rotation.x, up + sp * 0.15 * walk, clampf(delta * 10.0, 0.0, 1.0)), 0.35, 0)
+	arm_h.scale = Vector3(1.6, 1.3, 1.3) if h.shield_cos < 0.6 else Vector3.ONE
+	cape.rotation.x = 0.15 + walk * 0.5 + sin(sim.t * 3.0) * 0.06
+	hero_flash = maxf(0.0, hero_flash - delta * 5.0)
+	var glow := 0.02 + h.level * 0.012
+	hero_mat.set_shader_parameter("emission_boost", 0.0 if h.petrify_t > 0.0 else glow)
+	hero_mat.set_shader_parameter("flash", hero_flash)
+	hero_light.light_energy = 1.6 + h.level * 0.1
 	ring_min.position = p + Vector3(0, 0.06, 0)
 	ring_max.position = p + Vector3(0, 0.06, 0)
+	fireflies.position = p
+
+
+func _lanterns() -> void:
+	if frame % 10 != 0 or lanterns.is_empty():
+		return
+	var p := hero_pos(1.0)
+	var best: Array = []
+	for l in lanterns:
+		var d: float = (l as Vector3).distance_squared_to(p)
+		if d < 2500.0:
+			best.append([d, l])
+	best.sort_custom(func(a, b): return a[0] < b[0])
+	for i in lantern_lights.size():
+		var L: OmniLight3D = lantern_lights[i]
+		L.visible = i < best.size()
+		if L.visible:
+			L.position = best[i][1]
 
 
 func _draw_road_state() -> void:
@@ -793,7 +1030,7 @@ func _draw_road_state() -> void:
 		if loc["type"] == "shrine" and loc["entered"] and st == SimRoad.LocState.ACTIVE:
 			txt = "%s  %d" % [txt, ceili(float(loc["t"]))]
 			var ring: MeshInstance3D = n.get_meta("ring")
-			var s := 1.0 + 0.04 * sin(sim.t * 10.0)
+			var s := 1.0 + 0.05 * sin(sim.t * 12.0)
 			ring.scale = Vector3(s, 0.2, s)
 		elif loc["type"] == "ritual" and st == SimRoad.LocState.ACTIVE and loc["hp"] < loc["max_hp"]:
 			txt = "%s  %d%%" % [txt, int(100.0 * loc["hp"] / loc["max_hp"])]
@@ -801,7 +1038,9 @@ func _draw_road_state() -> void:
 		lab.modulate.a = 0.35 if st != SimRoad.LocState.ACTIVE else 1.0
 		if st == SimRoad.LocState.DESTROYED and loc["type"] != "shrine" and n.visible:
 			n.visible = false
-			emit_particles("explosion", n.position, 1.0)
+			emit_fx("fire", n.position + Vector3(0, 1, 0), 1.5)
+			emit_fx("smoke", n.position + Vector3(0, 1, 0), 1.5)
+			scorch(n.position, 6.0)
 
 
 func _draw_zones() -> void:
@@ -829,7 +1068,9 @@ func _draw_zones() -> void:
 			var c := Color(0.35, 0.35, 0.45, 0.22) if kind == "web" else Color(1.0, 0.45, 0.08, 0.32 + 0.06 * sin(sim.t * 8.0))
 			mat.albedo_color = c
 			mat.emission = Color(c.r, c.g, c.b)
-			mat.emission_energy_multiplier = 0.05 if kind == "web" else 0.6
+			mat.emission_energy_multiplier = 0.05 if kind == "web" else 0.8
+			if kind == "oil" and frame % 20 == 0:
+				emit_fx("fire", pos + Vector3(randf_range(-1, 1), 0.2, randf_range(-1, 1)), 0.35)
 		k += 1
 	for i in range(k, zone_pool.size()):
 		zone_pool[i]["disc"].visible = false
@@ -843,19 +1084,48 @@ func _draw_arena(delta: float) -> void:
 	var yaw := atan2(-A.face.x, -A.face.y)
 	for k in part_nodes.size():
 		var n: MeshInstance3D = part_nodes[k]
-		var off: Vector3 = PART_OFFSETS[A.part_ids[k]]
-		var target := Vector3(A.bx, 0, A.by) + off.rotated(UP, yaw)
+		if n.has_meta("dead"):
+			continue
+		var id: String = A.part_ids[k]
+		var off: Vector3 = PART_OFFSETS[id]
+		# Respiração e balanço: o chefe está vivo.
+		var idle := Vector3.ZERO
+		match id:
+			"head":
+				idle = Vector3(0, sin(sim.t * 1.6) * 0.12, 0)
+			"left_arm":
+				idle = Vector3(sin(sim.t * 1.3) * 0.08, sin(sim.t * 1.8) * 0.15, 0)
+			"right_arm":
+				idle = Vector3(-sin(sim.t * 1.3 + 1.0) * 0.08, sin(sim.t * 1.8 + 1.0) * 0.15, 0)
+		var target := Vector3(A.bx, 0, A.by) + (off + idle).rotated(UP, yaw)
 		n.position = n.position.lerp(target, clampf(delta * 10.0, 0.0, 1.0))
 		n.rotation.y = yaw
-		n.visible = A.part_hp[k] > 0.0
+		if id == "core":
+			n.scale = Vector3(1, 1.0 + sin(sim.t * 2.0) * 0.02, 1)
+		part_flash[k] = maxf(0.0, float(part_flash[k]) - delta * 5.0)
 		var m: ShaderMaterial = n.material_override
-		m.set_shader_parameter("emission_boost", 0.9 if A.fury_t > 0.0 else (0.3 if A.part_attackable(k) else 0.05))
+		m.set_shader_parameter("emission_boost", 0.9 if A.fury_t > 0.0 else (0.25 if A.part_attackable(k) else 0.05))
+		m.set_shader_parameter("flash", part_flash[k])
+		if A.part_hp[k] <= 0.0:
+			# A parte destruída despenca girando.
+			n.set_meta("dead", true)
+			falling.append({"n": n, "t": 1.4, "v": Vector3(randf_range(-2, 2), 6, randf_range(-2, 2)), "r": Vector3(randf_range(-4, 4), randf_range(-4, 4), randf_range(-4, 4))})
+	for e in falling.duplicate():
+		var n: MeshInstance3D = e["n"]
+		e["t"] -= delta
+		e["v"] += Vector3(0, -16, 0) * delta
+		n.position += e["v"] * delta
+		n.rotation += e["r"] * delta
+		if n.position.y < -1.0 or e["t"] <= 0.0:
+			n.visible = false
+			falling.erase(e)
 	for k in altar_nodes.size():
 		altar_nodes[k].visible = A.altar_alive[k]
 	for k in pillar_nodes.size():
 		if pillar_nodes[k].visible and not A.pillar_alive(k):
 			pillar_nodes[k].visible = false
-			emit_particles("explosion", pillar_nodes[k].position + Vector3(0, 1.5, 0), 1.2)
+			emit_fx("smoke", pillar_nodes[k].position + Vector3(0, 1.5, 0), 1.2)
+			emit_fx("spark", pillar_nodes[k].position + Vector3(0, 1.5, 0), 1.0)
 	boss_face.position = Vector3(A.bx, 0.08, A.by) + Vector3(A.face.x, 0, A.face.y) * 4.5
 	boss_face.look_at(boss_face.position + Vector3(A.face.x, 0, A.face.y), UP)
 
@@ -865,10 +1135,11 @@ func _tick_pools(delta: float, alpha: float) -> void:
 		if e["t"] > 0.0:
 			e["t"] -= delta
 			var l: Label3D = e["n"]
-			l.position += Vector3(0, 1.8 * delta, 0)
+			e["v"] += Vector3(0, -9.0, 0) * delta
+			l.position += e["v"] * delta
 			var life: float = e["t"]
-			l.modulate.a = clampf(life / 0.4, 0.0, 1.0)
-			l.scale = Vector3.ONE * (1.0 + clampf((life - 0.6) / 0.2, 0.0, 1.0) * 0.6)
+			l.modulate.a = clampf(life / 0.3, 0.0, 1.0)
+			l.scale = Vector3.ONE * (1.0 + clampf((life - 0.65) / 0.15, 0.0, 1.0) * 0.7)
 			if life <= 0.0:
 				l.visible = false
 	for e in burst_pool:
@@ -876,10 +1147,10 @@ func _tick_pools(delta: float, alpha: float) -> void:
 			e["t"] -= delta
 			var n: MeshInstance3D = e["n"]
 			var k: float = 1.0 - float(e["t"]) / 0.4
-			var r: float = float(e["r"]) * (0.3 + 0.9 * k)
+			var r: float = float(e["r"]) * (0.3 + 1.0 * (1.0 - pow(1.0 - k, 3)))
 			n.scale = Vector3(r, 0.3, r)
 			var m: StandardMaterial3D = n.material_override
-			m.albedo_color.a = 0.8 * (1.0 - k)
+			m.albedo_color.a = 0.9 * (1.0 - k)
 			if e["t"] <= 0.0:
 				n.visible = false
 	for e in shot_pool:
@@ -887,6 +1158,13 @@ func _tick_pools(delta: float, alpha: float) -> void:
 			e["t"] -= delta
 			if e["t"] <= 0.0:
 				e["n"].visible = false
+	for e in decal_pool:
+		if e["t"] > 0.0:
+			e["t"] -= delta
+			var dc: Decal = e["n"]
+			dc.modulate.a = clampf(float(e["t"]) / 2.0, 0.0, 1.0)
+			if e["t"] <= 0.0:
+				dc.visible = false
 	var hp := hero_pos(alpha) + Vector3(0, 1.2, 0)
 	for e in orb_pool:
 		if e["t"] > 0.0:
@@ -908,7 +1186,7 @@ func _tick_pools(delta: float, alpha: float) -> void:
 		bubble.visible = bubble_t > 0.0
 	if flash_t > 0.0:
 		flash_t -= delta
-		flash_light.light_energy = maxf(0.0, flash_t / 0.25) * 6.0
+		flash_light.light_energy = maxf(0.0, flash_t / 0.3) * 8.0
 
 
 func _camera(alpha: float, delta: float) -> void:
@@ -916,29 +1194,48 @@ func _camera(alpha: float, delta: float) -> void:
 	if sim.phase == K.Phase.ARENA:
 		target = target.lerp(Vector3(sim.arena.bx, 0, sim.arena.by), 0.4)
 	cam_pos = cam_pos.lerp(target, clampf(delta * 5.0, 0.0, 1.0))
-	var dist := 26.0 + zoom + minf(float(sim.units.count), 300.0) * 0.04
+	var dist := 22.0 + zoom + minf(float(sim.units.count), 300.0) * 0.04
 	if sim.phase == K.Phase.ARENA:
 		dist += 8.0
 	var off := Vector3(0, dist * 0.8, dist * 0.6)
-	var sh := Vector3.ZERO
-	if shake > 0.0:
-		shake -= delta
-		sh = Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * shake * 1.2
-	cam.position = cam_pos + off + sh
-	cam.look_at(cam_pos + Vector3(0, 0, -2) + sh * 0.5, UP)
+	trauma = maxf(0.0, trauma - delta * 1.6)
+	var sh := trauma * trauma
+	var t := Time.get_ticks_msec() / 1000.0
+	var shake := Vector3(sin(t * 47.0) + sin(t * 23.0) * 0.5, sin(t * 39.0 + 1.0) + sin(t * 17.0) * 0.5, 0) * sh * 0.9
+	cam.position = cam_pos + off + shake
+	cam.look_at(cam_pos + Vector3(0, 0, -2) + shake * 0.3, UP)
+	cam.rotation.z += sin(t * 31.0) * sh * 0.03
 
 
-# ---------------------------------------------------------------- eventos
+# ---------------------------------------------------------------- efeitos
 
-func emit_particles(kind: String, pos: Vector3, scale_ := 1.0) -> void:
-	var d: Dictionary = particles[kind]
+func add_trauma(v: float) -> void:
+	trauma = minf(1.0, trauma + v)
+
+
+func emit_fx(kind: String, pos: Vector3, scale_ := 1.0, col := Color.WHITE) -> void:
+	var d: Dictionary = fx[kind]
 	var list: Array = d["list"]
 	var p: GPUParticles3D = list[d["i"]]
 	d["i"] = (int(d["i"]) + 1) % list.size()
 	p.position = pos
 	p.scale = Vector3.ONE * scale_
+	var pm: ParticleProcessMaterial = p.process_material
+	pm.color = col
 	p.restart()
 	p.emitting = true
+
+
+func scorch(pos: Vector3, size: float) -> void:
+	var e: Dictionary = decal_pool[decal_i]
+	decal_i = (decal_i + 1) % decal_pool.size()
+	var dc: Decal = e["n"]
+	dc.position = pos + Vector3(0, 0.5, 0)
+	dc.size = Vector3(size, 2.0, size)
+	dc.rotation.y = randf() * TAU
+	dc.modulate.a = 1.0
+	dc.visible = true
+	e["t"] = 7.0
 
 
 func number(pos: Vector3, txt: String, col: Color, size := 52) -> void:
@@ -948,8 +1245,9 @@ func number(pos: Vector3, txt: String, col: Color, size := 52) -> void:
 	l.text = txt
 	l.modulate = col
 	l.font_size = size
-	l.position = pos + Vector3(randf_range(-0.5, 0.5), 2.4, randf_range(-0.2, 0.2))
+	l.position = pos + Vector3(randf_range(-0.4, 0.4), 2.2, randf_range(-0.2, 0.2))
 	l.visible = true
+	e["v"] = Vector3(randf_range(-1.6, 1.6), 5.5, 0)
 	e["t"] = 0.8
 
 
@@ -977,7 +1275,7 @@ func shot(a: Vector3, b: Vector3) -> void:
 	n.look_at(b + Vector3(0, 1.1, 0), UP)
 	n.scale = Vector3(1, 1, l)
 	n.visible = true
-	e["t"] = 0.07
+	e["t"] = 0.08
 
 
 func orb(from: Vector3) -> void:
@@ -988,7 +1286,12 @@ func orb(from: Vector3) -> void:
 	e["n"].visible = true
 
 
-## Fala cômica num balão sobre o herói ou o chefe.
+func light_flash(pos: Vector3, col: Color) -> void:
+	flash_light.position = pos + Vector3(0, 2, 0)
+	flash_light.light_color = col
+	flash_t = 0.3
+
+
 func say(key_prefix: String, n: int, on_boss: bool, col: Color) -> void:
 	if bubble_t > 0.5:
 		return
@@ -999,10 +1302,8 @@ func say(key_prefix: String, n: int, on_boss: bool, col: Color) -> void:
 	bubble_t = 2.6
 
 
-func light_flash(pos: Vector3, col: Color) -> void:
-	flash_light.position = pos + Vector3(0, 2, 0)
-	flash_light.light_color = col
-	flash_t = 0.25
+func _stop(t: float) -> void:
+	hitstop = maxf(hitstop, t)
 
 
 func handle_events(evs: Array) -> void:
@@ -1012,61 +1313,94 @@ func handle_events(evs: Array) -> void:
 		var p := Vector3(ev[1], 0, ev[2])
 		match k:
 			K.Ev.DAMAGE_HERO:
-				if float(ev[3]) >= 3.0:
-					number(p, str(int(ev[3])), Color(1, 0.35, 0.3), 56 if float(ev[3]) < 100.0 else 80)
+				var v := float(ev[3])
+				var tags := int(ev[4])
+				var col := Color(1, 0.35, 0.3)
+				if tags & K.TAG_FIRE:
+					col = Color(1, 0.6, 0.15)
+				elif tags & K.TAG_SHADOW:
+					col = Color(0.8, 0.45, 1.0)
+				if v >= 3.0:
+					number(p, str(int(v)), col, 56 if v < 100.0 else 90)
+				hero_flash = minf(1.0, hero_flash + clampf(v / 80.0, 0.2, 1.0))
+				if v >= 100.0:
+					add_trauma(0.35)
+					_stop(0.06)
 			K.Ev.DAMAGE_UNIT:
 				var i: int = ev[4]
-				swing_t = 0.28
+				swing_t = 0.26
 				if i >= 0 and i < flash.size():
 					flash[i] = 1.0
-					if randf() < 0.35:
-						emit_particles("hit", p + Vector3(0, 0.8, 0), 0.7)
+					var d := Vector2(U.px[i] - sim.hero.x, U.py[i] - sim.hero.y).normalized() * 0.45
+					kx[i] = d.x
+					ky[i] = d.y
+					emit_fx("hit", p + Vector3(0, 0.8, 0), 0.8)
 				else:
-					emit_particles("hit", p + Vector3(0, 2.0, 0), 1.5)
-				number(p, str(int(ev[3])), Color(1, 1, 1, 0.9), 36)
+					var part_i := -1 - i
+					if part_i >= 0 and part_i < part_flash.size():
+						part_flash[part_i] = 1.0
+					emit_fx("spark", p + Vector3(0, 2.0, 0), 1.0)
+					add_trauma(0.08)
+				number(p, str(int(ev[3])), Color(1, 1, 1, 0.95), 38)
 			K.Ev.DEATH:
 				var i: int = ev[4]
 				if i >= 0 and i < U.cap:
-					emit_particles("death", p + Vector3(0, 0.5, 0), 0.8)
+					var cid: String = sim.data.cards[int(ev[3])].id
+					emit_fx("death", p + Vector3(0, 0.5, 0), 0.9, UNIT_COLORS.get(cid, Color(0.7, 0.6, 0.8)))
 					if not (U.flags[i] & K.F_NO_XP) and U.xp[i] > 0.0:
 						orb(p)
+						emit_fx("soul", p + Vector3(0, 0.6, 0), 0.8)
 			K.Ev.EXPLOSION:
-				emit_particles("explosion", p + Vector3(0, 0.6, 0), float(ev[3]) / 2.5)
-				ring_burst(p, float(ev[3]), Color(1, 0.55, 0.15))
+				var r := float(ev[3])
+				emit_fx("fire", p + Vector3(0, 0.6, 0), r / 2.2)
+				emit_fx("smoke", p + Vector3(0, 0.8, 0), r / 2.2)
+				emit_fx("spark", p + Vector3(0, 0.6, 0), r / 2.5)
+				ring_burst(p, r, Color(1, 0.55, 0.15))
 				light_flash(p, Color(1, 0.6, 0.25))
-				shake = maxf(shake, 0.18)
+				scorch(p, r * 1.8)
+				add_trauma(0.45)
+				_stop(0.05)
 			K.Ev.SHOT:
 				shot(p, Vector3(ev[3], 0, float(ev[4]) / 100.0))
 			K.Ev.SPIN:
 				ring_burst(p, float(ev[3]), Color(0.7, 0.85, 1.0))
-				swing_t = 0.28
+				emit_fx("spark", p + Vector3(0, 1.0, 0), 0.8)
+				swing_t = 0.26
 			K.Ev.HERO_LEVEL:
-				emit_particles("level", p + Vector3(0, 0.5, 0), 1.0)
-				ring_burst(p, 3.0, Color(1, 0.9, 0.4))
-				number(p + Vector3(0, 1.5, 0), tr("UI_HERO_LEVEL").format({"n": int(ev[3])}), Color(1, 0.88, 0.35), 76)
+				emit_fx("level", p + Vector3(0, 0.5, 0), 1.0)
+				ring_burst(p, 3.5, Color(1, 0.9, 0.4))
+				light_flash(p, Color(1, 0.9, 0.5))
+				level_jump = 0.6
+				number(p + Vector3(0, 1.5, 0), tr("UI_HERO_LEVEL").format({"n": int(ev[3])}), Color(1, 0.88, 0.35), 80)
 				if int(ev[3]) % 3 == 0:
 					say("SAY_HERO", 4, false, Color(0.75, 0.88, 1.0))
 			K.Ev.PLAYER_LEVEL:
-				number(p + Vector3(0, 2.5, 0), tr("UI_PLAYER_LEVEL").format({"n": int(ev[3])}), Color(0.85, 0.55, 1.0), 76)
+				number(p + Vector3(0, 2.5, 0), tr("UI_PLAYER_LEVEL").format({"n": int(ev[3])}), Color(0.85, 0.55, 1.0), 80)
+				screen_flash = Color(0.7, 0.35, 1.0, 0.35)
 			K.Ev.SHIELD_BREAK:
-				emit_particles("shield", p + Vector3(0, 1.2, 0), 1.0)
+				emit_fx("shield", p + Vector3(0, 1.2, 0), 1.0)
+				add_trauma(0.2)
+				_stop(0.04)
 			K.Ev.HEAL:
 				if float(ev[3]) >= 20.0:
 					number(p, "+" + str(int(ev[3])), Color(0.45, 1, 0.55))
-					emit_particles("heal", p + Vector3(0, 0.5, 0), 0.8)
+					emit_fx("heal", p + Vector3(0, 0.5, 0), 0.9)
 			K.Ev.PART_DESTROYED:
-				emit_particles("explosion", p + Vector3(0, 2.0, 0), 2.5)
-				emit_particles("magic", p + Vector3(0, 2.0, 0), 2.0)
-				ring_burst(p, 6.0, Color(0.9, 0.3, 1.0))
+				var big := float(ev[3]) >= 0.0
+				emit_fx("fire", p + Vector3(0, 2.0, 0), 2.6 if big else 1.2)
+				emit_fx("smoke", p + Vector3(0, 2.0, 0), 2.6 if big else 1.2)
+				emit_fx("magic", p + Vector3(0, 2.0, 0), 2.0 if big else 1.0)
+				ring_burst(p, 6.0 if big else 3.0, Color(0.9, 0.3, 1.0))
 				light_flash(p, Color(0.9, 0.4, 1.0))
-				shake = 0.5
-				if float(ev[3]) >= 0.0:
+				add_trauma(0.8 if big else 0.3)
+				if big:
+					_stop(0.14)
+					screen_flash = Color(1, 0.85, 1, 0.5)
 					say("SAY_BOSS_PART", 3, true, Color(1.0, 0.6, 0.9))
-				else:
-					shake = 0.2
 			K.Ev.TELEPORT:
-				emit_particles("magic", p + Vector3(0, 1.0, 0), 1.6)
-				emit_particles("magic", Vector3(sim.arena.bx, 1.0, sim.arena.by), 1.6)
+				emit_fx("magic", p + Vector3(0, 1.0, 0), 1.6)
+				emit_fx("magic", Vector3(sim.arena.bx, 1.0, sim.arena.by), 1.6)
+				ring_burst(Vector3(sim.arena.bx, 0, sim.arena.by), 3.0, Color(0.6, 0.3, 1.0))
 				say("SAY_BOSS_TP", 2, true, Color(1.0, 0.6, 0.9))
 			K.Ev.SPELL:
 				var di := int(ev[3])
@@ -1074,14 +1408,22 @@ func handle_events(evs: Array) -> void:
 					var c: CardDef = sim.data.cards[di]
 					if c.category == "finisher":
 						say("SAY_BOSS_FIN", 2, true, Color(1.0, 0.85, 0.4))
+						screen_flash = Color(1, 0.9, 0.5, 0.4)
+						add_trauma(0.5)
 					if c.is_spell or c.category == "finisher":
-						emit_particles("magic", p + Vector3(0, 0.5, 0), 1.2)
+						emit_fx("magic", p + Vector3(0, 0.5, 0), 1.3)
 						ring_burst(p, float(c.fx.get("radius", 2.0)), Color(0.75, 0.35, 1.0))
 					elif c.is_unit:
-						ring_burst(p, 1.5, Color(0.6, 0.4, 1.0))
+						ring_burst(p, 1.6, Color(0.6, 0.4, 1.0))
+						emit_fx("magic", p + Vector3(0, 0.3, 0), 0.5)
 			K.Ev.CURSE:
-				emit_particles("magic", p + Vector3(0, 1.4, 0), 0.6)
+				emit_fx("magic", p + Vector3(0, 1.4, 0), 0.6)
 			K.Ev.SHRINE:
-				emit_particles("level" if float(ev[3]) > 0.0 else "explosion", p + Vector3(0, 1.0, 0), 1.5)
+				if float(ev[3]) > 0.0:
+					emit_fx("level", p + Vector3(0, 1.0, 0), 1.5)
+					screen_flash = Color(0.4, 1, 0.6, 0.3)
+				else:
+					emit_fx("fire", p + Vector3(0, 1.0, 0), 1.5)
+					emit_fx("smoke", p + Vector3(0, 1.0, 0), 1.5)
 			K.Ev.FEAR:
 				ring_burst(p, 2.0, Color(0.6, 0.3, 1.0))
