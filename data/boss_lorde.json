@@ -1,0 +1,89 @@
+{
+ "id": "dark_lord",
+ "parts": [
+  {
+   "id": "left_arm",
+   "hp": 800,
+   "offset": [
+    -1.6,
+    0.0
+   ],
+   "radius": 0.9
+  },
+  {
+   "id": "right_arm",
+   "hp": 800,
+   "offset": [
+    1.6,
+    0.0
+   ],
+   "radius": 0.9
+  },
+  {
+   "id": "head",
+   "hp": 1500,
+   "offset": [
+    0.0,
+    -1.2
+   ],
+   "radius": 0.9
+  },
+  {
+   "id": "core",
+   "hp": 3000,
+   "offset": [
+    0.0,
+    0.4
+   ],
+   "radius": 0.9
+  }
+ ],
+ "right_arm_dps": 40,
+ "decks": [
+  {
+   "id": "horde",
+   "cards": [
+    "rat_horde",
+    "rat_horde",
+    "bat_nest",
+    "skeleton_archers",
+    "soul_feast",
+    "web"
+   ],
+   "rules": {
+    "hand_size": 6,
+    "hero_xp_mult": 1.1
+   }
+  },
+  {
+   "id": "ruin",
+   "cards": [
+    "shadow_bolt",
+    "goblin_dynamiter",
+    "boiling_oil",
+    "web",
+    "cultists",
+    "gargoyle_tower"
+   ],
+   "rules": {
+    "spell_damage_mult": 1.15,
+    "monster_cost_add": 1
+   }
+  },
+  {
+   "id": "treasure",
+   "cards": [
+    "soul_collector",
+    "mimic",
+    "gold_bait",
+    "goblin_dynamiter",
+    "skeleton_archers",
+    "rat_horde"
+   ],
+   "rules": {
+    "elixir_start": 8,
+    "offer_options": 2
+   }
+  }
+ ]
+}

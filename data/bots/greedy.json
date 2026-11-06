@@ -1,0 +1,9 @@
+{
+ "id": "greedy",
+ "kind": "greedy",
+ "think_interval": 0.25,
+ "reserve": 0,
+ "place_distance": 6.0,
+ "sacrifice_unusable": 1.0,
+ "teleport_distance": 4.0
+}

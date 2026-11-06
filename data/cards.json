@@ -1,0 +1,639 @@
+{
+ "cards": [
+  {
+   "id": "rat_horde",
+   "category": "field",
+   "type": "swarm",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "swarm",
+   "rarity": "common",
+   "cost": 2,
+   "count": 8,
+   "xp_parts": 8,
+   "hp": 25,
+   "dps": 4,
+   "attack_interval": 1.0,
+   "speed": 5.5,
+   "range": 0.8,
+   "fx": {}
+  },
+  {
+   "id": "skeleton_archers",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "undead"
+   ],
+   "archetype": "shooter",
+   "rarity": "common",
+   "cost": 3,
+   "count": 2,
+   "xp_parts": 2,
+   "hp": 120,
+   "dps": 12,
+   "attack_interval": 1.0,
+   "speed": 3,
+   "range": 7,
+   "fx": {
+    "retreat": 4.0,
+    "projectile": true
+   }
+  },
+  {
+   "id": "goblin_dynamiter",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "kamikaze",
+   "rarity": "common",
+   "cost": 3,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 80,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 6,
+   "range": 1,
+   "fx": {
+    "explode_damage": 180,
+    "explode_radius": 2.5
+   }
+  },
+  {
+   "id": "slime",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "tank",
+   "rarity": "uncommon",
+   "cost": 4,
+   "count": 1,
+   "xp_parts": 7,
+   "hp": 240,
+   "dps": 12,
+   "attack_interval": 1.0,
+   "speed": 2.5,
+   "range": 1,
+   "fx": {
+    "split": [
+     {
+      "hp": 110,
+      "dps": 6,
+      "n": 2
+     },
+     {
+      "hp": 50,
+      "dps": 3,
+      "n": 2
+     }
+    ]
+   }
+  },
+  {
+   "id": "shadow_bolt",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "",
+   "rarity": "common",
+   "cost": 2,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 10,
+   "fx": {
+    "damage": 140,
+    "length": 10.0,
+    "width": 1.5,
+    "pierce_shield": true
+   }
+  },
+  {
+   "id": "bat_nest",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "pack",
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "uncommon",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 6,
+   "hp": 400,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "spawn": "bat",
+    "spawn_interval": 3.0,
+    "spawn_duration": 15.0
+   }
+  },
+  {
+   "id": "rat_king",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "support",
+   "rarity": "rare",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 7,
+   "hp": 500,
+   "dps": 15,
+   "attack_interval": 1.0,
+   "speed": 3,
+   "range": 1.2,
+   "fx": {
+    "aura_radius": 6.0,
+    "aura_pack_damage": 0.5,
+    "death_spawn": "rat",
+    "death_spawn_n": 6
+   }
+  },
+  {
+   "id": "bone_totem",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "undead",
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "rare",
+   "cost": 4,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 300,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 6,
+   "fx": {
+    "duration": 20.0,
+    "radius": 6.0,
+    "revive": "skeleton"
+   }
+  },
+  {
+   "id": "cultists",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "shooter",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 3,
+   "xp_parts": 3,
+   "hp": 90,
+   "dps": 8,
+   "attack_interval": 1.0,
+   "speed": 3,
+   "range": 6,
+   "fx": {
+    "spell_discount": 1,
+    "spell_min_cost": 1,
+    "projectile": true
+   }
+  },
+  {
+   "id": "ogre",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "tank",
+   "rarity": "uncommon",
+   "cost": 6,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 1200,
+   "dps": 30,
+   "attack_interval": 2.0,
+   "speed": 2.2,
+   "range": 1.5,
+   "fx": {
+    "knockback": 4.0
+   }
+  },
+  {
+   "id": "web",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "common",
+   "cost": 2,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 3,
+   "fx": {
+    "radius": 3.0,
+    "duration": 4.0,
+    "slow": 0.5
+   }
+  },
+  {
+   "id": "mimic",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 250,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 10,
+   "fx": {
+    "lure_radius": 10.0,
+    "bite": 120,
+    "curses": 2
+   }
+  },
+  {
+   "id": "boiling_oil",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "",
+   "rarity": "common",
+   "cost": 3,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 3,
+   "fx": {
+    "radius": 3.0,
+    "duration": 8.0,
+    "dps": 10,
+    "soaked": 6.0
+   }
+  },
+  {
+   "id": "ghost",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "chaser",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 150,
+   "dps": 10,
+   "attack_interval": 1.0,
+   "speed": 4,
+   "range": 1,
+   "fx": {
+    "phase": true,
+    "fear": 1.5,
+    "fear_cooldown": 6.0
+   }
+  },
+  {
+   "id": "gargoyle_tower",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "uncommon",
+   "cost": 4,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 500,
+   "dps": 18,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 9,
+   "fx": {
+    "stone_radius": 3.0,
+    "projectile": true
+   }
+  },
+  {
+   "id": "werewolf",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "chaser",
+   "rarity": "rare",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 600,
+   "dps": 25,
+   "attack_interval": 1.0,
+   "speed": 4,
+   "range": 1.2,
+   "fx": {
+    "speed_bonus": 1.0,
+    "hp_threshold": 0.5
+   }
+  },
+  {
+   "id": "scrap_golem",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "tank",
+   "rarity": "rare",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 700,
+   "dps": 20,
+   "attack_interval": 1.0,
+   "speed": 2,
+   "range": 1.5,
+   "fx": {
+    "absorb_radius": 5.0,
+    "absorb_hp": 40,
+    "hp_cap": 1500
+   }
+  },
+  {
+   "id": "soul_feast",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 1,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "radius": 4.0,
+    "bonus_per_card": 1
+   }
+  },
+  {
+   "id": "broken_bridge",
+   "category": "route",
+   "type": "route",
+   "tags": [],
+   "rarity": "common",
+   "cost": 3,
+   "fx": {
+    "target": "branch"
+   }
+  },
+  {
+   "id": "false_sign",
+   "category": "route",
+   "type": "route",
+   "tags": [],
+   "rarity": "uncommon",
+   "cost": 5,
+   "fx": {
+    "target": "branch"
+   }
+  },
+  {
+   "id": "gold_bait",
+   "category": "route",
+   "type": "route",
+   "tags": [],
+   "rarity": "common",
+   "cost": 2,
+   "fx": {
+    "target": "point",
+    "xp": 40,
+    "max_detour": 30.0
+   }
+  },
+  {
+   "id": "burn_village",
+   "category": "route",
+   "type": "route",
+   "tags": [],
+   "rarity": "uncommon",
+   "cost": 4,
+   "fx": {
+    "target": "location",
+    "location": "village"
+   }
+  },
+  {
+   "id": "soul_collector",
+   "category": "lair",
+   "type": "lair",
+   "tags": [],
+   "rarity": "uncommon",
+   "cost": 5,
+   "fx": {
+    "elixir_regen": 0.1,
+    "stack": 3
+   }
+  },
+  {
+   "id": "forbidden_library",
+   "category": "lair",
+   "type": "lair",
+   "tags": [],
+   "rarity": "rare",
+   "cost": 4,
+   "fx": {
+    "hand": 1,
+    "stack": 1
+   }
+  },
+  {
+   "id": "dark_forge",
+   "category": "lair",
+   "type": "lair",
+   "tags": [],
+   "rarity": "uncommon",
+   "cost": 4,
+   "fx": {
+    "monster_hp": 0.1,
+    "stack": 3
+   }
+  },
+  {
+   "id": "lair_walls",
+   "category": "lair",
+   "type": "lair",
+   "tags": [],
+   "rarity": "rare",
+   "cost": 6,
+   "fx": {
+    "hero_hp_loss": 0.1,
+    "stack": 1
+   }
+  },
+  {
+   "id": "cosmic_ray",
+   "category": "finisher",
+   "type": "finisher",
+   "tags": [],
+   "rarity": "legendary",
+   "cost": 7,
+   "fx": {
+    "cond": "front",
+    "cone": 45.0,
+    "range": 12.0,
+    "damage": 1200,
+    "width": 2.0,
+    "pierce_shield": true
+   }
+  },
+  {
+   "id": "bone_prison",
+   "category": "finisher",
+   "type": "finisher",
+   "tags": [],
+   "rarity": "rare",
+   "cost": 4,
+   "fx": {
+    "cond": "after_teleport",
+    "window": 3.0,
+    "root": 3.0
+   }
+  },
+  {
+   "id": "petrifying_gaze",
+   "category": "finisher",
+   "type": "finisher",
+   "tags": [],
+   "rarity": "rare",
+   "cost": 5,
+   "fx": {
+    "cond": "front",
+    "cone": 45.0,
+    "range": 12.0,
+    "petrify": 2.0
+   }
+  },
+  {
+   "id": "damned_army",
+   "category": "finisher",
+   "type": "finisher",
+   "tags": [],
+   "rarity": "legendary",
+   "cost": 6,
+   "fx": {
+    "cond": "hero_low",
+    "threshold": 0.3,
+    "max": 40,
+    "hp": 40,
+    "dps": 10,
+    "duration": 5.0
+   }
+  },
+  {
+   "id": "dark_fury",
+   "category": "finisher",
+   "type": "finisher",
+   "tags": [],
+   "rarity": "rare",
+   "cost": 5,
+   "fx": {
+    "cond": "part_destroyed",
+    "heal": 0.2,
+    "damage": 0.5,
+    "duration": 10.0
+   }
+  },
+  {
+   "id": "dark_pact",
+   "category": "finisher",
+   "type": "finisher",
+   "tags": [],
+   "rarity": "rare",
+   "cost": 0,
+   "fx": {
+    "cond": "none",
+    "draw": 2
+   }
+  }
+ ],
+ "aux_units": [
+  {
+   "id": "bat",
+   "archetype": "swarm",
+   "tags": [
+    "pack"
+   ],
+   "hp": 30,
+   "dps": 5,
+   "speed": 5.0,
+   "range": 0.8,
+   "fly": true
+  },
+  {
+   "id": "rat",
+   "archetype": "swarm",
+   "tags": [
+    "pack"
+   ],
+   "hp": 25,
+   "dps": 4,
+   "speed": 5.5,
+   "range": 0.8
+  },
+  {
+   "id": "skeleton",
+   "archetype": "chaser",
+   "tags": [
+    "undead"
+   ],
+   "hp": 60,
+   "dps": 6,
+   "speed": 3.0,
+   "range": 1.0
+  },
+  {
+   "id": "spectre",
+   "archetype": "chaser",
+   "tags": [
+    "undead",
+    "shadow"
+   ],
+   "hp": 40,
+   "dps": 10,
+   "speed": 4.5,
+   "range": 1.0
+  }
+ ]
+}

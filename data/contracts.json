@@ -1,0 +1,106 @@
+{
+ "contracts": [
+  {
+   "id": "crossfire",
+   "goal": {
+    "kind": "tag_damage",
+    "tag": "fire",
+    "amount": 300
+   },
+   "reward": {
+    "kind": "card",
+    "tag": "fire",
+    "min_rarity": "rare"
+   },
+   "deadline": 45
+  },
+  {
+   "id": "rat_storm",
+   "goal": {
+    "kind": "alive_tag",
+    "tag": "pack",
+    "amount": 30
+   },
+   "reward": {
+    "kind": "card",
+    "tag": "pack",
+    "min_rarity": "rare"
+   },
+   "deadline": 40
+  },
+  {
+   "id": "no_witnesses",
+   "goal": {
+    "kind": "damage_no_xp",
+    "amount": 200
+   },
+   "reward": {
+    "kind": "card",
+    "category": "finisher"
+   },
+   "deadline": 40
+  },
+  {
+   "id": "ambush",
+   "goal": {
+    "kind": "burst",
+    "amount": 150,
+    "window": 5.0
+   },
+   "reward": {
+    "kind": "modifier"
+   },
+   "deadline": 60
+  },
+  {
+   "id": "empty_hand",
+   "goal": {
+    "kind": "sacrifice",
+    "amount": 3
+   },
+   "reward": {
+    "kind": "card",
+    "category": "lair"
+   },
+   "deadline": 60
+  },
+  {
+   "id": "evil_architecture",
+   "goal": {
+    "kind": "structures",
+    "amount": 3
+   },
+   "reward": {
+    "kind": "card",
+    "tag": "construct",
+    "min_rarity": "rare"
+   },
+   "deadline": 50
+  },
+  {
+   "id": "hunt",
+   "goal": {
+    "kind": "cc",
+    "amount": 4
+   },
+   "reward": {
+    "kind": "card",
+    "tag": "shadow",
+    "min_rarity": "rare"
+   },
+   "deadline": 30
+  },
+  {
+   "id": "ritual_interrupted",
+   "goal": {
+    "kind": "ritual_time",
+    "amount": 8.0
+   },
+   "reward": {
+    "kind": "remove",
+    "elixir": 3
+   },
+   "deadline": -1
+  }
+ ]
+}

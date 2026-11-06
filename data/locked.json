@@ -1,0 +1,12 @@
+{
+ "paths": [
+  "rules.elixir.seconds_per_point",
+  "rules.elixir.max",
+  "rules.hand_size",
+  "rules.ring.min",
+  "rules.ring.max",
+  "rules.sim.dt",
+  "rules.phase1_target_s",
+  "rules.goals"
+ ]
+}

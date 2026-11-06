@@ -1,0 +1,58 @@
+{
+ "modifiers": [
+  {
+   "id": "veteran",
+   "p": {
+    "extra_units": 1
+   },
+   "applies": [
+    "monster",
+    "swarm"
+   ]
+  },
+  {
+   "id": "cheap",
+   "p": {
+    "cost": -1,
+    "min_cost": 1
+   },
+   "applies": [
+    "any"
+   ]
+  },
+  {
+   "id": "explosive",
+   "p": {
+    "damage": 40,
+    "radius": 2.0
+   },
+   "applies": [
+    "monster",
+    "swarm",
+    "structure"
+   ]
+  },
+  {
+   "id": "cursed",
+   "p": {
+    "curses": 1
+   },
+   "applies": [
+    "monster",
+    "swarm",
+    "structure"
+   ]
+  },
+  {
+   "id": "shadowy",
+   "p": {
+    "no_xp": true
+   },
+   "applies": [
+    "monster",
+    "swarm",
+    "structure"
+   ]
+  }
+ ]
+}
