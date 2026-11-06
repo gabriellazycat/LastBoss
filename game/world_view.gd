@@ -44,6 +44,9 @@ var altar_nodes: Array = []
 var boss_face: MeshInstance3D
 var cam_pos := Vector3.ZERO
 var shake := 0.0
+var bubble: Label3D
+var bubble_t := 0.0
+var bubble_on_boss := false
 var flash_light: OmniLight3D
 var flash_t := 0.0
 
@@ -404,6 +407,14 @@ func _build_hero() -> void:
 	show_placement(false, Vector3.ZERO, true, 1.0)
 	flash_light = _light(Vector3.ZERO, Color(1, 0.6, 0.3), 0.0, 14.0)
 	add_child(flash_light)
+	bubble = Label3D.new()
+	bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	bubble.no_depth_test = true
+	bubble.font_size = 64
+	bubble.outline_size = 16
+	bubble.outline_modulate = Color(0.1, 0.05, 0.15)
+	bubble.visible = false
+	add_child(bubble)
 
 
 func _circle(r: float, col: Color) -> MeshInstance3D:
@@ -746,9 +757,10 @@ func _draw_zones() -> void:
 			var r := float(z["r"])
 			disc.scale = Vector3(r, 1, r)
 			var mat: StandardMaterial3D = disc.material_override
-			var c := Color(0.55, 0.55, 0.65, 0.2) if kind == "web" else Color(1.0, 0.45, 0.08, 0.32 + 0.06 * sin(sim.t * 8.0))
+			var c := Color(0.35, 0.35, 0.45, 0.22) if kind == "web" else Color(1.0, 0.45, 0.08, 0.32 + 0.06 * sin(sim.t * 8.0))
 			mat.albedo_color = c
 			mat.emission = Color(c.r, c.g, c.b)
+			mat.emission_energy_multiplier = 0.05 if kind == "web" else 0.6
 		k += 1
 	for i in range(k, zone_pool.size()):
 		zone_pool[i]["disc"].visible = false
@@ -813,6 +825,14 @@ func _tick_pools(delta: float, alpha: float) -> void:
 			e["n"].position = pos
 			if e["t"] <= 0.0:
 				e["n"].visible = false
+	if bubble_t > 0.0:
+		bubble_t -= delta
+		var bp := hp + Vector3(0, 2.6, 0)
+		if bubble_on_boss and sim.arena.active:
+			bp = Vector3(sim.arena.bx, 7.5, sim.arena.by)
+		bubble.position = bp
+		bubble.modulate.a = clampf(bubble_t / 0.4, 0.0, 1.0)
+		bubble.visible = bubble_t > 0.0
 	if flash_t > 0.0:
 		flash_t -= delta
 		flash_light.light_energy = maxf(0.0, flash_t / 0.25) * 6.0
@@ -895,6 +915,17 @@ func orb(from: Vector3) -> void:
 	e["n"].visible = true
 
 
+## Fala cômica num balão sobre o herói ou o chefe.
+func say(key_prefix: String, n: int, on_boss: bool, col: Color) -> void:
+	if bubble_t > 0.5:
+		return
+	bubble.text = tr("%s_%d" % [key_prefix, randi_range(1, n)])
+	bubble.modulate = col
+	bubble_on_boss = on_boss
+	bubble.visible = true
+	bubble_t = 2.6
+
+
 func light_flash(pos: Vector3, col: Color) -> void:
 	flash_light.position = pos + Vector3(0, 2, 0)
 	flash_light.light_color = col
@@ -940,6 +971,8 @@ func handle_events(evs: Array) -> void:
 				emit_particles("level", p + Vector3(0, 0.5, 0), 1.0)
 				ring_burst(p, 3.0, Color(1, 0.9, 0.4))
 				number(p + Vector3(0, 1.5, 0), tr("UI_HERO_LEVEL").format({"n": int(ev[3])}), Color(1, 0.88, 0.35), 76)
+				if int(ev[3]) % 3 == 0:
+					say("SAY_HERO", 4, false, Color(0.75, 0.88, 1.0))
 			K.Ev.PLAYER_LEVEL:
 				number(p + Vector3(0, 2.5, 0), tr("UI_PLAYER_LEVEL").format({"n": int(ev[3])}), Color(0.85, 0.55, 1.0), 76)
 			K.Ev.SHIELD_BREAK:
@@ -954,13 +987,18 @@ func handle_events(evs: Array) -> void:
 				ring_burst(p, 6.0, Color(0.9, 0.3, 1.0))
 				light_flash(p, Color(0.9, 0.4, 1.0))
 				shake = 0.5
+				if float(ev[3]) >= 0.0:
+					say("SAY_BOSS_PART", 3, true, Color(1.0, 0.6, 0.9))
 			K.Ev.TELEPORT:
 				emit_particles("magic", p + Vector3(0, 1.0, 0), 1.6)
 				emit_particles("magic", Vector3(sim.arena.bx, 1.0, sim.arena.by), 1.6)
+				say("SAY_BOSS_TP", 2, true, Color(1.0, 0.6, 0.9))
 			K.Ev.SPELL:
 				var di := int(ev[3])
 				if di >= 0 and di < sim.data.cards.size():
 					var c: CardDef = sim.data.cards[di]
+					if c.category == "finisher":
+						say("SAY_BOSS_FIN", 2, true, Color(1.0, 0.85, 0.4))
 					if c.is_spell or c.category == "finisher":
 						emit_particles("magic", p + Vector3(0, 0.5, 0), 1.2)
 						ring_burst(p, float(c.fx.get("radius", 2.0)), Color(0.75, 0.35, 1.0))

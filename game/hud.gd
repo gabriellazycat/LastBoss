@@ -42,6 +42,10 @@ var help_label: Label
 var tele_label: Label
 var hand_sig := ""
 var lang_btn: Button
+var hint_panel: PanelContainer
+var hint_label: Label
+var hint_t := 0.0
+var hints_seen: Dictionary = {}
 var pause_panel: PanelContainer
 var pause_label: Label
 var top_box: HBoxContainer
@@ -230,6 +234,20 @@ func _build() -> void:
 	result_panel.visible = false
 	add_child(result_panel)
 	_build_menu()
+	hint_panel = _panel(Color(0.08, 0.05, 0.14, 0.92), Color(1.0, 0.8, 0.4))
+	hint_panel.custom_minimum_size = Vector2(620, 0)
+	hint_label = _label(17, Color(1, 0.95, 0.85))
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	hint_label.custom_minimum_size = Vector2(600, 0)
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_panel.add_child(hint_label)
+	hint_panel.visible = false
+	hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(hint_panel)
+	var cf := ConfigFile.new()
+	if cf.load("user://hints.cfg") == OK:
+		for k in cf.get_section_keys("seen") if cf.has_section("seen") else []:
+			hints_seen[k] = true
 	pause_panel = _panel(Color(0.04, 0.03, 0.07, 0.95), Color(0.6, 0.45, 0.9))
 	pause_panel.custom_minimum_size = Vector2(720, 0)
 	pause_label = _label(17)
@@ -291,6 +309,7 @@ func _layout() -> void:
 		p.position = (vs - p.size) * 0.5
 	menu_panel.position = Vector2((vs.x - menu_panel.size.x) * 0.5, vs.y - menu_panel.size.y - 30)
 	contract_panel.position = Vector2(12, 110)
+	hint_panel.position = Vector2((vs.x - hint_panel.size.x) * 0.5, 190)
 
 
 func show_menu(on: bool) -> void:
@@ -343,6 +362,40 @@ func show_pause(on: bool) -> void:
 		ups.append(tr("UPG_" + u))
 	pause_label.text = tr("UI_PAUSE_TEXT").format({"deck": "
 ".join(deck), "build": ", ".join(ups) if ups.size() > 0 else "—", "n": sim.cards.size()})
+
+
+## Dica contextual: aparece só na primeira vez (fica salva em user://hints.cfg).
+func hint(key: String) -> void:
+	if hints_seen.has(key):
+		return
+	hints_seen[key] = true
+	hint_label.text = tr("HINT_" + key)
+	hint_panel.visible = true
+	hint_t = 7.0
+	var cf := ConfigFile.new()
+	for k in hints_seen:
+		cf.set_value("seen", k, true)
+	cf.save("user://hints.cfg")
+
+
+func _hints() -> void:
+	if sim.t > 0.5:
+		hint("start")
+	if sim.offers.size() > 0 and sim.offers[0]["source"] == "level":
+		hint("offer")
+	if sim.contract.size() > 0:
+		hint("contract")
+	if sim.phase == K.Phase.ARENA:
+		hint("arena")
+	var h := Vector2(sim.hero.x, sim.hero.y)
+	for loc in sim.road.locations:
+		if loc["type"] == "shrine" and loc["state"] == SimRoad.LocState.ACTIVE and h.distance_to(loc["pos"]) < 45.0:
+			hint("shrine")
+	for ci in sim.hand:
+		if ci and ci.def.category == "route":
+			hint("route")
+		elif ci and ci.def.category == "finisher" and sim.phase == K.Phase.ROAD:
+			hint("finisher")
 
 
 func say(txt: String) -> void:
@@ -523,6 +576,11 @@ func refresh(delta: float, fps: float) -> void:
 	info_label.text = tr("UI_FPS").format({"fps": int(fps), "u": sim.units.count})
 	lang_btn.text = tr("UI_LANG")
 	help_label.text = tr("UI_HELP")
+	_hints()
+	if hint_t > 0.0:
+		hint_t -= delta
+		hint_panel.modulate.a = clampf(hint_t, 0.0, 1.0)
+		hint_panel.visible = hint_t > 0.0
 	_refresh_contract()
 	_refresh_offer()
 	_refresh_arena()
@@ -534,8 +592,19 @@ func refresh(delta: float, fps: float) -> void:
 	if sim.phase == K.Phase.OVER and not result_panel.visible:
 		result_panel.visible = true
 		var st := sim.stats
-		result_label.text = tr("UI_RESULT_" + str(st["result"])) + "\n\n" + tr("UI_RESULT_STATS").format({
-			"t": "%d:%02d" % [int(sim.t) / 60, int(sim.t) % 60], "h": h.level, "p": sim.player_level})
+		var top := ""
+		var best := 0
+		for cid in st["played"]:
+			if int(st["played"][cid]) > best:
+				best = int(st["played"][cid])
+				top = cid
+		var lines: Array = [tr("UI_RESULT_" + str(st["result"])), "", tr("UI_RESULT_STATS").format({
+			"t": "%d:%02d" % [int(sim.t) / 60, int(sim.t) % 60], "h": h.level, "p": sim.player_level}),
+			tr("UI_RESULT_MORE").format({"k": st["kills"], "s": st["shrines_won"], "c": st["contracts_ok"], "p": st["parts_lost"]})]
+		if top != "":
+			lines.append(tr("UI_RESULT_TOP").format({"card": tr("CARD_" + top)}))
+		result_label.text = "
+".join(lines)
 
 
 func _refresh_contract() -> void:

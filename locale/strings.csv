@@ -190,3 +190,23 @@ Hero build: {build}
 Space or Esc to resume"
 UI_SUBTITLE,O herói está a caminho. Molde quem vai bater à sua porta.,The hero is coming. Shape who will knock on your door.
 UI_DECK_CARDS,Cartas: {list},Cards: {list}
+HINT_start,"Jogue cartas ao redor do herói, no anel entre 3 e 12 m. Cada monstro que morre dá XP a ele: jogar mal fortalece o seu assassino.","Play cards around the hero, in the 3–12 m ring. Every monster that dies gives him XP: playing badly strengthens your killer."
+HINT_offer,"Você subiu de nível causando dano no herói. Escolha uma carta nova ou melhore uma do deck.","You leveled up by damaging the hero. Pick a new card or upgrade one in your deck."
+HINT_shrine,"Santuário à frente! Tenha monstros vivos no raio quando a contagem acabar para ganhar uma carta rara.","Shrine ahead! Have monsters alive in its radius when the countdown ends to earn a rare card."
+HINT_contract,"Contrato! Cumpra o objetivo no prazo para escolher uma recompensa.","Contract! Meet the goal in time to choose a reward."
+HINT_route,"Cartas de rota são jogadas no minimapa: clique perto do ramo ou do local que quer afetar.","Route cards are played on the minimap: click near the branch or location you want to affect."
+HINT_finisher,"Cartas de finalização só funcionam na arena. Na estrada, sacrifique-as (X + número) por 1 de elixir.","Finisher cards only work in the arena. On the road, sacrifice them (X + number) for 1 elixir."
+HINT_arena,"A arena! Proteja o seu corpo. Teleporte o chefe com Q/E ou clicando num altar.","The arena! Protect your body. Teleport the boss with Q/E or by clicking an altar."
+UI_RESULT_MORE,"Abates do herói: {k} · Santuários: {s} · Contratos: {c} · Partes perdidas: {p}","Hero kills: {k} · Shrines: {s} · Contracts: {c} · Parts lost: {p}"
+UI_RESULT_TOP,Sua carta mais jogada: {card},Your most played card: {card}
+SAY_HERO_1,Mais forte a cada passo!,Stronger with every step!
+SAY_HERO_2,Obrigado pelos ratinhos!,Thanks for the little rats!
+SAY_HERO_3,Seus monstros me alimentam!,Your monsters feed me!
+SAY_HERO_4,Estou chegando aí!,I'm coming for you!
+SAY_BOSS_PART_1,MEU BRAÇO! Eu gostava dele!,MY ARM! I liked that one!
+SAY_BOSS_PART_2,Isso vai deixar marca...,That's gonna leave a mark...
+SAY_BOSS_PART_3,Foi só um arranhão!,Just a scratch!
+SAY_BOSS_TP_1,Me pega se puder!,Catch me if you can!
+SAY_BOSS_TP_2,Plim! Errou!,Poof! Missed!
+SAY_BOSS_FIN_1,CONTEMPLE O MEU PODER!,BEHOLD MY POWER!
+SAY_BOSS_FIN_2,Hora do grande final!,Time for the grand finale!

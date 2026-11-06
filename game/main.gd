@@ -381,6 +381,9 @@ func _select(i: int) -> void:
 	if ci == null:
 		return
 	hud.selected = -1 if hud.selected == i else i
+	var big := hud.minimap.size.x > 400
+	if (hud.selected >= 0 and ci.def.category == "route") != big:
+		_toggle_map()
 	# Cartas sem alvo (covil, finalização) saem na hora.
 	if hud.selected >= 0 and (ci.def.category == "lair" or ci.def.category == "finisher"):
 		_play_at(Vector2(sim.hero.x, sim.hero.y))
@@ -398,6 +401,8 @@ func _play_at(p: Vector2) -> void:
 	var b := sim.play(i, p.x, p.y)
 	if b == K.Block.OK:
 		hud.selected = -1
+		if hud.minimap.size.x > 400:
+			_toggle_map()
 	else:
 		hud.say(tr("UI_BLOCK_%d" % mini(b, 5)))
 		if b != K.Block.NO_ELIXIR and b != K.Block.BAD_TARGET:
