@@ -115,7 +115,7 @@ def candidates(metric, sign):
             up = sign < 0
         else:
             up = sign > 0
-        for step in (0.12, 0.25):
+        for step in (0.15, 0.3):
             out.append((f, path, 1.0 + step if up else 1.0 - step))
     return out
 
@@ -160,10 +160,14 @@ def main():
         if not parts:
             print("todas as metas ajustáveis cumpridas")
             break
-        metric = max(parts, key=parts.get)
-        sign = metric_error(base, metric)
+        ranked = sorted(parts, key=parts.get, reverse=True)[:2]
+        metric = ranked[0]
+        cands = []
+        for mt in ranked:
+            for c in candidates(mt, metric_error(base, mt)):
+                cands.append((mt,) + c)
         best = None
-        for f, path, mult in candidates(metric, sign):
+        for metric, f, path, mult in cands:
             key = (knob_id(f, path), mult, round(base["score"], 3))
             if key in tried:
                 continue
@@ -173,11 +177,11 @@ def main():
             print("  ciclo %d %s: %s %s -> %s  nota %.3f" % (cyc, metric, knob_id(f, path), old, new, s["score"]))
             _restore(f, path, old)
             if not errs and (best is None or s["score"] < best[0]["score"]):
-                best = (s, f, path, mult, old, new)
+                best = (s, f, path, mult, old, new, metric)
         if best is None or best[0]["score"] >= base["score"]:
             print("ciclo %d: nenhum candidato melhorou %s" % (cyc, metric))
             continue
-        s, f, path, mult, old, new = best
+        s, f, path, mult, old, new, metric = best
         obj = load(f)
         put(obj, path, new)
         save(f, obj)

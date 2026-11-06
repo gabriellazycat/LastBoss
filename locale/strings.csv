@@ -165,3 +165,28 @@ UI_LANG,English,Português
 UI_TELEPORT,Teleporte (Q/E),Teleport (Q/E)
 UI_TELEPORT_READY,Teleporte pronto,Teleport ready
 UI_TELEPORT_CD,Teleporte em {t} s,Teleport in {t} s
+TYPE_swarm,Enxame,Swarm
+TYPE_monster,Monstro,Monster
+TYPE_spell,Feitiço,Spell
+TYPE_structure,Estrutura,Structure
+TYPE_route,Rota,Route
+TYPE_lair,Covil,Lair
+TYPE_finisher,Finalização,Finisher
+UI_CARD_MODS,{card} ({mods}),{card} ({mods})
+UI_PAUSE_TEXT,"PAUSADO
+
+Seu deck ({n} cartas):
+{deck}
+
+Build do herói: {build}
+
+Espaço ou Esc para voltar","PAUSED
+
+Your deck ({n} cards):
+{deck}
+
+Hero build: {build}
+
+Space or Esc to resume"
+UI_SUBTITLE,O herói está a caminho. Molde quem vai bater à sua porta.,The hero is coming. Shape who will knock on your door.
+UI_DECK_CARDS,Cartas: {list},Cards: {list}

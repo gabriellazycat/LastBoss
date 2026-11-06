@@ -42,6 +42,8 @@ var help_label: Label
 var tele_label: Label
 var hand_sig := ""
 var lang_btn: Button
+var pause_panel: PanelContainer
+var pause_label: Label
 var top_box: HBoxContainer
 var bottom_box: VBoxContainer
 
@@ -49,7 +51,33 @@ var bottom_box: VBoxContainer
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	theme = _make_theme()
 	_build()
+
+
+func _make_theme() -> Theme:
+	var t := Theme.new()
+	t.default_font_size = 18
+	var states := {"normal": [Color(0.12, 0.08, 0.18, 0.95), Color(0.55, 0.4, 0.75)], "hover": [Color(0.2, 0.12, 0.3, 0.98), Color(1.0, 0.8, 0.4)],
+		"pressed": [Color(0.3, 0.15, 0.4), Color(1.0, 0.85, 0.5)], "focus": [Color(0.2, 0.12, 0.3, 0.98), Color(1.0, 0.8, 0.4)],
+		"disabled": [Color(0.08, 0.06, 0.1, 0.8), Color(0.3, 0.3, 0.3)]}
+	for st in states:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = states[st][0]
+		sb.border_color = states[st][1]
+		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(10)
+		sb.set_content_margin_all(12)
+		sb.shadow_color = Color(0, 0, 0, 0.45)
+		sb.shadow_size = 5
+		t.set_stylebox(st, "Button", sb)
+	t.set_color("font_color", "Button", Color(0.95, 0.9, 1.0))
+	t.set_color("font_hover_color", "Button", Color(1.0, 0.92, 0.6))
+	t.set_color("font_outline_color", "Button", Color.BLACK)
+	t.set_constant("outline_size", "Button", 4)
+	t.set_color("font_outline_color", "Label", Color.BLACK)
+	t.set_constant("outline_size", "Label", 4)
+	return t
 
 
 func _panel(col := Color(0.06, 0.05, 0.1, 0.85), border := Color(0.45, 0.35, 0.65)) -> PanelContainer:
@@ -99,7 +127,7 @@ func _build() -> void:
 	hero_label = _label(20, Color(1, 0.8, 0.5))
 	hero_bar = _bar(Color(1, 0.7, 0.3), 380, 14)
 	hero_hp = _bar(Color(0.85, 0.2, 0.2), 380, 10)
-	build_label = _label(14, Color(0.9, 0.9, 1.0))
+	build_label = _label(12, Color(0.88, 0.88, 1.0))
 	build_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	build_label.custom_minimum_size = Vector2(380, 0)
 	build_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -202,10 +230,18 @@ func _build() -> void:
 	result_panel.visible = false
 	add_child(result_panel)
 	_build_menu()
+	pause_panel = _panel(Color(0.04, 0.03, 0.07, 0.95), Color(0.6, 0.45, 0.9))
+	pause_panel.custom_minimum_size = Vector2(720, 0)
+	pause_label = _label(17)
+	pause_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	pause_label.custom_minimum_size = Vector2(700, 0)
+	pause_panel.add_child(pause_label)
+	pause_panel.visible = false
+	add_child(pause_panel)
 
 
 func _build_menu() -> void:
-	menu_panel = _panel(Color(0.04, 0.03, 0.07, 0.96), Color(0.6, 0.4, 0.9))
+	menu_panel = _panel(Color(0.04, 0.03, 0.07, 0.72), Color(0.6, 0.4, 0.9))
 	menu_panel.position = Vector2(-520, -230)
 	menu_panel.custom_minimum_size = Vector2(1040, 0)
 	var v := VBoxContainer.new()
@@ -216,14 +252,18 @@ func _build_menu() -> void:
 	var st := _label(22)
 	st.text = "UI_CHOOSE_DECK"
 	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var sub := _label(18, Color(0.85, 0.8, 0.95))
+	sub.text = "UI_SUBTITLE"
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
+	v.add_child(sub)
 	v.add_child(st)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 16)
 	for id in ["horde", "ruin", "treasure"]:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(320, 200)
+		b.custom_minimum_size = Vector2(320, 300)
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD
 		b.text = tr("DECK_" + id) + "\n\n" + tr("DECKDESC_" + id)
 		b.set_meta("deck", id)
@@ -247,16 +287,29 @@ func _layout() -> void:
 	bottom_box.position = Vector2((vs.x - bottom_box.size.x) * 0.5, vs.y - bottom_box.size.y - 34)
 	help_label.position = Vector2(12, vs.y - 26)
 	toast.position = Vector2((vs.x - toast.size.x) * 0.5, vs.y * 0.3)
-	for p in [offer_panel, result_panel, menu_panel]:
+	for p in [offer_panel, result_panel, pause_panel]:
 		p.position = (vs - p.size) * 0.5
+	menu_panel.position = Vector2((vs.x - menu_panel.size.x) * 0.5, vs.y - menu_panel.size.y - 30)
 	contract_panel.position = Vector2(12, 110)
 
 
 func show_menu(on: bool) -> void:
 	menu_panel.visible = on
+	for n in [top_box, minimap, contract_panel, bottom_box, help_label, info_label, parts_box]:
+		n.visible = not on
+	if on:
+		sim = null
+	var data := GameData.load_dir()
 	for b in menu_panel.find_children("*", "Button", true, false):
 		var id: String = b.get_meta("deck")
-		b.text = tr("DECK_" + id) + "\n\n" + tr("DECKDESC_" + id)
+		var names: Array = []
+		for cid in data.deck(id)["cards"]:
+			names.append(tr("CARD_" + cid))
+		b.text = "%s
+
+%s
+
+%s" % [tr("DECK_" + id).to_upper(), tr("DECKDESC_" + id), tr("UI_DECK_CARDS").format({"list": ", ".join(names)})]
 
 
 func bind(s: Sim) -> void:
@@ -264,10 +317,32 @@ func bind(s: Sim) -> void:
 	selected = -1
 	hand_sig = ""
 	offer_sig = ""
-	minimap.visible = true
+	for n in [top_box, minimap, bottom_box, help_label, info_label]:
+		n.visible = true
 	parts_box.visible = false
 	result_panel.visible = false
 	minimap.setup(s)
+
+
+func show_pause(on: bool) -> void:
+	pause_panel.visible = on and sim != null
+	if not pause_panel.visible:
+		return
+	var deck: Array = []
+	for ci in sim.cards:
+		var mods: Array = []
+		for mid in K.MOD_IDS:
+			if ci.has_mod(K.MOD_BY_ID[mid]):
+				mods.append(tr("MOD_" + mid))
+		var line := tr("CARD_" + ci.def.id)
+		if mods.size() > 0:
+			line = tr("UI_CARD_MODS").format({"card": line, "mods": ", ".join(mods)})
+		deck.append("• " + line)
+	var ups: Array = []
+	for u in sim.hero.upgrade_order:
+		ups.append(tr("UPG_" + u))
+	pause_label.text = tr("UI_PAUSE_TEXT").format({"deck": "
+".join(deck), "build": ", ".join(ups) if ups.size() > 0 else "—", "n": sim.cards.size()})
 
 
 func say(txt: String) -> void:
@@ -291,38 +366,86 @@ static func card_desc(d: CardDef) -> String:
 	return TranslationServer.translate("DESC_" + d.id).format(card_params(d))
 
 
+func _gem(cost: int) -> PanelContainer:
+	var g := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.55, 0.15, 0.75)
+	sb.border_color = Color(1, 0.75, 1)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(20)
+	sb.content_margin_left = 9
+	sb.content_margin_right = 9
+	sb.content_margin_top = 0
+	sb.content_margin_bottom = 0
+	g.add_theme_stylebox_override("panel", sb)
+	var l := _label(24, Color.WHITE)
+	l.name = "Cost"
+	l.text = str(cost)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	g.add_child(l)
+	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return g
+
+
+func _type_line(d: CardDef) -> String:
+	var parts: Array = [tr("TYPE_" + d.type)]
+	for t in d.tag_names:
+		parts.append(tr("TAG_" + t))
+	return " · ".join(parts)
+
+
 func _card_panel(i: int, ci: Sim.CardInst) -> PanelContainer:
 	var d := ci.def
-	var p := _panel(Color(0.1, 0.08, 0.14, 0.95), RARITY_COLORS[d.rarity])
-	p.custom_minimum_size = Vector2(170, 210)
+	var p := _panel(Color(0.08, 0.06, 0.12, 0.97), RARITY_COLORS[d.rarity])
+	var sb: StyleBoxFlat = p.get_theme_stylebox("panel")
+	sb.set_content_margin_all(6)
+	sb.shadow_color = Color(0, 0, 0, 0.5)
+	sb.shadow_size = 6
+	p.custom_minimum_size = Vector2(168, 246)
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	var v := VBoxContainer.new()
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var top := HBoxContainer.new()
-	var cost := _label(30, Color(1, 0.6, 1))
-	cost.name = "Cost"
-	var key := _label(16, Color(0.7, 0.7, 0.7))
+	v.add_theme_constant_override("separation", 2)
+	var art := TextureRect.new()
+	art.custom_minimum_size = Vector2(156, 96)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.texture = CardArt.textures.get(d.id)
+	var over := Control.new()
+	over.custom_minimum_size = Vector2(156, 96)
+	over.add_child(art)
+	art.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var gem := _gem(ci.def.cost)
+	gem.position = Vector2(2, 2)
+	over.add_child(gem)
+	var key := _label(15, Color(0.9, 0.9, 0.9))
 	key.text = str(i + 1)
-	key.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	key.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	top.add_child(cost)
-	top.add_child(key)
-	var name_ := _label(17, RARITY_COLORS[d.rarity].lightened(0.35))
+	key.position = Vector2(140, 2)
+	over.add_child(key)
+	var name_ := _label(16, RARITY_COLORS[d.rarity].lightened(0.45))
 	name_.text = tr("CARD_" + d.id)
 	name_.autowrap_mode = TextServer.AUTOWRAP_WORD
-	var mods := ""
+	name_.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var tl := _label(11, Color(0.7, 0.65, 0.8))
+	tl.text = _type_line(d)
+	tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var mods := []
 	for mid in K.MOD_IDS:
 		if ci.has_mod(K.MOD_BY_ID[mid]):
-			mods += "★ " + tr("MOD_" + mid) + "\n"
-	var ml := _label(13, Color(1, 0.85, 0.4))
-	ml.text = mods.strip_edges()
-	var desc := _label(13, Color(0.85, 0.85, 0.9))
+			mods.append("★ " + tr("MOD_" + mid))
+	var ml := _label(12, Color(1, 0.85, 0.4))
+	ml.text = "  ".join(mods)
+	ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ml.visible = mods.size() > 0
+	var desc := _label(12, Color(0.86, 0.86, 0.92))
 	desc.text = card_desc(d)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD
-	desc.custom_minimum_size = Vector2(150, 0)
-	for n in [top, name_, ml, desc]:
-		n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	desc.custom_minimum_size = Vector2(156, 0)
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for n in [over, name_, tl, ml, desc]:
 		v.add_child(n)
+	for n in v.find_children("*", "Control", true, false):
+		n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(v)
 	p.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.pressed:
@@ -330,6 +453,8 @@ func _card_panel(i: int, ci: Sim.CardInst) -> PanelContainer:
 				card_pressed.emit(i)
 			elif e.button_index == MOUSE_BUTTON_RIGHT:
 				card_sacrificed.emit(i))
+	p.mouse_entered.connect(func(): p.set_meta("hover", true))
+	p.mouse_exited.connect(func(): p.set_meta("hover", false))
 	return p
 
 
@@ -370,10 +495,12 @@ func refresh(delta: float, fps: float) -> void:
 		var b := sim.can_play(k)
 		var cost: Label = p.find_child("Cost", true, false)
 		cost.text = str(sim.card_cost(ci))
-		p.modulate = Color(1, 1, 1) if b == K.Block.OK else Color(0.55, 0.55, 0.6)
-		p.position.y = -18.0 if k == selected else 0.0
+		p.modulate = Color(1, 1, 1) if b == K.Block.OK else Color(0.5, 0.5, 0.58)
+		var lift := -26.0 if k == selected else (-10.0 if p.get_meta("hover", false) else 0.0)
+		p.position.y = lerpf(p.position.y, lift, clampf(delta * 14.0, 0.0, 1.0))
 		var sb: StyleBoxFlat = p.get_theme_stylebox("panel")
 		sb.set_border_width_all(5 if k == selected else 2)
+		sb.shadow_color = Color(0.8, 0.5, 1.0, 0.55) if k == selected else (Color(0.5, 1.0, 0.6, 0.25) if b == K.Block.OK else Color(0, 0, 0, 0.5))
 	var h := sim.hero
 	elixir_bar.max_value = sim.elixir_max
 	elixir_bar.value = sim.elixir
