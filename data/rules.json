@@ -156,7 +156,11 @@
   "elixir_mult_head": 2.0,
   "spell_extra_cost_no_left_arm": 2,
   "arm_aura_radius": 3.0,
-  "entry_distance": 14.0
+  "entry_distance": 14.0,
+  "pillars": 6,
+  "pillar_ring": 6.0,
+  "pillar_radius": 0.9,
+  "pillar_hp": 350
  },
  "curse": {
   "hp_per_stack": 0.03,
