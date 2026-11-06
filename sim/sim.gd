@@ -158,6 +158,11 @@ func _road() -> void:
 	if road.complete and hero.s >= road.length() - 1.5:
 		enter_arena()
 		return
+	var pxp := float(R["hero_xp"].get("passive_per_s", 0.0))
+	if pxp > 0.0:
+		hero.xp += pxp * dt
+		if hero.xp >= hero.xp_needed():
+			hero_gain_xp(0.0001)
 	ritual_mult = 1.0
 	bridge_active = false
 	hero.leash_mult = 1.0
@@ -476,7 +481,7 @@ func hero_gain_xp(v: float) -> void:
 	if v <= 0.0:
 		return
 	hero.xp += v
-	if contract.size() > 0 and contract["goal"]["kind"] == "damage_no_xp":
+	if v >= 0.01 and contract.size() > 0 and contract["goal"]["kind"] == "damage_no_xp":
 		contract["progress"] = 0.0
 	while hero.xp >= hero.xp_needed():
 		hero.xp -= hero.xp_needed()

@@ -94,7 +94,7 @@ def dist(v, lo, hi):
 def goal_score(rows, cards, g):
     """Nota única: soma das distâncias normalizadas às metas (0 = todas cumpridas)."""
     parts = {}
-    heur = [r for r in rows if r["bot"] in ("heuristic", "greedy")]
+    heur = [r for r in rows if r["bot"] == "heuristic"] or [r for r in rows if r["bot"] == "greedy"]
     rnd = [r for r in rows if r["bot"] == "random"]
     if heur:
         parts["smart_win"] = dist(mean([r["win"] for r in heur]), *g["heuristic_win"])
@@ -104,6 +104,8 @@ def goal_score(rows, cards, g):
     parts["arena_time"] = dist(mean([r["arena_t"] for r in rows]), *g["arena_arrival_s"])
     parts["hero_level"] = dist(mean([r["hero_level_arena"] for r in rows]), *g["hero_level_arena"])
     parts["waste"] = max(0.0, mean([r["waste"] for r in rows]) - g["elixir_waste_max"])
+    if "player_levels" in g:
+        parts["player_levels"] = dist(mean([r["player_level_arena"] for r in rows]), *g["player_levels"])
     top = max([c["in_wins_frac"] or 0.0 for k, c in cards.items() if not k.startswith(("mod:", "remove"))] or [0.0])
     parts["card_dominance"] = max(0.0, top - g["card_in_wins_max"])
     return round(sum(parts.values()), 4), parts
@@ -137,6 +139,29 @@ def report_md(s, meta):
     return "\n".join(L) + "\n"
 
 
+def run_all(bots, decks, runs, seed0=1, workers=None, data="res://data", out=None):
+    workers = workers or os.cpu_count() or 4
+    out = out or os.path.join(ROOT, "reports", "tmp")
+    os.makedirs(os.path.join(out, "parts"), exist_ok=True)
+    combos = len(bots) * len(decks)
+    per = max(1, -(-runs * combos // workers))
+    per = min(per, runs)
+    jobs = []
+    for bot in bots:
+        for deck in decks:
+            s = seed0
+            while s < seed0 + runs:
+                e = min(seed0 + runs - 1, s + per - 1)
+                jobs.append((bot, deck, f"{s}-{e}", os.path.join(out, "parts", f"{bot}_{deck}_{s}.json")))
+                s = e + 1
+    res_runs, errs = [], []
+    with cf.ThreadPoolExecutor(max_workers=workers) as ex:
+        for res in ex.map(lambda j: run_chunk(*j, data), jobs):
+            res_runs += res[0]
+            errs += res[1]
+    return res_runs, errs
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bots", default="random,greedy")
@@ -150,21 +175,8 @@ def main():
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     out = a.out or os.path.join(ROOT, "reports", stamp)
     os.makedirs(os.path.join(out, "parts"), exist_ok=True)
-    jobs = []
-    per = max(1, a.runs // max(1, a.workers // (len(a.bots.split(",")) * len(a.decks.split(","))) or 1))
-    for bot in a.bots.split(","):
-        for deck in a.decks.split(","):
-            s = a.seed0
-            while s < a.seed0 + a.runs:
-                e = min(a.seed0 + a.runs - 1, s + per - 1)
-                jobs.append((bot, deck, f"{s}-{e}", os.path.join(out, "parts", f"{bot}_{deck}_{s}.json")))
-                s = e + 1
     t0 = time.time()
-    runs, errs = [], []
-    with cf.ThreadPoolExecutor(max_workers=a.workers) as ex:
-        for res in ex.map(lambda j: run_chunk(*j, a.data), jobs):
-            runs += res[0]
-            errs += res[1]
+    runs, errs = run_all(a.bots.split(","), a.decks.split(","), a.runs, a.seed0, a.workers, a.data, out)
     wall = time.time() - t0
     with open(os.path.join(ROOT, "data", "rules.json"), encoding="utf-8") as f:
         goals = json.load(f)["goals"]

@@ -22,7 +22,8 @@
  "hero_xp": {
   "per_elixir": 20,
   "level2": 100,
-  "growth": 0.15
+  "growth": 0.15,
+  "passive_per_s": 1.8
  },
  "player_xp": {
   "first_level": 900,
@@ -183,7 +184,11 @@
   ],
   "deck_spread_max": 0.05,
   "card_in_wins_max": 0.7,
-  "elixir_waste_max": 0.1
+  "elixir_waste_max": 0.1,
+  "player_levels": [
+   8,
+   12
+  ]
  },
  "units": {
   "retreat_speed": 0.55

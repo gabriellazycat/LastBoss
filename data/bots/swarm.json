@@ -1,0 +1,15 @@
+{
+ "id": "swarm",
+ "kind": "smart",
+ "think_interval": 0.25,
+ "max_cost": 3,
+ "lair_bonus": 0.0,
+ "lair_until": 0,
+ "shrine_reserve": 0,
+ "shrine_lookahead": 0.0,
+ "behind": 0.3,
+ "combo": 0.5,
+ "xp_aversion": 0.0,
+ "teleport_distance": 3.5,
+ "finisher_pick": 0.2
+}
