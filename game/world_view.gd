@@ -41,6 +41,7 @@ var ghost_mat: StandardMaterial3D
 var arena_root: Node3D
 var part_nodes: Array = []
 var altar_nodes: Array = []
+var pillar_nodes: Array = []
 var boss_face: MeshInstance3D
 var cam_pos := Vector3.ZERO
 var zoom := 0.0
@@ -90,7 +91,7 @@ func build(s: Sim, camera: Camera3D) -> void:
 	cam = camera
 	for c in get_children():
 		c.queue_free()
-	for a in [road_meshes, loc_nodes, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, part_nodes, altar_nodes]:
+	for a in [road_meshes, loc_nodes, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, part_nodes, altar_nodes, pillar_nodes]:
 		a.clear()
 	mm_by_def.clear()
 	particles.clear()
@@ -640,6 +641,12 @@ func build_arena() -> void:
 		a.add_child(lab)
 		arena_root.add_child(a)
 		altar_nodes.append(a)
+	for i in A.pillar_pos.size():
+		var pp: Vector2 = A.pillar_pos[i]
+		var pn := _mi(Models.prop("pillar"), Vector3(pp.x, 0, pp.y))
+		pn.scale = Vector3(1.1, 0.75, 1.1)
+		arena_root.add_child(pn)
+		pillar_nodes.append(pn)
 	boss_face = MeshInstance3D.new()
 	var fm := BoxMesh.new()
 	fm.size = Vector3(0.25, 0.05, 6.0)
@@ -845,6 +852,10 @@ func _draw_arena(delta: float) -> void:
 		m.set_shader_parameter("emission_boost", 0.9 if A.fury_t > 0.0 else (0.3 if A.part_attackable(k) else 0.05))
 	for k in altar_nodes.size():
 		altar_nodes[k].visible = A.altar_alive[k]
+	for k in pillar_nodes.size():
+		if pillar_nodes[k].visible and not A.pillar_alive(k):
+			pillar_nodes[k].visible = false
+			emit_particles("explosion", pillar_nodes[k].position + Vector3(0, 1.5, 0), 1.2)
 	boss_face.position = Vector3(A.bx, 0.08, A.by) + Vector3(A.face.x, 0, A.face.y) * 4.5
 	boss_face.look_at(boss_face.position + Vector3(A.face.x, 0, A.face.y), UP)
 
@@ -1051,6 +1062,8 @@ func handle_events(evs: Array) -> void:
 				shake = 0.5
 				if float(ev[3]) >= 0.0:
 					say("SAY_BOSS_PART", 3, true, Color(1.0, 0.6, 0.9))
+				else:
+					shake = 0.2
 			K.Ev.TELEPORT:
 				emit_particles("magic", p + Vector3(0, 1.0, 0), 1.6)
 				emit_particles("magic", Vector3(sim.arena.bx, 1.0, sim.arena.by), 1.6)
