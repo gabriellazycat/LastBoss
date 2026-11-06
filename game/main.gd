@@ -50,6 +50,13 @@ func _ready() -> void:
 		_build_menu_scene()
 		hud.show_menu(true))
 	hud.minimap_clicked.connect(_minimap_click)
+	hud.card_dropped.connect(func(i: int, sp: Vector2):
+		if sim and hud.selected == i:
+			var mm := hud.minimap
+			if mm.visible and mm.get_global_rect().has_point(sp):
+				_play_at(mm.to_world(sp - mm.global_position))
+			else:
+				_click_world(sp))
 	if DisplayServer.get_name() != "headless":
 		var art := CardArt.new()
 		add_child(art)
@@ -318,6 +325,40 @@ func _ui_test() -> void:
 	await get_tree().process_frame
 	print("uitest oferta escolhida com tecla 1: ", had_offer and sim.offers.is_empty())
 	ok = ok and had_offer and sim.offers.is_empty()
+	# Arrastar a carta 1 até o mapa.
+	sim.elixir = 10.0
+	await get_tree().process_frame
+	var before := 0
+	for k2 in sim.stats["played"]:
+		before += int(sim.stats["played"][k2])
+	var panel: Control = hud.card_panels[0]
+	var c0 := panel.get_global_rect().get_center()
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
+	down.pressed = true
+	down.position = c0
+	down.global_position = c0
+	Input.parse_input_event(down)
+	await get_tree().process_frame
+	var tgt := cam.unproject_position(Vector3(sim.hero.x, 0, sim.hero.y) + Vector3(5, 0, -3))
+	var mv := InputEventMouseMotion.new()
+	mv.position = tgt
+	mv.global_position = tgt
+	mv.button_mask = MOUSE_BUTTON_MASK_LEFT
+	Input.parse_input_event(mv)
+	var up := InputEventMouseButton.new()
+	up.button_index = MOUSE_BUTTON_LEFT
+	up.pressed = false
+	up.position = tgt
+	up.global_position = tgt
+	Input.parse_input_event(up)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var after := 0
+	for k2 in sim.stats["played"]:
+		after += int(sim.stats["played"][k2])
+	print("uitest arrastar e soltar jogou a carta: ", after == before + 1)
+	ok = ok and after == before + 1
 	print("uitest resultado: ", "OK" if ok else "FALHOU")
 	get_tree().quit(0 if ok else 1)
 
@@ -451,6 +492,10 @@ func _unhandled_input(e: InputEvent) -> void:
 				_click_world(e.position)
 		elif e.button_index == MOUSE_BUTTON_RIGHT:
 			hud.selected = -1
+		elif e.button_index == MOUSE_BUTTON_WHEEL_UP:
+			world.zoom = clampf(world.zoom - 2.0, -12.0, 20.0)
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			world.zoom = clampf(world.zoom + 2.0, -12.0, 20.0)
 	if e is InputEventKey and e.pressed and not e.echo:
 		var kc: int = e.keycode
 		if kc >= KEY_1 and kc <= KEY_9:

@@ -3,3 +3,4 @@
 reports/
 export/
 __pycache__/
+*.translation

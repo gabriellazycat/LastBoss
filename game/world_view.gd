@@ -43,6 +43,7 @@ var part_nodes: Array = []
 var altar_nodes: Array = []
 var boss_face: MeshInstance3D
 var cam_pos := Vector3.ZERO
+var zoom := 0.0
 var shake := 0.0
 var bubble: Label3D
 var bubble_t := 0.0
@@ -843,7 +844,7 @@ func _camera(alpha: float, delta: float) -> void:
 	if sim.phase == K.Phase.ARENA:
 		target = target.lerp(Vector3(sim.arena.bx, 0, sim.arena.by), 0.4)
 	cam_pos = cam_pos.lerp(target, clampf(delta * 5.0, 0.0, 1.0))
-	var dist := 26.0 + minf(float(sim.units.count), 300.0) * 0.04
+	var dist := 26.0 + zoom + minf(float(sim.units.count), 300.0) * 0.04
 	if sim.phase == K.Phase.ARENA:
 		dist += 8.0
 	var off := Vector3(0, dist * 0.8, dist * 0.6)

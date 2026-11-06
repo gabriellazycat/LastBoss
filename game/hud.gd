@@ -8,6 +8,7 @@ signal offer_chosen(k: int)
 signal deck_chosen(id: String)
 signal restart
 signal minimap_clicked(pos: Vector2)
+signal card_dropped(i: int, screen_pos: Vector2)
 
 const RARITY_COLORS := [Color(0.62, 0.62, 0.62), Color(0.35, 0.8, 0.35), Color(0.3, 0.55, 1.0), Color(0.7, 0.35, 1.0)]
 
@@ -48,6 +49,7 @@ var hint_t := 0.0
 var hints_seen: Dictionary = {}
 var pause_panel: PanelContainer
 var pause_label: Label
+var sac_zone: Button
 var top_box: HBoxContainer
 var bottom_box: VBoxContainer
 
@@ -188,6 +190,14 @@ func _build() -> void:
 	eb.alignment = BoxContainer.ALIGNMENT_CENTER
 	elixir_bar = _bar(Color(0.85, 0.3, 0.95), 760, 26)
 	elixir_label = _label(22, Color(1, 0.8, 1))
+	sac_zone = Button.new()
+	sac_zone.text = "UI_SACRIFICE"
+	sac_zone.focus_mode = Control.FOCUS_NONE
+	sac_zone.add_theme_font_size_override("font_size", 14)
+	sac_zone.pressed.connect(func():
+		if selected >= 0:
+			card_sacrificed.emit(selected))
+	eb.add_child(sac_zone)
 	eb.add_child(elixir_bar)
 	eb.add_child(elixir_label)
 	bottom.add_child(eb)
@@ -501,11 +511,18 @@ func _card_panel(i: int, ci: Sim.CardInst) -> PanelContainer:
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(v)
 	p.gui_input.connect(func(e: InputEvent):
-		if e is InputEventMouseButton and e.pressed:
-			if e.button_index == MOUSE_BUTTON_LEFT:
+		if e is InputEventMouseButton:
+			if e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 				card_pressed.emit(i)
-			elif e.button_index == MOUSE_BUTTON_RIGHT:
-				card_sacrificed.emit(i))
+			elif e.pressed and e.button_index == MOUSE_BUTTON_RIGHT:
+				card_sacrificed.emit(i)
+			elif not e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				# Arrastar e soltar: fora da mão = posicionar; sobre o ícone = sacrificar.
+				var gp: Vector2 = p.get_global_transform() * e.position
+				if sac_zone.get_global_rect().has_point(gp):
+					card_sacrificed.emit(i)
+				elif not hand_box.get_global_rect().grow(8).has_point(gp):
+					card_dropped.emit(i, gp))
 	p.mouse_entered.connect(func(): p.set_meta("hover", true))
 	p.mouse_exited.connect(func(): p.set_meta("hover", false))
 	return p

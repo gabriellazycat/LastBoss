@@ -1,55 +1,52 @@
-# Progresso — Marco 1 (run completa jogável, feia)
+# Progresso — Last Boss
 
 ## Estado (06/11/2026)
 
-Tudo do marco 1 está implementado e testado. A arte é feita de peças cinzas e o balanceamento ainda não foi ajustado.
+O MVP está jogável do começo ao fim, com arte, áudio e interface polidos. Os números estão sendo ajustados pelo bot na branch `balance`.
 
-| Item do marco 1 | Estado |
+| Área | Estado |
 |---|---|
-| Estrada gerada com 2–3 bifurcações, os 6 locais e minimapa | ✓ |
-| Escudeiro com IA por pontuação (rota, movimento, mapa de perigo, alvo, upgrades) e escudo frontal | ✓ |
-| Elixir, mão (5, ou 6 na Horda), deck único, sacrifício, anel de 3–12 m | ✓ |
-| As 18 cartas de campo com os 7 arquétipos; 4 de rota; 4 de covil; 5 modificadores | ✓ |
-| XP e level-up do herói (15 upgrades), do jogador (ofertas por raridade), santuários, 8 contratos | ✓ |
-| Arena: corpo em 4 partes, 5 altares, teleporte, 6 cartas de finalização | ✓ |
-| Bots Aleatório e Guloso headless em lote paralelo, JSON e relatório | ✓ (360 runs em 68 s) |
-| Pooling e MultiMesh: 500 unidades | ✓ 166 FPS em média, 122 no mínimo (RTX 2060) |
-| Simulação: 15 min de jogo em < 5 s | ✓ ~1,5–2 s por run |
-| Texto pt/en pela tradução da Godot | ✓ |
+| Simulação separada do visual (determinística, passo fixo, headless) | ✓ ~1,5–2 s por run de 12 min |
+| Estrada com bifurcações, 6 locais com cenário próprio, minimapa | ✓ |
+| Escudeiro: IA por pontuação, escudo frontal, 15 upgrades, falas | ✓ |
+| 32 cartas, 7 arquétipos, 5 modificadores, 8 contratos, santuários | ✓ |
+| Arena: chefe em 4 partes, 5 altares, teleporte, 6 finalizações | ✓ |
+| Os 5 perfis de bot (Aleatório, Guloso, Heurístico, Economista, Enxame) | ✓ |
+| Ajustador automático (branch `balance`, um commit por ciclo) | ✓ |
+| Arte: shader de paleta única, modelos low-poly, cenário espalhado, covil, arena | ✓ peças por código, prontas para trocar por modelos do Blender |
+| Efeitos: partículas, orbes de alma voando até o herói, tremor, flashes | ✓ |
+| Interface: cartas com arte 3D, menu no covil 3D, pausa com deck e build, dicas na primeira vez | ✓ |
+| Áudio: efeitos e trilha em camadas que cresce até o covil, trilha da arena | ✓ sintetizados (provisórios) |
+| Controles: mouse (clique ou arrastar), teclado, controle | ✓ |
+| pt/en pela tradução da Godot | ✓ |
+| 500 unidades | ✓ 166 FPS em média (RTX 2060) |
 | Testes, teste da entrada real, executável exportado | ✓ |
+
+## Qual versão jogar
+
+- `main`: tudo, com os números da planilha mais as mudanças de regra.
+- `balance`: o mesmo, com os números do ajustador. Pelo DECISOES.md, ela só entra na `main` depois que você jogar uma run com ela. Para jogar: `git checkout balance`, abrir na Godot e apertar F5. Os relatórios de cada ciclo ficam em `balance_reports/`.
 
 ## Como rodar
 
-O executável fica em `C:\Users\gabri\AppData\Local\Microsoft\WinGet\Packages\GodotEngine...\Godot_v4.7.2-stable_win64_console.exe` (abaixo, `godot`).
+O executável da Godot fica em `C:\Users\gabri\AppData\Local\Microsoft\WinGet\Packages\GodotEngine...\Godot_v4.7.2-stable_win64_console.exe` (abaixo, `godot`).
 
 - Jogar: abra o projeto na Godot e aperte F5, ou rode `export/LastBoss.exe` depois de exportar.
-- Testes: `godot --headless --path . res://tests/tests.tscn` (sai com o número de falhas).
-- Teste da entrada real (precisa de janela): `godot --path . -- --uitest=1`
-- Ver o bot jogando: `godot --path . -- --autoplay=greedy --deck=ruin --speed=4`. Também aceita `--skip=600` (pula direto para perto da arena), `--quit=60` e `--shots=10,30 --out=<pasta>` (capturas de tela).
+- Testes: `godot --headless --path . res://tests/tests.tscn`
+- Teste da entrada real (janela): `godot --path . -- --uitest=1`
+- Ver um bot jogando: `godot --path . -- --autoplay=heuristic --deck=ruin --speed=2`. Também aceita `--skip=600`, `--quit=60` e `--shots=10,30 --out=<pasta>`.
 - Estresse: `godot --path . --disable-vsync -- --autoplay=random --stress=500 --quit=25`
-- Lote de balanceamento: `python -I tools/run_batch.py --runs 60` grava `reports/<data>/report.md`, `summary.json` e `runs.json`.
-- Reconverter a planilha (sobrescreve `data/`): `python -I tools/xlsx_to_json.py`
+- Lote: `python -I tools/run_batch.py --bots heuristic,random,greedy --runs 60`
+- Ajustador (na branch `balance`): `python -I tools/tuner.py --cycles 15 --runs 8`
+- Regerar o áudio: `python -I tools/make_audio.py`
 - Exportar: `godot --headless --path . --export-release "Windows Desktop" export/LastBoss.exe`
 
-Controles: teclas 1–6 escolhem a carta e o clique posiciona; X+número ou clique direito na carta sacrifica; M amplia o minimapa (clique nele para usar cartas de rota); Q/E trocam de altar na arena; Espaço pausa; F muda a velocidade. No controle: L1/R1 escolhem, o analógico direito move o cursor, A confirma, segurar B sacrifica, Select abre o minimapa, o direcional troca de altar.
+Controles: teclas 1–6 escolhem a carta e o clique posiciona, ou arraste a carta até o mapa. Clique direito, X+número ou arrastar até "Sacrificar" sacrifica. M amplia o minimapa (ele abre sozinho com cartas de rota). Q/E ou clique trocam de altar na arena. A roda do mouse dá zoom, Espaço/Esc pausa e F muda a velocidade. No controle: L1/R1 escolhem, o analógico direito move o cursor, A confirma, segurar B sacrifica, Select abre o minimapa, o direcional troca de altar e Start pausa.
 
-## Último lote (60 runs por combinação)
+## O que fica para depois
 
-| bot | deck | vitória | chegada à arena | herói na arena |
-|---|---|---|---|---|
-| Guloso | Horda | 0% | 674 s | nv 16,8 |
-| Guloso | Ruína | 77% | 551 s | nv 3,8 |
-| Guloso | Tesouro | 0% | 616 s | nv 13,0 |
-| Aleatório | Horda | 5% | 631 s | nv 11,7 |
-| Aleatório | Ruína | 73% | 556 s | nv 6,1 |
-| Aleatório | Tesouro | 2% | 719 s | nv 14,7 |
-
-Leitura: a chegada à arena (550–720 s) e o nível do herói já estão perto das metas. O problema principal é o deck Ruína. Feitiços não dão XP, então o herói chega à arena fraco, e o próprio P8 da planilha já pedia para medir isso. Horda e Tesouro levam o herói a níveis altos demais. Esse é o trabalho do ajustador automático.
-
-## Próximos passos (depois do marco 1, como no DECISOES.md)
-
-1. Ajustador automático na branch `balance`: edita o JSON dentro dos limites (±30%, custo ±1 a cada 10 ciclos, `data/locked.json`) e faz um commit por ciclo com o relatório.
-2. Bots Heurístico, Economista e Enxame, e os exploradores.
-3. Arte do Blender no lugar das peças cinzas; efeitos, áudio, menu 3D no covil.
-4. Pilares da arena, salvamento no meio da run, tutorial.
-5. O lote não roda pelo executável exportado (builds de release não aceitam caminho de cena); ele roda pelo binário do editor.
+1. Modelos e animações do Blender (Quaternius/Kenney) no lugar das peças por código, começando pelo herói e pelo chefe.
+2. Trilha e efeitos sonoros finais (os atuais são sintetizados).
+3. Exploradores (bots que evoluem procurando estratégias que quebram o jogo).
+4. Pilares quebráveis da arena, salvamento no meio da run, tutorial guiado.
+5. Testes com pessoas: o bot mede equilíbrio, não diversão.
