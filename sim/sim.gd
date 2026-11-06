@@ -139,6 +139,7 @@ func _elixir() -> void:
 	var col: CardDef = data.card("soul_collector")
 	rate *= 1.0 + float(col.fx["elixir_regen"]) * int(lair.get("soul_collector", 0))
 	rate *= ritual_mult
+	rate *= float(deck_rules.get("elixir_mult", 1.0))
 	if phase == K.Phase.ARENA and arena.part_alive("head"):
 		rate *= float(R["arena"]["elixir_mult_head"])
 	elixir += rate * dt
@@ -304,12 +305,16 @@ func _finish(r: int) -> void:
 
 func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card_id: String) -> float:
 	var real := hero.take_damage(amount, sx, sy, tags, kind)
-	if real <= 0.0:
+	var gain := real
+	if R["player_xp"].get("count_shield", false):
+		gain += hero.last_absorbed
+	if gain <= 0.0:
 		return 0.0
-	emit(K.Ev.DAMAGE_HERO, hero.x, hero.y, real, tags)
+	if real > 0.0:
+		emit(K.Ev.DAMAGE_HERO, hero.x, hero.y, real, tags)
 	var dbc: Dictionary = stats["dmg_by_card"]
-	dbc[card_id] = float(dbc.get(card_id, 0.0)) + real
-	player_xp += real
+	dbc[card_id] = float(dbc.get(card_id, 0.0)) + gain
+	player_xp += gain
 	var P: Dictionary = R["player_xp"]
 	while player_xp >= _player_next():
 		player_xp -= _player_next()

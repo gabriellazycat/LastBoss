@@ -68,6 +68,8 @@ Cada carta é um objeto com `id`, `category` (field/route/lair/finisher), `type`
 - **Sustentação do herói** (a planilha prevê ~18 mil de dano no herói na fase 1 e ele tem 1500–4000 de vida): regeneração de 1,2% da vida máx./s em combate e 3%/s fora de combate, e golpe em arco de 110° (o Escudeiro corta o que está à frente). Tudo em `hero_escudeiro.json`.
 - **Atiradores recuam a 55% da velocidade** (`rules.units.retreat_speed`); senão faziam kiting infinito no herói. Enquanto persegue um alvo, a coleira do herói até a estrada estica até 18 m.
 - **XP de treino do herói** (`rules.hero_xp.passive_per_s` = 1,8/s): sem isso, não jogar quase nada vencia (o herói chegava no nível 3 à arena). Agora ele chega por volta do nível 8 mesmo sem ser alimentado.
+- **Na arena o herói não regenera** (`regen_in_arena: false`): ele chega "com a vida atual" (GDD), e com regeneração a luta final era quase invencível.
+- **Dano absorvido pelo escudo conta para o seu nível** (`player_xp.count_shield`): bater no escudo é causar dano no herói.
 - **A IA do herói não mira a Torre de Gárgula** (ela vira pedra quando ele chega perto): ele passa direto.
 - **Pilares quebráveis da arena** e **salvamento no meio da run** ficam para depois do marco 1.
 - Risco de desempenho: 15 min em < 5 s com GDScript. Se não bater, o laço das unidades vai para C# ou GDExtension (o plano B do GDD).
