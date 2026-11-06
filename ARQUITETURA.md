@@ -45,7 +45,7 @@ Cada carta é um objeto com `id`, `category` (field/route/lair/finisher), `type`
 ## Decisões que tomei no seu lugar (AFK) e riscos
 
 - **Passo de 20 Hz** na simulação; o visual interpola. Risco: colisões rápidas menos precisas (aceitável para monstros a ≤ 6 m/s).
-- **XP só quando o herói mata.** Kamikaze que explode, unidade sacrificada, ressuscitada, que expira ou que fica para trás (> 50 m) não dá XP.
+- **XP:** todo monstro que morre dá XP, inclusive o Kamikaze que explode. Não dão XP: sacrificada ou ressuscitada (Alma), espectro, unidade que fica para trás (> 50 m).
 - **Feitiços ignoram a distância mínima do anel** (só o máximo de 12 m vale), como no Clash. Monstros e estruturas respeitam 3–12 m.
 - **Teleporte:** grátis com recarga de 8 s (o GDD deixava "8 s ou 2 de elixir"); o custo fica em dados (`teleport_cost: 0`).
 - **Sacrifício** devolve 1 de elixir e manda a carta para o fim do deck (não remove).

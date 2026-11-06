@@ -20,7 +20,7 @@
   "flee_weight": 1.2,
   "road_weight": 1.0,
   "target_weight": 1.4,
-  "engage_radius": 7.0,
+  "engage_radius": 10.0,
   "low_hp": 0.5,
   "danger_cell": 2.0,
   "danger_size": 16,
@@ -198,5 +198,9 @@
     "big_hp": 500
    }
   }
- ]
+ ],
+ "cleave_arc": 110.0,
+ "regen_per_s": 0.03,
+ "regen_delay": 3.0,
+ "regen_combat": 0.012
 }

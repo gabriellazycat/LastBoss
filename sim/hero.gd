@@ -68,6 +68,7 @@ var second_used := false
 var taken: Dictionary = {}
 var taken_total := 0.0
 var leash_mult := 1.0
+var last_hit_t := -100.0
 var danger := PackedFloat32Array()
 var dn := 16
 var dcell := 2.0
@@ -150,6 +151,10 @@ func update(dt: float) -> void:
 		seg = int(pr.y)
 		road_dist = pr.z
 		var leash: float = float(sim.data.rules["road"]["leash"]) * leash_mult
+		if target_kind == TGT_UNIT and leash_mult >= 1.0:
+			var tp := _target_pos()
+			var tr := sim.road.project(tp, seg)
+			leash = clampf(tr.z + 2.0, leash, 18.0)
 		if road_dist > leash:
 			var q := sim.road.point_at(s)
 			var k := (road_dist - leash) / road_dist
@@ -310,7 +315,10 @@ func _attack(dt: float) -> void:
 		curses -= 1
 	match target_kind:
 		TGT_UNIT:
+			var tx := sim.units.px[target]
+			var ty := sim.units.py[target]
 			sim.hero_hits_unit(target, _unit_mult(target, dmg, true))
+			_cleave(tx, ty, dmg)
 		TGT_LOC:
 			var loc: Dictionary = sim.road.locations[target]
 			loc["hp"] -= dmg
@@ -321,6 +329,24 @@ func _attack(dt: float) -> void:
 		TGT_ALTAR:
 			var m2 := 2.0 if has("stone_hammer") else 1.0
 			sim.arena.damage_altar(target, dmg * m2)
+
+
+## Golpe em arco: atinge também quem está à frente, no alcance.
+func _cleave(tx: float, ty: float, dmg: float) -> void:
+	var arc: float = H.get("cleave_arc", 0.0)
+	if arc <= 0.0:
+		return
+	var dir := Vector2(tx - x, ty - y).normalized()
+	var c := cos(deg_to_rad(arc * 0.5))
+	var r: float = H["attack_range"] + radius
+	var U := sim.units
+	U.within(x, y, r + 0.4, tmp)
+	for i in tmp.duplicate():
+		if i == target or U.alive[i] == 0 or (U.flags[i] & K.F_STONE):
+			continue
+		var v := Vector2(U.px[i] - x, U.py[i] - y)
+		if v.length() < 0.01 or v.normalized().dot(dir) >= c:
+			sim.hero_hits_unit(i, _unit_mult(i, dmg, false))
 
 
 func _strike(big: bool) -> float:
@@ -377,6 +403,12 @@ func _abilities() -> void:
 			dash_y = dir.y
 			dash_left = p["distance"]
 			slow_t = 0.0
+	if hp > 0.0 and hp < max_hp():
+		var rg: float = H.get("regen_combat", 0.0)
+		if near_count == 0 and sim.t - last_hit_t > float(H.get("regen_delay", 3.0)):
+			rg = H.get("regen_per_s", 0.0)
+		if rg > 0.0:
+			hp = minf(max_hp(), hp + max_hp() * rg * sim.dt)
 	if has("second_wind") and not second_used:
 		var p: Dictionary = upgrades["second_wind"]
 		if hp_frac() < float(p["below"]):
@@ -451,7 +483,7 @@ func _choose_target() -> void:
 				lure_x = U.px[i]
 				lure_y = U.py[i]
 			continue
-		if d > unit_r or (U.flags[i] & K.F_STONE):
+		if d > unit_r or (U.flags[i] & K.F_STONE) or di == U.d_tower:
 			continue
 		var th := U.dmg[i] / maxf(U.atk_int[i], 0.1)
 		var sc := th * 0.05 + (1.0 - U.hp[i] / U.max_hp[i]) + float(strat.get(sim.data.cards[di].id, 0.0)) - d * 0.35
@@ -597,6 +629,7 @@ func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) 
 		return 0.0
 	amount = minf(amount, hp)
 	hp -= amount
+	last_hit_t = sim.t
 	if src_tags & K.TAG_PACK: note("pack", amount)
 	if src_tags & K.TAG_UNDEAD: note("undead", amount)
 	if src_tags & K.TAG_SHADOW: note("shadow", amount)

@@ -184,5 +184,8 @@
   "deck_spread_max": 0.05,
   "card_in_wins_max": 0.7,
   "elixir_waste_max": 0.1
+ },
+ "units": {
+  "retreat_speed": 0.55
  }
 }

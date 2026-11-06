@@ -165,6 +165,7 @@ func update(dt: float) -> void:
 	var fdy := hero.face_y
 	var hero_frac := hero.hp / hero.max_hp()
 	var nose := hero.has("treasure_nose")
+	var retreat_mult: float = sim.data.rules["units"]["retreat_speed"]
 	n_pack = 0; n_struct = 0; n_cultists = 0; n_kings = 0
 	for i in hi:
 		if alive[i] == 0:
@@ -224,7 +225,7 @@ func update(dt: float) -> void:
 				K.Arch.SHOOTER:
 					var retreat: float = sim.data.cards[di].fx.get("retreat", rng[i] * 0.4)
 					if d < retreat:
-						_step(i, px[i] - dx / d * 4.0, py[i] - dy / d * 4.0, speed, dt)
+						_step(i, px[i] - dx / d * 4.0, py[i] - dy / d * 4.0, speed * retreat_mult, dt)
 					elif d > rng[i] * 0.85:
 						_step(i, hx, hy, speed, dt)
 					attack = d <= rng[i] + hr
