@@ -173,3 +173,11 @@ Decidido com você no grilling de 09/11, depois do playtest. Implementado com vo
   - O círculo do Ritual com vida.
   - "Nenhum local ajuda o herói" (a Fonte cura 15% se ele terminar de beber, por escolha sua).
 
+## Direção de arte D é o padrão (09/11/2026)
+
+Você escolheu a direção **D · Aventura, dia**: modelos CC0 (KayKit e Quaternius, animados) e luz de dia no estilo Risk of Rain 2. Detalhes em `docs/ESTUDO_DE_ARTE.md`.
+
+- **Na `main`:** o estudo de arte foi mesclado, e D virou o padrão (`look_ground` 7, `look_hero` 5, `look_enemies` 5).
+- **Migração:** quem já tinha configuração salva recebe D uma vez (`art_rev` em `game/settings.gd`). As outras direções seguem em Configurações → Visual.
+- **Pendente:** a arena, o chefe e os prédios ainda são os antigos e destoam. É o próximo passo da arte.
+
