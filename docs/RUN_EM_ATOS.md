@@ -1,6 +1,6 @@
 # Run em 3 atos, disputas novas, relíquias e eventos (09/11/2026)
 
-Decidido com você no grilling de 09/11, depois do seu playtest. A maior parte foi implementada com você fora (AFK, autonomia total). Branch **`atos-2026-11`**; a `main` não mudou.
+Decidido com você no grilling de 09/11, depois do seu playtest. A maior parte foi implementada com você fora (AFK, autonomia total). Feito no branch `atos-2026-11` e levado para a `main` em 09/11/2026, junto com a direção de arte D.
 
 ## O que você pediu, e o que mudou
 

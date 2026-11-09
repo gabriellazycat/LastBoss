@@ -2,7 +2,7 @@
 
 ## Run em 3 atos, disputas novas, relíquias, eventos e compêndio (09/11/2026)
 
-Feito a partir do seu playtest, com você fora. Tudo está no branch **`atos-2026-11`** (a `main` não mudou). O resumo, as decisões que tomei no seu lugar e os riscos estão em `docs/RUN_EM_ATOS.md`.
+Feito a partir do seu playtest, com você fora; **na `main` desde 09/11/2026**, junto com a direção de arte D como padrão. Executável: `export/LastBoss.exe` (os atalhos por estilo estão em `export/atos_e_arte/`). O resumo, as decisões que tomei no seu lugar e os riscos estão em `docs/RUN_EM_ATOS.md`.
 
 - **Estrutura da run:**
   - 3 atos, 20 a 24 locais e 7 heróis.
@@ -25,7 +25,7 @@ Feito a partir do seu playtest, com você fora. Tudo está no branch **`atos-202
   - O `--uitest` está igual à versão anterior: só o arrastar falha, como antes.
   - O `--menutest` não rodou neste ambiente, nem na versão anterior.
 - **Balanceamento:** o bot bom ainda não supera o aleatório. Os números são um meio-termo (ver o doc).
-- **Arte:** o estudo de RoR2, Soulstone e Megabonk e três direções novas (D, E e F), selecionáveis em Configurações → Visual, estão no branch `claude/adoring-wing-ad2dc3`, separado deste.
+- **Arte:** o estudo de RoR2, Soulstone e Megabonk está em `docs/ESTUDO_DE_ARTE.md`. A direção D (Aventura, dia) é o padrão; as outras seguem em Configurações → Visual.
 - **Capturas novas:** `--offerat=2 --offer=relic`, `--offer=event[:id]`, `--offer=contest:<tavern|fountain|ritual|shrine|bridge>`, `--menu=compendium`.
 
 ## Rodada de balanceamento e bugs (09/11/2026)
