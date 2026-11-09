@@ -119,7 +119,7 @@ DECK_ruin,Ruína,Ruin
 DECK_treasure,Tesouro,Treasure
 DECKDESC_horde,"Muitas unidades baratas. Mão de 6, mas os heróis têm +10% de vida.","Many cheap units. Hand of 6, but the heroes have +10% health."
 DECKDESC_ruin,Feitiços e estruturas. Feitiços +15% de dano; monstros custam +1.,Spells and structures. Spells +15% damage; monsters cost +1.
-DECKDESC_treasure,Economia e enganação. Começa com 8 de elixir; a recompensa de queda tem 4 opções.,Economy and trickery. Starts with 8 elixir; the fall reward has 4 choices.
+DECKDESC_treasure,"Economia e enganação. Começa com 7 de elixir e a recompensa de queda tem 4 opções, mas os heróis têm +25% de vida.","Economy and trickery. Starts with 7 elixir and the fall reward has 4 choices, but the heroes have +25% health."
 UI_CHOOSE_DECK,Escolha o Pacto do Lorde das Trevas,Choose the Dark Lord's Pact
 UI_HERO_LEVEL,Herói nv {n},Hero lv {n}
 UI_HERO_OF,Herói {k} de {n},Hero {k} of {n}

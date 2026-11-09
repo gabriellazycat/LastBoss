@@ -163,7 +163,7 @@ def main():
                    "shrine_options": 3, "shrine_min_rarity": "rare", "contract_options": 2},
         "contracts": {"first_at": [90, 150], "interval": [120, 180]},
         # Mapa de rotas (09/11/2026, abas Mapa - ): rede de nós, Loja no lugar da Vila, Fonte cura as suas unidades.
-        "road": {"target_length": 1500.0, "point_step": 6.0, "lanes": 3, "lane_width": 30.0, "row_nodes": [2, 3],
+        "road": {"target_length": 1400.0, "point_step": 6.0, "lanes": 3, "lane_width": 30.0, "row_nodes": [2, 3],
                  "extra_link": 0.45, "length_slack": 1.04, "fork_decision_distance": 25.0, "leash": 8.0,
                  "max_backtrack": 8.0, "route_locations": [8, 10], "shrines": [2, 3], "shrine_chance": 0.24,
                  "shops": [1, 2], "location_weights": {"tavern": 2, "fountain": 2, "ritual": 2, "bridge": 2}},
@@ -185,7 +185,7 @@ def main():
         "status": {"fear": 1.5, "slow": 0.5, "soaked": 6.0},
         "fire_vs_soaked": 2.0,
         "goals": {"heuristic_win": [0.50, 0.65], "random_win_max": 0.10, "arena_arrival_s": [660, 780],
-                  "hero_level_arena": [12, 16], "deck_spread_max": 0.05, "card_in_wins_max": 0.70,
+                  "hero_level_arena": [3, 4], "deck_spread_max": 0.05, "card_in_wins_max": 0.70,
                   "elixir_waste_max": 0.10},
     }
 
@@ -231,10 +231,11 @@ def main():
         pid = parts[r["Parte (Lorde das Trevas)"]]
         boss["parts"].append({"id": pid, "hp": num(r["Vida"]), "offset": offs[pid], "radius": 0.9})
     deck_ids = {"Horda": "horde", "Ruína": "ruin", "Tesouro": "treasure"}
+    # Regras dos Pactos (não estão na planilha): as mesmas de data/boss_lorde.json desde a rodada de 09/11/2026.
     deck_rules = {
-        "horde": {"hand_size": 6, "hero_xp_mult": 1.10},
-        "ruin": {"spell_damage_mult": 1.15, "monster_cost_add": 1},
-        "treasure": {"elixir_start": 8, "offer_options": 2},
+        "horde": {"hand_size": 6, "elixir_mult": 1.0, "hero_hp_mult": 1.1},
+        "ruin": {"spell_damage_mult": 1.15, "monster_cost_add": 1, "elixir_mult": 1.0},
+        "treasure": {"elixir_start": 7, "offer_options": 4, "elixir_mult": 1.0, "hero_hp_mult": 1.25},
     }
     name_to_id = {**FIELD_IDS, **ROUTE_IDS, **FIN_IDS}
     for r in rows(wb["Decks"]):

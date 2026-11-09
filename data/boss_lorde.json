@@ -95,9 +95,10 @@
     "web"
    ],
    "rules": {
-    "elixir_start": 8,
+    "elixir_start": 7,
     "offer_options": 4,
-    "elixir_mult": 1.0
+    "elixir_mult": 1.0,
+    "hero_hp_mult": 1.25
    }
   }
  ]

@@ -83,7 +83,7 @@ func t_costs() -> void:
 	tw.def = data.card("gargoyle_tower")
 	check(s.card_cost(tw) == 4, "Ruína: Torre (estrutura) continua 4")
 	var t := _sim(1, "treasure")
-	check(int(t.elixir) == 8, "Tesouro começa com 8 de elixir")
+	check(int(t.elixir) == 7, "Tesouro começa com 7 de elixir")
 
 
 func t_sacrifice_and_cycle() -> void:
