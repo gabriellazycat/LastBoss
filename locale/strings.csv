@@ -386,6 +386,8 @@ SET_look_hud,Interface (HUD),Interface (HUD)
 SET_look_ground,Chão e fundo,Ground and backdrop
 SET_look_hero,Herói,Hero
 SET_look_enemies,Monstros,Monsters
+SET_look_dir,Direção de arte,Art direction
+SET_look_dir_custom,(mistura personalizada),(custom mix)
 UI_LOOKS_NOTE,Variações em avaliação. Trocar recarrega o jogo na tela inicial (a run salva continua em Continuar).,Art variations under review. Changing one reloads the game at the title screen (a saved run stays under Continue).
 N3_rat_horde,N3: os ratos [[pierce|atravessam o escudo]].,L3: the rats [[pierce|pierce the shield]].
 N3_skeleton_archers,"N3: flechas de [[fire|Fogo]] queimam o herói ({burn_dps} por segundo, {burn_s} s).","L3: [[fire|Fire]] arrows burn the hero ({burn_dps} per second, {burn_s} s)."

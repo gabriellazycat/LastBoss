@@ -153,11 +153,11 @@ func _rebuild() -> void:
 			note.autowrap_mode = TextServer.AUTOWRAP_WORD
 			note.custom_minimum_size = Vector2(700, 0)
 			body.add_child(note)
-			var opts := [0, 1, 2, 3, 4]
 			_choice("look_hud", _look_names(UiSkins.NAMES), [0, 1, 2, 3, 4, 5])
-			_choice("look_ground", _look_names(GroundLooks.NAMES), opts)
-			_choice("look_hero", _look_names(Looks.NAMES), opts)
-			_choice("look_enemies", _look_names(Looks.NAMES), opts)
+			_direction_choice()
+			_choice("look_ground", _look_names(GroundLooks.NAMES), range(GroundLooks.NAMES.size()))
+			_choice("look_hero", _look_names(Looks.NAMES), range(Looks.NAMES.size()))
+			_choice("look_enemies", _look_names(Looks.NAMES), range(Looks.NAMES.size()))
 	if UiSkins.covil():
 		_fit_scroll.call_deferred()
 	# Volta ao tamanho mínimo: um contêiner não encolhe sozinho depois de uma aba mais larga.
@@ -171,6 +171,23 @@ func _fit_scroll() -> void:
 	var scroll := body.get_parent() as ScrollContainer
 	scroll.custom_minimum_size.y = clampf(body.get_combined_minimum_size().y + 6.0, 120.0, 380.0)
 	size = Vector2.ZERO
+
+
+## Direção de arte inteira (ArtDirections): troca chão, herói e monstros de uma vez.
+func _direction_choice() -> void:
+	var row := _row("SET_look_dir")
+	var o := OptionButton.new()
+	o.custom_minimum_size = Vector2(220, 40)
+	for d in ArtDirections.LIST:
+		o.add_item(d["name"])
+	o.add_item(tr("SET_look_dir_custom"))
+	var cur := ArtDirections.current()
+	o.selected = cur if cur >= 0 else ArtDirections.LIST.size()
+	o.item_selected.connect(func(i: int):
+		if i < ArtDirections.LIST.size():
+			ArtDirections.apply(i)
+			_commit("look_ground"))
+	row.add_child(o)
 
 
 func _look_names(names: Array) -> Array:

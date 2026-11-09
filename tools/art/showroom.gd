@@ -69,8 +69,8 @@ func _props(g: int) -> void:
 	shots = [1.5]
 
 
-func _mat(look: int, emit := 0.0, fly := false) -> Material:
-	var m: ShaderMaterial = Models.glow_material(emit) if look == 0 else Looks.material(look, emit)
+func _mat(look: int, emit := 0.0, src: Mesh = null) -> Material:
+	var m: ShaderMaterial = Models.glow_material(emit) if look == 0 else Looks.material(look, emit, false, src)
 	return m
 
 
@@ -93,7 +93,7 @@ func _units(look: int) -> void:
 			var id: String = ids[i]
 			var mi := MeshInstance3D.new()
 			mi.mesh = _unit_mesh(look, id)
-			mi.material_override = _mat(look, 0.3 if id in ["ghost", "spectre"] else 0.0)
+			mi.material_override = _mat(look, 0.3 if id in ["ghost", "spectre"] else 0.0, mi.mesh)
 			mi.position = Vector3((i - (ids.size() - 1) * 0.5) * cell, 1.3 if id == "bat" else 0.0, -4.5 if r == 0 else 0.0)
 			mi.rotation.y = deg_to_rad(165)
 			add_child(mi)
@@ -113,7 +113,7 @@ func _single(look: int, id: String) -> void:
 	for i in 2:
 		var mi := MeshInstance3D.new()
 		mi.mesh = _unit_mesh(look, id)
-		mi.material_override = _mat(look)
+		mi.material_override = _mat(look, 0.0, mi.mesh)
 		var s := mi.mesh.get_aabb().size
 		mi.position = Vector3((i - 0.5) * maxf(s.x, s.z) * 1.4, 0, 0)
 		mi.rotation.y = deg_to_rad(180 if i == 0 else 130)
