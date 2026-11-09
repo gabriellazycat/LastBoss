@@ -125,3 +125,14 @@ Riscos e pendências:
 - O Aleatório continua acima da meta (<10%), principalmente no Tesouro; as metas antigas (nível do herói) ainda entram na nota. Falta o ajustador e refazer as metas (pendência do grupo de heróis).
 - Salvamentos de run anteriores ao mapa novo não carregam (o Continuar volta ao menu). Quem desbloqueou a Placa Falsa perde as 70 Almas.
 - Não joguei uma run inteira com a janela; as capturas e os testes de entrada (`--routetest`) cobrem a escolha, o mapa, a faixa e a Loja.
+
+## Rodada de balanceamento e bugs (09/11/2026)
+
+Tarefa agendada, com você fora e autonomia total; branch `balanceamento-2026-11-09`. Detalhes, números e riscos em `docs/RODADA_BALANCEAMENTO_2026-11-09.md`.
+
+- **Sacrifício:** durante a recarga de 8 s só gira carta morta (fora de fase, condição ou limite). Antes girava qualquer carta de graça.
+- **Tesouro ganha um custo:** heróis +25% de vida e 7 de elixir inicial (era 8). Antes o Pacto só tinha vantagens.
+- **Números:** corpo a corpo dos monstros ×2,5 → ×2,0; Mímico custa 4; Arqueiros DPS 8 → 7; estrada 1500 → 1400 m; perfil Heurístico = o melhor do explorador.
+- **Metas:** "herói chega à arena no nível 12–16" vira "chega o 3º ou o 4º herói"; "carta nas vitórias" conta só as cartas ganhas na run.
+- **Testes e capturas** salvam em arquivos próprios (`test_run.save`, `test_meta.save`).
+- **Mão com teto de 9** (as teclas de 1 a 9).

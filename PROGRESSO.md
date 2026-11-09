@@ -1,5 +1,18 @@
 # Progresso — Last Boss
 
+## Rodada de balanceamento e bugs (09/11/2026)
+
+Feita numa tarefa agendada, com você fora. Tudo está no branch **`balanceamento-2026-11-09`** (a `main` não mudou). Relatório completo, com números de antes e depois, pendências e decisões que tomei no seu lugar: `docs/RODADA_BALANCEAMENTO_2026-11-09.md`.
+
+- **5 bugs corrigidos, cada um com teste:**
+  - sacrificar girava a mão de graça e sem limite durante a recarga (dava para cavar o deck atrás da melhor carta);
+  - soltar uma carta fora da janela a jogava longe da tela;
+  - clicar na bandeja do elixir com uma carta selecionada jogava a carta atrás dela;
+  - os modos de teste sobrescreviam a sua run salva e o Pacto escolhido;
+  - a mão passava de 9 cartas.
+- **Balanceamento** (720 runs, mesmas sementes): quem joga ao acaso vence **12%** (era 34%; 18% em outras sementes, meta < 10%). O bot bom vence **64%** (meta 50–65%). Mudanças: corpo a corpo dos monstros ×2,0, Tesouro com heróis +25% de vida e 7 de elixir, Mímico custa 4, Arqueiros DPS 7, estrada de 1400 m. Planilha atualizada.
+- **Testes novos:** `--chaostest` (entrada real esquisita) e `headless/fuzz.tscn` (decks e comandos absurdos). Todos os testes passam.
+
 ## Mapa de rotas escolhidas (09/11/2026)
 
 A estrada virou uma **rede de caminhos** e **você escolhe por onde o herói vai**: em cada bifurcação o jogo pausa e o mapa grande abre (clique num local, teclas 1–3 ou L1/R1 + A no controle); dá para planejar vários trechos clicando num local mais à frente, no mapa ou na faixa. Os ramos não escolhidos ganham uma barreira. **Todo local é bom para você:** a Vila virou **Loja** (paga com o ouro que o dano no herói rende) e a Fonte cura os seus monstros. Ponte Quebrada e Placa Falsa saíram; Queimar Vila virou **Incêndio**. Testes: 0 falhas, mais `--uitest`, `--menutest`, `--tiptest` e o novo `--routetest` OK. Lote de 720 runs: Heurístico 55%, Aleatório 32%. Detalhes em `docs/MAPA_DE_ROTAS.md` e `DECISOES.md`.
@@ -71,6 +84,10 @@ O executável da Godot fica em `C:\Users\gabri\AppData\Local\Microsoft\WinGet\Pa
 - Ver um bot jogando: `godot --path . -- --autoplay=heuristic --deck=ruin --speed=2`. Também aceita `--skip=600`, `--quit=60` e `--shots=10,30 --out=<pasta>`.
 - Estresse: `godot --path . --disable-vsync -- --autoplay=random --stress=500 --quit=25`
 - Lote: `python -I tools/run_batch.py --bots heuristic,random,greedy --runs 60`
+- Teste de caos com a entrada real (janela): `godot --path . -- --chaostest=1`
+- Fuzz da simulação: `godot --headless --path . res://headless/fuzz.tscn -- --seeds=1-100`
+- Rastro do herói numa run de bot: `godot --headless --path . res://headless/replay.tscn -- --bot=swarm --deck=treasure --seed=5010`
+- Testes e capturas com argumentos salvam em `user://test_run.save` e `user://test_meta.save` (nunca na sua run).
 - Ajustador (na branch `balance`): `python -I tools/tuner.py --cycles 15 --runs 8`
 - Regerar o áudio: `python -I tools/make_audio.py`
 - Exportar: `godot --headless --path . --export-release "Windows Desktop" export/LastBoss.exe`
