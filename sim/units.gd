@@ -36,6 +36,7 @@ var slot := PackedFloat32Array()
 var tags := PackedInt32Array()
 var flags := PackedInt32Array()
 var uid := PackedInt32Array()
+var lvl := PackedByteArray()   # nível da carta que gerou a unidade (1 a 3)
 
 var free := PackedInt32Array()
 var free_n := 0
@@ -74,7 +75,7 @@ var g_cell := PackedInt32Array()
 func setup(s: Sim, capacity: int) -> void:
 	sim = s
 	cap = capacity
-	alive.resize(cap); arch.resize(cap); gen.resize(cap)
+	alive.resize(cap); arch.resize(cap); gen.resize(cap); lvl.resize(cap)
 	def.resize(cap); tags.resize(cap); flags.resize(cap); uid.resize(cap); g_cell.resize(cap)
 	px.resize(cap); py.resize(cap); ox.resize(cap); oy.resize(cap); ax.resize(cap); ay.resize(cap)
 	hp.resize(cap); max_hp.resize(cap); dmg.resize(cap); atk_int.resize(cap); atk_t.resize(cap)
@@ -109,6 +110,7 @@ func spawn(d: CardDef, x: float, y: float, xp_val: float, share: float, uflags: 
 	def[i] = d.idx
 	arch[i] = d.arch
 	gen[i] = 0
+	lvl[i] = 1
 	px[i] = x; py[i] = y; ox[i] = x; oy[i] = y; ax[i] = x; ay[i] = y
 	hp[i] = d.hp * hp_mult
 	max_hp[i] = hp[i]
@@ -222,7 +224,7 @@ func update(dt: float) -> void:
 					else:
 						attack = true
 						if di == d_ghost and timer2[i] <= 0.0:
-							sim.hero_fear(px[i], py[i])
+							sim.hero_fear(px[i], py[i], float(sim.data.cards[di].fx.get("fear", -1.0)))
 							timer2[i] = float(sim.data.cards[di].fx.get("fear_cooldown", 6.0))
 					if timer2[i] > 0.0:
 						timer2[i] -= dt
@@ -248,10 +250,16 @@ func update(dt: float) -> void:
 				K.Arch.SUPPORT:
 					if (sim.tick + i) % 5 == 0:
 						_support_target(i)
-					if d < 5.0:
-						_step(i, px[i] - dx / d * 4.0, py[i] - dy / d * 4.0, speed, dt)
+					# timer2 = tamanho do bando que ele segue. Sozinho não tem atrás de quem se esconder: vai para cima.
+					if timer2[i] <= 0.0:
+						if d > reach:
+							_step(i, hx, hy, speed, dt)
+					elif d < 5.0:
+						_step(i, px[i] - dx / d * 4.0, py[i] - dy / d * 4.0, speed * retreat_mult, dt)
 					else:
-						_step(i, ax[i], ay[i], speed, dt)
+						# Ir ao ponto de apoio afastando-se do herói também é recuar: senão ninguém o alcança.
+						var away := (ax[i] - px[i]) * -dx + (ay[i] - py[i]) * -dy > 0.0
+						_step(i, ax[i], ay[i], speed * (retreat_mult if away else 1.0), dt)
 					attack = d <= reach
 		if attack:
 			atk_t[i] -= dt
@@ -295,17 +303,17 @@ func _structure(i: int, di: int, d: float, dt: float, nose: bool) -> void:
 	var c: CardDef = sim.data.cards[di]
 	var hr := sim.hero.radius
 	if di == d_nest:
-		var dur: float = c.fx.get("spawn_duration", 15.0)
+		var dur := c.fxv("spawn_duration", lvl[i], 15.0)
 		if timer[i] >= timer2[i] and timer2[i] <= dur + 0.001:
 			timer2[i] += float(c.fx.get("spawn_interval", 3.0))
 			var bat: CardDef = sim.data.card(str(c.fx.get("spawn", "bat")))
 			var a := slot[i] + timer[i]
 			sim.spawn_child(bat, px[i] + cos(a) * 1.2, py[i] + sin(a) * 1.2, i)
 	elif di == d_totem:
-		if timer[i] > float(c.fx.get("duration", 20.0)):
+		if timer[i] > c.fxv("duration", lvl[i], 20.0):
 			sim.kill_unit(i, K.Death.EXPIRE)
 	elif di == d_mimic:
-		if not nose and not (flags[i] & K.F_BITTEN) and d <= hr + rad[i] + 0.5:
+		if not nose and not (flags[i] & K.F_BITTEN) and timer[i] >= timer2[i] and d <= hr + rad[i] + 0.5:
 			flags[i] |= K.F_BITTEN
 			sim.mimic_bite(i)
 	elif di == d_tower:
@@ -334,6 +342,7 @@ func _support_target(i: int) -> void:
 			sx += px[j]
 			sy += py[j]
 			n += 1
+	timer2[i] = n
 	if n > 0:
 		ax[i] = sx / n
 		ay[i] = sy / n

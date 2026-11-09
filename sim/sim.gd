@@ -7,6 +7,7 @@ class CardInst:
 	var def: CardDef
 	var mods := 0
 	var uid := 0
+	var level := 1
 
 	func has_mod(m: int) -> bool:
 		return (mods & m) != 0
@@ -41,10 +42,26 @@ var cards: Array = []
 var card_of_uid: Dictionary = {}
 var hand_size := 5
 var next_uid := 1
+var party_idx := 0                 # herói da fila (0 a size-1); o nível dele é party_idx + 1
+var gate_pos := Vector2.ZERO       # portão da arena, onde o herói seguinte entra
 var player_level := 1
 var player_xp := 0.0
 var offers: Array = []
-var lair: Dictionary = {}
+var lair: Dictionary = {}       # id -> cópias jogadas (limite de stack)
+var lair_val: Dictionary = {}   # id -> soma do efeito das cópias, já com o nível de cada uma
+var unlocked: Array = []        # cartas que as ofertas podem sortear (vazio = todas)
+var burn_t := 0.0               # Arqueiros N3: herói em chamas
+var burn_dps := 0.0
+var tav_li := -1                # taverna em disputa: dano no herói enquanto ele ataca devagar
+var tav_t := 0.0
+var tav_dmg := 0.0
+var bridge_li := -1
+var shop_li := -1               # loja em disputa: dano no herói enquanto ele está no raio
+var gold := 0.0                 # ouro da run (dano no herói e disputas vencidas); gasto nas lojas
+var shop_removes := 0           # remoções compradas na run (cada uma encarece a próxima)
+var route_wait := false         # o herói chegou a uma bifurcação sem ramo escolhido: o jogo espera a escolha
+var auto_route := false         # sem escolha, segue o primeiro ramo em vez de esperar (testes que não jogam a rota)
+var sac_elixir_t := -100.0      # último sacrifício que rendeu elixir
 var contract: Dictionary = {}
 var contract_next := 0.0
 var last_teleport_t := -100.0
@@ -55,7 +72,9 @@ var stats: Dictionary = {}
 var tmp := PackedInt32Array()
 
 
-func setup(d: GameData, seed_: int, deck: String) -> void:
+## `deck` é o Pacto (regras); `card_list` é o deck montado na coleção (vazio = deck pronto do Pacto);
+## `unlocked_` limita as ofertas às cartas desbloqueadas (vazio = todas).
+func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocked_: Array = []) -> void:
 	data = d
 	R = d.rules
 	run_seed = seed_
@@ -64,21 +83,23 @@ func setup(d: GameData, seed_: int, deck: String) -> void:
 	ai_period = maxi(1, int(round(1.0 / dt / float(R["sim"]["danger_hz"]))))
 	road.generate(rng, R)
 	units.setup(self, int(R["sim"]["max_units"]))
-	hero.setup(self)
 	var dk := d.deck(deck)
 	deck_id = dk["id"]
 	deck_rules = dk["rules"]
+	hero.setup(self)
 	hand_size = int(deck_rules.get("hand_size", R["hand_size"]))
 	elixir = float(deck_rules.get("elixir_start", R["elixir"]["start"]))
 	elixir_max = R["elixir"]["max"]
 	dead_by_def.resize(d.cards.size())
 	stats = {"seed": run_seed, "deck": deck_id, "result": "none", "t_end": 0.0, "arena_t": -1.0,
-		"hero_level_arena": 0, "player_level_arena": 0, "hero_level": 1, "player_level": 1,
+		"heroes_fallen": 0, "hero_level_arena": 0, "player_level_arena": 0, "hero_level": 1, "player_level": 1,
 		"waste_s": 0.0, "offered": {}, "picked": {}, "played": {}, "dmg_by_card": {}, "deck_final": [],
 		"upgrades": [], "shrines_won": 0, "shrines_lost": 0, "contracts_ok": 0, "contracts_fail": 0,
 		"parts_lost": 0, "kills": 0, "units_peak": 0, "teleports": 0, "sacrifices": 0, "shield_breaks": 0,
-		"route_len": 0.0, "hero_hp_arena": 0.0}
-	var list: Array = dk["cards"].duplicate()
+		"route_len": 0.0, "hero_hp_arena": 0.0, "locs_visited": 0, "locs_won": 0, "locs_lost": 0,
+		"skipped": 0, "card_levels": 0, "gold_earned": 0.0, "gold_spent": 0, "shop_buys": 0, "route": {}}
+	unlocked = unlocked_.duplicate()
+	var list: Array = (card_list if card_list.size() > 0 else dk["cards"]).duplicate()
 	for i in range(list.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
 		var tmpc = list[i]
@@ -112,7 +133,7 @@ func emit(k: int, x: float, y: float, v: float, e: int) -> void:
 func step() -> void:
 	if phase == K.Phase.OVER:
 		return
-	if pause_on_offer and offers.size() > 0:
+	if pause_on_offer and (offers.size() > 0 or route_wait):
 		return
 	tick += 1
 	t += dt
@@ -126,6 +147,8 @@ func step() -> void:
 	if units.count > stats["units_peak"]:
 		stats["units_peak"] = units.count
 	_zones()
+	_burn()
+	_tavern()
 	if phase == K.Phase.ROAD:
 		_road()
 	elif phase == K.Phase.ARENA:
@@ -136,8 +159,7 @@ func step() -> void:
 
 func _elixir() -> void:
 	var rate := 1.0 / float(R["elixir"]["seconds_per_point"])
-	var col: CardDef = data.card("soul_collector")
-	rate *= 1.0 + float(col.fx["elixir_regen"]) * int(lair.get("soul_collector", 0))
+	rate *= 1.0 + float(lair_val.get("soul_collector", 0.0))
 	rate *= ritual_mult
 	rate *= float(deck_rules.get("elixir_mult", 1.0))
 	if phase == K.Phase.ARENA and arena.part_alive("head"):
@@ -151,23 +173,25 @@ func _elixir() -> void:
 func _road() -> void:
 	var dd: float = R["road"]["fork_decision_distance"]
 	if not road.complete and hero.s >= road.length() - dd:
-		var leg := road.pending_leg()
-		var b := 0
-		if leg["kind"] == "fork":
-			b = hero.choose_branch(road.next_leg)
-		road.advance(b)
+		# Na bifurcação quem escolhe é o jogador; sem escolha, o jogo espera (ou, sem pausa, vai pelo primeiro ramo).
+		var e := road.next_edge()
+		if e < 0 and pause_on_offer and not auto_route:
+			route_wait = true
+			return
+		if e < 0:
+			e = road.nodes[road.head]["out"][0]
+		route_wait = false
+		road.advance(e)
 	if road.complete and hero.s >= road.length() - 1.5:
 		enter_arena()
 		return
-	var pxp := float(R["hero_xp"].get("passive_per_s", 0.0)) * float(deck_rules.get("hero_passive_mult", 1.0))
-	if pxp > 0.0:
-		hero.xp += pxp * dt
-		if hero.xp >= hero.xp_needed():
-			hero_gain_xp(0.0001)
 	ritual_mult = 1.0
 	bridge_active = false
+	bridge_li = -1
+	shop_li = -1
 	hero.leash_mult = 1.0
 	var L: Dictionary = R["locations"]
+	var LR: Dictionary = R["location_rewards"]
 	var hp_ := Vector2(hero.x, hero.y)
 	for li in road.locations.size():
 		var loc: Dictionary = road.locations[li]
@@ -182,38 +206,52 @@ func _road() -> void:
 				if _own_units_near(p.x, p.y, loc["r"]):
 					loc["state"] = SimRoad.LocState.WON
 					stats["shrines_won"] += 1
-					_offer_shrine()
+					_offer_location("shrine", true)
 					emit(K.Ev.SHRINE, p.x, p.y, 1, li)
 				else:
 					loc["state"] = SimRoad.LocState.DESTROYED
 					stats["shrines_lost"] += 1
-					hero_gain_xp(float(L["shrine"]["hero_xp"]))
+					_offer_location("shrine", false)
 					emit(K.Ev.SHRINE, p.x, p.y, 0, li)
 			continue
 		if not inside:
-			if loc["entered"] and ty in ["village", "bridge"]:
-				loc["state"] = SimRoad.LocState.USED
+			# A disputa da loja, da ponte e do ritual termina quando o herói sai do local.
+			if loc["entered"] and ty in ["shop", "bridge", "ritual"]:
+				_resolve_location(li)
 			continue
 		var first: bool = not loc["entered"]
 		loc["entered"] = true
 		if first:
+			stats["locs_visited"] += 1
+			var rt: Dictionary = stats["route"]
+			rt[ty] = int(rt.get(ty, 0)) + 1
 			emit(K.Ev.LOCATION, hero.x, hero.y, li, 0)
+			# Incêndio: o local marcado pega fogo quando o herói chega.
+			if loc.get("burn", false):
+				var bf: Dictionary = data.card("burn_village").fx
+				var bp: Vector2 = loc["pos"]
+				zones.append({"kind": "fire", "x": bp.x, "y": bp.y, "r": loc["r"] + 1.0, "t": float(loc["burn_s"]),
+					"dps": float(loc["burn_dps"]), "src": "burn_village"})
+				emit(K.Ev.EXPLOSION, bp.x, bp.y, float(bf.get("radius_fx", 4.0)), 1)
 		match ty:
-			"village":
-				var V: Dictionary = L["village"]
-				if hero.hp < hero.max_hp() and loc["t"] < float(V["heal_seconds"]):
-					if not units.any_within(hero.x, hero.y, V["interrupt_radius"]):
-						hero.stay_t = 0.2
-						loc["t"] += dt
-						hero.heal(hero.max_hp() * float(V["heal_per_s"]) * dt)
-				else:
-					loc["state"] = SimRoad.LocState.USED
+			"shop":
+				shop_li = li
 			"tavern":
 				hero.tavern_t = L["tavern"]["duration"]
 				loc["state"] = SimRoad.LocState.USED
+				tav_li = li
+				tav_t = L["tavern"]["duration"]
+				tav_dmg = 0.0
 			"fountain":
-				hero.heal(hero.max_hp() * float(L["fountain"]["heal"]))
+				# A fonte não cura mais o herói: cura as suas unidades por perto por alguns segundos.
+				# Monstro seu de guarda quando ele chega: você remove a carta que quiser.
+				var p: Vector2 = loc["pos"]
+				var F: Dictionary = L["fountain"]
+				var guarded := units.any_within(p.x, p.y, float(LR["fountain"]["guard_radius"]))
+				zones.append({"kind": "spring", "x": p.x, "y": p.y, "r": float(F["heal_radius"]), "t": float(F["heal_seconds"]),
+					"heal": float(F["heal_units"])})
 				loc["state"] = SimRoad.LocState.USED
+				_offer_location("fountain", guarded)
 			"ritual":
 				ritual_mult = L["ritual"]["elixir_mult"]
 				if contract.size() > 0 and contract["goal"]["kind"] == "ritual_time":
@@ -222,7 +260,38 @@ func _road() -> void:
 				loc["t"] = L["shrine"]["countdown"]
 			"bridge":
 				bridge_active = true
+				bridge_li = li
 				hero.leash_mult = float(L["bridge"]["leash"]) / float(R["road"]["leash"])
+
+
+## Fim da disputa de um local por onde o herói passou: marca como usado e abre a recompensa.
+func _resolve_location(li: int) -> void:
+	var loc: Dictionary = road.locations[li]
+	loc["state"] = SimRoad.LocState.USED
+	var LR: Dictionary = R["location_rewards"]
+	match str(loc["type"]):
+		"shop":
+			_open_shop(float(loc.get("dmg", 0.0)) >= float(LR["shop"]["win_damage"]))
+		"bridge":
+			_offer_location("bridge", float(loc.get("dmg", 0.0)) >= float(LR["bridge"]["win_damage"]))
+		"ritual":
+			_offer_location("ritual", true)
+
+
+func _tavern() -> void:
+	if tav_li < 0:
+		return
+	tav_t -= dt
+	if tav_t <= 0.0:
+		tav_li = -1
+		_offer_location("tavern", tav_dmg >= float(R["location_rewards"]["tavern"]["win_damage"]))
+
+
+func _burn() -> void:
+	if burn_t <= 0.0:
+		return
+	burn_t -= dt
+	damage_hero(burn_dps * dt, hero.x, hero.y, K.TAG_FIRE, SimHero.DMG_AREA, "skeleton_archers")
 
 
 func _own_units_near(x: float, y: float, r: float) -> bool:
@@ -234,6 +303,9 @@ func location_destroyed(li: int) -> void:
 	loc["state"] = SimRoad.LocState.DESTROYED
 	var p: Vector2 = loc["pos"]
 	emit(K.Ev.PART_DESTROYED, p.x, p.y, -2, li)
+	# O herói quebrou o círculo: você perde a disputa, mas ainda sobe uma carta sorteada.
+	if loc["type"] == "ritual" and road.is_on_route(loc):
+		_offer_location("ritual", false)
 
 
 func enter_arena() -> void:
@@ -245,6 +317,7 @@ func enter_arena() -> void:
 	var A: Dictionary = R["arena"]
 	var dir := road.lair_dir
 	var gate := Vector2(hero.x, hero.y)
+	gate_pos = gate
 	var center := gate + dir * (float(A["radius"]) - 1.5)
 	arena.setup(self, center, dir)
 	# Monstros vivos perto do herói entram junto; o resto fica para trás.
@@ -261,10 +334,9 @@ func enter_arena() -> void:
 		units.ox[i] = p.x
 		units.oy[i] = p.y
 	zones.clear()
-	var walls: CardDef = data.card("lair_walls")
-	var n := int(lair.get("lair_walls", 0))
-	if n > 0:
-		hero.hp = maxf(1.0, hero.hp - hero.max_hp() * float(walls.fx["hero_hp_loss"]) * n)
+	var loss := float(lair_val.get("lair_walls", 0.0))
+	if loss > 0.0:
+		hero.hp = maxf(1.0, hero.hp - hero.max_hp() * loss)
 	hero.target_kind = SimHero.TGT_NONE
 	stats["hero_hp_arena"] = hero.hp_frac()
 	emit(K.Ev.ARENA, center.x, center.y, 0, 0)
@@ -278,7 +350,11 @@ func _check_end() -> void:
 	if phase == K.Phase.OVER:
 		return
 	if hero.hp <= 0.0:
-		_finish(K.Result.WIN_EARLY if phase == K.Phase.ROAD else K.Result.WIN)
+		if party_idx < int(R["party"]["size"]) - 1:
+			_hero_fell()
+		else:
+			stats["heroes_fallen"] = party_idx + 1
+			_finish(K.Result.WIN_EARLY if phase == K.Phase.ROAD else K.Result.WIN)
 	elif t >= float(R["sim"]["max_run_seconds"]):
 		_finish(K.Result.TIMEOUT)
 
@@ -295,9 +371,12 @@ func _finish(r: int) -> void:
 	stats["upgrades"] = hero.upgrade_order.duplicate()
 	stats["waste_frac"] = stats["waste_s"] / maxf(t, 1.0)
 	var fin: Array = []
+	var lv := 0
 	for c in cards:
 		fin.append(c.def.id)
+		lv += c.level - 1
 	stats["deck_final"] = fin
+	stats["card_levels"] = lv
 	stats["ticks"] = tick
 
 
@@ -306,21 +385,22 @@ func _finish(r: int) -> void:
 func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card_id: String) -> float:
 	var real := hero.take_damage(amount, sx, sy, tags, kind)
 	var gain := real
-	if R["player_xp"].get("count_shield", false):
-		gain += hero.last_absorbed
+	gain += hero.last_absorbed
 	if gain <= 0.0:
 		return 0.0
 	if real > 0.0:
 		emit(K.Ev.DAMAGE_HERO, hero.x, hero.y, real, tags)
+	if tav_li >= 0:
+		tav_dmg += real
+	if bridge_li >= 0:
+		var bl: Dictionary = road.locations[bridge_li]
+		bl["dmg"] = float(bl.get("dmg", 0.0)) + real
+	if shop_li >= 0:
+		var sl: Dictionary = road.locations[shop_li]
+		sl["dmg"] = float(sl.get("dmg", 0.0)) + real
+	_earn_gold(gain / float(R["gold"]["damage_per_gold"]))
 	var dbc: Dictionary = stats["dmg_by_card"]
 	dbc[card_id] = float(dbc.get(card_id, 0.0)) + gain
-	player_xp += gain
-	var P: Dictionary = R["player_xp"]
-	while player_xp >= _player_next():
-		player_xp -= _player_next()
-		player_level += 1
-		emit(K.Ev.PLAYER_LEVEL, hero.x, hero.y, player_level, 0)
-		_offer_level()
 	if contract.size() > 0:
 		var g: Dictionary = contract["goal"]
 		match str(g["kind"]):
@@ -335,8 +415,7 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 
 
 func _player_next() -> float:
-	var P: Dictionary = R["player_xp"]
-	return float(P["first_level"]) * pow(1.0 + float(P["growth"]), player_level - 1)
+	return 1.0   # sem XP do jogador (09/11/2026); resto de compatibilidade com a HUD antiga
 
 
 func unit_hits_hero(i: int) -> void:
@@ -346,19 +425,42 @@ func unit_hits_hero(i: int) -> void:
 	if bridge_active and (units.tags[i] & K.TAG_PACK):
 		amount *= 1.0 + float(R["locations"]["bridge"]["pack_damage"])
 	var kind := 0
+	var lv := int(units.lvl[i])
+	var tg := units.tags[i]
 	if units.flags[i] & K.F_PROJECTILE:
 		kind = SimHero.DMG_PROJECTILE
 		emit(K.Ev.SHOT, units.px[i], units.py[i], hero.x, int(hero.y * 100.0))
-	damage_hero(amount, units.px[i], units.py[i], units.tags[i], kind, str(card_of_uid.get(units.uid[i], c.id)))
+	if c.has_n3(lv, "pierce"):
+		kind |= SimHero.DMG_PIERCE
+	if c.has_n3(lv, "burn_dps"):
+		tg |= K.TAG_FIRE
+		burn_t = float(c.n3["burn_s"])
+		burn_dps = float(c.n3["burn_dps"])
+	var src := str(card_of_uid.get(units.uid[i], c.id))
+	var real := damage_hero(amount, units.px[i], units.py[i], tg, kind, src)
+	# Contadores das habilidades do herói: Enxame (unidade de uma carta de enxame) e alvos grandes.
+	var oc: CardDef = data.card(src)
+	if (oc if oc else c).type == "swarm":
+		hero.note("swarm", real)
+	if units.max_hp[i] >= float(data.upgrades["heroic_strike"]["p"]["big_hp"]):
+		hero.note("big", real)
 	if di == units.d_ogre:
 		hero.knockback(units.px[i], units.py[i], float(c.fx.get("knockback", 4.0)))
+		if c.has_n3(lv, "root"):
+			hero.root_t = maxf(hero.root_t, float(c.n3["root"]))
 	if (units.flags[i] & K.F_CURSED) and units.curse_t[i] <= 0.0:
 		hero.add_curse(1)
 		units.curse_t[i] = R["curse"]["cursed_mod_cooldown"]
 
 
 func hero_hits_unit(i: int, dmg: float) -> void:
-	if units.alive[i] == 0 or (units.flags[i] & K.F_STONE):
+	if units.alive[i] == 0:
+		return
+	if units.flags[i] & K.F_STONE:
+		# Gárgula N3: em pedra, devolve parte do golpe.
+		var gc: CardDef = data.cards[units.def[i]]
+		if gc.has_n3(int(units.lvl[i]), "reflect"):
+			damage_hero(dmg * float(gc.n3["reflect"]), units.px[i], units.py[i], gc.tags, SimHero.DMG_AREA, gc.id)
 		return
 	units.hp[i] -= dmg
 	emit(K.Ev.DAMAGE_UNIT, units.px[i], units.py[i], dmg, i)
@@ -374,6 +476,8 @@ func kill_unit(i: int, cause: int) -> void:
 	var x := units.px[i]
 	var y := units.py[i]
 	var f := units.flags[i]
+	if cause == K.Death.HERO and contract.size() > 0 and contract["goal"]["kind"] == "damage_no_xp":
+		contract["progress"] = 0.0   # "Sem Testemunhas": causar dano sem perder nenhum monstro
 	if cause == K.Death.HERO or cause == K.Death.SELF:
 		if cause == K.Death.HERO:
 			stats["kills"] += 1
@@ -394,14 +498,18 @@ func kill_unit(i: int, cause: int) -> void:
 		var g := int(units.gen[i])
 		if g < split.size():
 			var s: Dictionary = split[g]
-			for k in int(s["n"]):
-				var a := units.slot[i] + k * PI
+			var lv := int(units.lvl[i])
+			var n := int(s["n"])
+			if g == 0 and c.has_n3(lv, "first_split"):
+				n = int(c.n3["first_split"])
+			for k in n:
+				var a := units.slot[i] + k * TAU / n
 				var j := spawn_child(c, x + cos(a) * 0.6, y + sin(a) * 0.6, i)
 				if j >= 0:
 					units.gen[j] = g + 1
-					units.hp[j] = float(s["hp"]) * _forge()
+					units.hp[j] = float(s["hp"]) * _forge() * (c.mult(lv) if c.scales("hp") else 1.0)
 					units.max_hp[j] = units.hp[j]
-					units.dmg[j] = float(s["dps"]) * units.atk_int[j] * units.dmg_mult
+					units.dmg[j] = float(s["dps"]) * units.atk_int[j] * units.dmg_mult * (c.mult(lv) if c.scales("dps") else 1.0)
 					units.rad[j] = c.radius * (0.75 if g == 0 else 0.55)
 		if c.fx.has("death_spawn"):
 			var sd: CardDef = data.card(str(c.fx["death_spawn"]))
@@ -418,12 +526,13 @@ func kill_unit(i: int, cause: int) -> void:
 func _golem_absorb(i: int, x: float, y: float) -> bool:
 	if units.d_golem < 0:
 		return false
-	var fx: Dictionary = data.cards[units.d_golem].fx
+	var gd: CardDef = data.cards[units.d_golem]
+	var fx: Dictionary = gd.fx
 	var r2: float = pow(float(fx["absorb_radius"]), 2)
 	for j in units.hi:
 		if units.alive[j] == 1 and j != i and units.def[j] == units.d_golem:
 			if Vector2(units.px[j] - x, units.py[j] - y).length_squared() <= r2:
-				var cap: float = fx["hp_cap"]
+				var cap := gd.fxv("hp_cap", int(units.lvl[j]))
 				units.max_hp[j] = minf(cap, units.max_hp[j] + float(fx["absorb_hp"]))
 				units.hp[j] = minf(units.max_hp[j], units.hp[j] + float(fx["absorb_hp"]))
 				return true
@@ -445,29 +554,43 @@ func _totem_revive(i: int, x: float, y: float) -> void:
 
 func spawn_child(c: CardDef, x: float, y: float, parent: int) -> int:
 	var inherit := units.flags[parent] & (K.F_NO_XP | K.F_CURSED | K.F_DEFEND)
-	return units.spawn(c, x, y, units.xp[parent], units.cost_share[parent], inherit, units.uid[parent], _forge())
+	var j := units.spawn(c, x, y, units.xp[parent], units.cost_share[parent], inherit, units.uid[parent], _forge())
+	if j >= 0:
+		units.lvl[j] = units.lvl[parent]
+	return j
 
 
 func kamikaze(i: int) -> void:
 	var c: CardDef = data.cards[units.def[i]]
+	var lv := int(units.lvl[i])
 	var r: float = c.fx.get("explode_radius", 2.5)
 	var x := units.px[i]
 	var y := units.py[i]
+	var src := str(card_of_uid.get(units.uid[i], c.id))
 	if Vector2(hero.x - x, hero.y - y).length() <= r + hero.radius:
-		damage_hero(float(c.fx.get("explode_damage", 0)), x, y, units.tags[i], 0, str(card_of_uid.get(units.uid[i], c.id)))
+		damage_hero(c.fxv("explode_damage", lv), x, y, units.tags[i], 0, src)
+	# Goblin N3: a explosão deixa fogo no chão.
+	if c.has_n3(lv, "fire_dps"):
+		zones.append({"kind": "fire", "x": x, "y": y, "r": c.n3["fire_r"], "t": c.n3["fire_s"], "dps": c.n3["fire_dps"], "src": src})
 	emit(K.Ev.EXPLOSION, x, y, r, 1)
 	kill_unit(i, K.Death.SELF)
 
 
 func mimic_bite(i: int) -> void:
 	var c: CardDef = data.cards[units.def[i]]
-	damage_hero(float(c.fx.get("bite", 0)), units.px[i], units.py[i], units.tags[i], SimHero.DMG_PIERCE, c.id)
+	var lv := int(units.lvl[i])
+	damage_hero(c.fxv("bite", lv), units.px[i], units.py[i], units.tags[i], SimHero.DMG_PIERCE, c.id)
 	hero.add_curse(int(c.fx.get("curses", 0)))
 	hero.note("mimic", 120.0)
+	# Mímico N3: morde de novo depois de uma pausa (gen conta as mordidas).
+	units.gen[i] += 1
+	if c.has_n3(lv, "bites") and units.gen[i] < int(c.n3["bites"]):
+		units.flags[i] &= ~K.F_BITTEN
+		units.timer2[i] = units.timer[i] + 3.0
 
 
-func hero_fear(x: float, y: float) -> void:
-	hero.fear(x, y)
+func hero_fear(x: float, y: float, dur := -1.0) -> void:
+	hero.fear(x, y, dur)
 	_cc()
 	emit(K.Ev.FEAR, hero.x, hero.y, 0, 0)
 
@@ -482,19 +605,44 @@ func on_shield_break() -> void:
 	emit(K.Ev.SHIELD_BREAK, hero.x, hero.y, 0, 0)
 
 
-func hero_gain_xp(v: float) -> void:
-	if v <= 0.0:
-		return
-	hero.xp += v
-	if v >= 0.01 and contract.size() > 0 and contract["goal"]["kind"] == "damage_no_xp":
-		contract["progress"] = 0.0
-	while hero.xp >= hero.xp_needed():
-		hero.xp -= hero.xp_needed()
-		hero.level_up()
-		var opts := _upgrade_options(3)
-		if opts.size() > 0:
-			hero.apply_upgrade(hero.choose_upgrade(opts))
-		emit(K.Ev.HERO_LEVEL, hero.x, hero.y, hero.level, 0)
+## Sem XP (09/11/2026): o herói só evolui quando um herói cai (`_hero_fell`). Mantida vazia para as chamadas antigas.
+func hero_gain_xp(_v: float) -> void:
+	pass
+
+
+## O herói da vez caiu: vem o próximo, um nível acima e com uma habilidade a mais, andando de trás.
+func _hero_fell() -> void:
+	var fell := party_idx + 1
+	stats["heroes_fallen"] = fell
+	emit(K.Ev.HERO_FALL, hero.x, hero.y, fell, 0)
+	party_idx += 1
+	var back := float(R["party"]["arrive_s"]) * float(hero.H["speed"])
+	hero.next_hero(party_idx)
+	if phase == K.Phase.ROAD:
+		var s0 := maxf(0.0, hero.s_max - back)
+		var p := road.point_at(s0)
+		hero.x = p.x
+		hero.y = p.y
+		hero.s = s0
+		hero.s_max = s0
+		hero.seg = road.seg_at(s0)
+	else:
+		hero.x = gate_pos.x
+		hero.y = gate_pos.y
+	hero.ox = hero.x
+	hero.oy = hero.y
+	var opts := _upgrade_options(3)
+	if opts.size() > 0:
+		hero.apply_upgrade(hero.choose_upgrade(opts))
+	emit(K.Ev.HERO_LEVEL, hero.x, hero.y, hero.level, 0)
+	_offer_level()
+
+
+## O herói aprende uma habilidade a cada `upgrade_every` níveis, até `upgrade_max` (poucas, para o jogador acompanhar).
+func _hero_learns() -> bool:
+	var X: Dictionary = R["hero_xp"]
+	var every := int(X.get("upgrade_every", 1))
+	return hero.level % every == 0 and hero.upgrade_order.size() < int(X.get("upgrade_max", 99))
 
 
 func _upgrade_options(n: int) -> Array:
@@ -518,10 +666,7 @@ func _upgrade_options(n: int) -> Array:
 
 
 func _forge() -> float:
-	var n := int(lair.get("dark_forge", 0))
-	if n == 0:
-		return 1.0
-	return 1.0 + float(data.card("dark_forge").fx["monster_hp"]) * n
+	return 1.0 + float(lair_val.get("dark_forge", 0.0))
 
 
 # ================================================================ zonas
@@ -541,10 +686,24 @@ func _zones() -> void:
 					if not z["applied"]:
 						z["applied"] = true
 						_cc()
+						hero.root_t = maxf(hero.root_t, float(z.get("root", 0.0)))
+						hero.add_curse(int(z.get("curse", 0)))
 			"oil":
 				if inside:
 					hero.soaked_t = z["soaked"]
 					damage_hero(float(z["dps"]) * dt, z["x"], z["y"], K.TAG_FIRE, SimHero.DMG_AREA, "boiling_oil")
+					if z.get("curse", 0) > 0:
+						hero.add_curse(int(z["curse"]))
+						z["curse"] = 0
+			"fire":
+				if inside:
+					damage_hero(float(z["dps"]) * dt, z["x"], z["y"], K.TAG_FIRE, SimHero.DMG_AREA, z["src"])
+			"spring":
+				# Fonte: cura as suas unidades no raio (estruturas também).
+				if tick % 4 == 0:
+					for j in units.within(z["x"], z["y"], z["r"], tmp):
+						if units.alive[j] == 1:
+							units.hp[j] = minf(units.max_hp[j], units.hp[j] + units.max_hp[j] * float(z["heal"]) * dt * 4.0)
 			"bait":
 				if hero.has("treasure_nose"):
 					z["t"] = 0.0
@@ -566,7 +725,7 @@ func _zones() -> void:
 
 func card_cost(c: CardInst) -> int:
 	var d := c.def
-	var cost := d.cost
+	var cost := d.cost_at(c.level)
 	if c.has_mod(K.M_CHEAP):
 		cost = maxi(mini(cost, 1), cost - 1)
 	if d.category == "field" and (d.type == "monster" or d.type == "swarm"):
@@ -595,23 +754,23 @@ func can_play(hi_: int) -> int:
 				return K.Block.WRONG_PHASE
 			if d.category == "lair" and int(lair.get(d.id, 0)) >= int(d.fx.get("stack", 1)):
 				return K.Block.STACK_LIMIT
-			if d.id in ["broken_bridge", "false_sign"] and road.next_fork_index() < 0:
+			if d.id == "burn_village" and _burn_targets().is_empty():
 				return K.Block.CONDITION
 		"finisher":
 			if phase != K.Phase.ARENA:
 				return K.Block.WRONG_PHASE
-			if not finisher_ready(d):
+			if not finisher_ready(d, c.level):
 				return K.Block.CONDITION
 	if elixir + 0.0001 < card_cost(c):
 		return K.Block.NO_ELIXIR
 	return K.Block.OK
 
 
-func finisher_ready(d: CardDef) -> bool:
+func finisher_ready(d: CardDef, level := 1) -> bool:
 	var fx := d.fx
 	match str(fx.get("cond", "none")):
 		"front":
-			return arena.hero_in_front(fx["cone"], fx["range"])
+			return arena.hero_in_front(d.fxv("cone", level), fx["range"])
 		"after_teleport":
 			return t - last_teleport_t <= float(fx["window"])
 		"hero_low":
@@ -627,8 +786,7 @@ func valid_target(c: CardInst, x: float, y: float) -> bool:
 	if d.category == "field":
 		var dist := Vector2(x - hero.x, y - hero.y).length()
 		var ring: Dictionary = R["ring"]
-		if dist > float(ring["max"]):
-			return false
+		# Sem alcance máximo: vale qualquer ponto que o jogador enxerga na tela.
 		if d.is_spell and ring["spells_ignore_min"]:
 			return true
 		if dist >= float(ring["min"]):
@@ -637,7 +795,7 @@ func valid_target(c: CardInst, x: float, y: float) -> bool:
 	if d.id == "gold_bait":
 		return Vector2(x - hero.x, y - hero.y).length() <= float(d.fx["max_detour"]) + 10.0
 	if d.id == "burn_village":
-		return _village_near(x, y) >= 0
+		return _burn_near(x, y) >= 0
 	return true
 
 
@@ -668,7 +826,11 @@ func _cycle(hi_: int) -> void:
 func sacrifice(hi_: int) -> bool:
 	if phase == K.Phase.OVER or offers.size() > 0 or hi_ < 0 or hi_ >= hand.size() or hand[hi_] == null:
 		return false
-	elixir = minf(elixir_max, elixir + float(R["sacrifice_elixir"]))
+	# Sacrificar sempre gira a mão; o elixir vem no máximo uma vez a cada `sacrifice_cooldown` s
+	# (sem isso, sacrificar sem parar era elixir infinito).
+	if sacrifice_ready():
+		elixir = minf(elixir_max, elixir + float(R["sacrifice_elixir"]))
+		sac_elixir_t = t
 	_cycle(hi_)
 	stats["sacrifices"] += 1
 	if contract.size() > 0 and contract["goal"]["kind"] == "sacrifice":
@@ -677,14 +839,27 @@ func sacrifice(hi_: int) -> bool:
 	return true
 
 
+func sacrifice_ready() -> bool:
+	return t - sac_elixir_t >= float(R.get("sacrifice_cooldown", 0.0))
+
+
 func _apply(c: CardInst, x: float, y: float) -> void:
 	var d := c.def
 	var fx := d.fx
+	var lv := c.level
 	var smult := float(deck_rules.get("spell_damage_mult", 1.0))
+	# Veterano em feitiço: efeito maior (dano ou duração), já que não há unidade a mais.
+	var vet := 1.0
+	if d.is_spell and c.has_mod(K.M_VETERAN):
+		vet += float(data.modifiers["veteran"]["p"].get("spell_effect", 0.0))
+	var curse := 1 if d.is_spell and c.has_mod(K.M_CURSED) else 0
 	emit(K.Ev.SPELL, x, y, d.idx, 0)
 	if d.is_unit:
-		var n := d.count + (1 if c.has_mod(K.M_VETERAN) else 0)
-		var xpv := float(d.cost) * float(R["hero_xp"]["per_elixir"]) / d.xp_parts * float(deck_rules.get("hero_xp_mult", 1.0))
+		var n := d.count_at(lv) + (1 if c.has_mod(K.M_VETERAN) else 0)
+		var hpm := d.mult(lv) if d.scales("hp") else 1.0
+		var dpm := d.mult(lv) if d.scales("dps") else 1.0
+		# XP cresce menos que o custo (cost_exp < 1): monstro caro não pode alimentar o herói mais do que machuca.
+		var xpv := 0.0   # sem XP (09/11/2026)
 		var f := 0
 		if c.has_mod(K.M_SHADOWY):
 			f |= K.F_NO_XP
@@ -697,7 +872,10 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 		for k in n:
 			var r := 0.55 * sqrt(float(k))
 			var a := k * 2.399963
-			units.spawn(d, x + cos(a) * r, y + sin(a) * r, xpv, float(d.cost) / n, f, c.uid, _forge())
+			var j := units.spawn(d, x + cos(a) * r, y + sin(a) * r, xpv, float(d.cost) / n, f, c.uid, _forge() * hpm)
+			if j >= 0:
+				units.lvl[j] = lv
+				units.dmg[j] *= dpm
 		return
 	match d.id:
 		"shadow_bolt":
@@ -709,14 +887,18 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			var along := rel.dot(dir)
 			var side := absf(rel.dot(Vector2(-dir.y, dir.x)))
 			if along >= -0.5 and along <= float(fx["length"]) and side <= float(fx["width"]) * 0.5 + hero.radius:
-				damage_hero(float(fx["damage"]) * smult, x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
+				# N3: o raio volta pelo mesmo caminho e acerta de novo.
+				for k in int(d.fxv("hits", lv, 1.0)):
+					damage_hero(d.fxv("damage", lv) * smult * vet, x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
+				hero.add_curse(curse)
 		"web":
-			zones.append({"kind": "web", "x": x, "y": y, "r": fx["radius"], "t": fx["duration"], "applied": false})
+			zones.append({"kind": "web", "x": x, "y": y, "r": fx["radius"], "t": d.fxv("duration", lv) * vet, "applied": false,
+				"root": d.fxv("root", lv), "curse": curse})
 		"boiling_oil":
 			zones.append({"kind": "oil", "x": x, "y": y, "r": fx["radius"], "t": fx["duration"],
-				"dps": float(fx["dps"]) * smult, "soaked": fx["soaked"]})
+				"dps": d.fxv("dps", lv) * smult * vet, "soaked": fx["soaked"], "curse": curse})
 		"soul_feast":
-			units.within(x, y, fx["radius"], tmp)
+			units.within(x, y, d.fxv("radius", lv), tmp)
 			var refund := 0.0
 			var seen := {}
 			for j in tmp.duplicate():
@@ -725,57 +907,51 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 				refund += units.cost_share[j]
 				seen[units.uid[j]] = true
 				kill_unit(j, K.Death.SACRIFICE)
-			refund += seen.size() * float(fx["bonus_per_card"])
+			refund += seen.size() * d.fxv("bonus_per_card", lv)
 			elixir = minf(elixir_max, elixir + refund)
-		"broken_bridge", "false_sign":
-			var li := road.next_fork_index()
-			if li >= 0:
-				var leg: Dictionary = road.legs[li]
-				var br := _nearest_branch(leg, x, y)
-				if d.id == "broken_bridge":
-					leg["closed"] = br
-					if leg["forced"] == br:
-						leg["forced"] = -1
-				else:
-					leg["forced"] = br
-					if leg["closed"] == br:
-						leg["closed"] = -1
 		"gold_bait":
-			zones.append({"kind": "bait", "x": x, "y": y, "r": 1.0, "t": 40.0, "xp": fx["xp"]})
+			zones.append({"kind": "bait", "x": x, "y": y, "r": 1.0, "t": 40.0, "xp": 0.0})
 		"burn_village":
-			var vi := _village_near(x, y)
-			if vi >= 0:
-				road.locations[vi]["state"] = SimRoad.LocState.DESTROYED
+			# Incêndio: marca um local da rota; quando o herói chega, o local pega fogo.
+			var bi := _burn_near(x, y)
+			if bi >= 0:
+				var bl: Dictionary = road.locations[bi]
+				bl["burn"] = true
+				bl["burn_dps"] = d.fxv("dps", lv) * smult * vet
+				bl["burn_s"] = float(fx["duration"])
 		"soul_collector", "dark_forge", "lair_walls":
 			lair[d.id] = int(lair.get(d.id, 0)) + 1
+			var key: String = {"soul_collector": "elixir_regen", "dark_forge": "monster_hp", "lair_walls": "hero_hp_loss"}[d.id]
+			lair_val[d.id] = float(lair_val.get(d.id, 0.0)) + d.fxv(key, lv)
 		"forbidden_library":
 			lair[d.id] = int(lair.get(d.id, 0)) + 1
 			hand_size += int(fx["hand"])
 			if queue.size() > 0:
 				hand.append(queue.pop_front())
 		"cosmic_ray":
-			if arena.hero_in_front(fx["cone"], float(fx["range"]) + 2.0):
+			if arena.hero_in_front(d.fxv("cone", lv), float(fx["range"]) + 2.0):
 				damage_hero(fx["damage"], arena.bx, arena.by, 0, SimHero.DMG_PIERCE, d.id)
 		"bone_prison":
-			hero.root_t = fx["root"]
+			hero.root_t = d.fxv("root", lv)
 		"petrifying_gaze":
-			hero.petrify_t = fx["petrify"]
+			hero.petrify_t = d.fxv("petrify", lv)
 			hero.shield_hp = 0.0
 			hero.shield_t = hero.H["shield"]["regen_seconds"]
 			hero.tavern_t = 0.0
 		"damned_army":
-			_army(fx)
+			_army(fx, d.fxv("hp", lv), d.fxv("dps", lv))
 		"dark_fury":
-			arena.fury(fx["heal"], fx["duration"])
+			arena.fury(fx["heal"], fx["duration"], d.fxv("damage", lv))
 		"dark_pact":
-			if arena.sacrifice_part():
+			# Paga com vida de uma parte do corpo (a mais cheia), sem destruí-la de saída.
+			if arena.drain_part(float(fx["drain"])):
 				elixir = elixir_max
-				for k in int(fx["draw"]):
+				for k in int(d.fxv("draw", lv)):
 					if queue.size() > 0:
 						hand.append(queue.pop_front())
 
 
-func _army(fx: Dictionary) -> void:
+func _army(fx: Dictionary, hp_: float, dps_: float) -> void:
 	var order: Array = []
 	for di in dead_by_def.size():
 		if dead_by_def[di] > 0:
@@ -793,36 +969,32 @@ func _army(fx: Dictionary) -> void:
 			var r := 4.0 + fmod(n * 0.7, 2.0)
 			var j := units.spawn(sp, hero.x + cos(a) * r, hero.y + sin(a) * r, 0.0, 0.0, K.F_NO_XP, 0)
 			if j >= 0:
-				units.hp[j] = fx["hp"]
-				units.max_hp[j] = fx["hp"]
-				units.dmg[j] = float(fx["dps"]) * units.atk_int[j] * units.dmg_mult
+				units.hp[j] = hp_
+				units.max_hp[j] = hp_
+				units.dmg[j] = dps_ * units.atk_int[j] * units.dmg_mult
 				ids.append(j)
 			n += 1
 	zones.append({"kind": "army", "x": hero.x, "y": hero.y, "r": 0.0, "t": fx["duration"], "ids": ids})
 
 
-func _nearest_branch(leg: Dictionary, x: float, y: float) -> int:
-	var best := 0
-	var bd := INF
-	for b in leg["pts"].size():
-		for p in leg["pts"][b]:
-			var dd := Vector2(x, y).distance_squared_to(p)
-			if dd < bd:
-				bd = dd
-				best = b
-	return best
-
-
-func _village_near(x: float, y: float) -> int:
-	var best := -1
-	var bd := 1600.0
+## Locais que o Incêndio pode marcar: ativos, ainda à frente no caminho do herói e sem fogo marcado.
+func _burn_targets() -> Array:
+	var out: Array = []
 	for li in road.locations.size():
 		var loc: Dictionary = road.locations[li]
-		if loc["type"] == "village" and loc["state"] == SimRoad.LocState.ACTIVE and not loc["entered"]:
-			var dd := Vector2(x, y).distance_squared_to(loc["pos"])
-			if dd < bd:
-				bd = dd
-				best = li
+		if loc["state"] == SimRoad.LocState.ACTIVE and not loc["entered"] and not loc.get("burn", false) and road.is_on_route(loc):
+			out.append(li)
+	return out
+
+
+func _burn_near(x: float, y: float) -> int:
+	var best := -1
+	var bd := 1600.0
+	for li in _burn_targets():
+		var dd := Vector2(x, y).distance_squared_to(road.locations[li]["pos"])
+		if dd < bd:
+			bd = dd
+			best = li
 	return best
 
 
@@ -850,6 +1022,8 @@ func _roll_rarity() -> int:
 
 
 func _card_ok(c: CardDef) -> bool:
+	if unlocked.size() > 0 and not unlocked.has(c.id):
+		return false
 	if c.category == "lair" and int(lair.get(c.id, 0)) + _deck_count(c.id) >= int(c.fx.get("stack", 1)):
 		return false
 	return true
@@ -880,7 +1054,7 @@ func _mod_option(exclude: Array) -> Dictionary:
 			continue
 		for mid in K.MOD_IDS:
 			var m: Dictionary = data.modifiers[mid]
-			var ok: bool = m["applies"].has("any") or m["applies"].has(ci.def.type)
+			var ok: bool = (m["applies"].has("any") or m["applies"].has(ci.def.type)) and not m.get("exclude", []).has(ci.def.id)
 			if ok and not ci.has_mod(K.MOD_BY_ID[mid]) and not exclude.has(str(ci.uid) + mid):
 				cand.append([ci, mid])
 	if cand.is_empty():
@@ -907,7 +1081,158 @@ func _opt_key(o: Dictionary) -> String:
 			return o["id"]
 		"mod":
 			return "mod:" + str(o["mod"])
+		"upgrade":
+			return "up:" + str(o["card"])
+		"pick":
+			return "pick:" + str(o["what"])
+		"buy":
+			return "buy:" + _opt_key(o["item"])
 	return "remove"
+
+
+## Recompensa de um local: o tipo do local decide o que vem; vencer a disputa dá mais opções.
+func _offer_location(ty: String, won: bool) -> void:
+	var LR: Dictionary = R["location_rewards"][ty]
+	var O: Dictionary = R["offers"]
+	var n := int(O["location_win"] if won else O["location_lose"])
+	stats["locs_won" if won else "locs_lost"] += 1
+	if won:
+		_earn_gold(float(R["gold"]["per_contest"]))
+	var opts: Array = []
+	match str(LR["reward"]):
+		"card":
+			if LR.has("min_rarity"):
+				var minr := K.RARITIES.find(str(LR["min_rarity"]))
+				opts = _card_options(n, func(cd: CardDef): return cd.rarity >= minr)
+			else:
+				opts = _card_options(n, _rarity_filter(LR["rarities"] if won else LR["lose_rarities"]))
+		"upgrade":
+			opts = _level_up_options(n)
+		"mod":
+			var ex: Array = []
+			for k in n:
+				var m := _mod_option(ex)
+				if m.size() > 0:
+					ex.append(str(m["uid"]) + str(m["mod"]))
+					opts.append(m)
+		"remove":
+			opts = _remove_options(-1 if won else int(LR["lose_options"]))
+		"choice":
+			if won:
+				opts = [{"kind": "pick", "what": "card"}, {"kind": "pick", "what": "upgrade"}]
+				if _can_remove():
+					opts.append({"kind": "pick", "what": "remove"})
+			else:
+				opts = _card_options(n, _rarity_filter(LR["lose_rarities"]))
+	_push_offer("location", opts, {"loc": ty, "won": won})
+
+
+func _earn_gold(v: float) -> void:
+	gold += v
+	stats["gold_earned"] += v
+
+
+## Loja: abre quando o herói sai do raio. Vencer a disputa (dano no herói lá dentro) dá desconto.
+## Cada item é {"kind": "buy", "item": opção de oferta (ou um "pick" que abre a escolha da carta), "price"}.
+func _open_shop(won: bool) -> void:
+	stats["locs_won" if won else "locs_lost"] += 1
+	if won:
+		_earn_gold(float(R["gold"]["per_contest"]))
+	var S: Dictionary = R["shop"]
+	var disc := float(R["location_rewards"]["shop"]["discount"]) if won else 0.0
+	var price := func(v: float) -> int: return int(round(v * (1.0 - disc)))
+	var items: Array = []
+	var ex: Array = []
+	for k in int(S["cards"]):
+		var r := _roll_rarity()
+		var c: CardDef = null
+		for dr in [0, -1, 1, -2, 2, -3, 3]:
+			var rr: int = r + dr
+			if rr < 0 or rr > 3:
+				continue
+			c = _pick_card(func(cd: CardDef): return cd.rarity == rr, ex)
+			if c:
+				break
+		if c:
+			ex.append(c.id)
+			items.append({"kind": "buy", "item": {"kind": "card", "id": c.id}, "price": price.call(float(S["prices"][K.RARITIES[c.rarity]]))})
+	if not _level_up_options(1).is_empty():
+		items.append({"kind": "buy", "item": {"kind": "pick", "what": "upgrade"}, "price": price.call(float(S["upgrade"]))})
+	var m := _mod_option([])
+	if m.size() > 0:
+		items.append({"kind": "buy", "item": m, "price": price.call(float(S["mod"]))})
+	if _can_remove():
+		items.append({"kind": "buy", "item": {"kind": "pick", "what": "remove"},
+			"price": price.call(float(S["remove"]) + float(S["remove_step"]) * shop_removes)})
+	_push_offer("shop", items, {"won": won})
+
+
+## Escolha do ramo pelo jogador: o herói vai passar pelo nó n (precisa estar à frente, no caminho).
+func choose_route(n: int) -> bool:
+	if phase != K.Phase.ROAD or not road.plan_to(n):
+		return false
+	if route_wait and road.next_edge() >= 0:
+		route_wait = false
+	return true
+
+
+func _rarity_filter(names: Array) -> Callable:
+	var rs: Array = names.map(func(r): return K.RARITIES.find(str(r)))
+	return func(cd: CardDef): return rs.has(cd.rarity)
+
+
+func _card_options(n: int, f: Callable) -> Array:
+	var opts: Array = []
+	var ex: Array = []
+	for k in n:
+		var c := _pick_card(f, ex)
+		if c:
+			ex.append(c.id)
+			opts.append({"kind": "card", "id": c.id})
+	return opts
+
+
+## Até n cartas diferentes do deck que ainda podem subir de nível (-1 = todas).
+func _level_up_options(n: int) -> Array:
+	var pool: Array = []
+	for ci in cards:
+		if ci.level < int(R["card_levels"]["max"]):
+			pool.append(ci)
+	return _pick_insts(pool, n, "upgrade")
+
+
+func _can_remove() -> bool:
+	return cards.size() > int(R["deck"]["min_in_run"])
+
+
+## Opções de remoção (n = -1: o deck inteiro, para escolher qualquer carta). Nunca abaixo do deck mínimo.
+func _remove_options(n: int) -> Array:
+	if not _can_remove():
+		return []
+	return _pick_insts(cards.duplicate(), n, "remove")
+
+
+## Cópias iguais (mesma carta, nível e modificadores) aparecem uma vez só.
+func _pick_insts(all: Array, n: int, kind: String) -> Array:
+	var pool: Array = []
+	var seen := {}
+	for ci in all:
+		var key := "%s/%d/%d" % [ci.def.id, ci.level, ci.mods]
+		if not seen.has(key):
+			seen[key] = true
+			pool.append(ci)
+	var opts: Array = []
+	if n < 0:
+		for ci in pool:
+			opts.append({"kind": kind, "uid": ci.uid, "card": ci.def.id, "level": ci.level})
+		return opts
+	for k in n:
+		if pool.is_empty():
+			break
+		var ci: CardInst = pool[rng.randi_range(0, pool.size() - 1)]
+		pool.erase(ci)
+		opts.append({"kind": kind, "uid": ci.uid, "card": ci.def.id, "level": ci.level})
+	return opts
 
 
 func _offer_level() -> void:
@@ -938,18 +1263,6 @@ func _offer_level() -> void:
 	_push_offer("level", opts)
 
 
-func _offer_shrine() -> void:
-	var opts: Array = []
-	var ex: Array = []
-	var minr := K.RARITIES.find(str(R["offers"]["shrine_min_rarity"]))
-	for k in int(R["offers"]["shrine_options"]):
-		var c := _pick_card(func(cd: CardDef): return cd.rarity >= minr, ex)
-		if c:
-			ex.append(c.id)
-			opts.append({"kind": "card", "id": c.id})
-	_push_offer("shrine", opts)
-
-
 func _offer_contract(rw: Dictionary) -> void:
 	var n := int(R["offers"]["contract_options"])
 	var opts: Array = []
@@ -976,28 +1289,94 @@ func _offer_contract(rw: Dictionary) -> void:
 					ex.append(str(m["uid"]) + str(m["mod"]))
 					opts.append(m)
 		"remove":
-			var pool := cards.duplicate()
-			for k in n:
-				if pool.size() <= 1:
-					break
-				var ci: CardInst = pool[rng.randi_range(0, pool.size() - 1)]
-				pool.erase(ci)
-				opts.append({"kind": "remove", "uid": ci.uid, "card": ci.def.id})
+			opts = _remove_options(n)
 			extra = {"elixir": rw.get("elixir", 0)}
 	_push_offer("contract", opts, extra)
 
 
+const SKIP := -1
+
+
+## Escolhe a opção k da oferta atual; SKIP (-1) recusa (toda recompensa pode ser recusada).
 func choose(k: int) -> bool:
 	if offers.is_empty():
 		return false
 	var o: Dictionary = offers[0]
 	var opts: Array = o["options"]
+	if k == SKIP:
+		# Na loja, recusar é sair (ou voltar da escolha da carta para a loja).
+		if o["source"] != "shop" and o["source"] != "shop_pick":
+			stats["skipped"] += 1
+		offers.pop_front()
+		return true
 	if k < 0 or k >= opts.size():
 		return false
 	var op: Dictionary = opts[k]
+	if o["source"] == "shop":
+		return _buy(k)
 	var pk: Dictionary = stats["picked"]
 	var key := _opt_key(op)
 	pk[key] = int(pk.get(key, 0)) + 1
+	if o["source"] == "shop_pick":
+		# Escolheu a carta do item comprado: paga e tira o item da loja (que está logo atrás).
+		_pay(int(o["price"]))
+		_apply_option(op)
+		offers.pop_front()
+		if offers.size() > 0 and offers[0]["source"] == "shop":
+			offers[0]["options"].remove_at(int(o["shop_k"]))
+			if op["kind"] == "remove":
+				shop_removes += 1
+			if offers[0]["options"].is_empty():
+				offers.pop_front()
+		return true
+	var follow := _apply_option(op)
+	if o.has("elixir"):
+		elixir = minf(elixir_max, elixir + float(o["elixir"]))
+	offers.pop_front()
+	if follow.size() > 0:
+		_push_offer("location", follow, {"loc": "bridge", "won": true})
+		offers.push_front(offers.pop_back())
+	return true
+
+
+## Compra o item k da loja aberta. Carta e modificador saem na hora; nível e remoção abrem a escolha da carta.
+func _buy(k: int) -> bool:
+	var o: Dictionary = offers[0]
+	var op: Dictionary = o["options"][k]
+	if gold + 0.0001 < float(op["price"]):
+		return false
+	var item: Dictionary = op["item"]
+	if item["kind"] == "pick":
+		var pickopts := _level_up_options(-1) if item["what"] == "upgrade" else _remove_options(-1)
+		if pickopts.is_empty():
+			return false
+		_push_offer("shop_pick", pickopts, {"price": op["price"], "shop_k": k, "what": item["what"]})
+		offers.push_front(offers.pop_back())
+		return true
+	var pk: Dictionary = stats["picked"]
+	var key := _opt_key(op)
+	pk[key] = int(pk.get(key, 0)) + 1
+	_pay(int(op["price"]))
+	_apply_option(item)
+	o["options"].remove_at(k)
+	if o["options"].is_empty():
+		offers.pop_front()
+	return true
+
+
+func _pay(p: int) -> void:
+	gold = maxf(0.0, gold - p)
+	stats["gold_spent"] += p
+	stats["shop_buys"] += 1
+
+
+func can_afford(op: Dictionary) -> bool:
+	return gold + 0.0001 >= float(op.get("price", 0))
+
+
+## Aplica uma opção de oferta ao deck. Devolve a escolha seguinte (Ponte vencida: o tipo escolhido abre as opções).
+func _apply_option(op: Dictionary) -> Array:
+	var follow: Array = []
 	match str(op["kind"]):
 		"card":
 			var ci := _new_inst(data.card(op["id"]))
@@ -1007,12 +1386,23 @@ func choose(k: int) -> bool:
 			for ci in cards:
 				if ci.uid == op["uid"]:
 					ci.mods |= int(K.MOD_BY_ID[op["mod"]])
+		"upgrade":
+			for ci in cards:
+				if ci.uid == op["uid"]:
+					ci.level = mini(ci.level + 1, int(R["card_levels"]["max"]))
 		"remove":
 			_remove_uid(op["uid"])
-	if o.has("elixir"):
-		elixir = minf(elixir_max, elixir + float(o["elixir"]))
-	offers.pop_front()
-	return true
+		"pick":
+			# Ponte vencida: escolheu o tipo, agora escolhe a recompensa (como num local vencido).
+			var n := int(R["offers"]["location_win"])
+			match str(op["what"]):
+				"card":
+					follow = _card_options(n, _rarity_filter(R["location_rewards"]["bridge"]["rarities"]))
+				"upgrade":
+					follow = _level_up_options(n)
+				"remove":
+					follow = _remove_options(-1)
+	return follow
 
 
 func _refill() -> void:

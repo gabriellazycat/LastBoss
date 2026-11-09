@@ -2,6 +2,9 @@ class_name PlayerBot
 extends RefCounted
 ## Bot do jogador. A personalidade vem de data/bots/<id>.json. Só emite comandos ao Sim.
 
+## O jogo não tem mais alcance máximo; o bot aleatório continua soltando perto do herói (o antigo anel de 12 m) para não mudar o balanceamento.
+const RANDOM_PLACE_MAX := 11.9
+
 var P: Dictionary
 var kind := "random"
 var rng := RandomNumberGenerator.new()
@@ -18,7 +21,11 @@ static func load_bot(id: String, seed_: int, dir := "res://data/bots") -> Player
 
 func think(sim: Sim) -> void:
 	if sim.offers.size() > 0:
-		sim.choose(_pick_offer(sim))
+		if not sim.choose(_pick_offer(sim)):
+			sim.choose(Sim.SKIP)
+		return
+	if sim.route_wait:
+		sim.choose_route(_pick_route(sim))
 		return
 	if sim.t < next_t:
 		return
@@ -124,8 +131,6 @@ func _smart_value(sim: Sim, c: Sim.CardInst) -> float:
 			v -= 1.0
 		"finisher":
 			v += 6.0
-	if d.is_unit and d.arch == K.Arch.SWARM and h.hp_frac() > 0.85:
-		v -= float(P.get("xp_aversion", 0.0))
 	var combo := float(P.get("combo", 0.0))
 	if d.id == "goblin_dynamiter" and (h.slow_t > 0.0 or h.soaked_t > 0.0 or h.root_t > 0.0):
 		v += combo
@@ -153,6 +158,20 @@ func _smart(sim: Sim) -> void:
 	var counting: bool = shrine.size() > 0 and shrine["entered"]
 	if shrine.size() > 0 and not counting and sim.elixir < float(P.get("shrine_reserve", 0)):
 		return
+	# Disputas de dano (Taverna, Ponte, Loja): guarda elixir até o herói entrar, depois gasta tudo ali.
+	# Fonte e Ritual: monstros de guarda perto do local.
+	var contest := _contest_ahead(sim)
+	var ctype := str(contest.get("type", ""))
+	var guard := {}
+	if ctype in ["tavern", "bridge", "shop"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)):
+		return
+	if ctype in ["fountain", "ritual"]:
+		var gd := Vector2(sim.hero.x, sim.hero.y).distance_to(contest["pos"])
+		if gd <= 18.0 and gd > float(contest["r"]):
+			guard = contest
+	if not counting and shrine.is_empty() and guard.size() > 0:
+		shrine = guard
+		counting = true
 	for _n in 3:
 		var best := -1
 		var best_v := 0.0
@@ -160,6 +179,13 @@ func _smart(sim: Sim) -> void:
 			var b := sim.can_play(i)
 			if b == K.Block.WRONG_PHASE or b == K.Block.STACK_LIMIT:
 				if sim.elixir < sim.elixir_max - 0.5 or sim.phase == K.Phase.ARENA:
+					sim.sacrifice(i)
+					return
+				continue
+			# Carta que este perfil nunca joga (cara demais) só trava a mão: vira elixir.
+			var hc: Sim.CardInst = sim.hand[i]
+			if hc.def.category == "field" and sim.card_cost(hc) > int(P.get("max_cost", 10)):
+				if sim.elixir < sim.elixir_max - 0.5:
 					sim.sacrifice(i)
 					return
 				continue
@@ -258,21 +284,13 @@ func _target(sim: Sim, c: Sim.CardInst, randomize: bool) -> Vector2:
 			return h
 		if randomize:
 			var a := rng.randf() * TAU
-			return h + Vector2(cos(a), sin(a)) * rng.randf_range(float(ring["min"]) + 0.1, float(ring["max"]) - 0.1)
+			return h + Vector2(cos(a), sin(a)) * rng.randf_range(float(ring["min"]) + 0.1, RANDOM_PLACE_MAX)
 		if sim.phase == K.Phase.ARENA:
 			var b := Vector2(sim.arena.bx, sim.arena.by)
 			return b + (h - b).normalized() * 3.0
 		var dist := float(P.get("place_distance", 6.0))
 		return h + _forward(sim).rotated(rng.randf_range(-0.6, 0.6)) * dist
 	match d.id:
-		"broken_bridge", "false_sign":
-			var li := sim.road.next_fork_index()
-			if li >= 0:
-				var leg: Dictionary = sim.road.legs[li]
-				var long := 0 if leg["len"][0] > leg["len"][1] else 1
-				var b := (1 - long) if d.id == "broken_bridge" else long
-				var pts: PackedVector2Array = leg["pts"][b]
-				return pts[pts.size() / 2]
 		"gold_bait":
 			var U := sim.units
 			for i in U.hi:
@@ -280,39 +298,168 @@ func _target(sim: Sim, c: Sim.CardInst, randomize: bool) -> Vector2:
 					return Vector2(U.px[i], U.py[i])
 			return sim.road.point_at(sim.hero.s + 15.0)
 		"burn_village":
-			for loc in sim.road.locations:
-				if loc["type"] == "village" and loc["state"] == SimRoad.LocState.ACTIVE and not loc["entered"] and sim.road.is_on_route(loc):
-					return loc["pos"]
+			# O local à frente mais próximo do herói (o fogo pega quando ele chega).
+			var best := -1
+			var bd := INF
+			for li in sim._burn_targets():
+				var dd := h.distance_to(sim.road.locations[li]["pos"])
+				if dd < bd:
+					bd = dd
+					best = li
+			if best >= 0:
+				return sim.road.locations[best]["pos"]
 	return h
 
 
+# ---------------------------------------------------------------- rota
+
+## Ramo na bifurcação: o aleatório e o guloso sorteiam; o "smart" soma o valor dos locais do melhor caminho.
+func _pick_route(sim: Sim) -> int:
+	var road := sim.road
+	var outs: Array = road.nodes[road.head]["out"]
+	if outs.is_empty():
+		return -1
+	if kind != "smart":
+		return road.legs[outs[rng.randi_range(0, outs.size() - 1)]]["b"]
+	var memo := {}
+	var best := -1
+	var bv := -INF
+	for e in outs:
+		var b: int = road.legs[e]["b"]
+		var v := _path_value(sim, b, memo) + rng.randf() * 0.01
+		if v > bv:
+			bv = v
+			best = b
+	return best
+
+
+## Valor do melhor caminho a partir do nó n até o covil (memorizado).
+func _path_value(sim: Sim, n: int, memo: Dictionary) -> float:
+	if memo.has(n):
+		return memo[n]
+	var road := sim.road
+	var v := 0.0
+	var li: int = road.nodes[n]["loc"]
+	if li >= 0:
+		v = _loc_value(sim, str(road.locations[li]["type"]))
+	var nxt := 0.0
+	var first := true
+	for e in road.nodes[n]["out"]:
+		var x := _path_value(sim, road.legs[e]["b"], memo)
+		if first or x > nxt:
+			nxt = x
+			first = false
+	memo[n] = v + nxt
+	return v + nxt
+
+
+func _loc_value(sim: Sim, ty: String) -> float:
+	match ty:
+		"shrine":
+			return float(P.get("route_shrine", 5.0))
+		"ritual":
+			return float(P.get("route_ritual", 4.0))
+		"shop":
+			return float(P.get("route_shop", 3.5)) + sim.gold / 150.0
+		"fountain":
+			# Remover carta vale mais com o deck grande.
+			return 2.5 + maxf(0.0, sim.cards.size() - float(P.get("deck_target", 12))) * 0.5
+	return 3.0
+
+
+## Próximo local de disputa à frente no caminho do herói, a até `contest_lookahead` m (ou {}).
+func _contest_ahead(sim: Sim) -> Dictionary:
+	var look := float(P.get("contest_lookahead", 30.0))
+	if look <= 0.0 or sim.phase != K.Phase.ROAD:
+		return {}
+	var h := Vector2(sim.hero.x, sim.hero.y)
+	var best := {}
+	var bd := look
+	for loc in sim.road.locations:
+		if loc["state"] != SimRoad.LocState.ACTIVE or loc["type"] == "shrine" or not sim.road.is_on_route(loc):
+			continue
+		var d := h.distance_to(loc["pos"]) - float(loc["r"])
+		if loc["entered"]:
+			d = 0.0
+		if d < bd:
+			bd = d
+			best = loc
+	return best
+
+
 func _pick_offer(sim: Sim) -> int:
-	var opts: Array = sim.offers[0]["options"]
+	var of: Dictionary = sim.offers[0]
+	var opts: Array = of["options"]
+	if of["source"] == "shop":
+		return _pick_buy(sim, opts)
 	if kind == "random":
 		return rng.randi_range(0, opts.size() - 1)
 	var best := 0
 	var bv := -INF
 	for k in opts.size():
+		var v := _opt_value(sim, opts[k])
+		if v > bv:
+			bv = v
+			best = k
+	# A escolha da carta de um item já comprado nunca é recusada (senão a loja oferece o item de novo).
+	if bv < float(P.get("skip_below", 2.5)) and of["source"] != "shop_pick":
+		return Sim.SKIP
+	return best
+
+
+## Loja: compra o item que mais vale pelo preço (o ouro tem valor de reserva); nada que valha → sai.
+func _pick_buy(sim: Sim, opts: Array) -> int:
+	var can: Array = []
+	for k in opts.size():
+		if sim.can_afford(opts[k]):
+			can.append(k)
+	if can.is_empty():
+		return Sim.SKIP
+	if kind == "random":
+		return can[rng.randi_range(0, can.size() - 1)] if rng.randf() < 0.7 else Sim.SKIP
+	var best := Sim.SKIP
+	var bv := float(P.get("skip_below", 2.5))
+	for k in can:
 		var o: Dictionary = opts[k]
-		var v := 1.0
-		match str(o["kind"]):
-			"card":
-				var c: CardDef = sim.data.card(o["id"])
-				v = c.cost + c.rarity * 2.0
-				if c.category == "finisher":
-					v -= 2.0 if kind == "greedy" else 2.0 - 3.0 * float(P.get("finisher_pick", 0.0)) * (1.0 if _count(sim, "finisher") < 2 else -1.0)
-				if c.category == "lair":
-					v += float(P.get("lair_bonus", 0.0)) * 0.5
-				if c.category == "field" and sim.card_cost(_tmp_inst(c)) > int(P.get("max_cost", 10)):
-					v -= 10.0
-			"mod":
-				v = 3.0
-				if kind == "smart" and o["mod"] == "shadowy":
-					v += float(P.get("xp_aversion", 0.0)) * 2.0
+		var item: Dictionary = o["item"]
+		var v := _opt_value(sim, item) - float(o["price"]) / float(P.get("gold_value", 30.0))
 		if v > bv:
 			bv = v
 			best = k
 	return best
+
+
+## Valor de uma opção de oferta para este perfil.
+func _opt_value(sim: Sim, o: Dictionary) -> float:
+	# Deck grande dilui a mão: acima do alvo, carta nova vale menos (e uma oferta fraca é recusada).
+	var excess := maxf(0.0, sim.cards.size() - float(P.get("deck_target", 12)))
+	var v := 1.0
+	match str(o["kind"]):
+		"card":
+			var c: CardDef = sim.data.card(o["id"])
+			v = c.cost + c.rarity * 2.0
+			if c.category == "finisher":
+				v -= 2.0 if kind == "greedy" else 2.0 - 3.0 * float(P.get("finisher_pick", 0.0)) * (1.0 if _count(sim, "finisher") < 2 else -1.0)
+			if c.category == "lair":
+				v += float(P.get("lair_bonus", 0.0)) * 0.5
+			if c.category == "field" and sim.card_cost(_tmp_inst(c)) > int(P.get("max_cost", 10)):
+				v -= 10.0
+			v -= excess
+		"mod":
+			v = 3.0
+		"upgrade":
+			# Sobe a carta que mais pesa; o especial do N3 vale um pouco mais.
+			var c: CardDef = sim.data.card(o["card"])
+			v = 4.0 + c.cost * 0.5 + c.rarity
+			if int(o["level"]) + 1 >= 3 and c.n3.size() > 0:
+				v += 1.5
+		"remove":
+			# Tira a carta que menos vale (barata, comum, sem nível).
+			var c: CardDef = sim.data.card(o["card"])
+			v = 9.0 - c.cost - c.rarity * 2.0 - int(o.get("level", 1)) * 2.0
+		"pick":
+			v = {"upgrade": 6.0, "card": 5.0 - excess, "remove": 4.0 + excess}.get(str(o["what"]), 1.0)
+	return v
 
 
 func _count(sim: Sim, cat: String) -> int:

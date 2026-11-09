@@ -1,0 +1,32 @@
+{
+ "start_collection": [
+  "rat_horde",
+  "bat_nest",
+  "skeleton_archers",
+  "soul_feast",
+  "web",
+  "shadow_bolt",
+  "goblin_dynamiter",
+  "boiling_oil",
+  "cultists",
+  "gargoyle_tower",
+  "soul_collector",
+  "mimic",
+  "gold_bait",
+  "burn_village",
+  "dark_forge",
+  "bone_prison"
+ ],
+ "unlock_cost": {
+  "common": 40,
+  "uncommon": 70,
+  "rare": 100,
+  "legendary": 180
+ },
+ "souls": {
+  "damage_per_soul": 400,
+  "per_location": 2,
+  "win": 40,
+  "win_early_extra": 20
+ }
+}

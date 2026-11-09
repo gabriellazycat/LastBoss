@@ -26,9 +26,6 @@ KNOBS = [
     ("hero_escudeiro.json", ["regen_combat"], "+hero"),
     ("boss_lorde.json", ["parts", 3, "hp"], "-hero"),
     ("boss_lorde.json", ["right_arm_dps"], "-hero"),
-    ("rules.json", ["player_xp", "first_level"], "-plevel"),
-    ("rules.json", ["hero_xp", "per_elixir"], "+level"),
-    ("rules.json", ["hero_xp", "passive_per_s"], "+level"),
     ("rules.json", ["road", "target_length"], "+time"),
     ("rules.json", ["units", "damage_mult"], "-hero"),
     ("rules.json", ["units", "projectile_damage_mult"], "-hero"),
@@ -39,7 +36,6 @@ METRIC_KNOBS = {
     "random_win": ("+hero", "-hero"),
     "hero_level": ("+level",),
     "arena_time": ("+time",),
-    "player_levels": ("-plevel",),
     "deck_spread": ("deck",),
 }
 DECK_IDX = {"horde": 0, "ruin": 1, "treasure": 2}
@@ -100,9 +96,9 @@ def metric_error(s, name):
     if name == "arena_time":
         v = rb.mean([r["arena_t"] for r in rows])
         return 1 if v is not None and v > g["arena_arrival_s"][1] else -1
-    if name == "player_levels":
-        v = rb.mean([r["player_level_arena"] for r in rows])
-        return 1 if v is not None and v > g["player_levels"][1] else -1
+    if name == "heroes_fallen":
+        v = rb.mean([r["heroes_fallen"] for r in rows])
+        return 1 if v is not None and v < 5 else -1
     return 0
 
 

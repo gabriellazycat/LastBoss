@@ -1,0 +1,171 @@
+<title>Last Boss, antes e depois</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Alegreya+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: uma coluna de pares antes/depois, como uma tira de provas; a página tem a cor do covil (só escura). */
+:root {
+  --iron: #110e13;
+  --plate: #1c171e;
+  --bronze: #cc9e61;
+  --gold: #ffd180;
+  --parchment: #f2e9dc;
+  --ash: #b3a597;
+  --display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html { background: var(--iron); }
+body { background: var(--iron); color: var(--parchment); font: 500 17px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 64px; }
+main { max-width: 1480px; margin: 0 auto; display: grid; gap: 48px; }
+.intro { display: grid; gap: 10px; max-width: 70ch; }
+.intro .eyebrow { font: 700 13px/1 var(--body); letter-spacing: .18em; text-transform: uppercase; color: var(--bronze); }
+h1 { font: 900 clamp(34px, 6vw, 64px)/1.05 var(--display); margin: 0; color: var(--gold); text-wrap: balance;
+  text-shadow: 0 3px 0 #000; }
+.intro p { margin: 0; color: var(--ash); }
+.pair { display: grid; gap: 14px; padding-top: 22px; border-top: 1px solid color-mix(in srgb, var(--bronze) 35%, transparent); }
+.pair header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+h2 { font: 700 22px/1.2 var(--display); margin: 0; color: var(--parchment); letter-spacing: .03em; }
+.pair header p { margin: 0; color: var(--ash); min-width: 0; }
+.shots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+figure img { width: 100%; height: auto; display: block; border: 2px solid #000; outline: 1px solid color-mix(in srgb, var(--bronze) 55%, transparent);
+  box-shadow: 0 8px 24px rgba(0,0,0,.55); background: var(--plate); }
+figcaption { font: 700 12px/1 var(--body); letter-spacing: .16em; text-transform: uppercase; color: var(--ash); }
+figure:last-child figcaption { color: var(--gold); }
+@media (max-width: 760px) { .shots { grid-template-columns: 1fr; } }
+</style>
+<main>
+  <div class="intro">
+    <span class="eyebrow">Revisão visual · 08/11/2026 · 18 telas</span>
+    <h1>Last Boss, antes e depois</h1>
+    <p>Interface refeita na direção "Covil": ferro escuro, aro de bronze, gemas facetadas, Cinzel nos títulos e Alegreya Sans no texto. À esquerda o estado de partida, à direita a última rodada de revisão. Detalhes, notas e decisões em docs/REVISAO_VISUAL.md.</p>
+  </div>
+  <section class="pair" id="title_1920x1080">
+    <header><h2>Menu principal</h2><p>Título com degradê de metal, botões em Cinzel, covil escuro com brasas.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/title_1920x1080_antes.jpg" alt="Menu principal, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/title_1920x1080_depois.jpg" alt="Menu principal, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="decks_1920x1080">
+    <header><h2>Escolha de Pacto</h2><p>Brasão de cada Pacto, véu escuro atrás do texto, moldura de ferro e bronze.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/decks_1920x1080_antes.jpg" alt="Escolha de Pacto, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/decks_1920x1080_depois.jpg" alt="Escolha de Pacto, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="collection_1920x1080">
+    <header><h2>Coleção</h2><p>Cadeado nas bloqueadas, miniaturas no deck, preço em cobre.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/collection_1920x1080_antes.jpg" alt="Coleção, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/collection_1920x1080_depois.jpg" alt="Coleção, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="settings_video_1920x1080">
+    <header><h2>Configurações</h2><p>Abas e botões com estado aceso; listas com seta.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/settings_video_1920x1080_antes.jpg" alt="Configurações, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/settings_video_1920x1080_depois.jpg" alt="Configurações, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="settings_controls_1920x1080">
+    <header><h2>Controles</h2></header>
+    <div class="shots">
+      <figure><img src="galeria/settings_controls_1920x1080_antes.jpg" alt="Controles, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/settings_controls_1920x1080_depois.jpg" alt="Controles, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="run_start_1920x1080">
+    <header><h2>Começo da run</h2><p>HUD com hierarquia: o herói no centro, o tempo solto sobre o mundo.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/run_start_1920x1080_antes.jpg" alt="Começo da run, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/run_start_1920x1080_depois.jpg" alt="Começo da run, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="run_mid_1920x1080">
+    <header><h2>Meio da run</h2><p>Cartas da mão com plaqueta e atalho no pé; frascos de elixir.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/run_mid_1920x1080_antes.jpg" alt="Meio da run, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/run_mid_1920x1080_depois.jpg" alt="Meio da run, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="hand_hover_1920x1080">
+    <header><h2>Carta ampliada</h2><p>A carta sob o mouse cresce; sem a carta fantasma de antes.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/hand_hover_1920x1080_antes.jpg" alt="Carta ampliada, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/hand_hover_1920x1080_depois.jpg" alt="Carta ampliada, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="hand_map_1920x1080">
+    <header><h2>Mapa grande</h2><p>Título, legenda e estrada com contorno.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/hand_map_1920x1080_antes.jpg" alt="Mapa grande, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/hand_map_1920x1080_depois.jpg" alt="Mapa grande, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="offer_1920x1080">
+    <header><h2>Oferta de cartas</h2><p>Cartas grandes com arte, plaqueta, tipo, texto e raridade.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/offer_1920x1080_antes.jpg" alt="Oferta de cartas, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/offer_1920x1080_depois.jpg" alt="Oferta de cartas, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="pause_1920x1080">
+    <header><h2>Pausa</h2><p>Escurecimento atrás (antes não aparecia); o deck da run.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/pause_1920x1080_antes.jpg" alt="Pausa, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/pause_1920x1080_depois.jpg" alt="Pausa, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="hint_1920x1080">
+    <header><h2>Dica</h2></header>
+    <div class="shots">
+      <figure><img src="galeria/hint_1920x1080_antes.jpg" alt="Dica, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/hint_1920x1080_depois.jpg" alt="Dica, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="arena_1920x1080">
+    <header><h2>Arena</h2><p>Partes do corpo com a vida em %.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/arena_1920x1080_antes.jpg" alt="Arena, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/arena_1920x1080_depois.jpg" alt="Arena, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="result_1920x1080">
+    <header><h2>Resultado</h2><p>Almas ganhas em destaque, zeros apagados.</p></header>
+    <div class="shots">
+      <figure><img src="galeria/result_1920x1080_antes.jpg" alt="Resultado, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/result_1920x1080_depois.jpg" alt="Resultado, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="run_mid_1280x720">
+    <header><h2>Meio da run (1280x720)</h2></header>
+    <div class="shots">
+      <figure><img src="galeria/run_mid_1280x720_antes.jpg" alt="Meio da run (1280x720), antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/run_mid_1280x720_depois.jpg" alt="Meio da run (1280x720), depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="offer_1280x720">
+    <header><h2>Oferta (1280x720)</h2></header>
+    <div class="shots">
+      <figure><img src="galeria/offer_1280x720_antes.jpg" alt="Oferta (1280x720), antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/offer_1280x720_depois.jpg" alt="Oferta (1280x720), depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="decks_en_1920x1080">
+    <header><h2>Pactos em inglês</h2></header>
+    <div class="shots">
+      <figure><img src="galeria/decks_en_1920x1080_antes.jpg" alt="Pactos em inglês, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/decks_en_1920x1080_depois.jpg" alt="Pactos em inglês, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+  <section class="pair" id="offer_en_1920x1080">
+    <header><h2>Oferta em inglês</h2></header>
+    <div class="shots">
+      <figure><img src="galeria/offer_en_1920x1080_antes.jpg" alt="Oferta em inglês, antes" loading="lazy"><figcaption>Antes</figcaption></figure>
+      <figure><img src="galeria/offer_en_1920x1080_depois.jpg" alt="Oferta em inglês, depois" loading="lazy"><figcaption>Depois</figcaption></figure>
+    </div>
+  </section>
+</main>

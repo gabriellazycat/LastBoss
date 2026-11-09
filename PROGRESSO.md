@@ -1,5 +1,15 @@
 # Progresso — Last Boss
 
+## Mapa de rotas escolhidas (09/11/2026)
+
+A estrada virou uma **rede de caminhos** e **você escolhe por onde o herói vai**: em cada bifurcação o jogo pausa e o mapa grande abre (clique num local, teclas 1–3 ou L1/R1 + A no controle); dá para planejar vários trechos clicando num local mais à frente, no mapa ou na faixa. Os ramos não escolhidos ganham uma barreira. **Todo local é bom para você:** a Vila virou **Loja** (paga com o ouro que o dano no herói rende) e a Fonte cura os seus monstros. Ponte Quebrada e Placa Falsa saíram; Queimar Vila virou **Incêndio**. Testes: 0 falhas, mais `--uitest`, `--menutest`, `--tiptest` e o novo `--routetest` OK. Lote de 720 runs: Heurístico 55%, Aleatório 32%. Detalhes em `docs/MAPA_DE_ROTAS.md` e `DECISOES.md`.
+
+- Capturas: `--routewait=1` (espera a escolha na primeira bifurcação), `--offerat=2 --offer=shop` (Loja com 200 de ouro; `shop:0` sem desconto).
+
+## Grupo de heróis, sem XP (09/11/2026)
+
+A run agora tem **5 heróis em fila** (estrada e arena) e **nenhum XP**: cada queda traz o próximo, um nível acima, com uma habilidade a mais e uma oferta de 1 entre 3. A barra "Seu poder" saiu; a HUD mostra "Herói k de 5". Testes: 0 falhas. Lote de 144 runs: Heurístico ~51%, Aleatório ~36% (Tesouro 71%, alto demais). **Falta:** passar o ajustador, refazer as metas, atualizar a planilha e jogar com janela (chegada e câmera não vistas). Detalhes em `DECISOES.md` e `docs/GRUPO_DE_HEROIS.md`. Os números de balanceamento das seções abaixo valem para o jogo de um herói só e estão superados.
+
 ## Estado (06/11/2026)
 
 O MVP está jogável do começo ao fim, com arte, áudio e interface polidos. Os números estão sendo ajustados pelo bot na branch `balance`.
@@ -7,7 +17,7 @@ O MVP está jogável do começo ao fim, com arte, áudio e interface polidos. Os
 | Área | Estado |
 |---|---|
 | Simulação separada do visual (determinística, passo fixo, headless) | ✓ ~1,5–2 s por run de 12 min |
-| Estrada com bifurcações, 6 locais com cenário próprio, minimapa | ✓ |
+| Estrada com bifurcações, 6 locais com cenário próprio, faixa de rota e mapa grande | ✓ |
 | Escudeiro: IA por pontuação, escudo frontal, 15 upgrades, falas | ✓ |
 | 32 cartas, 7 arquétipos, 5 modificadores, 8 contratos, santuários | ✓ |
 | Arena: chefe em 4 partes, 5 altares, teleporte, 6 finalizações | ✓ |
@@ -15,26 +25,40 @@ O MVP está jogável do começo ao fim, com arte, áudio e interface polidos. Os
 | Ajustador automático (branch `balance`, um commit por ciclo) | ✓ |
 | Arte: shader de paleta única, modelos low-poly, cenário espalhado, covil, arena | ✓ peças por código, prontas para trocar por modelos do Blender |
 | Efeitos: partículas, orbes de alma voando até o herói, tremor, flashes | ✓ |
-| Interface: cartas com arte 3D, menu no covil 3D, pausa com deck e build, dicas na primeira vez | ✓ |
+| Interface na direção "Covil" (08/11/2026): molduras de ferro e bronze por shader, Cinzel e Alegreya Sans, cartas novas com retratos 512x384 e 17 ícones redesenhados, gemas facetadas, frascos de elixir, menu sobre o covil com brasas, mapa com legenda. Ver `docs/REVISAO_VISUAL.md` e `docs/visual/galeria.html` | ✓ mouse, teclado e controle; a pele antiga segue em Configurações → Visual (HUD "Clássica (a antiga)") |
+| Configurações (áudio, vídeo, jogo, controles), salvas em `user://settings.cfg` | ✓ |
 | Áudio: efeitos e trilha em camadas que cresce até o covil, trilha da arena | ✓ sintetizados (provisórios) |
 | Controles: mouse (clique ou arrastar), teclado, controle | ✓ |
 | pt/en pela tradução da Godot | ✓ |
 | 500 unidades | ✓ 90 FPS em média, 74 no mínimo, com a arte final (RTX 2060) |
 | Testes, teste da entrada real, executável exportado | ✓ |
 
+## Revisão visual (08/11/2026)
+
+A interface foi refeita numa direção só, chamada "Covil": ferro escuro, aro de bronze, gemas violeta, Cinzel nos títulos e Alegreya Sans no texto. Passou por rodadas de captura e crítica independente. O que mudou, as notas de cada rodada, as decisões e os riscos estão em `docs/REVISAO_VISUAL.md`; o antes e depois lado a lado está em `docs/visual/galeria.html`.
+
+- Capturas de todas as telas (1920x1080 em tela cheia e 1280x720): `bash tools/capture_ui.sh <pasta>`. Galeria: `python -I tools/make_gallery.py <pasta>`.
+- Para voltar à interface antiga: Configurações → Visual → HUD "Clássica (a antiga)". O backup de antes das mudanças está em `C:\Users\gabri\Desktop\LastBoss_backup_visual_2026-11-08\`.
+
+## Deck que evolui e coleção (07/11/2026)
+
+Cada local da estrada dá uma escolha para o deck (carta, nível, modificador ou remoção, com mais opções quando você vence a disputa do local), as cartas sobem até o nível 3, e fora da run as Almas desbloqueiam cartas numa coleção onde você monta o deck de 10. Os decks viraram Pactos (só regras). Detalhes, decisões e riscos no DECISOES.md, "Deck que evolui na run e meta-progressão".
+
+- Testes: 0 falhas (inclui níveis, recompensas de local, recusa, coleção e salvamento com nível); `--menutest` e `--uitest` OK.
+- Captura de uma oferta de local: `godot --path . -- --start=horde --offerat=2 --offer=ritual --shots=3 --quit=4 --out=<pasta>/` (também `fountain`, `bridge`, `fountain:0` para a disputa perdida). Coleção: `--menu=collection`.
+- **Balanceamento fora das metas** (`reports/deck_v5/report.md`): bot bom 69% na Ruína, 23% na Horda e no Tesouro. Falta passar o ajustador.
+
 ## Qual versão jogar
 
 - `main`: tudo, com os números da planilha mais as mudanças de regra.
 - `balance`: o mesmo, com os números do ajustador. Pelo DECISOES.md, ela só entra na `main` depois que você jogar uma run com ela. Para jogar: `git checkout balance`, abrir na Godot e apertar F5. Os relatórios de cada ciclo ficam em `balance_reports/`.
 
-## Balanceamento: onde parou
+## Balanceamento: onde parou (07/11/2026)
 
-Mudanças de regra (medidas pelo bot): herói sem regeneração passiva (vilas, fontes e upgrades curam), monstros causam 2,5× de dano corpo a corpo e 1,2× à distância (a planilha previa 70 de dano por elixir; a simulação media 10), Tesouro dá 45% menos XP ao herói, Ruína dá treino dobrado ao herói.
-
-O ajustador baixou a nota de 1,14 para 0,28 nas suas metas. No lote final com os 5 bots (360 runs, `balance_reports/final_5bots_v2.md`), a nota é 0,89:
-- **Na meta:** chegada à arena e nível do herói; nível do jogador 5–12.
-- **Ainda fora:** o Heurístico vence 17–42% (meta 50–65%); o Aleatório ainda vence 21–42% (meta < 10%); com o Tesouro a run chega tarde à arena (até 950 s).
-- Próxima rodada: melhorar o Heurístico (um bot melhor separa "jogar bem" de "jogar ao acaso") e rodar o ajustador por mais ciclos.
+O herói agora tem no máximo 4 habilidades (uma a cada 4 níveis), o dano no herói rende 25% mais XP ao jogador (o dobro disso na arena) e as caixas de palavra-chave não pausam mais. Rebalanceado em seguida na `main` (detalhes e riscos no DECISOES.md, "Herói com menos poderes e rebalanceamento"):
+- O perfil Heurístico (`data/bots/heuristic.json`) agora é o melhor bot encontrado pelo explorador.
+- Lote final com os 5 bots (`reports/final_balance/report.md`, 720 runs): Heurístico vence **47%**, Aleatório **12%**, nota 0,25. Chegada à arena, níveis e desperdício dentro das metas.
+- **Ainda fora:** o Tesouro jogado ao acaso vence 23% (vitórias cedo); Goblin Dinamiteiro e Teia aparecem em ~80% das vitórias, mas porque estão em dois dos três decks iniciais (a métrica conta as cartas iniciais); entre as cartas escolhidas, a mais presente é o Raio Cósmico, com 66%.
 
 ## Como rodar
 
@@ -42,7 +66,8 @@ O executável da Godot fica em `C:\Users\gabri\AppData\Local\Microsoft\WinGet\Pa
 
 - Jogar: abra o projeto na Godot e aperte F5, ou rode `export/LastBoss.exe` depois de exportar.
 - Testes: `godot --headless --path . res://tests/tests.tscn`
-- Teste da entrada real (janela): `godot --path . -- --uitest=1`
+- Teste da entrada real (janela): `godot --path . -- --uitest=1` (cartas: tecla, balão, clique, sacrifício, oferta, carta ampliada, arrastar, mapa; com `--out=<pasta>` grava `uitest_*.png`) e `godot --path . -- --menutest=1` (menu, pausa, configurações, salvar e continuar) e `godot --path . -- --tiptest=1` (caixas de explicação: habilidade nova na HUD, caixa do ícone, palavra aninhada, jogo seguindo com a caixa aberta, carta da mão só depois de parar nela). O `--tiptest` move o cursor de verdade: o RichTextLabel acha a palavra pela posição real do mouse, não pela do evento.
+- Capturas da interface: `--menu=decks|settings --tab=controls`, `--start=horde` (run sem bot), `--offerat=3`, `--pauseat=3`, `--hint=start`, `--skip=arena`, `--seed=7` e `--set=ui_scale:1.15,language:en` (só nesta execução), sempre com `--shots=5 --quit=6 --out=<pasta>`
 - Ver um bot jogando: `godot --path . -- --autoplay=heuristic --deck=ruin --speed=2`. Também aceita `--skip=600`, `--quit=60` e `--shots=10,30 --out=<pasta>`.
 - Estresse: `godot --path . --disable-vsync -- --autoplay=random --stress=500 --quit=25`
 - Lote: `python -I tools/run_batch.py --bots heuristic,random,greedy --runs 60`
@@ -50,7 +75,7 @@ O executável da Godot fica em `C:\Users\gabri\AppData\Local\Microsoft\WinGet\Pa
 - Regerar o áudio: `python -I tools/make_audio.py`
 - Exportar: `godot --headless --path . --export-release "Windows Desktop" export/LastBoss.exe`
 
-Controles: teclas 1–6 escolhem a carta e o clique posiciona, ou arraste a carta até o mapa. Clique direito, X+número ou arrastar até "Sacrificar" sacrifica. M amplia o minimapa (ele abre sozinho com cartas de rota). Q/E ou clique trocam de altar na arena. A roda do mouse dá zoom, Espaço/Esc pausa e F muda a velocidade. No controle: L1/R1 escolhem, o analógico direito move o cursor, A confirma, segurar B sacrifica, Select abre o minimapa, o direcional troca de altar e Start pausa.
+Controles (também na aba Controles das configurações): teclas 1–6 escolhem a carta e o clique posiciona (em qualquer ponto da tela, a pelo menos 3 m do herói), ou arraste a carta até o mapa. Clique direito, X+número ou arrastar até "Sacrificar" sacrifica. A faixa de rota, em pé na borda esquerda (início embaixo, covil em cima), mostra a estrada inteira; Ponte Quebrada, Placa Falsa e Queimar Vila também são jogadas clicando nela. M abre o mapa grande (ele abre sozinho com cartas de rota). Q/E ou clique trocam de altar na arena. A roda do mouse dá zoom, Espaço/Esc pausa e F muda a velocidade. No controle: L1/R1 escolhem, o analógico direito move o cursor, A confirma, segurar B sacrifica, Select abre o mapa grande, o direcional troca de altar e Start pausa.
 
 ## O que fica para depois
 

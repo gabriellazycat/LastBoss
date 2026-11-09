@@ -25,6 +25,9 @@ var is_unit := false
 var is_spell := false
 var is_structure := false
 var radius := 0.4
+var lvl: Array = []        # números que crescem com o nível: chaves de fx ou count, hp, dps, cost
+var n3: Dictionary = {}    # efeito especial do nível 3
+var growth := 0.25         # +25% por nível (rules.card_levels.growth)
 
 
 static func from_dict(d: Dictionary, i: int, cat_override := "") -> CardDef:
@@ -47,6 +50,8 @@ static func from_dict(d: Dictionary, i: int, cat_override := "") -> CardDef:
 	c.speed = float(d.get("speed", 0))
 	c.range = float(d.get("range", 1))
 	c.fx = d.get("fx", {})
+	c.lvl = d.get("lvl", [])
+	c.n3 = d.get("n3", {})
 	c.fly = bool(d.get("fly", false))
 	c.projectile = bool(c.fx.get("projectile", false))
 	c.is_spell = c.type == "spell"
@@ -63,3 +68,41 @@ static func from_dict(d: Dictionary, i: int, cat_override := "") -> CardDef:
 
 func is_field() -> bool:
 	return category == "field"
+
+
+## Multiplicador do nível: 1, 1 + g, 1 + 2g.
+func mult(level: int) -> float:
+	return 1.0 + growth * (level - 1)
+
+
+func scales(key: String) -> bool:
+	return lvl.has(key)
+
+
+## Número de fx no nível dado (o especial do N3 sobrepõe a mesma chave).
+func fxv(key: String, level: int, default := 0.0) -> float:
+	if level >= 3 and n3.has(key):
+		return float(n3[key])
+	var v := float(fx.get(key, default))
+	return v * mult(level) if scales(key) else v
+
+
+func count_at(level: int) -> int:
+	return int(round(count * mult(level))) if scales("count") else count
+
+
+func hp_at(level: int) -> float:
+	return hp * mult(level) if scales("hp") else hp
+
+
+func dps_at(level: int) -> float:
+	return dps * mult(level) if scales("dps") else dps
+
+
+## Cartas sem número para crescer ficam 1 mais baratas por nível (mínimo 1).
+func cost_at(level: int) -> int:
+	return maxi(1, cost - (level - 1)) if scales("cost") else cost
+
+
+func has_n3(level: int, key: String) -> bool:
+	return level >= 3 and n3.has(key)

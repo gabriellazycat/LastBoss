@@ -27,16 +27,26 @@ const C_RED_EYE := Color(1.0, 0.15, 0.1)
 
 static var _cache: Dictionary = {}
 static var _mat: ShaderMaterial
+static var _mat_look := -1
 
 
+## Numa direção de arte única (look de chão 5 ou 6) prédios, cenário e chefe usam o shader dela.
 static func material() -> ShaderMaterial:
-	if _mat == null:
-		_mat = ShaderMaterial.new()
-		_mat.shader = load("res://game/art/toon.gdshader")
+	var wl := GroundLooks.world_shader_look()
+	if _mat == null or _mat_look != wl:
+		_mat_look = wl
+		if wl > 0:
+			_mat = Looks.material(wl)
+		else:
+			_mat = ShaderMaterial.new()
+			_mat.shader = load("res://game/art/toon.gdshader")
 	return _mat
 
 
 static func glow_material(emit: float) -> ShaderMaterial:
+	var wl := GroundLooks.world_shader_look()
+	if wl > 0:
+		return Looks.material(wl, emit)
 	var m := ShaderMaterial.new()
 	m.shader = load("res://game/art/toon.gdshader")
 	m.set_shader_parameter("emission_boost", emit)
@@ -682,80 +692,170 @@ static func prop(id: String) -> ArrayMesh:
 
 # ---------------------------------------------------------------- ícones (cartas sem unidade)
 
+static func tor(inner: float, outer: float, rings := 24, sides := 6) -> TorusMesh:
+	var m := TorusMesh.new()
+	m.inner_radius = inner
+	m.outer_radius = outer
+	m.rings = rings
+	m.ring_segments = sides
+	return m
+
+
+## Modelo do retrato das cartas sem unidade (feitiços, rota, covil, finalizações). Só a arte das cartas usa.
+## G(cor) = parte que brilha.
 static func icon(id: String) -> ArrayMesh:
 	var k := Kit.new()
 	match id:
 		"shadow_bolt":
-			for i in 4:
-				k.add(box(0.25, 0.25, 0.7), Vector3(0.3 * (i % 2) - 0.15, 0.3 + i * 0.4, -0.5 + i * 0.35), Color(0.6, 0.2, 1.0), Vector3(30, 0, 25 - 50 * (i % 2)))
+			# Raio em zigue-zague saindo de uma esfera escura, com faíscas.
+			k.add(sph(0.32, 8, 5), Vector3(-0.1, 1.75, 0), C_DARK.lightened(0.15))
+			k.add(sph(0.2, 6, 4), Vector3(-0.1, 1.75, -0.18), G(Color(0.75, 0.35, 1.0)))
+			var pts := [Vector3(-0.1, 1.6, 0), Vector3(0.35, 1.15, 0), Vector3(-0.2, 0.75, 0), Vector3(0.25, 0.2, 0)]
+			for n in 3:
+				var a: Vector3 = pts[n]
+				var b: Vector3 = pts[n + 1]
+				var d := b - a
+				var ang := rad_to_deg(atan2(-d.x, d.y))
+				k.add(box(0.16, d.length() + 0.12, 0.16), (a + b) * 0.5, G(Color(0.7, 0.3, 1.0)), Vector3(0, 0, ang))
+				k.add(box(0.07, d.length() + 0.14, 0.2), (a + b) * 0.5, G(Color(0.95, 0.8, 1.0)), Vector3(0, 0, ang))
+			for n in 5:
+				k.add(sph(0.05, 4, 3), Vector3(0.45 * cos(n * 1.7), 0.2 + 0.08 * n, 0.3 * sin(n * 1.7)), G(Color(0.85, 0.6, 1.0)))
 		"web":
 			for i in 4:
-				k.add(box(1.8, 0.05, 0.05), Vector3(0, 0.8, 0), Color(0.92, 0.92, 0.95), Vector3(0, 0, 0), Vector3.ONE)
-				k.add(box(0.05, 0.05, 1.8), Vector3(0, 0.8, 0), Color(0.92, 0.92, 0.95), Vector3(0, i * 22, 0))
-			var tm := TorusMesh.new()
-			tm.inner_radius = 0.5
-			tm.outer_radius = 0.56
-			k.add(tm, Vector3(0, 0.8, 0), Color(0.92, 0.92, 0.95))
+				k.add(box(1.8, 0.04, 0.04), Vector3(0, 0.9, 0), Color(0.92, 0.92, 0.95), Vector3(0, 0, i * 45.0))
+			for r in [0.3, 0.55, 0.8]:
+				k.add(tor(r, r + 0.035, 8, 3), Vector3(0, 0.9, 0), Color(0.88, 0.88, 0.94), Vector3(90, 22.5, 0))
+			# Aranha no centro.
+			k.add(sph(0.2, 8, 5), Vector3(0.05, 0.75, -0.1), C_DARK.lightened(0.1), Vector3.ZERO, Vector3(1, 1.2, 0.9))
+			k.add(sph(0.12, 6, 4), Vector3(0.05, 1.0, -0.14), C_DARK.lightened(0.15))
+			geyes(k, 1.03, -0.24, 0.05, 0.035, Color(1.0, 0.2, 0.15))
+			for sx in [-1.0, 1.0]:
+				for n in 4:
+					k.add(cyl(0.02, 0.02, 0.5, 4), Vector3(0.05 + sx * 0.25, 0.92 - n * 0.09, -0.12), C_DARK.lightened(0.2), Vector3(0, 0, sx * (70 - n * 22)))
 		"boiling_oil":
-			k.add(cyl(0.7, 0.5, 0.8, 8), Vector3(0, 0.4, 0), C_DARK.lightened(0.15))
-			k.add(cyl(0.6, 0.6, 0.06, 8), Vector3(0, 0.8, 0), Color(1.0, 0.55, 0.1))
+			# Caldeirão em três pés sobre o fogo, óleo em brasa e bolhas.
+			k.add(sph(0.6, 10, 6), Vector3(0, 0.75, 0), C_DARK.lightened(0.18), Vector3.ZERO, Vector3(1, 0.8, 1))
+			k.add(tor(0.52, 0.62, 16, 5), Vector3(0, 1.15, 0), C_DARK.lightened(0.3))
+			k.add(cyl(0.52, 0.52, 0.04, 12), Vector3(0, 1.13, 0), G(Color(1.0, 0.5, 0.08)))
 			for i in 3:
-				k.add(sph(0.12, 5, 3), Vector3(-0.3 + i * 0.3, 0.95 + (i % 2) * 0.2, 0), Color(1.0, 0.7, 0.2))
+				var a := TAU * i / 3.0
+				k.add(cyl(0.05, 0.04, 0.5, 4), Vector3(cos(a) * 0.4, 0.22, sin(a) * 0.4), C_DARK.lightened(0.25))
+				k.add(sph(0.11, 5, 3), Vector3(cos(a + 0.6) * 0.25, 1.25 + 0.06 * i, sin(a + 0.6) * 0.25), G(Color(1.0, 0.75, 0.25)))
+			for i in 4:
+				k.add(cone(0.16, 0.45, 5), Vector3(-0.3 + i * 0.2, 0.2, 0.05 * (i % 2)), G(Color(1.0, 0.45 + 0.1 * i, 0.1)))
 		"soul_feast":
-			k.add(cyl(0.6, 0.4, 0.3, 8), Vector3(0, 0.15, 0), C_GOLD.darkened(0.3))
+			# Taça dourada com três almas subindo.
+			k.add(cyl(0.3, 0.42, 0.12, 10), Vector3(0, 0.06, 0), C_GOLD.darkened(0.35))
+			k.add(cyl(0.08, 0.12, 0.45, 6), Vector3(0, 0.33, 0), C_GOLD.darkened(0.25))
+			k.add(cyl(0.6, 0.25, 0.35, 10), Vector3(0, 0.72, 0), C_GOLD.darkened(0.1))
+			k.add(cyl(0.55, 0.55, 0.03, 10), Vector3(0, 0.88, 0), G(Color(0.4, 1.0, 0.85)))
 			for i in 3:
-				k.add(sph(0.2, 6, 3), Vector3(-0.3 + i * 0.3, 0.5 + i * 0.15, 0), Color(0.5, 1.0, 0.9))
-		"broken_bridge":
-			k.add(box(1.0, 0.15, 0.6), Vector3(-0.6, 0.5, 0), C_WOOD, Vector3(0, 0, -15))
-			k.add(box(1.0, 0.15, 0.6), Vector3(0.6, 0.5, 0), C_WOOD, Vector3(0, 0, 15))
-		"false_sign":
-			k.add(cyl(0.06, 0.06, 1.6, 5), Vector3(0, 0.8, 0), C_WOOD)
-			k.add(box(1.0, 0.3, 0.08), Vector3(0.35, 1.3, 0), C_WOOD.lightened(0.15), Vector3(0, 0, 8))
-			k.add(box(1.0, 0.3, 0.08), Vector3(-0.35, 0.95, 0), C_WOOD.lightened(0.1), Vector3(0, 0, -8))
+				var x := -0.32 + i * 0.32
+				k.add(sph(0.17, 7, 4), Vector3(x, 1.25 + 0.2 * (i % 2), 0), G(Color(0.55, 1.0, 0.9)))
+				k.add(cone(0.12, 0.4, 5), Vector3(x, 0.98 + 0.2 * (i % 2), 0), G(Color(0.4, 0.9, 0.85)), Vector3(180, 0, 0))
 		"gold_bait":
 			return prop("coins")
 		"burn_village":
-			k.add(box(1.0, 0.7, 0.9), Vector3(0, 0.35, 0), Color(0.3, 0.22, 0.18))
-			k.add(cone(0.5, 0.9, 5), Vector3(-0.2, 1.1, 0), Color(1.0, 0.45, 0.1))
-			k.add(cone(0.35, 0.7, 5), Vector3(0.3, 1.0, 0.1), Color(1.0, 0.8, 0.2))
+			k.add(box(0.9, 0.6, 0.8), Vector3(0, 0.3, 0), Color(0.36, 0.26, 0.2))
+			k.add(cyl(0.0, 0.75, 0.55, 4), Vector3(0, 0.88, 0), Color(0.3, 0.16, 0.12), Vector3(0, 45, 0))
+			k.add(box(0.2, 0.3, 0.05), Vector3(0, 0.15, -0.41), G(Color(1.0, 0.55, 0.15)))
+			for i in 5:
+				k.add(cone(0.22 - i * 0.02, 0.8 - i * 0.08, 5), Vector3(-0.4 + i * 0.2, 1.1 + 0.08 * (i % 2), 0.05 * (i % 3)), G(Color(1.0, 0.4 + 0.1 * i, 0.08)))
+			for i in 4:
+				k.add(sph(0.04, 4, 3), Vector3(-0.3 + i * 0.25, 1.75 + 0.12 * (i % 2), 0), G(Color(1.0, 0.7, 0.3)))
 		"soul_collector":
-			k.add(cyl(0.4, 0.5, 0.9, 7), Vector3(0, 0.45, 0), Color(0.5, 0.9, 1.0))
-			k.add(cyl(0.45, 0.45, 0.15, 7), Vector3(0, 0.95, 0), C_GOLD)
-			k.add(sph(0.2, 5, 3), Vector3(0, 0.5, 0), Color(0.9, 1.0, 1.0))
+			# Lanterna de almas: base e teto de ouro, gaiola, alma acesa dentro.
+			k.add(cyl(0.45, 0.5, 0.15, 8), Vector3(0, 0.08, 0), C_GOLD.darkened(0.3))
+			k.add(cyl(0.38, 0.42, 0.1, 8), Vector3(0, 0.2, 0), C_GOLD.darkened(0.1))
+			k.add(cyl(0.4, 0.4, 0.1, 8), Vector3(0, 1.2, 0), C_GOLD.darkened(0.1))
+			k.add(cone(0.42, 0.4, 8), Vector3(0, 1.45, 0), C_GOLD.darkened(0.25))
+			k.add(tor(0.08, 0.13, 10, 4), Vector3(0, 1.72, 0), C_GOLD, Vector3(90, 0, 0))
+			for i in 8:
+				var a := TAU * i / 8.0
+				k.add(cyl(0.025, 0.025, 1.0, 4), Vector3(cos(a) * 0.36, 0.7, sin(a) * 0.36), C_GOLD.darkened(0.2))
+			k.add(sph(0.24, 8, 5), Vector3(0, 0.7, 0), G(Color(0.55, 1.0, 1.0)), Vector3.ZERO, Vector3(1, 1.3, 1))
+			k.add(cone(0.14, 0.4, 6), Vector3(0, 1.02, 0), G(Color(0.8, 1.0, 1.0)))
 		"forbidden_library":
-			k.add(box(1.1, 0.25, 0.8), Vector3(0, 0.15, 0), Color(0.45, 0.1, 0.2))
-			k.add(box(1.0, 0.25, 0.75), Vector3(0.05, 0.42, 0), Color(0.2, 0.15, 0.4), Vector3(0, 12, 0))
-			k.add(box(0.9, 0.22, 0.7), Vector3(-0.05, 0.66, 0), Color(0.15, 0.35, 0.25), Vector3(0, -10, 0))
+			# Atril com o livro aberto e acorrentado, runas flutuando e uma vela.
+			k.add(box(0.35, 0.7, 0.35), Vector3(0, 0.35, 0), C_WOOD.darkened(0.3))
+			k.add(box(1.0, 0.08, 0.7), Vector3(0, 0.78, 0), C_WOOD.darkened(0.2), Vector3(-20, 0, 0))
+			for sx in [-1.0, 1.0]:
+				k.add(box(0.48, 0.06, 0.62), Vector3(sx * 0.25, 0.86, 0), Color(0.5, 0.08, 0.14), Vector3(-20, 0, sx * -6))
+				k.add(box(0.44, 0.05, 0.56), Vector3(sx * 0.24, 0.9, 0), C_WHITE.darkened(0.08), Vector3(-20, 0, sx * -10))
+			for i in 5:
+				k.add(tor(0.05, 0.08, 8, 4), Vector3(-0.55 + i * 0.07, 0.75 - i * 0.12, -0.2), Color(0.55, 0.55, 0.6), Vector3(90 * (i % 2), 0, 30))
+			for i in 4:
+				k.add(box(0.1, 0.1, 0.02), Vector3(-0.3 + i * 0.2, 1.25 + 0.12 * (i % 2), 0), G(Color(0.6, 0.4, 1.0)), Vector3(0, 0, 45))
+			k.add(cyl(0.06, 0.06, 0.25, 6), Vector3(0.62, 0.9, 0.1), C_WHITE)
+			k.add(cone(0.05, 0.14, 5), Vector3(0.62, 1.09, 0.1), G(Color(1.0, 0.8, 0.3)))
 		"dark_forge":
-			k.add(box(1.2, 0.4, 0.6), Vector3(0, 0.6, 0), C_DARK.lightened(0.2))
-			k.add(box(0.5, 0.5, 0.4), Vector3(0, 0.25, 0), C_DARK.lightened(0.1))
-			k.add(cone(0.25, 0.4, 4), Vector3(-0.75, 0.62, 0), C_DARK.lightened(0.2), Vector3(0, 0, 90))
-		"lair_walls":
-			for i in 3:
-				k.add(box(0.5, 1.0, 0.5), Vector3(-0.6 + i * 0.6, 0.5, 0), Color(0.3, 0.24, 0.38))
-				k.add(box(0.2, 0.25, 0.5), Vector3(-0.6 + i * 0.6, 1.12, 0), Color(0.3, 0.24, 0.38))
-		"cosmic_ray":
-			k.add(cyl(0.25, 0.25, 2.2, 8), Vector3(0, 0.6, 0), Color(1.0, 0.85, 0.3), Vector3(0, 0, 70))
-			k.add(sph(0.4, 7, 4), Vector3(-0.9, 0.3, 0), Color(1.0, 0.95, 0.6))
-		"bone_prison":
+			# Bigorna com metal em brasa e martelo, faíscas.
+			k.add(box(0.6, 0.15, 0.5), Vector3(0, 0.08, 0), C_DARK.lightened(0.18))
+			k.add(box(0.35, 0.45, 0.32), Vector3(0, 0.38, 0), C_DARK.lightened(0.24))
+			k.add(box(1.0, 0.25, 0.45), Vector3(0.05, 0.72, 0), C_STEEL.darkened(0.45))
+			k.add(cone(0.22, 0.5, 6), Vector3(-0.68, 0.72, 0), C_STEEL.darkened(0.45), Vector3(0, 0, 90))
+			k.add(box(0.45, 0.08, 0.16), Vector3(0.1, 0.89, 0), G(Color(1.0, 0.45, 0.1)))
+			k.add(cyl(0.035, 0.04, 0.9, 5), Vector3(0.55, 1.15, 0.1), C_WOOD, Vector3(0, 0, -50))
+			k.add(box(0.36, 0.2, 0.2), Vector3(0.22, 1.42, 0.1), C_STEEL.darkened(0.3), Vector3(0, 0, -50))
 			for i in 6:
-				var a := TAU * i / 6.0
-				k.add(cyl(0.05, 0.07, 1.4, 4), Vector3(cos(a) * 0.5, 0.7, sin(a) * 0.5), C_BONE)
-			k.add(sph(0.25), Vector3(0, 1.5, 0), C_BONE)
+				k.add(sph(0.035, 4, 3), Vector3(-0.1 + 0.12 * i, 1.0 + 0.1 * (i % 3), -0.1 + 0.05 * (i % 2)), G(Color(1.0, 0.7, 0.25)))
+		"lair_walls":
+			k.add(box(1.6, 0.85, 0.45), Vector3(0, 0.43, 0), Color(0.3, 0.25, 0.36))
+			for i in 5:
+				k.add(box(0.2, 0.2, 0.45), Vector3(-0.7 + i * 0.35, 0.95, 0), Color(0.33, 0.27, 0.4))
+			for sx in [-1.0, 1.0]:
+				k.add(cyl(0.3, 0.33, 1.3, 8), Vector3(sx * 0.95, 0.65, 0), Color(0.28, 0.23, 0.34))
+				k.add(cone(0.38, 0.6, 8), Vector3(sx * 0.95, 1.6, 0), Color(0.42, 0.12, 0.2))
+				k.add(cone(0.06, 0.18, 5), Vector3(sx * 0.55, 0.85, -0.3), G(Color(1.0, 0.6, 0.2)))
+			k.add(box(0.45, 0.6, 0.06), Vector3(0, 0.3, -0.24), Color(0.08, 0.05, 0.08))
+			k.add(sph(0.23, 8, 4), Vector3(0, 0.6, -0.24), Color(0.08, 0.05, 0.08), Vector3.ZERO, Vector3(1, 0.6, 0.2))
+		"cosmic_ray":
+			k.add(sph(0.38, 10, 6), Vector3(-0.55, 1.6, 0), G(Color(1.0, 0.9, 0.5)))
+			k.add(tor(0.5, 0.56, 24, 4), Vector3(-0.55, 1.6, 0), G(Color(1.0, 0.75, 0.35)), Vector3(70, 0, 20))
+			k.add(cyl(0.16, 0.16, 1.8, 8), Vector3(0.0, 0.85, 0), G(Color(1.0, 0.85, 0.35)), Vector3(0, 0, 32))
+			k.add(cyl(0.06, 0.06, 1.85, 6), Vector3(0.0, 0.85, -0.05), G(Color(1.0, 1.0, 0.9)), Vector3(0, 0, 32))
+			k.add(tor(0.25, 0.32, 20, 4), Vector3(0.45, 0.05, 0), G(Color(1.0, 0.6, 0.2)))
+			k.add(tor(0.45, 0.49, 20, 4), Vector3(0.45, 0.05, 0), G(Color(1.0, 0.45, 0.15)))
+		"bone_prison":
+			k.add(tor(0.48, 0.6, 16, 5), Vector3(0, 0.06, 0), C_BONE.darkened(0.15))
+			for i in 7:
+				var a := TAU * i / 7.0
+				k.add(cyl(0.05, 0.07, 1.3, 5), Vector3(cos(a) * 0.52, 0.7, sin(a) * 0.52), C_BONE, Vector3(sin(a) * 6, 0, -cos(a) * 6))
+				k.add(sph(0.08, 5, 3), Vector3(cos(a) * 0.5, 1.37, sin(a) * 0.5), C_BONE.lightened(0.1))
+			k.add(sph(0.27, 8, 5), Vector3(0, 1.55, 0), C_BONE)
+			k.add(box(0.26, 0.14, 0.2), Vector3(0, 1.36, -0.05), C_BONE.darkened(0.08))
+			geyes(k, 1.58, -0.22, 0.1, 0.06, Color(0.4, 1.0, 0.6))
 		"petrifying_gaze":
-			k.add(sph(0.6, 8, 4), Vector3(0, 0.7, 0), Color(0.9, 0.9, 0.8), Vector3.ZERO, Vector3(1, 0.7, 0.6))
-			k.add(sph(0.3, 6, 3), Vector3(0, 0.7, -0.25), Color(0.4, 1.0, 0.4))
-			k.add(sph(0.14, 5, 3), Vector3(0, 0.7, -0.45), C_DARK)
+			# Olho enorme com pálpebras, íris verde acesa e pedras flutuando.
+			k.add(sph(0.62, 12, 7), Vector3(0, 0.85, 0), Color(0.92, 0.9, 0.82), Vector3.ZERO, Vector3(1.2, 0.75, 0.6))
+			k.add(sph(0.66, 12, 6), Vector3(0, 1.08, 0.03), Color(0.38, 0.4, 0.34), Vector3.ZERO, Vector3(1.25, 0.35, 0.68))
+			k.add(sph(0.66, 12, 6), Vector3(0, 0.62, 0.03), Color(0.34, 0.36, 0.3), Vector3.ZERO, Vector3(1.25, 0.3, 0.68))
+			k.add(sph(0.27, 10, 6), Vector3(0, 0.85, -0.3), G(Color(0.35, 1.0, 0.45)), Vector3.ZERO, Vector3(1, 1, 0.4))
+			k.add(box(0.07, 0.36, 0.05), Vector3(0, 0.85, -0.42), C_DARK)
+			for i in 5:
+				var a := TAU * i / 5.0 + 0.3
+				k.add(box(0.18, 0.22, 0.15), Vector3(cos(a) * 1.0, 0.85 + sin(a) * 0.65, 0.1), C_STONE.darkened(0.05 * i), Vector3(20 * i, 35 * i, 15 * i))
 		"damned_army":
 			for i in 3:
-				k.add(sph(0.3), Vector3(-0.5 + i * 0.5, 0.5 + (i % 2) * 0.3, 0), Color(0.4, 1.0, 0.85))
+				var x := -0.55 + i * 0.55
+				var y := 0.85 + (i % 2) * 0.3
+				k.add(cone(0.22, 0.75, 6), Vector3(x, y - 0.42, 0.05), G(Color(0.3, 0.85, 0.75)), Vector3(180, 0, 0))
+				k.add(sph(0.26, 8, 5), Vector3(x, y, 0), Color(0.75, 1.0, 0.95))
+				geyes(k, y + 0.03, -0.2, 0.09, 0.07, Color(0.2, 1.0, 0.8))
+				k.add(cyl(0.03, 0.03, 0.9, 4), Vector3(x + 0.2, 0.35, 0.25), C_STEEL.darkened(0.2), Vector3(0, 0, 12 - i * 12))
+				k.add(box(0.2, 0.04, 0.04), Vector3(x + 0.25, 0.65, 0.25), C_STEEL.darkened(0.3), Vector3(0, 0, 12 - i * 12))
 		"dark_fury":
-			k.add(cone(0.6, 1.4, 6), Vector3(0, 0.7, 0), Color(0.75, 0.2, 1.0))
-			k.add(cone(0.35, 0.9, 6), Vector3(0, 0.6, -0.2), Color(1.0, 0.5, 1.0))
+			k.add(cone(0.6, 1.4, 7), Vector3(0, 0.7, 0), G(Color(0.75, 0.2, 1.0)))
+			k.add(cone(0.38, 1.0, 7), Vector3(0.1, 0.6, -0.25), G(Color(1.0, 0.5, 1.0)))
+			k.add(cone(0.3, 0.8, 6), Vector3(-0.4, 0.45, 0.1), G(Color(0.6, 0.15, 0.9)))
+			k.add(sph(0.2, 7, 4), Vector3(0, 0.35, -0.3), G(Color(1.0, 0.85, 1.0)))
 		"dark_pact":
-			k.add(sph(0.45, 7, 4), Vector3(-0.2, 0.7, 0), Color(0.8, 0.1, 0.2))
-			k.add(sph(0.45, 7, 4), Vector3(0.2, 0.7, 0), Color(0.8, 0.1, 0.2))
-			k.add(cone(0.55, 0.7, 6), Vector3(0, 0.2, 0), Color(0.8, 0.1, 0.2), Vector3(180, 0, 0))
+			k.add(sph(0.45, 8, 5), Vector3(-0.2, 0.8, 0), Color(0.8, 0.1, 0.2))
+			k.add(sph(0.45, 8, 5), Vector3(0.2, 0.8, 0), Color(0.8, 0.1, 0.2))
+			k.add(cone(0.55, 0.7, 7), Vector3(0, 0.3, 0), Color(0.8, 0.1, 0.2), Vector3(180, 0, 0))
+			k.add(sph(0.18, 6, 4), Vector3(0, 0.75, -0.38), G(Color(1.0, 0.3, 0.3)))
+			for i in 6:
+				k.add(tor(0.06, 0.1, 8, 4), Vector3(-0.75 + i * 0.3, 0.6 + 0.1 * (i % 2), -0.42), Color(0.55, 0.55, 0.6), Vector3(90 * (i % 2), 0, 15))
 		_:
 			k.add(box(0.8, 0.8, 0.8), Vector3(0, 0.4, 0), C_STONE)
 	return k.done()

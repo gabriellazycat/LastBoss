@@ -22,10 +22,13 @@ func _ready() -> void:
 		streams[id] = load("res://assets/audio/%s.wav" % id)
 	for i in 16:
 		var p := AudioStreamPlayer.new()
+		p.bus = "SFX"
 		add_child(p)
 		pool.append(p)
 	music_base = AudioStreamPlayer.new()
 	music_layer = AudioStreamPlayer.new()
+	music_base.bus = "Music"
+	music_layer.bus = "Music"
 	add_child(music_base)
 	add_child(music_layer)
 
@@ -90,8 +93,8 @@ func handle_events(evs: Array, sim: Sim) -> void:
 				play("shield_break")
 			K.Ev.HERO_LEVEL:
 				play("level_hero", 0.0)
-			K.Ev.PLAYER_LEVEL:
-				play("level_player", 0.0)
+			K.Ev.HERO_FALL:
+				play("part_destroyed", 0.0)
 			K.Ev.SHRINE:
 				play("reward" if float(ev[3]) > 0.0 else "explosion", 0.0)
 			K.Ev.CONTRACT:

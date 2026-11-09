@@ -29,8 +29,10 @@ FIELD_IDS = {
     "Óleo Fervente": "boiling_oil", "Fantasma": "ghost", "Torre de Gárgula": "gargoyle_tower",
     "Lobisomem": "werewolf", "Golem de Sucata": "scrap_golem", "Banquete de Almas": "soul_feast",
 }
+# Ponte Quebrada e Placa Falsa saíram do jogo (09/11/2026, aba Mapa - Cartas): a planilha ainda tem as linhas.
+REMOVED = {"Ponte Quebrada", "Placa Falsa"}
 ROUTE_IDS = {
-    "Ponte Quebrada": "broken_bridge", "Placa Falsa": "false_sign", "Isca de Ouro": "gold_bait",
+    "Isca de Ouro": "gold_bait",
     "Queimar Vila": "burn_village", "Coletor de Almas": "soul_collector",
     "Biblioteca Proibida": "forbidden_library", "Forja Sombria": "dark_forge",
     "Muralhas do Covil": "lair_walls",
@@ -62,10 +64,8 @@ FX = {
     "werewolf": {"speed_bonus": 1.0, "hp_threshold": 0.5},
     "scrap_golem": {"absorb_radius": 5.0, "absorb_hp": 40, "hp_cap": 1500},
     "soul_feast": {"radius": 4.0, "bonus_per_card": 1},
-    "broken_bridge": {"target": "branch"},
-    "false_sign": {"target": "branch"},
     "gold_bait": {"target": "point", "xp": 40, "max_detour": 30.0},
-    "burn_village": {"target": "location", "location": "village"},
+    "burn_village": {"target": "location", "dps": 40.0, "duration": 10.0},
     "soul_collector": {"elixir_regen": 0.10, "stack": 3},
     "forbidden_library": {"hand": 1, "stack": 1},
     "dark_forge": {"monster_hp": 0.10, "stack": 3},
@@ -130,6 +130,8 @@ def main():
         }
         cards.append(c)
     for r in rows(wb["Rota e Covil"]):
+        if r["Carta"] in REMOVED:
+            continue
         cid = ROUTE_IDS[r["Carta"]]
         cat = "route" if r["Categoria"] == "Rota" else "lair"
         cards.append({"id": cid, "category": cat, "type": cat, "tags": [], "rarity": RARITY[r["Raridade"]],
@@ -150,33 +152,33 @@ def main():
         "elixir": {"seconds_per_point": B("Elixir: segundos por ponto"), "max": B("Elixir máximo"),
                    "start": B("Elixir inicial")},
         "hand_size": 5,
-        "ring": {"min": 3.0, "max": 12.0, "spells_ignore_min": True},
+        "ring": {"min": 3.0, "spells_ignore_min": True},
         "sacrifice_elixir": 1,
-        "hero_xp": {"per_elixir": B("XP do herói por ponto de elixir que morre"),
-                    "level2": B("XP do herói para o nível 2"),
-                    "growth": B("Crescimento do XP por nível do herói")},
-        "player_xp": {"first_level": 900, "growth": B("Crescimento do dano necessário por nível do jogador"),
-                      "_note": "first_level = ROUND(dano total estimado * g / ((1+g)^10 - 1), -1) da aba Base"},
+        "party": {"size": 5, "step": 1.28, "arrive_s": 8.0},
+        "hero_xp": {"upgrade_every": 4, "upgrade_max": 4},
         "phase1_target_s": B("Duração da fase 1 (s)"),
         "rarity_by_time": {"breaks_s": [240, 480], "weights": [rar["0 a 4 min"], rar["4 a 8 min"], rar["8 min em diante"]],
                            "order": ["common", "uncommon", "rare", "legendary"]},
         "offers": {"options": 3, "new_card_weight": 0.7, "modifier_weight": 0.3,
                    "shrine_options": 3, "shrine_min_rarity": "rare", "contract_options": 2},
         "contracts": {"first_at": [90, 150], "interval": [120, 180]},
-        "road": {"target_length": 1500.0, "forks": [2, 3], "fork_spread": 45.0, "long_branch_extra": [0.35, 0.6],
-                 "wiggle": 18.0, "point_step": 6.0, "fork_decision_distance": 25.0, "leash": 8.0,
-                 "route_locations": [8, 10], "shrines": [2, 4],
-                 "location_weights": {"village": 3, "tavern": 2, "fountain": 2, "ritual": 2, "bridge": 2},
-                 "min_location_gap": 60.0},
+        # Mapa de rotas (09/11/2026, abas Mapa - ): rede de nós, Loja no lugar da Vila, Fonte cura as suas unidades.
+        "road": {"target_length": 1500.0, "point_step": 6.0, "lanes": 3, "lane_width": 30.0, "row_nodes": [2, 3],
+                 "extra_link": 0.45, "length_slack": 1.04, "fork_decision_distance": 25.0, "leash": 8.0,
+                 "max_backtrack": 8.0, "route_locations": [8, 10], "shrines": [2, 3], "shrine_chance": 0.24,
+                 "shops": [1, 2], "location_weights": {"tavern": 2, "fountain": 2, "ritual": 2, "bridge": 2}},
+        "gold": {"damage_per_gold": 40.0, "per_contest": 25},
+        "shop": {"cards": 3, "prices": {"common": 50, "uncommon": 75, "rare": 120, "legendary": 180},
+                 "upgrade": 75, "mod": 60, "remove": 50, "remove_step": 25},
         "locations": {
-            "village": {"radius": 7.0, "heal_seconds": 10.0, "heal_per_s": 0.03, "interrupt_radius": 6.0},
+            "shop": {"radius": 7.0},
             "tavern": {"radius": 6.0, "duration": 15.0, "attack_speed": -0.4},
-            "fountain": {"radius": 5.0, "heal": 0.40},
+            "fountain": {"radius": 5.0, "heal_units": 0.05, "heal_seconds": 15.0, "heal_radius": 8.0},
             "ritual": {"radius": 6.0, "elixir_mult": 2.0, "hp": 300},
-            "shrine": {"radius": 7.0, "countdown": 10.0, "hero_xp": 80},
+            "shrine": {"radius": 7.0, "countdown": 10.0},
             "bridge": {"radius": 10.0, "leash": 1.5, "pack_damage": 0.5},
         },
-        "arena": {"radius": 15.0, "altars": 5, "altar_ring": 10.0, "altar_hp": 300, "teleport_cooldown": 8.0,
+        "arena": {"radius": 15.0, "altars": 5, "altar_ring": 10.0, "altar_hp": 1500, "teleport_cooldown": 8.0,
                   "teleport_cost": 0, "elixir_mult_head": 2.0, "spell_extra_cost_no_left_arm": 2,
                   "arm_aura_radius": 3.0, "entry_distance": 14.0},
         "curse": {"hp_per_stack": 0.03, "max_stacks": 10, "cursed_mod_cooldown": 5.0},
@@ -278,7 +280,7 @@ def main():
         {"id": "shadowy", "p": {"no_xp": True}, "applies": ["monster", "swarm", "structure"]},
     ]
     locked = {"paths": ["rules.elixir.seconds_per_point", "rules.elixir.max", "rules.hand_size", "rules.ring.min",
-                        "rules.ring.max", "rules.sim.dt", "rules.phase1_target_s", "rules.goals"]}
+                        "rules.sim.dt", "rules.phase1_target_s", "rules.goals"]}
     bots = {
         "random": {"id": "random", "kind": "random", "think_interval": 0.5, "play_chance": 0.6,
                    "sacrifice_unusable": 0.3},

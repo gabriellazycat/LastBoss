@@ -12,6 +12,7 @@ const TGT_LOC := 2
 const TGT_PART := 3
 const TGT_ALTAR := 4
 const TGT_PILLAR := 5
+const LEASH_MAX := 18.0   # a coleira estica até aqui enquanto persegue um alvo
 
 var sim: Sim
 var H: Dictionary
@@ -48,12 +49,14 @@ var kb_x := 0.0
 var kb_y := 0.0
 var kb_t := 0.0
 var s := 0.0
+var s_max := 0.0
 var seg := 0
 var road_dist := 0.0
 var target := -1
 var target_kind := TGT_NONE
 var attacking := false
 var near_count := 0
+var fury_count := 0                # inimigos no raio da Fúria do Herói
 var lure_on := false
 var lure_x := 0.0
 var lure_y := 0.0
@@ -83,7 +86,7 @@ func setup(s_: Sim) -> void:
 	sim = s_
 	H = sim.data.hero
 	AI = H["ai"]
-	base_hp = H["hp"]
+	base_hp = float(H["hp"]) * float(sim.deck_rules.get("hero_hp_mult", 1.0))
 	hp = base_hp
 	radius = H["radius"]
 	shield_max = H["shield"]["hp"]
@@ -109,7 +112,31 @@ func max_hp() -> float:
 
 
 func damage() -> float:
-	return float(H["damage"]) * pow(1.0 + float(H["damage_growth"]), level - 1)
+	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1)
+
+
+## Herói seguinte da fila: um nível acima, vida e dano ×step, tudo cheio. Habilidades e dano recebido ficam (são do grupo).
+func next_hero(i: int) -> void:
+	level = i + 1
+	base_hp = float(H["hp"]) * pow(float(sim.data.rules["party"]["step"]), i) * float(sim.deck_rules.get("hero_hp_mult", 1.0))
+	curses = 0
+	hp = base_hp
+	shield_hp = shield_max
+	shield_t = 0.0
+	slow_t = 0.0
+	fear_t = 0.0
+	root_t = 0.0
+	petrify_t = 0.0
+	soaked_t = 0.0
+	tavern_t = 0.0
+	stay_t = 0.0
+	kb_t = 0.0
+	dash_left = 0.0
+	spin_t = 0.0
+	second_used = false
+	target = -1
+	target_kind = TGT_NONE
+	last_hit_t = -100.0
 
 
 func xp_needed() -> float:
@@ -143,23 +170,27 @@ func update(dt: float) -> void:
 		if shield_t <= 0.0:
 			shield_hp = shield_max
 	if sim.tick % sim.ai_period == 0:
-		_rebuild_danger()
 		_choose_target()
+		_rebuild_danger()
 	_validate_target()
 	_move(dt)
 	if sim.phase == K.Phase.ROAD:
-		var pr := sim.road.project(Vector2(x, y), seg)
+		# O progresso só recua um pouco: senão a projeção escorrega para trás e a coleira o arrasta.
+		var pr := sim.road.project(Vector2(x, y), seg, s_max - float(sim.data.rules["road"]["max_backtrack"]))
 		s = pr.x
+		s_max = maxf(s_max, s)
 		seg = int(pr.y)
 		road_dist = pr.z
 		var leash: float = float(sim.data.rules["road"]["leash"]) * leash_mult
+		# Perseguindo: o alvo está a no máximo LEASH_MAX - 3 m da estrada (_choose_target), então sempre dá para alcançá-lo.
 		if target_kind == TGT_UNIT and leash_mult >= 1.0:
-			var tp := _target_pos()
-			var tr := sim.road.project(tp, seg)
-			leash = clampf(tr.z + 2.0, leash, 18.0)
+			leash = LEASH_MAX
 		if road_dist > leash:
+			# Volta para a coleira andando rápido, sem tranco; só o limite máximo é rígido.
+			var excess := road_dist - leash
+			var pull := minf(excess, maxf(road_dist - LEASH_MAX, float(H["speed"]) * 2.0 * dt))
 			var q := sim.road.point_at(s)
-			var k := (road_dist - leash) / road_dist
+			var k := pull / road_dist
 			x += (q.x - x) * k
 			y += (q.y - y) * k
 	else:
@@ -204,10 +235,13 @@ func _move(dt: float) -> void:
 	var tpos := _target_pos()
 	var reach := attack_reach()
 	var tdist := INF
+	# closing: no alcance, mas o alvo está escapando pela borda; continua perseguindo a toda.
+	var closing := false
 	if target_kind != TGT_NONE:
 		tdist = Vector2(x, y).distance_to(tpos)
 		if tdist <= reach:
 			attacking = true
+			closing = target_kind == TGT_UNIT and tdist > reach * 0.7
 	# Seguir a estrada (ou, na arena, ir até o chefe).
 	var road_dir := Vector2.ZERO
 	if sim.phase == K.Phase.ROAD:
@@ -216,7 +250,7 @@ func _move(dt: float) -> void:
 	else:
 		road_dir = (Vector2(sim.arena.bx, sim.arena.by) - Vector2(x, y)).normalized()
 	mv += road_dir * float(AI["road_weight"]) * (0.25 if attacking else 1.0)
-	if target_kind != TGT_NONE and not attacking:
+	if target_kind != TGT_NONE and (closing or not attacking):
 		mv += (tpos - Vector2(x, y)).normalized() * float(AI["target_weight"])
 	if lure_on:
 		mv += (Vector2(lure_x, lure_y) - Vector2(x, y)).normalized() * 2.2
@@ -232,7 +266,7 @@ func _move(dt: float) -> void:
 				mv -= g.normalized() * float(AI["flee_weight"]) * k
 	if mv.length() > 0.01:
 		mv = mv.normalized()
-		var sp := speed * (float(H["attack_move_mult"]) if attacking else 1.0)
+		var sp := speed * (float(H["attack_move_mult"]) if attacking and not closing else 1.0)
 		x += mv.x * sp * dt
 		y += mv.y * sp * dt
 	# Encarar o alvo (o escudo fica na frente) ou a direção do movimento.
@@ -311,7 +345,7 @@ func _attack(dt: float) -> void:
 		m *= 1.0 - sl
 	if has("hero_fury"):
 		var u: Dictionary = upgrades["hero_fury"]
-		m *= 1.0 + minf(float(u["cap"]), near_count * float(u["per_unit"]))
+		m *= 1.0 + minf(float(u["cap"]), fury_count * float(u["per_unit"]))
 	atk_t -= dt * m
 	if atk_t > 0.0:
 		return
@@ -321,7 +355,7 @@ func _attack(dt: float) -> void:
 	atk_t = H["attack_interval"]
 	var dmg := damage()
 	if has("purifying_blade") and curses > 0:
-		curses -= 1
+		curses = maxi(0, curses - int(upgrades["purifying_blade"]["remove"]))
 	match target_kind:
 		TGT_UNIT:
 			var tx := sim.units.px[target]
@@ -336,11 +370,14 @@ func _attack(dt: float) -> void:
 		TGT_PART:
 			sim.arena.damage_part(target, dmg * _strike(true))
 		TGT_ALTAR:
-			var m2 := 2.0 if has("stone_hammer") else 1.0
-			sim.arena.damage_altar(target, dmg * m2)
+			sim.arena.damage_altar(target, dmg * _hammer())
 		TGT_PILLAR:
-			var m3 := 2.0 if has("stone_hammer") else 1.0
-			sim.arena.damage_pillar(target, dmg * m3)
+			sim.arena.damage_pillar(target, dmg * _hammer())
+
+
+## Martelo Quebra-pedra também vale contra altares e pilares (pedra).
+func _hammer() -> float:
+	return float(upgrades["stone_hammer"]["mult"]) if has("stone_hammer") else 1.0
 
 
 ## Golpe em arco: atinge também quem está à frente, no alcance.
@@ -436,6 +473,8 @@ func _rebuild_danger() -> void:
 	d_y0 = y - dn * dcell * 0.5
 	var U := sim.units
 	near_count = 0
+	fury_count = 0
+	var fr := float(upgrades["hero_fury"]["radius"]) if has("hero_fury") else 0.0
 	for i in U.hi:
 		if U.alive[i] == 0:
 			continue
@@ -443,6 +482,11 @@ func _rebuild_danger() -> void:
 		var dy := U.py[i] - y
 		if dx * dx + dy * dy < 16.0:
 			near_count += 1
+		if dx * dx + dy * dy < fr * fr:
+			fury_count += 1
+		# O alvo atual não espanta o herói: senão ele recua de quem está tentando acertar.
+		if target_kind == TGT_UNIT and i == target:
+			continue
 		var cx := int((U.px[i] - d_x0) / dcell)
 		var cy := int((U.py[i] - d_y0) / dcell)
 		if cx < 1 or cy < 1 or cx >= dn - 1 or cy >= dn - 1:
@@ -501,6 +545,12 @@ func _choose_target() -> void:
 		var sc := th * 0.05 + (1.0 - U.hp[i] / U.max_hp[i]) + float(strat.get(sim.data.cards[di].id, 0.0)) - d * 0.35
 		if arena:
 			sc += 2.0
+		# Longe demais da estrada: a coleira não deixa alcançar, então nem tenta (senão fica parado olhando).
+		# O alvo atual tem folga, para não trocar de ideia na borda.
+		if not arena and sc > best_score:
+			var lim := LEASH_MAX - (0.5 if target_kind == TGT_UNIT and i == target else 3.0)
+			if sim.road.project(Vector2(U.px[i], U.py[i]), seg).z > lim:
+				continue
 		if sc > best_score:
 			best_score = sc
 			best = i
@@ -517,7 +567,7 @@ func _choose_target() -> void:
 	if not arena:
 		for li in sim.road.locations.size():
 			var loc: Dictionary = sim.road.locations[li]
-			if loc["type"] != "ritual" or loc["state"] != SimRoad.LocState.ACTIVE:
+			if loc["type"] != "ritual" or loc["state"] != SimRoad.LocState.ACTIVE or not sim.road.is_on_route(loc):
 				continue
 			var d := Vector2(x, y).distance_to(loc["pos"])
 			if d < engage * 1.5:
@@ -562,20 +612,6 @@ func _choose_target() -> void:
 						best_kind = TGT_ALTAR
 	target = best
 	target_kind = best_kind
-
-
-## Ramo numa bifurcação: regra visível (vida baixa → cura; senão → mais curto).
-func choose_branch(leg_i: int) -> int:
-	var leg: Dictionary = sim.road.legs[leg_i]
-	if leg["forced"] >= 0:
-		return leg["forced"]
-	if leg["closed"] >= 0:
-		return 1 - int(leg["closed"])
-	if hp_frac() < float(AI["low_hp"]):
-		for b in 2:
-			if sim.road.branch_has(leg_i, b, ["village", "fountain"]):
-				return b
-	return 0 if leg["len"][0] <= leg["len"][1] else 1
 
 
 func choose_upgrade(options: Array) -> String:
@@ -664,6 +700,7 @@ func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) 
 	if kind & DMG_PROJECTILE: note("projectile", amount)
 	if kind & DMG_SPELL: note("spell", amount)
 	if amount >= 100.0: note("burst", amount)
+	if near_count >= int(sim.data.upgrades["dash"]["p"]["surround"]): note("surround", amount)
 	return amount
 
 
@@ -700,11 +737,11 @@ func knockback(from_x: float, from_y: float, dist: float) -> void:
 	note("knockback", 40.0)
 
 
-func fear(from_x: float, from_y: float) -> void:
+func fear(from_x: float, from_y: float, dur := -1.0) -> void:
 	var v := Vector2(x - from_x, y - from_y)
 	if v.length() < 0.01:
 		v = Vector2(0, 1)
 	v = v.normalized()
 	fear_x = v.x
 	fear_y = v.y
-	fear_t = sim.data.rules["status"]["fear"]
+	fear_t = dur if dur > 0.0 else float(sim.data.rules["status"]["fear"])

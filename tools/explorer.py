@@ -21,8 +21,10 @@ BOTS = os.path.join(ROOT, "data", "bots")
 GENES = {
     "max_cost": (2, 10, int), "lair_bonus": (0.0, 10.0, float), "lair_until": (0, 900, int),
     "shrine_reserve": (0, 10, int), "shrine_lookahead": (0.0, 60.0, float), "behind": (0.0, 1.0, float),
-    "combo": (0.0, 6.0, float), "xp_aversion": (0.0, 5.0, float), "teleport_distance": (2.0, 6.0, float),
+    "combo": (0.0, 6.0, float), "teleport_distance": (2.0, 6.0, float),
     "finisher_pick": (0.0, 2.0, float), "think_interval": (0.15, 0.6, float),
+    "contest_reserve": (0, 10, int), "contest_lookahead": (0.0, 60.0, float), "gold_value": (10.0, 60.0, float),
+    "route_shrine": (0.0, 8.0, float), "route_shop": (0.0, 8.0, float), "route_ritual": (0.0, 8.0, float),
 }
 
 

@@ -15,21 +15,12 @@
  "hand_size": 5,
  "ring": {
   "min": 3.0,
-  "max": 12.0,
   "spells_ignore_min": true
  },
  "sacrifice_elixir": 1,
  "hero_xp": {
-  "per_elixir": 20,
-  "level2": 100,
-  "growth": 0.15,
-  "passive_per_s": 1.8
- },
- "player_xp": {
-  "first_level": 900,
-  "growth": 0.15,
-  "_note": "first_level = ROUND(dano total estimado * g / ((1+g)^10 - 1), -1) da aba Base",
-  "count_shield": true
+  "upgrade_every": 4,
+  "upgrade_max": 4
  },
  "phase1_target_s": 720,
  "rarity_by_time": {
@@ -68,9 +59,10 @@
   "options": 3,
   "new_card_weight": 0.7,
   "modifier_weight": 0.3,
-  "shrine_options": 3,
-  "shrine_min_rarity": "rare",
-  "contract_options": 2
+  "contract_options": 2,
+  "level_every": 1,
+  "location_win": 3,
+  "location_lose": 1
  },
  "contracts": {
   "first_at": [
@@ -84,43 +76,39 @@
  },
  "road": {
   "target_length": 1500.0,
-  "forks": [
+  "point_step": 6.0,
+  "lanes": 3,
+  "lane_width": 30.0,
+  "row_nodes": [
    2,
    3
   ],
-  "fork_spread": 45.0,
-  "long_branch_extra": [
-   0.35,
-   0.6
-  ],
-  "wiggle": 18.0,
-  "point_step": 6.0,
+  "extra_link": 0.45,
+  "length_slack": 1.04,
   "fork_decision_distance": 25.0,
   "leash": 8.0,
+  "max_backtrack": 8.0,
   "route_locations": [
    8,
    10
   ],
   "shrines": [
    2,
-   4
+   3
   ],
   "location_weights": {
-   "village": 3,
    "tavern": 2,
    "fountain": 2,
    "ritual": 2,
    "bridge": 2
   },
-  "min_location_gap": 60.0
+  "shrine_chance": 0.24,
+  "shops": [
+   1,
+   2
+  ]
  },
  "locations": {
-  "village": {
-   "radius": 7.0,
-   "heal_seconds": 10.0,
-   "heal_per_s": 0.03,
-   "interrupt_radius": 6.0
-  },
   "tavern": {
    "radius": 6.0,
    "duration": 15.0,
@@ -128,7 +116,9 @@
   },
   "fountain": {
    "radius": 5.0,
-   "heal": 0.4
+   "heal_units": 0.05,
+   "heal_seconds": 15.0,
+   "heal_radius": 8.0
   },
   "ritual": {
    "radius": 6.0,
@@ -137,20 +127,22 @@
   },
   "shrine": {
    "radius": 7.0,
-   "countdown": 10.0,
-   "hero_xp": 80
+   "countdown": 10.0
   },
   "bridge": {
    "radius": 10.0,
    "leash": 1.5,
    "pack_damage": 0.5
+  },
+  "shop": {
+   "radius": 7.0
   }
  },
  "arena": {
   "radius": 15.0,
   "altars": 5,
   "altar_ring": 10.0,
-  "altar_hp": 300,
+  "altar_hp": 1500,
   "teleport_cooldown": 8.0,
   "teleport_cost": 0,
   "elixir_mult_head": 2.0,
@@ -168,7 +160,7 @@
   "cursed_mod_cooldown": 5.0
  },
  "status": {
-  "fear": 1.5,
+  "fear": 2.0,
   "slow": 0.5,
   "soaked": 6.0
  },
@@ -196,6 +188,75 @@
   ]
  },
  "units": {
-  "retreat_speed": 0.55
+  "retreat_speed": 0.4,
+  "damage_mult": 2.5,
+  "projectile_damage_mult": 1.2
+ },
+ "card_levels": {
+  "growth": 0.25,
+  "max": 3
+ },
+ "deck": {
+  "size": 10,
+  "max_copies": 2,
+  "max_finishers": 1,
+  "min_in_run": 6
+ },
+ "location_rewards": {
+  "shrine": {
+   "reward": "card",
+   "min_rarity": "rare"
+  },
+  "ritual": {
+   "reward": "upgrade"
+  },
+  "tavern": {
+   "reward": "mod",
+   "win_damage": 150
+  },
+  "fountain": {
+   "reward": "remove",
+   "guard_radius": 6.0,
+   "lose_options": 2
+  },
+  "bridge": {
+   "reward": "choice",
+   "win_damage": 200,
+   "rarities": [
+    "common",
+    "uncommon"
+   ],
+   "lose_rarities": [
+    "common"
+   ]
+  },
+  "shop": {
+   "reward": "shop",
+   "win_damage": 150,
+   "discount": 0.3
+  }
+ },
+ "sacrifice_cooldown": 8.0,
+ "party": {
+  "size": 5,
+  "step": 1.26,
+  "arrive_s": 8.0
+ },
+ "gold": {
+  "damage_per_gold": 40.0,
+  "per_contest": 25
+ },
+ "shop": {
+  "cards": 3,
+  "prices": {
+   "common": 50,
+   "uncommon": 75,
+   "rare": 120,
+   "legendary": 180
+  },
+  "upgrade": 75,
+  "mod": 60,
+  "remove": 50,
+  "remove_step": 25
  }
 }

@@ -26,6 +26,7 @@ var pillar_r := 0.9
 var tp_cd := 0.0
 var arm_t := 0.0
 var fury_t := 0.0
+var fury_dmg := 0.5
 var destroyed := 0
 var active := false
 
@@ -179,7 +180,7 @@ func update(dt: float) -> void:
 			arm_t += 1.0
 			var h := sim.hero
 			if Vector2(h.x - bx, h.y - by).length() <= float(A["arm_aura_radius"]) + h.radius + 1.0:
-				var m := 1.5 if fury_t > 0.0 else 1.0
+				var m := 1.0 + fury_dmg if fury_t > 0.0 else 1.0
 				sim.damage_hero(float(sim.data.boss["right_arm_dps"]) * m, bx, by, 0, SimHero.DMG_AREA, "boss")
 
 
@@ -191,11 +192,26 @@ func hero_in_front(cone_deg: float, rng_m: float) -> bool:
 	return v.normalized().dot(face) >= cos(deg_to_rad(cone_deg * 0.5))
 
 
-func fury(heal: float, dur: float) -> void:
+func fury(heal: float, dur: float, dmg := 0.5) -> void:
 	for k in part_hp.size():
 		if part_hp[k] > 0.0:
 			part_hp[k] = minf(part_max[k], part_hp[k] + part_max[k] * heal)
 	fury_t = dur
+	fury_dmg = dmg
+
+
+## Pacto Sombrio: tira `frac` da vida máxima da parte mais cheia (sem o núcleo); se ela chegar a zero, é destruída.
+func drain_part(frac: float) -> bool:
+	var best := -1
+	for k in part_hp.size():
+		if part_hp[k] > 0.0 and part_ids[k] != "core" and (best < 0 or part_hp[k] > part_hp[best]):
+			best = k
+	if best < 0:
+		return false
+	part_hp[best] -= part_max[best] * frac
+	if part_hp[best] <= 0.0:
+		_destroy(best)
+	return true
 
 
 func sacrifice_part() -> bool:

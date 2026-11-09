@@ -17,7 +17,13 @@
    "attack_interval": 1.0,
    "speed": 5.5,
    "range": 0.8,
-   "fx": {}
+   "fx": {},
+   "lvl": [
+    "count"
+   ],
+   "n3": {
+    "pierce": true
+   }
   },
   {
    "id": "skeleton_archers",
@@ -31,14 +37,22 @@
    "cost": 3,
    "count": 2,
    "xp_parts": 2,
-   "hp": 120,
-   "dps": 12,
+   "hp": 75,
+   "dps": 8,
    "attack_interval": 1.0,
    "speed": 3,
    "range": 7,
    "fx": {
     "retreat": 4.0,
     "projectile": true
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "burn_dps": 5,
+    "burn_s": 3.0
    }
   },
   {
@@ -61,6 +75,14 @@
    "fx": {
     "explode_damage": 180,
     "explode_radius": 2.5
+   },
+   "lvl": [
+    "explode_damage"
+   ],
+   "n3": {
+    "fire_dps": 10,
+    "fire_s": 4.0,
+    "fire_r": 2.5
    }
   },
   {
@@ -73,7 +95,7 @@
    "cost": 4,
    "count": 1,
    "xp_parts": 7,
-   "hp": 240,
+   "hp": 300,
    "dps": 12,
    "attack_interval": 1.0,
    "speed": 2.5,
@@ -81,16 +103,23 @@
    "fx": {
     "split": [
      {
-      "hp": 110,
+      "hp": 140,
       "dps": 6,
       "n": 2
      },
      {
-      "hp": 50,
+      "hp": 60,
       "dps": 3,
       "n": 2
      }
     ]
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "first_split": 3
    }
   },
   {
@@ -115,6 +144,12 @@
     "length": 10.0,
     "width": 1.5,
     "pierce_shield": true
+   },
+   "lvl": [
+    "damage"
+   ],
+   "n3": {
+    "hits": 2
    }
   },
   {
@@ -139,7 +174,11 @@
     "spawn": "bat",
     "spawn_interval": 3.0,
     "spawn_duration": 15.0
-   }
+   },
+   "lvl": [
+    "hp",
+    "spawn_duration"
+   ]
   },
   {
    "id": "rat_king",
@@ -163,7 +202,11 @@
     "aura_pack_damage": 0.5,
     "death_spawn": "rat",
     "death_spawn_n": 6
-   }
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ]
   },
   {
    "id": "bone_totem",
@@ -182,12 +225,16 @@
    "dps": 0,
    "attack_interval": 1.0,
    "speed": 0,
-   "range": 6,
+   "range": 8,
    "fx": {
     "duration": 20.0,
-    "radius": 6.0,
+    "radius": 8.0,
     "revive": "skeleton"
-   }
+   },
+   "lvl": [
+    "hp",
+    "duration"
+   ]
   },
   {
    "id": "cultists",
@@ -210,7 +257,10 @@
     "spell_discount": 1,
     "spell_min_cost": 1,
     "projectile": true
-   }
+   },
+   "lvl": [
+    "count"
+   ]
   },
   {
    "id": "ogre",
@@ -229,6 +279,13 @@
    "range": 1.5,
    "fx": {
     "knockback": 4.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "root": 0.5
    }
   },
   {
@@ -250,6 +307,12 @@
     "radius": 3.0,
     "duration": 4.0,
     "slow": 0.5
+   },
+   "lvl": [
+    "duration"
+   ],
+   "n3": {
+    "root": 1.0
    }
   },
   {
@@ -273,6 +336,13 @@
     "lure_radius": 10.0,
     "bite": 120,
     "curses": 2
+   },
+   "lvl": [
+    "bite",
+    "hp"
+   ],
+   "n3": {
+    "bites": 2
    }
   },
   {
@@ -297,7 +367,10 @@
     "duration": 8.0,
     "dps": 10,
     "soaked": 6.0
-   }
+   },
+   "lvl": [
+    "dps"
+   ]
   },
   {
    "id": "ghost",
@@ -318,9 +391,13 @@
    "range": 1,
    "fx": {
     "phase": true,
-    "fear": 1.5,
+    "fear": 2.0,
     "fear_cooldown": 6.0
-   }
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ]
   },
   {
    "id": "gargoyle_tower",
@@ -342,6 +419,13 @@
    "fx": {
     "stone_radius": 3.0,
     "projectile": true
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "reflect": 0.3
    }
   },
   {
@@ -351,7 +435,7 @@
    "tags": [],
    "archetype": "chaser",
    "rarity": "rare",
-   "cost": 5,
+   "cost": 4,
    "count": 1,
    "xp_parts": 1,
    "hp": 600,
@@ -362,7 +446,11 @@
    "fx": {
     "speed_bonus": 1.0,
     "hp_threshold": 0.5
-   }
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ]
   },
   {
    "id": "scrap_golem",
@@ -385,7 +473,12 @@
     "absorb_radius": 5.0,
     "absorb_hp": 40,
     "hp_cap": 1500
-   }
+   },
+   "lvl": [
+    "hp",
+    "dps",
+    "hp_cap"
+   ]
   },
   {
    "id": "soul_feast",
@@ -405,28 +498,12 @@
    "fx": {
     "radius": 4.0,
     "bonus_per_card": 1
-   }
-  },
-  {
-   "id": "broken_bridge",
-   "category": "route",
-   "type": "route",
-   "tags": [],
-   "rarity": "common",
-   "cost": 3,
-   "fx": {
-    "target": "branch"
-   }
-  },
-  {
-   "id": "false_sign",
-   "category": "route",
-   "type": "route",
-   "tags": [],
-   "rarity": "uncommon",
-   "cost": 5,
-   "fx": {
-    "target": "branch"
+   },
+   "lvl": [
+    "radius"
+   ],
+   "n3": {
+    "bonus_per_card": 2
    }
   },
   {
@@ -438,9 +515,11 @@
    "cost": 2,
    "fx": {
     "target": "point",
-    "xp": 40,
     "max_detour": 30.0
-   }
+   },
+   "lvl": [
+    "cost"
+   ]
   },
   {
    "id": "burn_village",
@@ -451,8 +530,12 @@
    "cost": 4,
    "fx": {
     "target": "location",
-    "location": "village"
-   }
+    "dps": 40.0,
+    "duration": 10.0
+   },
+   "lvl": [
+    "cost"
+   ]
   },
   {
    "id": "soul_collector",
@@ -464,7 +547,10 @@
    "fx": {
     "elixir_regen": 0.1,
     "stack": 3
-   }
+   },
+   "lvl": [
+    "elixir_regen"
+   ]
   },
   {
    "id": "forbidden_library",
@@ -476,7 +562,10 @@
    "fx": {
     "hand": 1,
     "stack": 1
-   }
+   },
+   "lvl": [
+    "cost"
+   ]
   },
   {
    "id": "dark_forge",
@@ -488,7 +577,10 @@
    "fx": {
     "monster_hp": 0.1,
     "stack": 3
-   }
+   },
+   "lvl": [
+    "monster_hp"
+   ]
   },
   {
    "id": "lair_walls",
@@ -500,7 +592,10 @@
    "fx": {
     "hero_hp_loss": 0.1,
     "stack": 1
-   }
+   },
+   "lvl": [
+    "hero_hp_loss"
+   ]
   },
   {
    "id": "cosmic_ray",
@@ -513,10 +608,13 @@
     "cond": "front",
     "cone": 45.0,
     "range": 12.0,
-    "damage": 1200,
+    "damage": 1000,
     "width": 2.0,
     "pierce_shield": true
-   }
+   },
+   "lvl": [
+    "cone"
+   ]
   },
   {
    "id": "bone_prison",
@@ -529,7 +627,10 @@
     "cond": "after_teleport",
     "window": 3.0,
     "root": 3.0
-   }
+   },
+   "lvl": [
+    "root"
+   ]
   },
   {
    "id": "petrifying_gaze",
@@ -543,7 +644,10 @@
     "cone": 45.0,
     "range": 12.0,
     "petrify": 2.0
-   }
+   },
+   "lvl": [
+    "petrify"
+   ]
   },
   {
    "id": "damned_army",
@@ -559,7 +663,11 @@
     "hp": 40,
     "dps": 10,
     "duration": 5.0
-   }
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ]
   },
   {
    "id": "dark_fury",
@@ -573,7 +681,10 @@
     "heal": 0.2,
     "damage": 0.5,
     "duration": 10.0
-   }
+   },
+   "lvl": [
+    "damage"
+   ]
   },
   {
    "id": "dark_pact",
@@ -584,7 +695,12 @@
    "cost": 0,
    "fx": {
     "cond": "none",
-    "draw": 2
+    "draw": 2,
+    "drain": 0.4
+   },
+   "lvl": [],
+   "n3": {
+    "draw": 3
    }
   }
  ],

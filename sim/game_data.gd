@@ -11,6 +11,7 @@ var cards: Array[CardDef] = []
 var by_id: Dictionary = {}  # id -> CardDef
 var pool: Array[CardDef] = []  # cartas que podem ser oferecidas (as 32)
 var upgrades: Dictionary = {}  # id -> dict
+var meta: Dictionary = {}      # coleção, custos de desbloqueio e Almas (data/meta.json)
 
 
 static func load_dir(dir := "res://data") -> GameData:
@@ -21,9 +22,12 @@ static func load_dir(dir := "res://data") -> GameData:
 	g.contracts = _read(dir + "/contracts.json")["contracts"]
 	for m in _read(dir + "/modifiers.json")["modifiers"]:
 		g.modifiers[m["id"]] = m
+	g.meta = _read(dir + "/meta.json")
+	var growth := float(g.rules["card_levels"]["growth"])
 	var cj := _read(dir + "/cards.json")
 	for d in cj["cards"]:
 		var c := CardDef.from_dict(d, g.cards.size())
+		c.growth = growth
 		g.cards.append(c)
 		g.by_id[c.id] = c
 		g.pool.append(c)

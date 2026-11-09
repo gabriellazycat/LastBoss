@@ -7,7 +7,7 @@ extends Node3D
 const UP := Vector3.UP
 const STRIDE := 20
 const LOC_COLORS := {
-	"village": Color(0.95, 0.75, 0.35), "tavern": Color(0.9, 0.55, 0.25), "fountain": Color(0.35, 0.75, 1.0),
+	"shop": Color(0.95, 0.75, 0.35), "tavern": Color(0.9, 0.55, 0.25), "fountain": Color(0.35, 0.75, 1.0),
 	"ritual": Color(0.8, 0.25, 1.0), "shrine": Color(0.3, 1.0, 0.6), "bridge": Color(0.65, 0.6, 0.55),
 }
 const PART_OFFSETS := {"core": Vector3(0, 0, 0), "head": Vector3(0, 4.3, 0), "left_arm": Vector3(-1.6, 2.4, 0), "right_arm": Vector3(1.6, 2.4, 0)}
@@ -17,6 +17,23 @@ const UNIT_COLORS := {
 	"slime": Color(0.3, 0.95, 0.55), "cultists": Color(0.6, 0.15, 0.4), "ogre": Color(0.55, 0.62, 0.34), "ghost": Color(0.7, 0.88, 1.0),
 	"spectre": Color(0.35, 1.0, 0.85), "werewolf": Color(0.4, 0.32, 0.28), "scrap_golem": Color(0.62, 0.4, 0.24),
 }
+
+# Cor de destaque de cada tipo de monstro: o anel no chão que identifica o tipo de longe.
+const ACCENT := {
+	"rat_horde": Color(0.95, 0.72, 0.42), "rat": Color(0.95, 0.72, 0.42), "rat_king": Color(1.0, 0.85, 0.3),
+	"bat": Color(0.78, 0.45, 1.0), "bat_nest": Color(0.78, 0.45, 1.0),
+	"skeleton": Color(0.9, 0.93, 1.0), "skeleton_archers": Color(0.9, 0.93, 1.0), "bone_totem": Color(0.9, 0.93, 1.0),
+	"goblin_dynamiter": Color(0.6, 1.0, 0.3), "slime": Color(0.3, 1.0, 0.72), "cultists": Color(1.0, 0.3, 0.62),
+	"ogre": Color(1.0, 0.55, 0.25), "mimic": Color(1.0, 0.8, 0.35), "ghost": Color(0.6, 0.85, 1.0),
+	"spectre": Color(0.3, 1.0, 0.95), "gargoyle_tower": Color(0.75, 0.7, 1.0), "werewolf": Color(0.9, 0.6, 0.4),
+	"scrap_golem": Color(1.0, 0.62, 0.2),
+}
+# Câmera: distância base, quanto ela afasta por unidade em campo (até 300) e o extra na arena.
+const CAM_DIST := 30.0
+const CAM_PER_UNIT := 0.02
+const CAM_ARENA := 6.0
+# O chão (terreno, estrada, grama) fica na camada 2: a contraluz não o ilumina.
+const GROUND_LAYER := 2
 
 var sim: Sim
 var cam: Camera3D
@@ -41,6 +58,7 @@ var slash: MeshInstance3D
 var slash_mat: StandardMaterial3D
 var hero_light: OmniLight3D
 var road_meshes: Array = []
+var barricades: Array = []      # [nó 3D, ligação]: barreira na entrada de cada ramo, aparece quando o ramo é fechado
 var loc_nodes: Array = []
 var lanterns: Array = []
 var lantern_lights: Array = []
@@ -58,9 +76,8 @@ var decal_i := 0
 var fx: Dictionary = {}
 var fireflies: GPUParticles3D
 var ring_min: MeshInstance3D
-var ring_max: MeshInstance3D
 var ghost: MeshInstance3D
-var ghost_mat: StandardMaterial3D
+var ghost_mat: ShaderMaterial
 var arena_root: Node3D
 var part_nodes: Array = []
 var part_flash: Array = []
@@ -70,6 +87,7 @@ var pillar_nodes: Array = []
 var boss_face: MeshInstance3D
 var cam_pos := Vector3.ZERO
 var zoom := 0.0
+var arrive_pull := 0.0   # recuo da câmera por ~3 s quando chega um herói novo
 var trauma := 0.0
 var hitstop := 0.0
 var screen_flash := Color(1, 1, 1, 0)
@@ -77,6 +95,10 @@ var flash_light: OmniLight3D
 var flash_t := 0.0
 var bar_mm: MultiMesh
 var bar_buf := PackedFloat32Array()
+var ring_mm: MultiMesh
+var ring_buf := PackedFloat32Array()
+# Dano no herói somado por ~0,3 s num número só (antes eram dezenas de números empilhados).
+var dmg_acc := {"v": 0.0, "t": 0.0, "col": Color.WHITE, "p": Vector3.ZERO}
 var bubble: Label3D
 var bubble_t := 0.0
 var bubble_on_boss := false
@@ -128,7 +150,7 @@ func build(s: Sim, camera: Camera3D) -> void:
 	build_empty()
 	sim = s
 	cam = camera
-	for a in [road_meshes, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
+	for a in [road_meshes, barricades, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
 		a.clear()
 	mm_by_def.clear()
 	fx.clear()
@@ -173,6 +195,9 @@ func _road_bounds() -> Rect2:
 
 
 func _build_ground() -> void:
+	if GroundLooks.look() > 0:
+		_build_ground_look()
+		return
 	var b := _road_bounds()
 	var cell := 6.0
 	var nx := int(b.size.x / cell) + 1
@@ -201,7 +226,87 @@ func _build_ground() -> void:
 				st.add_vertex(p[k])
 	var g := _mi(st.commit(), Vector3.ZERO)
 	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	g.layers = GROUND_LAYER
 	add_child(g)
+
+
+## Chão das variações (GroundLooks): plano com shader de texturas + grama com vento perto da estrada.
+func _build_ground_look() -> void:
+	var b := _road_bounds()
+	var pm := PlaneMesh.new()
+	pm.size = b.size
+	# Subdividido: com só dois triângulos enormes, a interpolação por vértice marcava a diagonal.
+	pm.subdivide_width = int(b.size.x / 12.0)
+	pm.subdivide_depth = int(b.size.y / 12.0)
+	var g := _mi(pm, Vector3(b.get_center().x, -0.03, b.get_center().y), GroundLooks.ground_material())
+	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	g.layers = GROUND_LAYER
+	add_child(g)
+	var dens: float = GroundLooks.preset()["grass"]
+	if dens <= 0.0:
+		return
+	# Pontos da estrada numa grade de 4 m, para saber a distância até ela.
+	var near := {}
+	for leg in sim.road.legs:
+		for pts in leg["pts"]:
+			for p in pts:
+				var k := Vector2i(int(floor(p.x / 4.0)), int(floor(p.y / 4.0)))
+				if not near.has(k):
+					near[k] = []
+				near[k].append(p)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = sim.run_seed + 131
+	var chunks := {}
+	# Teto por célula de 6 m: onde as faixas de duas estradas se sobrepõem (a rede tem ~50 ligações lado a lado),
+	# a grama não dobra. O teto é a densidade de uma estrada sozinha.
+	var per_cell := {}
+	var cap := maxi(1, ceili(36.0 * 0.12 * dens))
+	for leg in sim.road.legs:
+		for pts in leg["pts"]:
+			for i in range(0, pts.size(), 2):
+				var c: Vector2 = pts[i]
+				for j in int(70 * dens):
+					var a := rng.randf() * TAU
+					var r := rng.randf_range(2.4, 26.0)
+					var p := c + Vector2(cos(a), sin(a)) * r
+					var kk := Vector2i(int(floor(p.x / 4.0)), int(floor(p.y / 4.0)))
+					var ok := true
+					for dy in range(-1, 2):
+						for dx in range(-1, 2):
+							for q in near.get(kk + Vector2i(dx, dy), []):
+								if p.distance_squared_to(q) < 9.0:
+									ok = false
+									break
+					if not ok:
+						continue
+					var cell := Vector2i(int(floor(p.x / 6.0)), int(floor(p.y / 6.0)))
+					if int(per_cell.get(cell, 0)) >= cap:
+						continue
+					per_cell[cell] = int(per_cell.get(cell, 0)) + 1
+					var s := rng.randf_range(0.9, 1.9) * (1.0 + clampf((r - 8.0) / 18.0, 0.0, 1.0) * 0.4)
+					var ck := Vector2i(int(floor(p.x / 64.0)), int(floor(p.y / 64.0)))
+					if not chunks.has(ck):
+						chunks[ck] = []
+					chunks[ck].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.8, 1.3), s)), Vector3(p.x, -0.02, p.y)))
+	var mesh := GroundLooks.grass_mesh()
+	var mat := GroundLooks.grass_material()
+	for ck in chunks:
+		var xf: Array = chunks[ck]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.mesh = mesh
+		mm.instance_count = xf.size()
+		for i in xf.size():
+			mm.set_instance_transform(i, xf[i])
+			var v := rng.randf_range(0.8, 1.2)
+			mm.set_instance_color(i, Color(v, v * rng.randf_range(0.92, 1.08), v * 0.95))
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.material_override = mat
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mmi.layers = GROUND_LAYER
+		add_child(mmi)
 
 
 func _ribbon(pts: PackedVector2Array, width: float, col: Color, edge: Color) -> ArrayMesh:
@@ -242,12 +347,46 @@ func _build_road() -> void:
 	for li in sim.road.legs.size():
 		var leg: Dictionary = sim.road.legs[li]
 		for b in leg["pts"].size():
-			var r := _mi(_ribbon(leg["pts"][b], 4.2, Color(0.56, 0.44, 0.31), Color(0.34, 0.29, 0.22)), Vector3.ZERO, Models.glow_material(0.0))
+			var r: MeshInstance3D
+			if GroundLooks.look() > 0:
+				r = _mi(GroundLooks.road_mesh(leg["pts"][b], 4.2), Vector3.ZERO, GroundLooks.road_material())
+			else:
+				r = _mi(_ribbon(leg["pts"][b], 4.2, Color(0.56, 0.44, 0.31), Color(0.34, 0.29, 0.22)), Vector3.ZERO, Models.glow_material(0.0))
 			r.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			r.layers = GROUND_LAYER
 			r.set_meta("leg", li)
 			r.set_meta("branch", b)
 			add_child(r)
 			road_meshes.append(r)
+		# Barreira na entrada do ramo: só os que saem de uma bifurcação podem ser fechados pela escolha.
+		if sim.road.nodes[leg["a"]]["out"].size() > 1:
+			# Perto do nó os ramos ainda se sobrepõem: a barreira vai onde este ramo já se afastou dos irmãos.
+			var pts: PackedVector2Array = leg["pts"][0]
+			var at := 9.0
+			while at < 70.0:
+				var c := SimRoad._point_on(pts, at)
+				var near := INF
+				for e2 in sim.road.nodes[leg["a"]]["out"]:
+					if e2 != li:
+						for p2 in sim.road.legs[e2]["pts"][0]:
+							near = minf(near, c.distance_to(p2))
+				if near > 9.0:
+					break
+				at += 2.0
+			var q := SimRoad._point_on(pts, at)
+			var dir := (SimRoad._point_on(pts, at + 2.0) - q).normalized()
+			var yaw := atan2(-dir.x, -dir.y)
+			var side := Vector3(dir.orthogonal().x, 0, dir.orthogonal().y)
+			var bn := Node3D.new()
+			bn.position = Vector3(q.x, 0, q.y)
+			bn.add_child(_mi(Models.prop("fence"), side * 1.1, null, yaw + PI * 0.5))
+			bn.add_child(_mi(Models.prop("fence"), -side * 1.1, null, yaw + PI * 0.5))
+			bn.add_child(_mi(Models.prop("rock"), side * 2.6, null, yaw))
+			bn.add_child(_mi(Models.prop("rock"), -side * 2.4 + Vector3(dir.x, 0, dir.y) * 0.8, null, yaw + 1.0))
+			bn.add_child(_mi(Models.prop("dead_tree"), Vector3(dir.x, 0, dir.y) * 1.6, null, yaw + 0.6))
+			bn.visible = false
+			add_child(bn)
+			barricades.append([bn, li])
 
 
 func _road_cells() -> Dictionary:
@@ -272,9 +411,11 @@ func _road_cells() -> Dictionary:
 	return cells
 
 
-func _scatter_mm(mesh: Mesh, xforms: Array, mat: Material, shadow: bool) -> void:
+func _scatter_mm(mesh: Mesh, xforms: Array, mat: Material, shadow: bool, tint := false) -> void:
 	if xforms.is_empty():
 		return
+	var trng := RandomNumberGenerator.new()
+	trng.seed = xforms.size()
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
@@ -282,7 +423,7 @@ func _scatter_mm(mesh: Mesh, xforms: Array, mat: Material, shadow: bool) -> void
 	mm.instance_count = xforms.size()
 	for i in xforms.size():
 		mm.set_instance_transform(i, xforms[i])
-		mm.set_instance_color(i, Color.WHITE)
+		mm.set_instance_color(i, GroundLooks.foliage_tint(trng) if tint else Color.WHITE)
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.material_override = mat
@@ -296,32 +437,41 @@ func _build_scatter() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sim.run_seed + 77
 	var sets := {"tree": [], "tree_round": [], "dead_tree": [], "rock": [], "grass": [], "mushroom": [], "bush": [], "flowers": [], "gravestone": [], "road_stone": [], "lantern": []}
-	var n := int(b.size.x * b.size.y / 34.0)
+	# Composição: um ruído grande decide bosque (árvores juntas), mata baixa ou clareira; outro junta as pedras.
+	# Antes cada ponto sorteava o tipo sozinho, e o cenário ficava salpicado por igual.
+	var wood := FastNoiseLite.new()
+	wood.seed = sim.run_seed + 5
+	wood.frequency = 0.018
+	var stones := FastNoiseLite.new()
+	stones.seed = sim.run_seed + 9
+	stones.frequency = 0.05
+	var n := int(b.size.x * b.size.y / 26.0)
 	for i in n:
 		var p := Vector2(rng.randf_range(b.position.x, b.end.x), rng.randf_range(b.position.y, b.end.y))
 		if cells.has(Vector2i(int(floor(p.x / 6.0)), int(floor(p.y / 6.0)))):
 			continue
+		var f := wood.get_noise_2dv(p)
+		var st := stones.get_noise_2dv(p)
 		var r := rng.randf()
 		var kind := "grass"
-		if r < 0.14:
-			kind = "tree"
-		elif r < 0.22:
-			kind = "tree_round"
-		elif r < 0.25:
-			kind = "dead_tree"
-		elif r < 0.31:
+		if f > 0.18:
+			# Bosque: denso, quase só árvores, com arbustos e cogumelos na sombra.
+			kind = "tree" if r < 0.5 else ("tree_round" if r < 0.78 else ("bush" if r < 0.92 else ("mushroom" if r < 0.97 else "dead_tree")))
+		elif f > -0.08:
+			# Mata baixa: arbustos, flores, árvores soltas.
+			if r > 0.7:
+				continue
+			kind = "bush" if r < 0.2 else ("flowers" if r < 0.34 else ("tree_round" if r < 0.42 else ("dead_tree" if r < 0.46 else "grass")))
+		else:
+			# Clareira: quase vazia, só grama e alguma lápide.
+			if r > 0.35:
+				continue
+			kind = "gravestone" if r < 0.012 else "grass"
+		if st > 0.35 and rng.randf() < 0.5:
 			kind = "rock"
-		elif r < 0.4:
-			kind = "bush"
-		elif r < 0.46:
-			kind = "flowers"
-		elif r < 0.475:
-			kind = "mushroom"
-		elif r < 0.485:
-			kind = "gravestone"
 		var s := rng.randf_range(0.75, 1.45) if kind != "grass" else rng.randf_range(0.8, 1.7)
 		sets[kind].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.85, 1.2), s)), Vector3(p.x, 0, p.y)))
-	# Pedras na beira da estrada e lanternas a cada ~38 m, alternando os lados.
+	# Pedras na beira da estrada e lanternas a cada ~56 m, alternando os lados (a rede tem muitas ligações).
 	for leg in sim.road.legs:
 		for pts in leg["pts"]:
 			var acc := 0.0
@@ -333,7 +483,7 @@ func _build_scatter() -> void:
 				if rng.randf() < 0.35:
 					var q: Vector2 = pts[i] + o * (rng.randf_range(2.6, 3.4) * (1.0 if rng.randf() < 0.5 else -1.0))
 					sets["road_stone"].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.6, 1.4)), Vector3(q.x, 0, q.y)))
-				if acc > 38.0:
+				if acc > 56.0:
 					acc = 0.0
 					side = -side
 					var q2: Vector2 = pts[i] + o * 3.4 * side
@@ -342,11 +492,18 @@ func _build_scatter() -> void:
 					lanterns.append(Vector3(q2.x, 0, q2.y) + Basis(UP, yaw) * Vector3(0.5, 2.15, 0))
 	for k in sets:
 		var mat: Material = Models.material()
-		if k in ["tree", "tree_round", "bush", "grass", "flowers"]:
+		var mesh: Mesh = Models.prop(k)
+		var look_mesh := GroundLooks.prop_mesh(k)
+		if look_mesh:
+			mesh = look_mesh
+			mat = GroundLooks.prop_material(k in ["tree", "tree_round", "bush"])
+		elif k == "grass" and GroundLooks.look() > 0:
+			continue
+		elif k in ["tree", "tree_round", "bush", "grass", "flowers"]:
 			var sm := Models.glow_material(0.0)
-			sm.set_shader_parameter("sway", 1.0)
+			Looks.set_param(sm, "sway", 1.0)
 			mat = sm
-		_scatter_mm(Models.prop(k), sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"])
+		_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"], k in ["tree", "tree_round", "bush", "dead_tree"])
 	for i in 6:
 		var l := _light(Vector3.ZERO, Color(1.0, 0.7, 0.35), 1.6, 9.0)
 		add_child(l)
@@ -383,12 +540,12 @@ func _build_locations() -> void:
 		var off := Vector3(side.x, 0, side.y)
 		var fwd := Vector3(dir.x, 0, dir.y)
 		match t:
-			"village":
-				n.add_child(_mi(Models.prop("house"), off * 6.5, null, yaw + PI * 0.5))
-				n.add_child(_mi(Models.prop("house"), -off * 6.5 + fwd * 3.0, null, yaw - PI * 0.5))
-				n.add_child(_mi(Models.prop("house"), off * 7.0 + fwd * 7.0, null, yaw + PI * 0.5))
-				n.add_child(_mi(Models.prop("fence"), off * 4.2 - fwd * 3.0, null, yaw))
-				n.add_child(_mi(Models.prop("fence"), -off * 4.2 - fwd * 4.0, null, yaw))
+			"shop":
+				# Loja: uma casa, a banca com o ouro à mostra e lanternas.
+				n.add_child(_mi(Models.prop("house"), off * 7.0, null, yaw + PI * 0.5))
+				n.add_child(_mi(Models.prop("fence"), off * 4.2 - fwd * 2.5, null, yaw))
+				n.add_child(_mi(Models.prop("coins"), off * 4.6 + fwd * 1.2 + Vector3(0, 0.6, 0)))
+				n.add_child(_mi(Models.prop("lantern"), off * 4.0 + fwd * 3.5, null, yaw))
 			"tavern":
 				n.add_child(_mi(Models.prop("tavern"), off * 7.0, null, yaw + PI * 0.5))
 				n.add_child(_mi(Models.prop("fence"), off * 4.0 + fwd * 4.0, null, yaw))
@@ -403,7 +560,7 @@ func _build_locations() -> void:
 			"bridge":
 				n.add_child(_mi(Models.prop("water"), Vector3.ZERO, Models.glow_material(0.2), yaw + PI * 0.5))
 				n.add_child(_mi(Models.prop("bridge"), Vector3.ZERO, null, yaw))
-		if t in ["shrine", "ritual", "village"]:
+		if t in ["shrine", "ritual", "shop", "fountain"]:
 			var ring := MeshInstance3D.new()
 			var tm := TorusMesh.new()
 			tm.inner_radius = float(loc["r"]) - 0.12
@@ -433,7 +590,10 @@ func _build_locations() -> void:
 func _build_lair() -> void:
 	var lp := sim.road.lair + sim.road.lair_dir * 34.0
 	var yaw := atan2(-sim.road.lair_dir.x, -sim.road.lair_dir.y)
-	add_child(_mi(Models.prop("castle"), Vector3(lp.x, 0, lp.y), Models.glow_material(0.05), yaw + PI))
+	var castle := _mi(Models.prop("castle"), Vector3(lp.x, 0, lp.y), Models.glow_material(0.05), yaw + PI)
+	# Peça de fundo: a sombra dela cobria a arena inteira com uma cunha de borda reta.
+	castle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(castle)
 	add_child(_light(Vector3(lp.x, 8, lp.y), Color(0.8, 0.3, 1.0), 4.0, 40.0))
 
 
@@ -448,14 +608,14 @@ func _build_units() -> void:
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.use_colors = true
 		mm.use_custom_data = true
-		mm.mesh = Models.unit(c.id)
+		mm.mesh = Looks.unit_mesh(c.id)
 		mm.instance_count = cap
 		mm.visible_instance_count = 0
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
-		var mat := Models.glow_material(0.3 if c.id in ["ghost", "spectre"] else 0.0)
+		var mat := Looks.unit_material(0.3 if c.id in ["ghost", "spectre"] else 0.0, true)
 		if c.fly:
-			mat.set_shader_parameter("flap", 1.0)
+			Looks.set_param(mat, "flap", 1.0)
 		mmi.material_override = mat
 		mmi.custom_aabb = AABB(Vector3(-3000, -10, -3000), Vector3(6000, 40, 6000))
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if cap > 96 or c.radius < 0.5 else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
@@ -467,7 +627,34 @@ func _build_units() -> void:
 			hop = 1.2
 		if c.fly:
 			hop = 0.0
-		mm_by_def[c.idx] = {"mm": mm, "buf": buf, "cap": cap, "hop": hop, "fly": c.fly, "struct": c.arch == K.Arch.STRUCTURE}
+		var acc: Color = ACCENT.get(c.id, Color(0.8, 0.6, 1.0))
+		acc.a = 0.35 if c.arch == K.Arch.SWARM else 0.55
+		mm_by_def[c.idx] = {"mm": mm, "buf": buf, "cap": cap, "hop": hop, "fly": c.fly, "struct": c.arch == K.Arch.STRUCTURE,
+			"rad": maxf(c.radius, 0.35) * 1.35, "acc": acc}
+	ring_mm = MultiMesh.new()
+	ring_mm.transform_format = MultiMesh.TRANSFORM_3D
+	ring_mm.use_colors = true
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(2, 2)
+	ring_mm.mesh = pm
+	ring_mm.instance_count = sim.units.cap
+	ring_mm.visible_instance_count = 0
+	ring_buf.resize(sim.units.cap * 16)
+	var rmi := MultiMeshInstance3D.new()
+	rmi.multimesh = ring_mm
+	rmi.material_override = ring_material(Color.WHITE, 0.14, 0.06)
+	rmi.custom_aabb = AABB(Vector3(-3000, -10, -3000), Vector3(6000, 40, 6000))
+	rmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(rmi)
+
+
+func ring_material(col: Color, edge: float, fill: float) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = preload("res://game/art/ring.gdshader")
+	m.set_shader_parameter("tint", col)
+	m.set_shader_parameter("edge", edge)
+	m.set_shader_parameter("fill", fill)
+	return m
 
 
 func _part(parent: Node3D, id: String, pos: Vector3) -> Node3D:
@@ -475,7 +662,7 @@ func _part(parent: Node3D, id: String, pos: Vector3) -> Node3D:
 	pivot.position = pos
 	parent.add_child(pivot)
 	var mi := MeshInstance3D.new()
-	mi.mesh = Models.hero_part(id)
+	mi.mesh = Looks.hero_mesh(id)
 	mi.material_override = hero_mat
 	pivot.add_child(mi)
 	return pivot
@@ -485,7 +672,7 @@ func _build_hero() -> void:
 	hero_root = Node3D.new()
 	hero_root.scale = Vector3.ONE * 1.3
 	add_child(hero_root)
-	hero_mat = Models.glow_material(0.05)
+	hero_mat = Looks.hero_material(0.05)
 	body = Node3D.new()
 	hero_root.add_child(body)
 	leg_l = _part(body, "leg", Vector3(-0.16, 0.72, 0))
@@ -495,7 +682,7 @@ func _build_hero() -> void:
 	arm_s = _part(body, "arm_sword", Vector3(0.48, 1.33, 0))
 	arm_h = _part(body, "arm_shield", Vector3(-0.48, 1.33, 0))
 	cape = _part(body, "cape", Vector3(0, 1.4, 0.24))
-	hero_light = _light(Vector3(0, 3.0, 0), Color(1.0, 0.72, 0.42), 1.8, 14.0)
+	hero_light = _light(Vector3(0, 3.0, 0), Color(1.0, 0.72, 0.42), 1.1, 11.0)
 	hero_root.add_child(hero_light)
 	slash = MeshInstance3D.new()
 	var tm := TorusMesh.new()
@@ -511,17 +698,14 @@ func _build_hero() -> void:
 	slash.position = Vector3(0, 1.1, -0.4)
 	hero_root.add_child(slash)
 	ring_min = _circle(3.0, Color(1, 0.4, 0.4, 0.75))
-	ring_max = _circle(12.0, Color(0.75, 0.55, 1.0, 0.75))
 	add_child(ring_min)
-	add_child(ring_max)
 	ghost = MeshInstance3D.new()
-	var gm := CylinderMesh.new()
-	gm.top_radius = 1.0
-	gm.bottom_radius = 1.0
-	gm.height = 0.08
-	gm.radial_segments = 32
+	var gm := PlaneMesh.new()
+	gm.size = Vector2(2, 2)
 	ghost.mesh = gm
-	ghost_mat = _unshaded(Color(0.4, 1, 0.5, 0.4), 1.0)
+	ghost_mat = ring_material(Color(0.4, 1, 0.5, 0.9), 0.1, 0.22)
+	ghost_mat.set_shader_parameter("pulse", 0.6)
+	ghost_mat.set_shader_parameter("glow", 1.6)
 	ghost.material_override = ghost_mat
 	add_child(ghost)
 	show_placement(false, Vector3.ZERO, true, 1.0)
@@ -663,13 +847,10 @@ func _build_pools() -> void:
 		decal_pool.append({"n": dc, "t": 0.0})
 	for i in 24:
 		var z := MeshInstance3D.new()
-		var cm := CylinderMesh.new()
-		cm.top_radius = 1.0
-		cm.bottom_radius = 1.0
-		cm.height = 0.05
-		cm.radial_segments = 32
+		var cm := PlaneMesh.new()
+		cm.size = Vector2(2, 2)
 		z.mesh = cm
-		z.material_override = _unshaded(Color.WHITE, 0.3)
+		z.material_override = ring_material(Color.WHITE, 0.08, 0.2)
 		z.visible = false
 		add_child(z)
 		var coins := _mi(Models.prop("coins"), Vector3.ZERO, Models.glow_material(0.6))
@@ -681,7 +862,11 @@ func _build_pools() -> void:
 		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		l.no_depth_test = true
 		l.font_size = 52
-		l.outline_size = 12
+		l.outline_size = 18
+		l.outline_modulate = Color(0.06, 0.02, 0.08)
+		# Números e avisos no mundo na fonte dos títulos da interface (pele Covil).
+		if UiSkins.covil():
+			l.font = UiCovil.font("title_black")
 		l.visible = false
 		add_child(l)
 		number_pool.append({"n": l, "t": 0.0, "v": Vector3.ZERO})
@@ -809,15 +994,13 @@ func build_arena() -> void:
 
 func show_placement(on: bool, pos: Vector3, valid: bool, radius: float) -> void:
 	ring_min.visible = on
-	ring_max.visible = on
 	ghost.visible = on
 	if not on:
 		return
 	ghost.position = pos + Vector3(0, 0.05, 0)
 	ghost.scale = Vector3(radius, 1, radius)
-	var c := Color(0.4, 1, 0.5) if valid else Color(1, 0.3, 0.3)
-	ghost_mat.albedo_color = Color(c.r, c.g, c.b, 0.4)
-	ghost_mat.emission = c
+	var c := Color(0.4, 1, 0.5, 0.9) if valid else Color(1, 0.3, 0.3, 0.9)
+	ghost_mat.set_shader_parameter("tint", c)
 
 
 # ---------------------------------------------------------------- desenho
@@ -854,6 +1037,9 @@ func _draw_units(alpha: float, delta: float) -> void:
 		ky[i] *= decay
 	var hx := sim.hero.x
 	var hy := sim.hero.y
+	var rb := ring_buf
+	ring_buf = PackedFloat32Array()
+	var rn := 0
 	for k in mm_by_def:
 		var e: Dictionary = mm_by_def[k]
 		var mm: MultiMesh = e["mm"]
@@ -907,8 +1093,20 @@ func _draw_units(alpha: float, delta: float) -> void:
 			buf[o + 8] = -sa; buf[o + 9] = 0.0; buf[o + 10] = ca; buf[o + 11] = z
 			buf[o + 12] = col.r; buf[o + 13] = col.g; buf[o + 14] = col.b; buf[o + 15] = 1.0
 			buf[o + 16] = flash[i]; buf[o + 17] = hop * maxf(moving, 0.25 if hop > 0.0 else 0.0); buf[o + 18] = float(i) * 1.7; buf[o + 19] = lunge
+			var rr: float = e["rad"] * s
+			var acc: Color = e["acc"]
+			var ro := rn * 16
+			rb[ro] = rr; rb[ro + 1] = 0.0; rb[ro + 2] = 0.0; rb[ro + 3] = x
+			rb[ro + 4] = 0.0; rb[ro + 5] = 1.0; rb[ro + 6] = 0.0; rb[ro + 7] = 0.03
+			rb[ro + 8] = 0.0; rb[ro + 9] = 0.0; rb[ro + 10] = rr; rb[ro + 11] = z
+			rb[ro + 12] = acc.r; rb[ro + 13] = acc.g; rb[ro + 14] = acc.b; rb[ro + 15] = acc.a
+			rn += 1
 		mm.buffer = buf
 		e["buf"] = buf
+	ring_mm.visible_instance_count = rn
+	if rn > 0:
+		ring_mm.buffer = rb
+	ring_buf = rb
 
 
 func _draw_bars(alpha: float) -> void:
@@ -985,9 +1183,8 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	var glow := 0.02 + h.level * 0.012
 	hero_mat.set_shader_parameter("emission_boost", 0.0 if h.petrify_t > 0.0 else glow)
 	hero_mat.set_shader_parameter("flash", hero_flash)
-	hero_light.light_energy = 1.6 + h.level * 0.1
+	hero_light.light_energy = 1.0 + h.level * 0.06
 	ring_min.position = p + Vector3(0, 0.06, 0)
-	ring_max.position = p + Vector3(0, 0.06, 0)
 	fireflies.position = p
 
 
@@ -1015,15 +1212,16 @@ func _draw_road_state() -> void:
 		var leg: Dictionary = sim.road.legs[r.get_meta("leg")]
 		var b: int = r.get_meta("branch")
 		var em := 0.0
-		var dim := false
-		if leg["kind"] == "fork":
-			if leg["closed"] == b or (leg["chosen"] >= 0 and leg["chosen"] != b):
-				dim = true
-			elif leg["forced"] == b:
-				em = 0.4
+		var dim: bool = leg["closed"] == b
+		# Ramo já planejado pelo jogador e ainda não percorrido: brilha de leve.
+		if not dim and leg["chosen"] < 0 and sim.road.plan.get(leg["a"], -1) == r.get_meta("leg"):
+			em = 0.35
 		var m: ShaderMaterial = r.material_override
 		m.set_shader_parameter("emission_boost", em)
 		r.transparency = 0.6 if dim else 0.0
+	for bk in barricades:
+		var g: Dictionary = sim.road.legs[bk[1]]
+		bk[0].visible = g["closed"] == 0 and sim.road.path.has(g["a"])
 	for li in loc_nodes.size():
 		var loc: Dictionary = sim.road.locations[li]
 		var n: Node3D = loc_nodes[li]
@@ -1067,13 +1265,19 @@ func _draw_zones() -> void:
 			disc.position = pos
 			var r := float(z["r"])
 			disc.scale = Vector3(r, 1, r)
-			var mat: StandardMaterial3D = disc.material_override
-			var c := Color(0.35, 0.35, 0.45, 0.22) if kind == "web" else Color(1.0, 0.45, 0.08, 0.32 + 0.06 * sin(sim.t * 8.0))
-			mat.albedo_color = c
-			mat.emission = Color(c.r, c.g, c.b)
-			mat.emission_energy_multiplier = 0.05 if kind == "web" else 0.8
-			if kind == "oil" and frame % 20 == 0:
-				emit_fx("fire", pos + Vector3(randf_range(-1, 1), 0.2, randf_range(-1, 1)), 0.35)
+			var mat: ShaderMaterial = disc.material_override
+			var web := kind == "web"
+			var spring := kind == "spring"
+			var tint := Color(0.82, 0.85, 0.95, 0.75) if web else Color(1.0, 0.5, 0.12, 0.95)
+			if spring:
+				tint = Color(0.35, 0.8, 1.0, 0.7)
+			mat.set_shader_parameter("tint", tint)
+			mat.set_shader_parameter("pattern", 1.0 if web else 0.0)
+			mat.set_shader_parameter("pulse", 0.0 if web else 0.8)
+			mat.set_shader_parameter("fill", 0.08 if web else 0.3)
+			mat.set_shader_parameter("glow", 1.0 if web else 2.2)
+			if (kind == "oil" or (kind == "fire" and z.get("src", "") == "burn_village")) and frame % 20 == 0:
+				emit_fx("fire", pos + Vector3(randf_range(-1, 1), 0.2, randf_range(-1, 1)) * (r * 0.6 if kind == "fire" else 1.0), 0.35)
 		k += 1
 	for i in range(k, zone_pool.size()):
 		zone_pool[i]["disc"].visible = false
@@ -1134,6 +1338,13 @@ func _draw_arena(delta: float) -> void:
 
 
 func _tick_pools(delta: float, alpha: float) -> void:
+	if dmg_acc["v"] > 0.0:
+		dmg_acc["t"] -= delta
+		if dmg_acc["t"] <= 0.0:
+			var v: float = dmg_acc["v"]
+			if v >= 3.0:
+				number(dmg_acc["p"], str(int(v)), dmg_acc["col"], 72 if v < 100.0 else (100 if v < 500.0 else 128))
+			dmg_acc["v"] = 0.0
 	for e in number_pool:
 		if e["t"] > 0.0:
 			e["t"] -= delta
@@ -1197,9 +1408,11 @@ func _camera(alpha: float, delta: float) -> void:
 	if sim.phase == K.Phase.ARENA:
 		target = target.lerp(Vector3(sim.arena.bx, 0, sim.arena.by), 0.4)
 	cam_pos = cam_pos.lerp(target, clampf(delta * 5.0, 0.0, 1.0))
-	var dist := 22.0 + zoom + minf(float(sim.units.count), 300.0) * 0.04
+	var dist := CAM_DIST + zoom + minf(float(sim.units.count), 300.0) * CAM_PER_UNIT
 	if sim.phase == K.Phase.ARENA:
-		dist += 8.0
+		dist += CAM_ARENA
+	arrive_pull = maxf(0.0, arrive_pull - delta)
+	dist += 5.0 * sin(clampf(arrive_pull / 3.0, 0.0, 1.0) * PI)
 	var off := Vector3(0, dist * 0.8, dist * 0.6)
 	trauma = maxf(0.0, trauma - delta * 1.6)
 	var sh := trauma * trauma
@@ -1213,7 +1426,7 @@ func _camera(alpha: float, delta: float) -> void:
 # ---------------------------------------------------------------- efeitos
 
 func add_trauma(v: float) -> void:
-	trauma = minf(1.0, trauma + v)
+	trauma = minf(1.0, trauma + v * float(Settings.v["shake"]))
 
 
 func emit_fx(kind: String, pos: Vector3, scale_ := 1.0, col := Color.WHITE) -> void:
@@ -1330,8 +1543,12 @@ func handle_events(evs: Array) -> void:
 					col = Color(1, 0.6, 0.15)
 				elif tags & K.TAG_SHADOW:
 					col = Color(0.8, 0.45, 1.0)
-				if v >= 3.0:
-					number(p, str(int(v)), col, 56 if v < 100.0 else 90)
+				if Settings.v["damage_numbers"]:
+					if dmg_acc["v"] <= 0.0:
+						dmg_acc["t"] = 0.3
+						dmg_acc["col"] = col
+					dmg_acc["v"] += v
+					dmg_acc["p"] = p
 				hero_flash = minf(1.0, hero_flash + clampf(v / 80.0, 0.2, 1.0))
 				if v >= 100.0:
 					add_trauma(0.35)
@@ -1352,8 +1569,8 @@ func handle_events(evs: Array) -> void:
 						part_flash[part_i] = 1.0
 					emit_fx("spark", p + Vector3(0, 2.0, 0), 1.0)
 					add_trauma(0.08)
-				if _spend("num"):
-					number(p, str(int(ev[3])), Color(1, 1, 1, 0.95), 38)
+				if Settings.v["damage_numbers"] and float(ev[3]) >= 20.0 and _spend("num"):
+					number(p, str(int(ev[3])), Color(1, 1, 1, 0.9), 50)
 			K.Ev.DEATH:
 				var i: int = ev[4]
 				if i >= 0 and i < U.cap and _spend("death"):
@@ -1383,12 +1600,16 @@ func handle_events(evs: Array) -> void:
 				ring_burst(p, 3.5, Color(1, 0.9, 0.4))
 				light_flash(p, Color(1, 0.9, 0.5))
 				level_jump = 0.6
-				number(p + Vector3(0, 1.5, 0), tr("UI_HERO_LEVEL").format({"n": int(ev[3])}), Color(1, 0.88, 0.35), 80)
+				arrive_pull = 3.0
+				number(p + Vector3(0, 1.5, 0), tr("UI_HERO_ARRIVING"), Color(1, 0.88, 0.35), 80)
 				if int(ev[3]) % 3 == 0:
 					say("SAY_HERO", 4, false, Color(0.75, 0.88, 1.0))
-			K.Ev.PLAYER_LEVEL:
-				number(p + Vector3(0, 2.5, 0), tr("UI_PLAYER_LEVEL").format({"n": int(ev[3])}), Color(0.85, 0.55, 1.0), 80)
-				screen_flash = Color(0.7, 0.35, 1.0, 0.35)
+			K.Ev.HERO_FALL:
+				number(p + Vector3(0, 2.5, 0), tr("UI_HERO_FALLEN").format({"n": int(ev[3])}), Color(1, 0.82, 0.25), 80)
+				ring_burst(p, 4.5, Color(1, 0.8, 0.3))
+				light_flash(p, Color(1, 0.85, 0.4))
+				add_trauma(0.3)
+				screen_flash = Color(1, 0.9, 0.6, 0.3)
 			K.Ev.SHIELD_BREAK:
 				emit_fx("shield", p + Vector3(0, 1.2, 0), 1.0)
 				add_trauma(0.2)

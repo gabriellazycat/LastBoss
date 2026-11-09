@@ -9,7 +9,6 @@
  "shrine_lookahead": 0.0,
  "behind": 0.3,
  "combo": 0.5,
- "xp_aversion": 0.0,
  "teleport_distance": 3.5,
  "finisher_pick": 0.2
 }

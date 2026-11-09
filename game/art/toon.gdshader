@@ -58,9 +58,16 @@ void fragment() {
 void light() {
 	float ndl = dot(NORMAL, LIGHT);
 	float ramp = smoothstep(-0.05, 0.05, ndl) * 0.5 + smoothstep(0.4, 0.5, ndl) * 0.35 + smoothstep(0.85, 0.9, ndl) * 0.15;
+	// Luz pontual (lanternas, braseiros, herói): degraus em chão plano viravam elipses de borda dura.
+	if (!LIGHT_IS_DIRECTIONAL) {
+		ramp = smoothstep(-0.2, 0.7, ndl);
+	}
 	DIFFUSE_LIGHT += ramp * ATTENUATION * LIGHT_COLOR / PI;
 	float rim = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0) * rim_strength;
 	DIFFUSE_LIGHT += rim * rim_color * ATTENUATION * smoothstep(-0.4, 0.2, ndl) * length(LIGHT_COLOR) * 0.25;
 	vec3 h = normalize(LIGHT + VIEW);
-	SPECULAR_LIGHT += step(0.96, dot(NORMAL, h)) * ATTENUATION * LIGHT_COLOR * 0.08;
+	// Brilho em degrau só com luz direcional: com luz pontual ele desenhava elipses duras no chão.
+	if (LIGHT_IS_DIRECTIONAL) {
+		SPECULAR_LIGHT += step(0.96, dot(NORMAL, h)) * ATTENUATION * LIGHT_COLOR * 0.08 * SPECULAR_AMOUNT;
+	}
 }

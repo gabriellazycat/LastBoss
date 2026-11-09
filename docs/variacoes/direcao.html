@@ -1,0 +1,267 @@
+<title>Direção de arte Last Boss</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: abas de cena no topo; as quatro versões da mesma cena lado a lado (2×2, uma coluna no celular);
+   embaixo, as três direções com o custo em FPS desenhado em escala e o que mudou em todas. */
+:root {
+  color-scheme: dark;
+  --bg: #120e18;
+  --panel: #1b1524;
+  --line: #2f2640;
+  --fg: #ece6f2;
+  --muted: #a99fba;
+  --gold: #e2b65a;
+  --opt-before: #8d8499;
+  --opt-a: #e8997c;
+  --opt-b: #6fd2df;
+  --opt-c: #a5c97f;
+  --display: "Marcellus SC", "Palatino Linotype", Georgia, serif;
+  --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 1.0625rem/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 32px 64px; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; max-width: 70ch; }
+.eyebrow { font: 500 0.8rem/1 var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+h1, h2 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); line-height: 1.1; }
+h2 { font-size: 1.55rem; }
+p { margin: 0; }
+.lead { color: var(--muted); }
+.lead strong { color: var(--fg); font-weight: 500; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tabs button {
+  font: 500 0.95rem var(--body); color: var(--muted); background: transparent;
+  border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer;
+}
+.tabs button[aria-selected="true"] { color: var(--bg); background: var(--gold); border-color: var(--gold); }
+.tabs button:focus-visible, figure button:focus-visible, .close:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.scene-note { color: var(--muted); font-size: 0.95rem; margin-top: -24px; }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+figure button { padding: 0; border: 0; background: none; cursor: zoom-in; display: block; border-radius: 8px; overflow: hidden; }
+figure img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+figcaption { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.chip { font: 700 0.78rem/1 var(--body); letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 9px; border-radius: 4px; color: var(--bg); }
+.chip.before { background: var(--opt-before); }
+.chip.a { background: var(--opt-a); }
+.chip.b { background: var(--opt-b); }
+.chip.c { background: var(--opt-c); }
+figcaption span:last-child { color: var(--muted); font-size: 0.95rem; }
+
+.options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 900px) { .options { grid-template-columns: minmax(0, 1fr); } }
+.opt { border-top: 3px solid var(--line); padding-top: 14px; display: grid; gap: 10px; align-content: start; }
+.opt.a { border-color: var(--opt-a); }
+.opt.b { border-color: var(--opt-b); }
+.opt.c { border-color: var(--opt-c); }
+.opt h3 { font: 400 1.25rem/1.2 var(--display); margin: 0; }
+.opt ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; color: var(--muted); }
+.opt li strong { color: var(--fg); font-weight: 500; }
+
+.fps { display: grid; gap: 10px; }
+.fps-row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 3.5em; gap: 12px; align-items: center; font-variant-numeric: tabular-nums; }
+.fps-row .bar { height: 14px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.fps-row .bar i { display: block; height: 100%; }
+.fps-row b { font-weight: 500; text-align: right; }
+.fps-note { color: var(--muted); font-size: 0.92rem; max-width: 75ch; }
+
+.common { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 28px; padding: 0; margin: 0; list-style: none; }
+@media (max-width: 760px) { .common { grid-template-columns: minmax(0, 1fr); } }
+.common li { padding-left: 16px; position: relative; color: var(--muted); }
+.common li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg); }
+.common li strong { color: var(--fg); font-weight: 500; }
+
+.choose { border: 1px solid var(--gold); border-radius: 10px; padding: 20px; display: grid; gap: 8px; max-width: 80ch; }
+.choose code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 0.92em; color: var(--gold); }
+
+dialog { padding: 0; border: 0; background: transparent; max-width: min(96vw, 1600px); }
+dialog::backdrop { background: rgba(8, 5, 12, 0.88); }
+dialog img { display: block; max-width: 100%; max-height: 86vh; border-radius: 6px; }
+dialog p { color: var(--fg); padding: 8px 2px; font-size: 0.95rem; }
+.close { position: absolute; top: 8px; right: 8px; font: 700 1rem var(--body); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+@media (prefers-reduced-motion: no-preference) { figure button img { transition: transform 0.25s ease; } figure button:hover img { transform: scale(1.015); } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Last Boss · comparação de 08/11/2026</div>
+    <h1>Qual linguagem visual o jogo inteiro deve seguir?</h1>
+    <p class="lead">As mesmas cinco cenas, com a mesma semente, em quatro versões: o jogo <strong>antes</strong> e as três direções <strong>A</strong>, <strong>B</strong> e <strong>C</strong>. As três já têm as correções comuns (câmera mais afastada, luz com contraste, anéis de cor sob os monstros, cartas sem texto cortado). Clique numa foto para ampliar.</p>
+  </header>
+
+  <section aria-label="Cenas">
+    <div class="tabs" role="tablist" id="tabs"></div>
+  </section>
+  <p class="scene-note" id="scene-note"></p>
+  <div class="grid" id="grid"></div>
+
+  <section class="fps" aria-labelledby="fps-h">
+    <h2 id="fps-h">Custo: quadros por segundo com 500 monstros</h2>
+    <div id="fps"></div>
+    <p class="fps-note">Teste de estresse, 1280×720, RTX 2060, medido hoje com as opções alternadas (A, B, C, A, B, C); o valor é a média das duas rodadas. A escala vai até 60, que é o visual antigo (todos os looks em 0) no mesmo teste. A versão "antes" não foi medida hoje.</p>
+  </section>
+
+  <section aria-labelledby="opt-h" style="display:grid;gap:18px">
+    <h2 id="opt-h">As três direções</h2>
+    <div class="options">
+      <div class="opt a">
+        <span class="chip a" style="justify-self:start">A</span>
+        <h3>Pintado em tudo</h3>
+        <ul>
+          <li><strong>Chão e estrada pintados por código</strong>, sem textura de foto: manchas de musgo, roxo e azul profundo, pinceladas largas.</li>
+          <li>Árvores, casas, castelo, arena e chefe no mesmo shader pintado dos monstros.</li>
+          <li>Herói com o desenho Sombrio, mas pintado (sem metal cromado).</li>
+          <li>Mais próximo do GDD: paleta escura, um material só.</li>
+          <li>Ponto fraco: a horda de ogros e slimes claros ainda forma uma massa clara.</li>
+        </ul>
+      </div>
+      <div class="opt b">
+        <span class="chip b" style="justify-self:start">B</span>
+        <h3>Cartum com contorno</h3>
+        <ul>
+          <li><strong>Tudo em faixas de luz chapadas com contorno escuro</strong>: personagens, cenário, arena.</li>
+          <li>Chão em três tons, estrada clara com borda desenhada.</li>
+          <li>Herói e monstros Cartum, cores mais saturadas.</li>
+          <li>A horda mais legível das três: cada monstro tem silhueta.</li>
+          <li>Ponto fraco: o contorno custa caro (18 FPS). Se escolhida, o contorno precisa virar um efeito de tela.</li>
+        </ul>
+      </div>
+      <div class="opt c">
+        <span class="chip c" style="justify-self:start">C</span>
+        <h3>A escolha de ontem, corrigida</h3>
+        <ul>
+          <li><strong>Chão Bosque enluarado (foto), herói Sombrio (metal), monstros Pintado</strong>, como na escolha de 07/11.</li>
+          <li>Com as correções comuns, um chão mais calmo e luz menos turva.</li>
+          <li>A mais leve das três (38 FPS).</li>
+          <li>Ponto fraco: a mistura de foto, metal e pintado continua.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="common-h" style="display:grid;gap:14px">
+    <h2 id="common-h">O que mudou nas três</h2>
+    <ul class="common">
+      <li><strong>Câmera mais afastada</strong>: distância 30 (era 22), afastamento menor quando a horda cresce; a roda do mouse continua ajustando.</li>
+      <li><strong>Contraluz</strong> que contorna personagens e cenário sem clarear o chão.</li>
+      <li><strong>Anel de cor sob cada monstro</strong>, uma cor por tipo, para reconhecer de longe.</li>
+      <li><strong>Dano no herói somado</strong> num número grande, em vez de dezenas empilhados.</li>
+      <li><strong>Zonas em anel</strong>: o óleo pulsa e brilha, a teia tem desenho de teia; a prévia da carta também virou anel.</li>
+      <li><strong>Leque de cartas</strong>: as pontas não descem mais para trás da barra de elixir, então nenhum nome fica cortado.</li>
+      <li><strong>Linha de atalhos</strong> some depois de 45 s de partida.</li>
+      <li><strong>Cenário composto</strong>: bosques densos, mata baixa e clareiras, pedras em grupos.</li>
+      <li><strong>Defeitos corrigidos</strong>: elipses de luz de borda dura, cunha clara na arena, sombra do castelo cobrindo a arena, manchas retas onde trechos de estrada se sobrepõem.</li>
+      <li><strong>Bloom contido</strong>: só o que é emissivo brilha; monstros claros não estouram em branco.</li>
+    </ul>
+  </section>
+
+  <section class="choose" aria-labelledby="choose-h">
+    <h2 id="choose-h" style="font-size:1.3rem">Como escolher</h2>
+    <p>Responda no chat com A, B ou C, ou com uma mistura (por exemplo, "chão da A com os monstros da B").</p>
+    <p>Para testar jogando: <code>Configurações → Visual → Chão e fundo</code>, opções "Pintado (direção única)" e "Cartum (direção única)". Com elas, prédios, herói e monstros seguem o shader da direção.</p>
+    <p class="lead" style="font-size:0.92rem">As fotos A, B e C já têm a HUD nova feita em outra sessão; a foto "antes" tem a HUD antiga.</p>
+  </section>
+</div>
+
+<dialog id="zoom" aria-label="Foto ampliada">
+  <button class="close" id="close" type="button">Fechar</button>
+  <img id="zoom-img" alt="">
+  <p id="zoom-cap"></p>
+</dialog>
+
+<script>
+const SCENES = [
+  { id: "road", name: "Estrada", note: "Início da run: o herói na estrada, sem monstros em campo." },
+  { id: "horde", name: "Horda", note: "150 monstros em volta do herói: a cena que mais testa a leitura." },
+  { id: "arena", name: "Arena", note: "Luta final: o corpo do chefe, altares e pilares." },
+  { id: "offer", name: "Subiu de nível", note: "Oferta de cartas ao subir de nível, com o mundo ao fundo." },
+  { id: "menu", name: "Menu", note: "Escolha do deck, com o chefe ao fundo." },
+];
+const OPTS = [
+  { id: "before", chip: "Antes", label: "07/11, antes das mudanças" },
+  { id: "A", chip: "A", label: "Pintado em tudo" },
+  { id: "B", chip: "B", label: "Cartum com contorno" },
+  { id: "C", chip: "C", label: "A escolha de ontem, corrigida" },
+];
+const FPS = [
+  { name: "Visual antigo", v: 60, color: "var(--opt-before)" },
+  { name: "C · ontem, corrigida", v: 38, color: "var(--opt-c)" },
+  { name: "A · Pintado", v: 30, color: "var(--opt-a)" },
+  { name: "B · Cartum", v: 18, color: "var(--opt-b)" },
+];
+
+const tabs = document.getElementById("tabs");
+const grid = document.getElementById("grid");
+const note = document.getElementById("scene-note");
+const dlg = document.getElementById("zoom");
+
+function show(id) {
+  const s = SCENES.find(x => x.id === id) || SCENES[0];
+  for (const b of tabs.children) b.setAttribute("aria-selected", String(b.dataset.id === s.id));
+  note.textContent = s.note;
+  grid.innerHTML = "";
+  for (const o of OPTS) {
+    const src = `img/${o.id}_${s.id}.jpg`;
+    const fig = document.createElement("figure");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", `Ampliar: ${s.name}, ${o.chip}`);
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = `${s.name}, versão ${o.chip} (${o.label})`;
+    img.loading = "lazy";
+    btn.append(img);
+    btn.addEventListener("click", () => {
+      document.getElementById("zoom-img").src = src;
+      document.getElementById("zoom-img").alt = img.alt;
+      document.getElementById("zoom-cap").textContent = `${s.name} · ${o.chip} · ${o.label}`;
+      dlg.showModal();
+    });
+    const cap = document.createElement("figcaption");
+    cap.innerHTML = `<span class="chip ${o.id === "before" ? "before" : o.id.toLowerCase()}">${o.chip}</span><span>${o.label}</span>`;
+    fig.append(btn, cap);
+    grid.append(fig);
+  }
+  try { localStorage.setItem("scene", s.id); } catch (e) {}
+}
+
+for (const s of SCENES) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.role = "tab";
+  b.dataset.id = s.id;
+  b.textContent = s.name;
+  b.addEventListener("click", () => show(s.id));
+  tabs.append(b);
+}
+
+const fpsBox = document.getElementById("fps");
+for (const f of FPS) {
+  const row = document.createElement("div");
+  row.className = "fps-row";
+  row.innerHTML = `<span>${f.name}</span><span class="bar"><i style="width:${(f.v / 60) * 100}%;background:${f.color}"></i></span><b>${f.v}</b>`;
+  fpsBox.append(row);
+}
+
+document.getElementById("close").addEventListener("click", () => dlg.close());
+dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+
+let start = "horde";
+try { start = localStorage.getItem("scene") || start; } catch (e) {}
+const hash = location.hash.slice(1);
+if (SCENES.some(s => s.id === hash)) start = hash;
+show(start);
+</script>
