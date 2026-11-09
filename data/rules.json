@@ -114,7 +114,7 @@
    "radius": 8.0,
    "window": 25.0,
    "houses": 3,
-   "house_hp": 400.0,
+   "house_hp": 250.0,
    "house_ring": 5.0,
    "aggro_r": 10.0,
    "defend": 3.0
@@ -247,7 +247,7 @@
  "sacrifice_cooldown": 8.0,
  "party": {
   "size": 7,
-  "step": 1.2,
+  "step": 1.21,
   "arrive_s": 8.0
  },
  "gold": {

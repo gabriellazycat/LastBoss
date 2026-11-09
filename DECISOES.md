@@ -136,3 +136,40 @@ Tarefa agendada, com você fora e autonomia total; branch `balanceamento-2026-11
 - **Metas:** "herói chega à arena no nível 12–16" vira "chega o 3º ou o 4º herói"; "carta nas vitórias" conta só as cartas ganhas na run.
 - **Testes e capturas** salvam em arquivos próprios (`test_run.save`, `test_meta.save`).
 - **Mão com teto de 9** (as teclas de 1 a 9).
+
+## Run em 3 atos, disputas novas, relíquias e eventos (09/11/2026)
+
+Decidido com você no grilling de 09/11, depois do playtest. Implementado com você fora e com autonomia total, no branch `atos-2026-11`. Detalhes, a tabela dos locais, as decisões que tomei no seu lugar e os riscos estão em `docs/RUN_EM_ATOS.md`. Os números estão nas abas `Run - ` da planilha.
+
+- **Run:**
+  - 3 atos, cada um com seu mapa e seu chão.
+  - 20 a 24 locais na run, com trechos mais curtos.
+  - 7 heróis numa fila só, com menos vida.
+  - Arena só depois do 3º ato; a run dura uns 25 minutos.
+- **Relíquias do covil:** passivas que mudam regras; 1 entre 3 no fim de cada ato.
+- **Locais:**
+  - Todo local pede ação sustentada, e o herói para lá até a disputa acabar.
+  - Ritual = 10 mortes no círculo; Santuário = 6 s com monstros no círculo; Taverna = destruir as casas; Ponte = dano em 15 s; Fonte = interromper o gole (se não, ele cura 15%).
+  - A Loja não tem disputa e é garantida em toda rota.
+  - Local novo "?" com eventos de texto.
+  - Perder uma disputa não dá nada.
+- **Bifurcação:** escolhida depois do evento do nó.
+- **Ofertas:** nunca misturam tipos.
+- **Herói:** as recargas das habilidades aparecem na HUD, e o nome da habilidade aparece sobre o herói 1 s antes de ela disparar.
+- **Arena:**
+  - O herói caça atiradores e estruturas a até 10 m.
+  - A Torre de Gárgula fica 3 s em pedra e depois 5 s vulnerável.
+  - O teleporte custa 2 de elixir e recarrega em 12 s.
+- **Interface:**
+  - Clique em qualquer parte da carta.
+  - Dica do local no mapa grande.
+  - Compêndio no menu.
+  - Estrada em trechos retos, sem piscar.
+- **Arte:** estudo de RoR2, Soulstone Survivors e Megabonk numa sessão separada, com versões selecionáveis no jogo para você escolher.
+- **Reverte:**
+  - Local perdido dá 1 opção.
+  - Desconto da Loja.
+  - A Fonte cura as suas unidades.
+  - O círculo do Ritual com vida.
+  - "Nenhum local ajuda o herói" (a Fonte cura 15% se ele terminar de beber, por escolha sua).
+

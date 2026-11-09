@@ -200,6 +200,9 @@ func _smart(sim: Sim) -> void:
 		if best < 0:
 			break
 		var c: Sim.CardInst = sim.hand[best]
+		# Arena: guarda elixir para o teleporte (custa 2 desde 09/11/2026).
+		if sim.phase == K.Phase.ARENA and sim.elixir - sim.card_cost(c) < float(P.get("teleport_reserve", 2.0)) and sim.arena.tp_cd <= 0.0:
+			break
 		var pos := _smart_target(sim, c, shrine if counting else {})
 		if sim.play(best, pos.x, pos.y) != K.Block.OK:
 			break
@@ -213,8 +216,12 @@ func _smart_target(sim: Sim, c: Sim.CardInst, shrine: Dictionary) -> Vector2:
 	if d.category != "field" or d.is_spell:
 		return _target(sim, c, false)
 	if sim.phase == K.Phase.ARENA:
+		# Entre o chefe e o herói (arena_front: 0 = colado no chefe, 1 = no herói), a pelo menos 3,5 m dele.
 		var b := Vector2(sim.arena.bx, sim.arena.by)
-		return b + (h - b).normalized() * 3.5
+		var p := b.lerp(h, float(P.get("arena_front", 0.6)))
+		if p.distance_to(h) < 3.5:
+			p = h + (b - h).normalized() * 3.5
+		return p
 	if shrine.size() > 0:
 		var sp: Vector2 = shrine["pos"]
 		var v := sp - h

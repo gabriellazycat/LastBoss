@@ -1,5 +1,33 @@
 # Progresso — Last Boss
 
+## Run em 3 atos, disputas novas, relíquias, eventos e compêndio (09/11/2026)
+
+Feito a partir do seu playtest, com você fora. Tudo está no branch **`atos-2026-11`** (a `main` não mudou). O resumo, as decisões que tomei no seu lugar e os riscos estão em `docs/RUN_EM_ATOS.md`.
+
+- **Estrutura da run:**
+  - 3 atos, 20 a 24 locais e 7 heróis.
+  - Uma relíquia no fim de cada ato.
+  - Local "?" com eventos de texto.
+  - Loja garantida em toda rota.
+- **Locais:** disputas sustentadas, e o herói para no local até ela acabar. A bifurcação é escolhida depois do evento.
+- **Herói e arena:**
+  - Recargas das habilidades na HUD, e o nome da habilidade sobre o herói 1 s antes de ela disparar.
+  - Na arena, o herói caça atiradores e estruturas.
+  - O teleporte custa 2 de elixir.
+- **Interface:**
+  - Clique em qualquer parte da carta.
+  - Dica do local no mapa grande.
+  - Compêndio no menu.
+- **Estrada:** trechos retos, sem piscar.
+- **Testes:**
+  - 0 falhas headless, com testes novos para disputas, atos, relíquias, eventos, ofertas, aviso de habilidade e arena.
+  - Fuzz sem falhas.
+  - O `--uitest` está igual à versão anterior: só o arrastar falha, como antes.
+  - O `--menutest` não rodou neste ambiente, nem na versão anterior.
+- **Balanceamento:** o bot bom ainda não supera o aleatório. Os números são um meio-termo (ver o doc).
+- **Arte:** o estudo de RoR2, Soulstone e Megabonk e três direções novas (D, E e F), selecionáveis em Configurações → Visual, estão no branch `claude/adoring-wing-ad2dc3`, separado deste.
+- **Capturas novas:** `--offerat=2 --offer=relic`, `--offer=event[:id]`, `--offer=contest:<tavern|fountain|ritual|shrine|bridge>`, `--menu=compendium`.
+
 ## Rodada de balanceamento e bugs (09/11/2026)
 
 Feita numa tarefa agendada, com você fora. Tudo está no branch **`balanceamento-2026-11-09`** (a `main` não mudou). Relatório completo, com números de antes e depois, pendências e decisões que tomei no seu lugar: `docs/RODADA_BALANCEAMENTO_2026-11-09.md`.
