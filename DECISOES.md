@@ -136,3 +136,12 @@ Tarefa agendada, com você fora e autonomia total; branch `balanceamento-2026-11
 - **Metas:** "herói chega à arena no nível 12–16" vira "chega o 3º ou o 4º herói"; "carta nas vitórias" conta só as cartas ganhas na run.
 - **Testes e capturas** salvam em arquivos próprios (`test_run.save`, `test_meta.save`).
 - **Mão com teto de 9** (as teclas de 1 a 9).
+
+## Direção de arte D é o padrão (09/11/2026)
+
+Você escolheu a direção **D · Aventura, dia**: modelos CC0 (KayKit e Quaternius, animados) e luz de dia no estilo Risk of Rain 2. Detalhes em `docs/ESTUDO_DE_ARTE.md`.
+
+- **Na `main`:** o estudo de arte foi mesclado, e D virou o padrão (`look_ground` 7, `look_hero` 5, `look_enemies` 5).
+- **Migração:** quem já tinha configuração salva recebe D uma vez (`art_rev` em `game/settings.gd`). As outras direções seguem em Configurações → Visual.
+- **Pendente:** a arena, o chefe e os prédios ainda são os antigos e destoam. É o próximo passo da arte.
+
