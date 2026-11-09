@@ -1,0 +1,129 @@
+{
+ "_note": "Rascunho da aba 'Run - Relíquias' (09/11/2026), aguardando sua revisão. fx: deltas somados entre as relíquias.",
+ "relics": [
+  {
+   "id": "bone_crown",
+   "rarity": "common",
+   "bot_value": 3.0,
+   "fx": {
+    "death_elixir_every": 10
+   }
+  },
+  {
+   "id": "portable_altar",
+   "rarity": "common",
+   "bot_value": 2.0,
+   "fx": {
+    "sacrifice_cd": -0.5
+   }
+  },
+  {
+   "id": "lair_tithe",
+   "rarity": "common",
+   "bot_value": 1.5,
+   "fx": {
+    "gold": 0.3
+   }
+  },
+  {
+   "id": "black_mortar",
+   "rarity": "common",
+   "bot_value": 2.0,
+   "fx": {
+    "structure": 0.5
+   }
+  },
+  {
+   "id": "victory_horn",
+   "rarity": "common",
+   "bot_value": 2.0,
+   "fx": {
+    "contest_elixir": 2
+   }
+  },
+  {
+   "id": "cracked_hourglass",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "contest_window": 0.3
+   }
+  },
+  {
+   "id": "jailer_chains",
+   "rarity": "uncommon",
+   "bot_value": 2.0,
+   "fx": {
+    "cc": 0.5
+   }
+  },
+  {
+   "id": "watchful_eye",
+   "rarity": "uncommon",
+   "bot_value": 3.0,
+   "fx": {
+    "free_after_ability": 3.0
+   }
+  },
+  {
+   "id": "pack_howl",
+   "rarity": "uncommon",
+   "bot_value": 2.0,
+   "fx": {
+    "pack_min": 5,
+    "pack_dmg": 0.25
+   }
+  },
+  {
+   "id": "merchant_purse",
+   "rarity": "uncommon",
+   "bot_value": 1.5,
+   "fx": {
+    "shop_cards": 1,
+    "shop_price": -0.15
+   }
+  },
+  {
+   "id": "overflowing_chalice",
+   "rarity": "rare",
+   "bot_value": 2.5,
+   "fx": {
+    "act_full_elixir": 1
+   }
+  },
+  {
+   "id": "passage_stone",
+   "rarity": "rare",
+   "bot_value": 2.5,
+   "fx": {
+    "teleport_cost": -2,
+    "teleport_cd": -4.0
+   }
+  },
+  {
+   "id": "profane_earth",
+   "rarity": "rare",
+   "bot_value": 2.5,
+   "fx": {
+    "loc_raise": 0.25
+   }
+  },
+  {
+   "id": "bad_blood",
+   "rarity": "rare",
+   "bot_value": 3.0,
+   "fx": {
+    "fall_mod_offer": 1
+   }
+  },
+  {
+   "id": "heavy_grimoire",
+   "rarity": "rare",
+   "bot_value": 2.0,
+   "fx": {
+    "hand": 1,
+    "elixir_max": -1
+   }
+  }
+ ]
+}

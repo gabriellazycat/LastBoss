@@ -31,6 +31,11 @@ var upg_none: Label
 var upg_shown := 0
 var learn_panel: PanelContainer    # aviso "o herói aprendeu" (some sozinho, não pausa)
 var learn_t := 0.0
+var upg_icons: Dictionary = {}       # habilidade -> ícone na HUD (recarga desenhada por cima)
+var contest_panel: PanelContainer     # disputa do local em andamento (rodada 09/11/2026)
+var contest_label: RichTextLabel
+var contest_text := ""
+var relic_row: HBoxContainer          # relíquias do covil ganhas na run
 var curse_label: Label
 # Esquerda: run e contrato.
 var run_panel: PanelContainer
@@ -325,6 +330,18 @@ func _build_messages() -> void:
 	learn_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	learn_panel.visible = false
 	add_child(learn_panel)
+	# Disputa do local em andamento (rodada 09/11/2026): o que falta e quanto tempo resta.
+	contest_panel = UiKit.panel(Color(0.08, 0.04, 0.06, 0.92), UiKit.GOLD, 10)
+	contest_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	contest_label = Tips.label("", 17, Color(1, 0.93, 0.8), 560.0, true)
+	contest_panel.add_child(contest_label)
+	contest_panel.visible = false
+	add_child(contest_panel)
+	# Relíquias do covil ganhas na run, em fila no canto de baixo à direita.
+	relic_row = HBoxContainer.new()
+	relic_row.add_theme_constant_override("separation", 6)
+	relic_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(relic_row)
 
 
 func _dim() -> ColorRect:
@@ -516,7 +533,10 @@ func _layout() -> void:
 	minimap.position = Vector2(vs.x - minimap.size.x - m, below)
 	parts_panel.position = Vector2(vs.x - parts_panel.size.x - m, tool_row.position.y + tool_row.size.y + 8)
 	toast.position = Vector2((vs.x - toast.size.x) * 0.5, vs.y * 0.28)
-	learn_panel.position = Vector2((vs.x - learn_panel.size.x) * 0.5, duel.position.y + duel.size.y + 26)
+	contest_panel.size = contest_panel.get_combined_minimum_size()
+	contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, duel.position.y + duel.size.y + 8)
+	learn_panel.position = Vector2((vs.x - learn_panel.size.x) * 0.5, duel.position.y + duel.size.y + (70 if contest_panel.visible else 26))
+	relic_row.position = Vector2(vs.x - relic_row.size.x - m, tool_row.position.y + tool_row.size.y + 8)
 	hint_panel.position = Vector2((vs.x - hint_panel.size.x) * 0.5, below + 6)
 	for layer in [offer_layer, pause_layer, result_layer]:
 		# O escurecimento cobre a tela inteira (pela âncora ele ficava com tamanho zero e não aparecia).
@@ -735,6 +755,8 @@ func refresh(delta: float, fps: float) -> void:
 		hint_panel.modulate.a = clampf(hint_t, 0.0, 1.0)
 		hint_panel.visible = hint_t > 0.0
 	_refresh_offer()
+	_refresh_contest()
+	_refresh_relics()
 	_refresh_arena()
 	if sim.phase == K.Phase.ROAD and minimap.visible:
 		minimap.queue_redraw()
@@ -768,6 +790,18 @@ func _refresh_upgrades() -> void:
 		_announce(order[upg_shown])
 		upg_shown += 1
 	upg_none.visible = order.is_empty()
+	# Recarga de cada habilidade: a janela para jogar a carta certa (rodada 09/11/2026).
+	for id in upg_icons:
+		var ic: UpgradeIcon = upg_icons[id]
+		var st := sim.hero.ability_state(id)
+		var f := clampf(st.x / st.y, 0.0, 1.0) if st.y > 0.0 else 0.0
+		var tl := st.z >= 0.0
+		if not is_equal_approx(f, ic.cd_frac) or tl != ic.telling:
+			ic.cd_frac = f
+			ic.telling = tl
+			ic.queue_redraw()
+		elif tl:
+			ic.queue_redraw()
 	if learn_t > 0.0:
 		learn_t -= get_process_delta_time()
 		learn_panel.modulate.a = clampf(learn_t * 2.0, 0.0, 1.0)
@@ -779,11 +813,13 @@ func _add_upgrade_icon(id: String) -> UpgradeIcon:
 	var ic := UpgradeIcon.make(id, 30)
 	_attach_upgrade(ic, id)
 	upg_row.add_child(ic)
+	upg_icons[id] = ic
 	return ic
 
 
 ## Run nova ou carregada: refaz a fileira com o que o herói já tem, sem anunciar.
 func _sync_upgrades() -> void:
+	upg_icons.clear()
 	for c in upg_row.get_children():
 		if c != upg_none:
 			upg_row.remove_child(c)
@@ -853,6 +889,45 @@ func _refresh_left() -> void:
 	contract_time.add_theme_color_override("font_color", UiKit.BAD if tl <= 10 else UiKit.TEXT)
 
 
+func _refresh_contest() -> void:
+	var c := sim.contest
+	contest_panel.visible = c.size() > 0 and sim.phase == K.Phase.ROAD and not pause_layer.visible
+	if not contest_panel.visible:
+		return
+	var p := float(c["progress"])
+	var g := float(c["goal"])
+	var txt := tr("UI_CONTEST_" + str(c["type"])).format({
+		"p": int(p) if c["type"] != "bridge" and c["type"] != "fountain" else int(p),
+		"g": int(g), "s": int(ceil(float(c["window"]) - float(c["t"])))})
+	if txt != contest_text:
+		contest_text = txt
+		Tips.set_text(contest_label, txt)
+
+
+func _refresh_relics() -> void:
+	if relic_row.get_child_count() == sim.relics.size():
+		return
+	UiKit.clear(relic_row)
+	for id in sim.relics:
+		var b := UiKit.label(14, UiKit.GOLD, 3)
+		b.text = "◆ " + tr("REL_" + str(id))
+		b.mouse_filter = Control.MOUSE_FILTER_STOP
+		var rid: String = id
+		Tips.attach(b, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
+		relic_row.add_child(b)
+
+
+## Eventos da simulação que viram aviso na tela (disputa, ato).
+func handle_events(evs: Array) -> void:
+	for e in evs:
+		match int(e[0]):
+			K.Ev.CONTEST:
+				if int(e[4]) != 0:
+					say(tr("UI_CONTEST_WON" if int(e[4]) > 0 else "UI_CONTEST_LOST"))
+			K.Ev.ACT_START:
+				say(tr("UI_ACT_OF").format({"n": int(e[3]) + 1, "m": sim.acts()}))
+
+
 func _refresh_offer() -> void:
 	var on := sim.offers.size() > 0
 	offer_layer.visible = on
@@ -872,6 +947,25 @@ func _refresh_offer() -> void:
 		slot.position.y = lerpf(slot.position.y, base - (14.0 if hot else 0.0), 0.25)
 
 
+## Carta só de texto (relíquia, opção de evento): título e descrição numa moldura.
+func _text_card(title: String, body: String, w: float, edge: Color) -> PanelContainer:
+	var cp := UiKit.panel(UiKit.BG, edge, 14)
+	cp.custom_minimum_size = Vector2(w, 246.0 * w / 168.0)
+	var pv := VBoxContainer.new()
+	pv.alignment = BoxContainer.ALIGNMENT_CENTER
+	pv.add_theme_constant_override("separation", 12)
+	var pt := UiKit.title(24, edge.lightened(0.3))
+	pt.text = title
+	pt.autowrap_mode = TextServer.AUTOWRAP_WORD
+	pt.custom_minimum_size = Vector2(w - 30.0, 0)
+	pt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pv.add_child(pt)
+	pv.add_child(Tips.label(body, 16, UiKit.TEXT, w - 30.0, true))
+	UiKit.ignore_mouse(pv)
+	cp.add_child(pv)
+	return cp
+
+
 func _offer_heading(o: Dictionary) -> String:
 	if o["source"] == "location":
 		return tr("UI_OFFER_LOC_" + str(o["loc"]))
@@ -879,6 +973,10 @@ func _offer_heading(o: Dictionary) -> String:
 		return tr("UI_OFFER_SHOP").format({"g": int(sim.gold)})
 	if o["source"] == "shop_pick":
 		return tr("UI_OFFER_SHOP_PICK_" + str(o["what"]))
+	if o["source"] == "relic":
+		return tr("UI_OFFER_RELIC").format({"a": int(o.get("act", 0)) + 1})
+	if o["source"] == "event":
+		return tr("EVT_" + str(o["event"])) if o.has("event") else tr("UI_OFFER_EVENT_STEP")
 	return tr({"level": "UI_OFFER_LEVEL", "shrine": "UI_OFFER_SHRINE", "contract": "UI_OFFER_CONTRACT"}[o["source"]])
 
 
@@ -892,8 +990,11 @@ func _inst_level(uid: int) -> int:
 func _build_offer_options(o: Dictionary) -> void:
 	offer_title.text = _offer_heading(o)
 	var shop: bool = o["source"] == "shop"
-	offer_sub.visible = o["source"] == "location" or shop
-	if offer_sub.visible:
+	offer_sub.visible = o["source"] == "location" or shop or o.has("event")
+	if o.has("event"):
+		offer_sub.text = tr("EVT_%s_BODY" % str(o["event"]))
+		offer_sub.add_theme_color_override("font_color", UiKit.TEXT)
+	elif offer_sub.visible:
 		var won: bool = o["won"]
 		offer_sub.text = tr(("UI_SHOP_WON" if won else "UI_SHOP_LOST") if shop else ("UI_OFFER_WON" if won else "UI_OFFER_LOST"))
 		offer_sub.add_theme_color_override("font_color", UiKit.GOOD if won else UiKit.BAD)
@@ -973,6 +1074,25 @@ func _build_offer_options(o: Dictionary) -> void:
 				pv.add_child(Tips.label(tr("UI_OPT_BUY_UPGRADE_D") if price >= 0 else tr("UI_PICKD_" + str(op["what"])), 16, UiKit.TEXT, w - 30.0, true))
 				UiKit.ignore_mouse(pv)
 				cp.add_child(pv)
+			"relic":
+				var rel: Dictionary = sim.data.relics.get(str(op["id"]), {})
+				var ri := K.RARITIES.find(str(rel.get("rarity", "common")))
+				head.text = tr("RARITY_" + K.RARITIES[maxi(ri, 0)])
+				head.add_theme_color_override("font_color", UiKit.RARITY_COLORS[maxi(ri, 0)].lightened(0.4))
+				cp = _text_card(tr("REL_" + str(op["id"])), tr("RELD_" + str(op["id"])), w, UiKit.RARITY_COLORS[maxi(ri, 0)])
+			"event_opt":
+				var ek := "EVT_%s_%s" % [op["event"], sim.data.events_def[op["event"]]["options"][int(op["opt"])]["id"]]
+				head.text = key
+				cp = _text_card(tr(ek), tr(ek + "_D"), w, UiKit.GOLD)
+				if not sim.event_option_ok(op):
+					var need: float = sim.data.events_def[op["event"]]["options"][int(op["opt"])].get("requires", {}).get("gold", 0)
+					cp.modulate = Color(0.55, 0.55, 0.55)
+					Tips.set_text(foot, tr("UI_EVENT_NEEDS").format({"g": int(need)}))
+			"transform", "copy":
+				cd = sim.data.card(str(op["card"]))
+				lv = int(op.get("level", 1))
+				head.text = tr("UI_OPT_" + str(op["kind"]).to_upper() + "_HEAD")
+				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
 		if price >= 0:
 			var ok := sim.can_afford(opts[k])
 			head.text = tr("UI_SHOP_PRICE").format({"p": price}) + " · " + head.text

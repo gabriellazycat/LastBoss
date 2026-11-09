@@ -567,6 +567,8 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 	p.add_child(v)
 	var rr := d.rarity
 	p.draw.connect(func(): draw_rarity(p, Vector2(p.size.x * 0.5, p.size.y - 1.5 * k), 6.5 * k, UiKit.RARITY_COLORS[rr]))
+	# A carta inteira recebe o clique: moldura, placa e gema engoliam o clique na metade de cima (rodada 09/11/2026).
+	UiKit.ignore_mouse(p)
 	return p
 
 

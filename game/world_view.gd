@@ -9,6 +9,7 @@ const STRIDE := 20
 const LOC_COLORS := {
 	"shop": Color(0.95, 0.75, 0.35), "tavern": Color(0.9, 0.55, 0.25), "fountain": Color(0.35, 0.75, 1.0),
 	"ritual": Color(0.8, 0.25, 1.0), "shrine": Color(0.3, 1.0, 0.6), "bridge": Color(0.65, 0.6, 0.55),
+	"event": Color(0.95, 0.9, 0.55),
 }
 const PART_OFFSETS := {"core": Vector3(0, 0, 0), "head": Vector3(0, 4.3, 0), "left_arm": Vector3(-1.6, 2.4, 0), "right_arm": Vector3(1.6, 2.4, 0)}
 const UNIT_COLORS := {
@@ -101,6 +102,9 @@ var ring_buf := PackedFloat32Array()
 var dmg_acc := {"v": 0.0, "t": 0.0, "col": Color.WHITE, "p": Vector3.ZERO}
 var bubble: Label3D
 var bubble_t := 0.0
+var tell_label: Label3D            # aviso de habilidade do herói, 1 s antes de disparar (rodada 09/11/2026)
+var tell_t := 0.0
+var house_nodes: Dictionary = {}    # "li:k" -> casa da Taverna em disputa
 var bubble_on_boss := false
 var soft_tex: GradientTexture2D
 var frame := 0
@@ -153,6 +157,7 @@ func build(s: Sim, camera: Camera3D) -> void:
 	for a in [road_meshes, barricades, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
 		a.clear()
 	mm_by_def.clear()
+	house_nodes.clear()
 	fx.clear()
 	arena_root = null
 	flash.resize(sim.units.cap)
@@ -348,10 +353,12 @@ func _build_road() -> void:
 		var leg: Dictionary = sim.road.legs[li]
 		for b in leg["pts"].size():
 			var r: MeshInstance3D
+			# Cada trecho numa altura própria (até 1,8 cm): perto das bifurcações os irmãos se sobrepõem.
+			var lift := float(li % 4) * 0.006
 			if GroundLooks.look() > 0:
-				r = _mi(GroundLooks.road_mesh(leg["pts"][b], 4.2), Vector3.ZERO, GroundLooks.road_material())
+				r = _mi(GroundLooks.road_mesh(leg["pts"][b], 4.2, lift), Vector3(0, 0, 0), GroundLooks.road_material())
 			else:
-				r = _mi(_ribbon(leg["pts"][b], 4.2, Color(0.56, 0.44, 0.31), Color(0.34, 0.29, 0.22)), Vector3.ZERO, Models.glow_material(0.0))
+				r = _mi(_ribbon(leg["pts"][b], 4.2, Color(0.56, 0.44, 0.31), Color(0.34, 0.29, 0.22)), Vector3(0, lift, 0), Models.glow_material(0.0))
 			r.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			r.layers = GROUND_LAYER
 			r.set_meta("leg", li)
@@ -560,7 +567,12 @@ func _build_locations() -> void:
 			"bridge":
 				n.add_child(_mi(Models.prop("water"), Vector3.ZERO, Models.glow_material(0.2), yaw + PI * 0.5))
 				n.add_child(_mi(Models.prop("bridge"), Vector3.ZERO, null, yaw))
-		if t in ["shrine", "ritual", "shop", "fountain"]:
+			"event":
+				# Encruzilhada "?": placa, pedras e lanterna.
+				n.add_child(_mi(Models.prop("fence"), off * 3.5, null, yaw))
+				n.add_child(_mi(Models.prop("gravestone"), off * 4.5 + fwd * 1.5, null, yaw + 0.4))
+				n.add_child(_mi(Models.prop("lantern"), off * 3.0 - fwd * 2.0, null, yaw))
+		if t in ["shrine", "ritual", "fountain", "tavern", "bridge"]:
 			var ring := MeshInstance3D.new()
 			var tm := TorusMesh.new()
 			tm.inner_radius = float(loc["r"]) - 0.12
@@ -719,6 +731,15 @@ func _build_hero() -> void:
 	bubble.outline_modulate = Color(0.1, 0.05, 0.15)
 	bubble.visible = false
 	add_child(bubble)
+	tell_label = Label3D.new()
+	tell_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	tell_label.no_depth_test = true
+	tell_label.font_size = 72
+	tell_label.outline_size = 18
+	tell_label.outline_modulate = Color(0.25, 0.02, 0.02)
+	tell_label.modulate = Color(1.0, 0.85, 0.3)
+	tell_label.visible = false
+	add_child(tell_label)
 
 
 func _circle(r: float, col: Color) -> MeshInstance3D:
@@ -1097,7 +1118,7 @@ func _draw_units(alpha: float, delta: float) -> void:
 			var acc: Color = e["acc"]
 			var ro := rn * 16
 			rb[ro] = rr; rb[ro + 1] = 0.0; rb[ro + 2] = 0.0; rb[ro + 3] = x
-			rb[ro + 4] = 0.0; rb[ro + 5] = 1.0; rb[ro + 6] = 0.0; rb[ro + 7] = 0.03
+			rb[ro + 4] = 0.0; rb[ro + 5] = 1.0; rb[ro + 6] = 0.0; rb[ro + 7] = 0.055
 			rb[ro + 8] = 0.0; rb[ro + 9] = 0.0; rb[ro + 10] = rr; rb[ro + 11] = z
 			rb[ro + 12] = acc.r; rb[ro + 13] = acc.g; rb[ro + 14] = acc.b; rb[ro + 15] = acc.a
 			rn += 1
@@ -1148,8 +1169,11 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	var p := hero_pos(alpha)
 	var speed := Vector2(h.x - h.ox, h.y - h.oy).length() / sim.dt
 	var walk := clampf(speed / 3.0, 0.0, 1.0)
-	var frozen := h.petrify_t > 0.0 or h.root_t > 0.0
+	var frozen := h.petrify_t > 0.0 or h.root_t > 0.0 or h.drink_t > 0.0
 	hero_root.position = p
+	# Fonte: ajoelhado bebendo.
+	if h.drink_t > 0.0:
+		hero_root.position.y -= 0.35
 	var f := Vector3(h.face_x, 0, h.face_y)
 	if f.length() > 0.01:
 		hero_root.rotation.y = lerp_angle(hero_root.rotation.y, atan2(-f.x, -f.z), clampf(delta * 14.0, 0.0, 1.0))
@@ -1218,7 +1242,10 @@ func _draw_road_state() -> void:
 			em = 0.35
 		var m: ShaderMaterial = r.material_override
 		m.set_shader_parameter("emission_boost", em)
-		r.transparency = 0.6 if dim else 0.0
+		if GroundLooks.look() > 0:
+			m.set_shader_parameter("dim", 1.0 if dim else 0.0)
+		else:
+			r.transparency = 0.6 if dim else 0.0
 	for bk in barricades:
 		var g: Dictionary = sim.road.legs[bk[1]]
 		bk[0].visible = g["closed"] == 0 and sim.road.path.has(g["a"])
@@ -1390,6 +1417,13 @@ func _tick_pools(delta: float, alpha: float) -> void:
 			e["n"].position = pos
 			if e["t"] <= 0.0:
 				e["n"].visible = false
+	if tell_t > 0.0:
+		tell_t -= delta
+		tell_label.position = hp + Vector3(0, 3.6 + (1.0 - clampf(tell_t, 0.0, 1.0)) * 0.6, 0)
+		tell_label.modulate.a = clampf(tell_t / 0.25, 0.0, 1.0)
+		tell_label.scale = Vector3.ONE * (1.0 + 0.15 * sin(tell_t * 25.0))
+		tell_label.visible = tell_t > 0.0
+	_draw_houses()
 	if bubble_t > 0.0:
 		bubble_t -= delta
 		var bp := hp + Vector3(0, 2.6, 0)
@@ -1502,6 +1536,39 @@ func orb(from: Vector3) -> void:
 	e["n"].visible = true
 
 
+## Casas da Taverna em disputa: aparecem na chegada do herói, afundam e somem quando quebram.
+func _draw_houses() -> void:
+	if sim.contest.is_empty() or sim.contest["type"] != "tavern":
+		for k in house_nodes:
+			house_nodes[k].visible = false
+		return
+	var li := int(sim.contest["li"])
+	var hs: Array = sim.road.locations[li]["houses"]
+	for k in hs.size():
+		var key := "%d:%d" % [li, k]
+		var h: Dictionary = hs[k]
+		if not house_nodes.has(key):
+			var n := _mi(Models.prop("house"), Vector3(h["x"], 0, h["y"]), null, randf() * TAU)
+			n.scale = Vector3.ONE * 0.75
+			add_child(n)
+			house_nodes[key] = n
+		var hn: MeshInstance3D = house_nodes[key]
+		var f := clampf(float(h["hp"]) / float(h["max_hp"]), 0.0, 1.0)
+		hn.visible = f > 0.0
+		hn.position.y = -(1.0 - f) * 1.2
+		hn.rotation.z = (1.0 - f) * 0.18
+
+
+## Aviso da habilidade sobre o herói (o nome dela, 1 s antes de disparar).
+func ability_tell(idx: int) -> void:
+	var ups: Array = sim.data.hero["upgrades"]
+	if idx < 0 or idx >= ups.size():
+		return
+	tell_label.text = tr("UPG_" + str(ups[idx]["id"])) + "!"
+	tell_t = 1.0
+	tell_label.visible = true
+
+
 func light_flash(pos: Vector3, col: Color) -> void:
 	flash_light.position = pos + Vector3(0, 2, 0)
 	flash_light.light_color = col
@@ -1535,6 +1602,8 @@ func handle_events(evs: Array) -> void:
 		var k: int = ev[0]
 		var p := Vector3(ev[1], 0, ev[2])
 		match k:
+			K.Ev.ABILITY_TELL:
+				ability_tell(int(ev[3]))
 			K.Ev.DAMAGE_HERO:
 				var v := float(ev[3])
 				var tags := int(ev[4])

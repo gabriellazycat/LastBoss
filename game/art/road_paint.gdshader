@@ -10,6 +10,8 @@ uniform vec3 c_road_dark : source_color = vec3(0.25, 0.2, 0.2);
 uniform vec3 c_edge : source_color = vec3(0.12, 0.14, 0.12);
 uniform float bands = 0.0;
 uniform float emission_boost = 0.0;
+// Ramo fechado: escurece sem sair da passada opaca (transparência fazia os ramos piscarem).
+uniform float dim = 0.0;
 uniform vec3 warm : source_color = vec3(1.0, 0.92, 0.8);
 uniform vec3 cool : source_color = vec3(0.45, 0.4, 0.85);
 uniform vec3 shadow_tint : source_color = vec3(0.55, 0.45, 0.85);
@@ -55,6 +57,7 @@ void fragment() {
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
+	ALBEDO *= mix(1.0, 0.35, dim);
 	EMISSION = c * emission_boost;
 }
 

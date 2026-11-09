@@ -163,11 +163,13 @@ func _smart(sim: Sim) -> void:
 	var contest := _contest_ahead(sim)
 	var ctype := str(contest.get("type", ""))
 	var guard := {}
-	if ctype in ["tavern", "bridge", "shop"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)):
+	# Ponte e Fonte (rodada 09/11/2026): dano ou controle numa janela curta; guarda elixir até ela abrir.
+	if ctype in ["bridge", "fountain"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)):
 		return
-	if ctype in ["fountain", "ritual"]:
+	# Ritual (mortes no círculo), Santuário (monstros no círculo) e Taverna (casas): monstros no local.
+	if ctype in ["ritual", "tavern"]:
 		var gd := Vector2(sim.hero.x, sim.hero.y).distance_to(contest["pos"])
-		if gd <= 18.0 and gd > float(contest["r"]):
+		if gd <= 18.0 or contest["entered"]:
 			guard = contest
 	if not counting and shrine.is_empty() and guard.size() > 0:
 		shrine = guard
@@ -376,7 +378,7 @@ func _contest_ahead(sim: Sim) -> Dictionary:
 	var best := {}
 	var bd := look
 	for loc in sim.road.locations:
-		if loc["state"] != SimRoad.LocState.ACTIVE or loc["type"] == "shrine" or not sim.road.is_on_route(loc):
+		if loc["state"] != SimRoad.LocState.ACTIVE or loc["type"] in ["shrine", "shop", "event"] or not sim.road.is_on_route(loc):
 			continue
 		var d := h.distance_to(loc["pos"]) - float(loc["r"])
 		if loc["entered"]:
@@ -392,6 +394,8 @@ func _pick_offer(sim: Sim) -> int:
 	var opts: Array = of["options"]
 	if of["source"] == "shop":
 		return _pick_buy(sim, opts)
+	if of["source"] == "event" and opts.size() > 0 and opts[0]["kind"] == "event_opt":
+		return _pick_event(sim, opts)
 	if kind == "random":
 		return rng.randi_range(0, opts.size() - 1)
 	var best := 0
@@ -402,7 +406,7 @@ func _pick_offer(sim: Sim) -> int:
 			bv = v
 			best = k
 	# A escolha da carta de um item já comprado nunca é recusada (senão a loja oferece o item de novo).
-	if bv < float(P.get("skip_below", 2.5)) and of["source"] != "shop_pick":
+	if bv < float(P.get("skip_below", 2.5)) and not of["source"] in ["shop_pick", "relic"]:
 		return Sim.SKIP
 	return best
 
@@ -459,6 +463,66 @@ func _opt_value(sim: Sim, o: Dictionary) -> float:
 			v = 9.0 - c.cost - c.rarity * 2.0 - int(o.get("level", 1)) * 2.0
 		"pick":
 			v = {"upgrade": 6.0, "card": 5.0 - excess, "remove": 4.0 + excess}.get(str(o["what"]), 1.0)
+		"relic":
+			v = 3.0 + float(sim.data.relics[o["id"]].get("bot_value", 2.0)) * float(P.get("relic_weight", 1.0))
+		"transform":
+			var c: CardDef = sim.data.card(o["card"])
+			v = 8.0 - c.cost - c.rarity * 2.0
+		"copy":
+			var c: CardDef = sim.data.card(o["card"])
+			v = c.cost + c.rarity * 2.0 - excess
+	return v
+
+
+## Evento de texto: soma um valor grosseiro das ações de cada opção; a que pede ouro que falta não conta.
+func _pick_event(sim: Sim, opts: Array) -> int:
+	if kind == "random":
+		var ok: Array = []
+		for k in opts.size():
+			if sim.event_option_ok(opts[k]):
+				ok.append(k)
+		return ok[rng.randi_range(0, ok.size() - 1)] if ok.size() > 0 else Sim.SKIP
+	var best := Sim.SKIP
+	var bv := -INF
+	for k in opts.size():
+		if not sim.event_option_ok(opts[k]):
+			continue
+		var o: Dictionary = sim.data.events_def[opts[k]["event"]]["options"][int(opts[k]["opt"])]
+		var v := _acts_value(sim, o["do"]) * (1.0 + float(P.get("event_risk", 0.0)) * rng.randf_range(-0.3, 0.3))
+		if v > bv:
+			bv = v
+			best = k
+	return best
+
+
+func _acts_value(sim: Sim, acts: Array) -> float:
+	var v := 0.0
+	for a in acts:
+		match str(a["kind"]):
+			"gold":
+				v += float(a["amount"]) / float(P.get("gold_value", 30.0))
+			"card":
+				v += 4.0 + (1.5 if a.has("min_rarity") else 0.0)
+			"upgrade":
+				v += 5.0 * maxf(1.0, float(a.get("n", 1)) if a.get("give", false) else 1.0)
+			"relic":
+				v += 6.0
+			"remove", "mod", "transform":
+				v += 3.0
+			"copy":
+				v += 2.0
+			"boss_hp":
+				v += (1.0 - float(a["mult"])) * 20.0
+			"hero_curse":
+				v += float(a["n"])
+			"hero_heal":
+				v -= float(a["frac"]) * 15.0
+			"next_hero_hp":
+				v += (1.0 - float(a["mult"])) * 25.0
+			"next_hero_ability":
+				v -= 3.0
+			"chance":
+				v += float(a["p"]) * _acts_value(sim, a.get("then", [])) + (1.0 - float(a["p"])) * _acts_value(sim, a.get("else", []))
 	return v
 
 

@@ -7,7 +7,7 @@ const PATH := "user://run.save"
 ## Arquivo em uso. Os modos de teste e de captura da janela (main.gd com argumentos) trocam para outro
 ## arquivo: antes, o salvamento automático deles sobrescrevia a run salva do jogador (rodada 09/11/2026).
 static var current := PATH
-const VERSION := 2                  # 2: estrada em rede de nós (09/11/2026); salvamentos antigos não carregam
+const VERSION := 3                  # 3: run em 3 atos, disputas e relíquias (09/11/2026); 2: estrada em rede de nós
 const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script"]
 const PARTS := ["units", "hero", "road", "arena"]
 
@@ -99,4 +99,5 @@ static func load_run(data: GameData, path := "") -> Sim:
 	sim.queue = d["queue"].map(func(c): return by_uid.get(c["uid"]))
 	sim.rng.seed = d["__rng_seed"]
 	sim.rng.state = d["__rng_state"]
+	sim.rebuild_rfx()
 	return sim

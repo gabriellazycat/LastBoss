@@ -30,6 +30,14 @@ func _ready() -> void:
 	t_route()
 	t_shop()
 	t_fountain_and_fire()
+	t_contests()
+	t_fork_after_location()
+	t_offer_single_type()
+	t_relics()
+	t_events()
+	t_ability_tell()
+	t_arena_hunt()
+	t_acts()
 	t_meta()
 	t_full_runs()
 	t_translations()
@@ -375,7 +383,8 @@ func t_location_rewards() -> void:
 			lv = ci.level
 	check(lv == 2, "escolher a melhoria sobe a carta para o N2")
 	s._offer_location("ritual", false)
-	check(s.offers[0]["options"].size() == 1, "ritual perdido: 1 carta sorteada")
+	check(s.offers.is_empty(), "disputa perdida não dá nada (rodada 09/11/2026)")
+	s._offer_location("ritual", true)
 	check(s.choose(Sim.SKIP) and s.offers.is_empty(), "toda recompensa pode ser recusada")
 	s._offer_location("fountain", true)
 	var distinct := {}
@@ -426,7 +435,8 @@ func t_meta() -> void:
 	three[2] = "web"
 	check(m.deck_errors(three).has("DECKERR_copies"), "3 cópias é recusado")
 	var st := {"dmg_by_card": {"a": 4000.0}, "locs_visited": 9, "result": "win"}
-	check(MetaSave.souls_for(data, st) == 10 + 18 + 40, "Almas: dano, locais e vitória (%d)" % MetaSave.souls_for(data, st))
+	var per_loc := int(data.meta["souls"]["per_location"])
+	check(MetaSave.souls_for(data, st) == 10 + 9 * per_loc + 40, "Almas: dano, locais e vitória (%d)" % MetaSave.souls_for(data, st))
 	m.add_run(st, path)
 	var m2 := MetaSave.load_or_new(data, path)
 	check(m2.souls == m.souls and m2.is_unlocked("ogre") and m2.runs == 1, "meta salva e carrega")
@@ -463,7 +473,8 @@ func _path_len(road: SimRoad, p: Array) -> float:
 
 
 func t_route() -> void:
-	var R: Dictionary = data.rules["road"]
+	var R: Dictionary = data.rules["road"].duplicate()
+	R.merge(data.rules["acts"][0]["road"], true)
 	var bad_len := 0
 	var bad_rows := 0
 	var bad_shrines := 0
@@ -482,7 +493,7 @@ func t_route() -> void:
 		for loc in road.locations:
 			if loc["type"] == "shop":
 				shops_total += 1
-		if shops_total < int(R["shops"][0]) or shops_total > int(R["shops"][1]):
+		if shops_total != 1:
 			bad_shops += 1
 		for p in paths:
 			if absf(_path_len(road, p) - l0) > 1.0:
@@ -496,7 +507,7 @@ func t_route() -> void:
 					nsp += 1 if road.locations[li]["type"] == "shop" else 0
 			if nsh < int(R["shrines"][0]) or nsh > int(R["shrines"][1]):
 				bad_shrines += 1
-			if nsp > 1:
+			if nsp != 1:
 				bad_shops += 1
 			if p.size() - 2 < int(R["route_locations"][0]) or p.size() - 2 > int(R["route_locations"][1]):
 				bad_rows += 1
@@ -519,10 +530,10 @@ func t_route() -> void:
 			if n["out"].size() > 1:
 				forks += 1
 	check(bad_len == 0, "todas as rotas têm o mesmo comprimento (%d fora)" % bad_len)
-	check(bad_rows == 0, "8 a 10 locais por rota e tipos diferentes por fileira (%d erros)" % bad_rows)
+	check(bad_rows == 0, "%s locais por rota e tipos diferentes por fileira (%d erros)" % [str(R["route_locations"]), bad_rows])
 	check(bad_cross == 0, "ligações nunca se cruzam (%d)" % bad_cross)
 	check(bad_shrines * 10 <= npaths, "Santuários por rota quase sempre entre %s (%d de %d rotas fora)" % [str(R["shrines"]), bad_shrines, npaths])
-	check(bad_shops == 0, "1 a 2 Lojas por mapa, nunca 2 na mesma rota (%d)" % bad_shops)
+	check(bad_shops == 0, "toda rota passa por exatamente uma Loja (%d erros)" % bad_shops)
 	check(forks >= nmaps * 3, "o mapa tem bifurcações (%d em %d mapas)" % [forks, nmaps])
 	# Sem plano, o jogo espera a escolha do jogador; a escolha resolve e fecha os outros ramos.
 	var w := Sim.new()
@@ -574,7 +585,7 @@ func t_shop() -> void:
 	var s := _sim(4)
 	s.offers.clear()
 	s.gold = 0.0
-	s._open_shop(false)
+	s._open_shop()
 	var o: Dictionary = s.offers[0]
 	check(o["source"] == "shop" and o["options"].size() >= 5, "loja abre com cartas, nível, modificador e remoção (%d)" % o["options"].size())
 	check(not s.choose(0) and s.offers.size() == 1, "sem ouro não compra")
@@ -598,13 +609,13 @@ func t_shop() -> void:
 			lv = ci.level
 	check(lv == 2 and s.gold < g0 and s.offers[0]["source"] == "shop", "nível escolhido: paga, sobe a carta e volta à loja")
 	check(s.choose(Sim.SKIP) and s.offers.is_empty(), "recusar sai da loja")
-	s._open_shop(true)
+	s._open_shop()
 	var base := int(data.rules["shop"]["prices"]["common"])
-	var cheap := true
+	var full := true
 	for op in s.offers[0]["options"]:
 		if op["item"]["kind"] == "card" and data.card(op["item"]["id"]).rarity == 0:
-			cheap = cheap and op["price"] == int(round(base * 0.7))
-	check(cheap, "disputa vencida: 30% de desconto")
+			full = full and op["price"] == base
+	check(full, "loja sem desconto (rodada 09/11/2026)")
 	s.offers.clear()
 	# Ouro: dano no herói e disputa vencida.
 	var g := _sim(4)
@@ -620,26 +631,13 @@ func t_shop() -> void:
 	var t := _sim(5)
 	t.offers.clear()
 	t.gold = 300.0
-	t._open_shop(true)
+	t._open_shop()
 	for i in 30:
 		b.think(t)
 	check(t.offers.is_empty() and t.stats["shop_buys"] >= 1, "Heurístico compra e sai da loja (%d compras)" % t.stats["shop_buys"])
 
 
 func t_fountain_and_fire() -> void:
-	# A Fonte cura as suas unidades, nunca o herói.
-	var s := _sim(2)
-	var p := Vector2(s.hero.x, s.hero.y) + Vector2(0, -10)
-	var j := s.units.spawn(data.card("gargoyle_tower"), p.x + 2.0, p.y, 0.0, 0.0, 0, 999)
-	s.units.hp[j] = s.units.max_hp[j] * 0.3
-	s.hero.hp = s.hero.max_hp() * 0.5
-	var hp0 := s.hero.hp
-	s.zones.append({"kind": "spring", "x": p.x, "y": p.y, "r": 8.0, "t": 15.0, "heal": 0.05})
-	for i in 40:
-		s._zones()
-		s.tick += 1
-	check(s.units.hp[j] > s.units.max_hp[j] * 0.3, "Fonte cura as suas unidades por perto")
-	check(is_equal_approx(s.hero.hp, hp0), "Fonte não cura o herói")
 	# Incêndio: marca um local à frente; o fogo pega quando o herói chega.
 	var f := _sim(2)
 	var tg: Array = f._burn_targets()
@@ -660,3 +658,266 @@ func t_fountain_and_fire() -> void:
 		if fire:
 			break
 	check(fire, "o local marcado pega fogo quando o herói chega")
+
+
+# ================================================================ rodada 09/11/2026: atos, disputas, relíquias, eventos
+
+## Sim parada num local do tipo `ty` (troca o tipo do primeiro local da rota): herói em cima dele, disputa começada.
+func _at_location(ty: String, seed_ := 3) -> Sim:
+	var s := _sim(seed_)
+	s.hero.base_hp = 1.0e6
+	s.hero.hp = 1.0e6
+	# Estrada decidida até o primeiro nó; herói em cima dele (com o progresso na estrada certo, senão a coleira o puxa).
+	s.road.advance(s.road.nodes[0]["out"][0])
+	var li: int = s.road.nodes[s.road.head]["loc"]
+	var loc: Dictionary = s.road.locations[li]
+	loc["type"] = ty
+	loc["r"] = float(data.rules["locations"][ty]["radius"])
+	var p: Vector2 = loc["pos"]
+	s.hero.x = p.x
+	s.hero.y = p.y
+	s.hero.s = s.road.length()
+	s.hero.s_max = s.hero.s
+	s.hero.seg = s.road.seg_at(s.hero.s)
+	s.offers.clear()
+	s._arrive(li)
+	return s
+
+
+func _steps(s: Sim, sec: float) -> void:
+	for i in int(sec / s.dt):
+		s.step()
+
+
+func t_contests() -> void:
+	# Ritual: 10 mortes de monstros seus dentro do círculo.
+	var s := _at_location("ritual")
+	var p: Vector2 = s.road.locations[int(s.contest["li"])]["pos"]
+	check(s.contest["type"] == "ritual" and s.hero.hold, "Ritual: o herói para no local e a disputa começa")
+	for k in 10:
+		var j := s.units.spawn(data.card("ogre"), p.x + 1.0, p.y, 0.0, 0.0, 0, 999)
+		s.kill_unit(j, K.Death.HERO)
+	s.step()
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "upgrade", "Ritual: 10 mortes no círculo vencem (nível de 1 entre 3)")
+	s = _at_location("ritual")
+	_steps(s, float(data.rules["locations"]["ritual"]["window"]) + 0.2)
+	check(s.contest.is_empty() and s.offers.is_empty() and not s.hero.hold, "Ritual: janela acaba sem mortes → nada, e o herói segue")
+	# Santuário: monstro que luta no círculo por 6 s; torre não conta.
+	s = _at_location("shrine")
+	p = s.road.locations[int(s.contest["li"])]["pos"]
+	s.hero.petrify_t = 100.0
+	s.units.spawn(data.card("gargoyle_tower"), p.x + 2.0, p.y, 0.0, 0.0, 0, 999)
+	_steps(s, 7.0)
+	check(s.contest.size() > 0, "Santuário: só uma torre no círculo não conta")
+	s.units.spawn(data.card("slime"), p.x - 2.0, p.y, 0.0, 0.0, 0, 999)
+	_steps(s, 6.5)
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "card", "Santuário: 6 s com monstro no círculo vencem")
+	# Taverna: destruir as casas; os monstros vão nelas.
+	s = _at_location("tavern")
+	var loc: Dictionary = s.road.locations[int(s.contest["li"])]
+	check(loc["houses"].size() == int(data.rules["locations"]["tavern"]["houses"]), "Taverna: as casas aparecem")
+	s.hero.petrify_t = 100.0
+	var hp0 := 0.0
+	for h in loc["houses"]:
+		hp0 += float(h["hp"])
+	var hpos: Vector2 = Vector2(loc["houses"][0]["x"], loc["houses"][0]["y"])
+	for k in 3:
+		s.units.spawn(data.card("ogre"), hpos.x + 3.0, hpos.y + k, 0.0, 0.0, 0, 999)
+	_steps(s, 4.0)
+	var hp1 := 0.0
+	for h in loc["houses"]:
+		hp1 += float(h["hp"])
+	check(hp1 < hp0, "Taverna: monstros perto atacam as casas (%.0f → %.0f)" % [hp0, hp1])
+	for k in loc["houses"].size():
+		s.damage_house(k, 1.0e6)
+	s.step()
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "mod", "Taverna: todas as casas no chão vencem (modificador)")
+	# Ponte: dano na janela.
+	s = _at_location("bridge")
+	check(s.hero.tavern_t > 0.0, "Ponte: o herói fica lento")
+	s.damage_hero(200.0, s.hero.x + 1.0, s.hero.y, 0, SimHero.DMG_PIERCE, "test")
+	s.step()
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "pick", "Ponte: 150 de dano vencem (escolhe o tipo)")
+	# Fonte: interromper o gole; se ele termina, cura 15% e você não ganha nada.
+	s = _at_location("fountain")
+	check(s.hero.drink_t > 0.0, "Fonte: o herói começa a beber")
+	var x0 := s.hero.x
+	_steps(s, 1.0)
+	check(is_equal_approx(s.hero.x, x0), "Fonte: bebendo, ele não anda")
+	s.hero_fear(s.hero.x + 1.0, s.hero.y)
+	s.step()
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "remove", "Fonte: medo interrompe e você remove uma carta")
+	s = _at_location("fountain")
+	s.hero.base_hp = 1000.0
+	s.hero.hp = 500.0
+	_steps(s, float(data.rules["locations"]["fountain"]["drink_s"]) + 0.2)
+	check(s.offers.is_empty() and s.hero.hp > 500.0, "Fonte: gole completo cura o herói e não dá nada (%.0f)" % s.hero.hp)
+	# Loja e "?": sem disputa.
+	s = _at_location("shop")
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["source"] == "shop", "Loja abre na chegada, sem disputa")
+	s = _at_location("event")
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["source"] == "event", "Local ? abre um evento de texto")
+
+
+## A bifurcação é escolhida depois do local do nó, não antes.
+func t_fork_after_location() -> void:
+	var bad := 0
+	var waits := 0
+	for seed_ in range(1, 9):
+		var s := Sim.new()
+		s.setup(data, seed_, "horde")
+		s.hero.base_hp = 1.0e6
+		s.hero.hp = 1.0e6
+		for i in 30000:
+			if s.offers.size() > 0:
+				s.choose(Sim.SKIP)
+			if s.route_wait:
+				var li: int = s.road.nodes[s.road.head]["loc"]
+				if li >= 0:
+					waits += 1
+					if s.road.locations[li]["state"] == SimRoad.LocState.ACTIVE:
+						bad += 1
+				var outs: Array = s.road.nodes[s.road.head]["out"]
+				s.choose_route(s.road.legs[outs[0]]["b"])
+			s.step()
+			if s.act > 0 or s.phase != K.Phase.ROAD:
+				break
+	check(waits > 0 and bad == 0, "a escolha da bifurcação vem depois do evento do nó (%d escolhas, %d antes do evento)" % [waits, bad])
+
+
+func t_acts() -> void:
+	var s := _run(3, "horde", "heuristic")
+	var acts := int(data.rules["run"]["acts"])
+	var at: Array = s.stats["act_t"]
+	check(s.phase == K.Phase.OVER, "run em atos termina (%s em %.0f s)" % [s.stats["result"], s.t])
+	if s.stats["arena_t"] >= 0.0:
+		check(at.size() == acts, "a arena só vem depois dos %d atos (%d)" % [acts, at.size()])
+	check(s.stats["relics"].size() == at.size(), "uma relíquia por ato terminado (%d relíquias, %d atos)" % [s.stats["relics"].size(), at.size()])
+	check(int(s.stats["locs_visited"]) >= at.size() * 5, "cada ato passa por vários locais (%d)" % s.stats["locs_visited"])
+	# Começo do ato seguinte: estrada nova, herói no começo dela, vida mantida.
+	var a := _sim(5)
+	a.hero.hp = a.hero.max_hp() * 0.5
+	var hp := a.hero.hp
+	a._end_act()
+	check(a.act_pending and a.offers.size() == 1 and a.offers[0]["source"] == "relic", "fim do ato oferece relíquia")
+	var old_road := a.road
+	a.choose(0)
+	a.step()
+	check(a.act == 1 and a.road != old_road and a.hero.s == 0.0 and is_equal_approx(a.hero.hp, hp), "ato 2: estrada nova, herói no começo e com a mesma vida")
+
+
+func t_relics() -> void:
+	var s := _sim(2)
+	s.gain_relic("heavy_grimoire")
+	check(s.hand_size == 7 and s.elixir_max == 9.0, "Grimório Pesado: mão +1, elixir máximo −1 (%d, %.0f)" % [s.hand_size, s.elixir_max])
+	s.gain_relic("passage_stone")
+	check(s.teleport_cost() == 0.0, "Pedra de Passagem: teleporte de graça")
+	s.gain_relic("bone_crown")
+	s.elixir = 0.0
+	for k in 10:
+		var j := s.units.spawn(data.card("rat_horde"), s.hero.x + 5.0, s.hero.y, 0.0, 0.0, 0, 999)
+		s.kill_unit(j, K.Death.HERO)
+	check(is_equal_approx(s.elixir, 1.0), "Coroa de Ossos: 10 mortes dão +1 de elixir")
+	s.gain_relic("watchful_eye")
+	s.ability_fired("war_cry")
+	check(s.card_cost(s.hand[0]) == 0, "Olho Vigilante: carta grátis logo depois de uma habilidade")
+	SaveGame.save(s, "user://test.save")
+	var c := SaveGame.load_run(data, "user://test.save")
+	check(c.relics == s.relics and c.teleport_cost() == 0.0 and c.hand_size == 7, "relíquias vão no salvamento")
+	SaveGame.erase("user://test.save")
+
+
+func t_events() -> void:
+	var ok := true
+	for id in data.event_ids:
+		for k in data.events_def[id]["options"].size():
+			var s := _sim(4)
+			s.offers.clear()
+			s.gold = 500.0
+			s._push_offer("event", [{"kind": "event_opt", "event": id, "opt": k}], {"event": id})
+			ok = ok and s.choose(0)
+			for g in 5:
+				if s.offers.size() > 0:
+					s.choose(0)
+	check(ok, "todas as opções de todos os eventos rodam")
+	var p := _sim(4)
+	p.offers.clear()
+	p.gold = 0.0
+	p._push_offer("event", [{"kind": "event_opt", "event": "hooded_merchant", "opt": 0}], {"event": "hooded_merchant"})
+	check(not p.choose(0), "opção que pede ouro é recusada sem ouro")
+	var a := _sim(9)
+	var b := _sim(9)
+	for x in [a, b]:
+		x.offers.clear()
+		x._push_offer("event", [{"kind": "event_opt", "event": "forgotten_tomb", "opt": 0}], {"event": "forgotten_tomb"})
+		x.choose(0)
+	check(a.relics == b.relics and a.next_extra_ability == b.next_extra_ability, "chance do evento é determinística pela semente")
+
+
+func t_offer_single_type() -> void:
+	var mixed := 0
+	for seed_ in range(1, 40):
+		var s := _sim(seed_)
+		s.offers.clear()
+		s._offer_level()
+		for o in s.offers:
+			var kinds := {}
+			for op in o["options"]:
+				kinds[op["kind"]] = true
+			if kinds.size() > 1:
+				mixed += 1
+	check(mixed == 0, "oferta de queda nunca mistura tipos (%d misturadas)" % mixed)
+
+
+func t_ability_tell() -> void:
+	var s := _sim_tough(6)
+	s.hero.apply_upgrade("sword_spin")
+	s.record_events = true
+	_spawn_near(s, "ogre", 1)
+	var tell_t := -1.0
+	var spin_t := -1.0
+	for i in 400:
+		s.step()
+		for e in s.events:
+			if e[0] == K.Ev.ABILITY_TELL and tell_t < 0.0:
+				tell_t = s.t
+			if e[0] == K.Ev.SPIN and spin_t < 0.0:
+				spin_t = s.t
+		s.events.clear()
+		if spin_t > 0.0:
+			break
+	check(tell_t > 0.0 and spin_t - tell_t >= 0.95, "aviso da habilidade 1 s antes de ela disparar (aviso %.2f, giro %.2f)" % [tell_t, spin_t])
+	var st := s.hero.ability_state("sword_spin")
+	check(st.y == float(data.upgrades["sword_spin"]["p"]["interval"]) and st.x > 0.0, "HUD lê a recarga da habilidade (%.1f de %.1f)" % [st.x, st.y])
+
+
+func t_arena_hunt() -> void:
+	var a := _sim(3)
+	a.hero.base_hp = 1.0e6
+	a.hero.hp = 1.0e6
+	a.enter_arena()
+	var h := Vector2(a.hero.x, a.hero.y)
+	var j := a.units.spawn(data.card("skeleton_archers"), h.x + 8.0, h.y, 0.0, 0.0, 0, 999)
+	a.hero._choose_target()
+	check(a.hero.target_kind == SimHero.TGT_UNIT and a.hero.target == j, "na arena o herói caça o atirador a 8 m")
+	a.units.release(j)
+	var tw := a.units.spawn(data.card("gargoyle_tower"), h.x + 6.0, h.y, 0.0, 0.0, 0, 999)
+	a.hero._choose_target()
+	check(a.hero.target == tw, "na arena a Torre de Gárgula não é mais ignorada")
+	# Pedra por 3 s, depois 5 s vulnerável.
+	a.units.px[tw] = h.x + 2.0
+	var stone_seen := false
+	var free_after := false
+	a.hero.petrify_t = 100.0
+	for i in int(4.0 / a.dt):
+		a.units.update(a.dt)
+		if a.units.flags[tw] & K.F_STONE:
+			stone_seen = true
+	free_after = not (a.units.flags[tw] & K.F_STONE)
+	check(stone_seen and free_after, "a Torre vira pedra e depois fica vulnerável mesmo com o herói perto")
+	a.elixir = 1.0
+	check(not a.arena.can_teleport((a.arena.altar + 1) % a.arena.altar_pos.size()), "teleporte custa 2 de elixir")
+	a.elixir = 10.0
+	var k := (a.arena.altar + 1) % a.arena.altar_pos.size()
+	check(a.teleport(k), "teleporta com elixir")
+	check(is_equal_approx(a.arena.tp_cd, 12.0), "recarga do teleporte de 12 s (%.1f)" % a.arena.tp_cd)

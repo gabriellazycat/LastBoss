@@ -11,6 +11,8 @@ uniform vec3 tint : source_color = vec3(1.0);
 uniform float rut = 0.25;
 uniform float normal_strength = 1.0;
 uniform float emission_boost = 0.0;
+// Ramo fechado: escurece sem sair da passada opaca (transparência fazia os ramos piscarem).
+uniform float dim = 0.0;
 uniform vec3 edge_color : source_color = vec3(0.4, 0.35, 0.3);
 
 varying vec3 wp;
@@ -44,5 +46,6 @@ void fragment() {
 	SPECULAR = 0.2;
 	ALPHA = smoothstep(0.25, 0.5, e);
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
+	ALBEDO *= mix(1.0, 0.35, dim);
 	EMISSION = c * emission_boost;
 }

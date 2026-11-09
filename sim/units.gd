@@ -172,6 +172,9 @@ func update(dt: float) -> void:
 	var hero_frac := hero.hp / hero.max_hp()
 	var nose := hero.has("treasure_nose")
 	var retreat_mult: float = sim.data.rules["units"]["retreat_speed"]
+	# Taverna em disputa: os monstros a até aggro_r de uma casa viva vão nela (rodada 09/11/2026).
+	var houses: Array = sim.live_houses() if on_road else []
+	var aggro: float = float(sim.data.rules["locations"]["tavern"].get("aggro_r", 10.0))
 	n_pack = 0; n_struct = 0; n_cultists = 0; n_kings = 0
 	for i in hi:
 		if alive[i] == 0:
@@ -203,6 +206,8 @@ func update(dt: float) -> void:
 		if fear_t[i] > 0.0:
 			fear_t[i] -= dt
 			_step(i, px[i] - dx / d * 5.0, py[i] - dy / d * 5.0, spd[i], dt)
+			continue
+		if houses.size() > 0 and _house_attack(i, a, houses, aggro, dt):
 			continue
 		var speed := spd[i]
 		var attack := false
@@ -288,6 +293,36 @@ func update(dt: float) -> void:
 					py[i] -= dy / d * push
 
 
+## Ataque à casa mais perto da Taverna em disputa. Devolve false se não há casa ao alcance da vontade.
+func _house_attack(i: int, a: int, houses: Array, aggro: float, dt: float) -> bool:
+	var best := -1
+	var bd := aggro
+	var bp := Vector2.ZERO
+	for k in houses:
+		var hp_: Vector2 = sim.house_pos(k)
+		var dd := hp_.distance_to(Vector2(px[i], py[i]))
+		if dd < bd:
+			bd = dd
+			best = k
+			bp = hp_
+	if best < 0:
+		return false
+	var reach := (rng[i] if a == K.Arch.SHOOTER else 0.0) + rad[i] + 1.4
+	if bd > reach:
+		_step(i, bp.x, bp.y, spd[i], dt)
+		return true
+	var c: CardDef = sim.data.cards[def[i]]
+	if a == K.Arch.KAMIKAZE:
+		sim.damage_house(best, c.fxv("explode_damage", lvl[i]))
+		sim.kamikaze(i)
+		return true
+	atk_t[i] -= dt
+	if atk_t[i] <= 0.0:
+		atk_t[i] += atk_int[i]
+		sim.damage_house(best, dmg[i] * (1.0 + buff[i]))
+	return true
+
+
 func _step(i: int, tx: float, ty: float, speed: float, dt: float) -> void:
 	var vx := tx - px[i]
 	var vy := ty - py[i]
@@ -302,26 +337,37 @@ func _step(i: int, tx: float, ty: float, speed: float, dt: float) -> void:
 func _structure(i: int, di: int, d: float, dt: float, nose: bool) -> void:
 	var c: CardDef = sim.data.cards[di]
 	var hr := sim.hero.radius
+	var smult := 1.0 + sim.rv("structure")
 	if di == d_nest:
-		var dur := c.fxv("spawn_duration", lvl[i], 15.0)
+		var dur := c.fxv("spawn_duration", lvl[i], 15.0) * smult
 		if timer[i] >= timer2[i] and timer2[i] <= dur + 0.001:
 			timer2[i] += float(c.fx.get("spawn_interval", 3.0))
 			var bat: CardDef = sim.data.card(str(c.fx.get("spawn", "bat")))
 			var a := slot[i] + timer[i]
 			sim.spawn_child(bat, px[i] + cos(a) * 1.2, py[i] + sin(a) * 1.2, i)
 	elif di == d_totem:
-		if timer[i] > c.fxv("duration", lvl[i], 20.0):
+		if timer[i] > c.fxv("duration", lvl[i], 20.0) * smult:
 			sim.kill_unit(i, K.Death.EXPIRE)
 	elif di == d_mimic:
 		if not nose and not (flags[i] & K.F_BITTEN) and timer[i] >= timer2[i] and d <= hr + rad[i] + 0.5:
 			flags[i] |= K.F_BITTEN
 			sim.mimic_bite(i)
 	elif di == d_tower:
+		# Pedra por stone_s quando o herói chega perto, depois stone_cd vulnerável (rodada 09/11/2026).
+		# timer2 > 0: segundos de pedra que faltam; timer2 < 0: recarga da pedra.
 		var stone: float = c.fx.get("stone_radius", 3.0)
-		if d < stone + hr:
-			flags[i] |= K.F_STONE
+		if flags[i] & K.F_STONE:
+			timer2[i] -= dt
+			if timer2[i] <= 0.0:
+				flags[i] &= ~K.F_STONE
+				timer2[i] = -float(c.fx.get("stone_cd", 5.0))
 		else:
-			flags[i] &= ~K.F_STONE
+			if timer2[i] < 0.0:
+				timer2[i] = minf(0.0, timer2[i] + dt)
+			if d < stone + hr and timer2[i] >= 0.0:
+				flags[i] |= K.F_STONE
+				timer2[i] = float(c.fx.get("stone_s", 3.0))
+		if not (flags[i] & K.F_STONE):
 			if d <= rng[i] + hr:
 				atk_t[i] -= dt
 				if atk_t[i] <= 0.0:
@@ -440,6 +486,18 @@ func within(x: float, y: float, r: float, out: PackedInt32Array) -> PackedInt32A
 			if dx * dx + dy * dy <= r2:
 				out.append(i)
 	return out
+
+
+## Algum monstro seu que luta (não estrutura, não Mímico) a até r (disputa do Santuário).
+func any_fighter_within(x: float, y: float, r: float) -> bool:
+	var r2 := r * r
+	for i in hi:
+		if alive[i] == 1 and arch[i] != K.Arch.STRUCTURE and def[i] != d_mimic:
+			var dx := px[i] - x
+			var dy := py[i] - y
+			if dx * dx + dy * dy <= r2:
+				return true
+	return false
 
 
 func any_within(x: float, y: float, r: float) -> bool:

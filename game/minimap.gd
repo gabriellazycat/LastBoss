@@ -18,6 +18,8 @@ const SHUT := Color(0.18, 0.16, 0.16, 0.7)
 var sim: Sim
 var hover := -1
 var t := 0.0
+var tip_n := -1                    # nó sob o mouse e há quanto tempo (abre a caixa do local, rodada 09/11/2026)
+var tip_t := 0.0
 
 
 func setup(s: Sim) -> void:
@@ -31,6 +33,15 @@ func _process(delta: float) -> void:
 		var m := get_local_mouse_position()
 		hover = node_at(m) if Rect2(Vector2.ZERO, size).has_point(m) else -1
 		queue_redraw()
+		# Parado sobre um local: a caixa explica a disputa e a recompensa (como na faixa de rota).
+		tip_t = tip_t + delta if hover >= 0 and hover == tip_n else 0.0
+		tip_n = hover
+		if hover >= 0 and tip_t >= HandFan.TIP_HOLD:
+			var li: int = sim.road.nodes[hover]["loc"]
+			if li >= 0:
+				var ty := str(sim.road.locations[li]["type"])
+				var gp := global_position + node_point(hover)
+				Tips.hold("map:%d" % hover, Rect2(gp - Vector2(12, 12), Vector2(24, 24)), func(): return [Tips.kw_entry(ty)])
 
 
 ## Área do desenho da rota: abaixo do título e acima da legenda (que não cobrem mais a estrada).
@@ -233,3 +244,6 @@ func _icon(p: Vector2, ty: String, c: Color) -> void:
 			draw_rect(Rect2(p - Vector2(3.5, 4), Vector2(7, 8)), c)
 		"bridge":
 			draw_arc(p + Vector2(0, 4), 6.0, PI, TAU, 10, c, 2.0)
+		"event":
+			var f := ThemeDB.fallback_font
+			draw_string(f, p + Vector2(-4, 5), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, c)

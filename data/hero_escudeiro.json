@@ -1,8 +1,8 @@
 {
  "id": "escudeiro",
- "hp": 1700,
+ "hp": 1150,
  "hp_growth": 0.08,
- "damage": 44,
+ "damage": 40,
  "damage_growth": 0.08,
  "attack_interval": 1.0,
  "attack_range": 1.8,
@@ -203,5 +203,6 @@
  "regen_per_s": 0.0,
  "regen_delay": 3.0,
  "regen_combat": 0.0,
- "regen_in_arena": false
+ "regen_in_arena": false,
+ "ability_tell_s": 1.0
 }

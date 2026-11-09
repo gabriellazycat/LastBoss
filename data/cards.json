@@ -418,7 +418,9 @@
    "range": 9,
    "fx": {
     "stone_radius": 3.0,
-    "projectile": true
+    "projectile": true,
+    "stone_s": 3.0,
+    "stone_cd": 5.0
    },
    "lvl": [
     "hp",

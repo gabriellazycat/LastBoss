@@ -44,7 +44,11 @@ var root_t := 0.0
 var petrify_t := 0.0
 var soaked_t := 0.0
 var tavern_t := 0.0
-var stay_t := 0.0
+var drink_t := 0.0              # Fonte: ajoelhado bebendo (não anda nem ataca)
+var hold := false               # disputa de local em andamento: fica perto de (hold_x, hold_y)
+var hold_x := 0.0
+var hold_y := 0.0
+var tell: Dictionary = {}       # habilidade -> segundos até disparar (aviso de 1 s sobre o herói)
 var kb_x := 0.0
 var kb_y := 0.0
 var kb_t := 0.0
@@ -129,7 +133,8 @@ func next_hero(i: int) -> void:
 	petrify_t = 0.0
 	soaked_t = 0.0
 	tavern_t = 0.0
-	stay_t = 0.0
+	drink_t = 0.0
+	tell = {}
 	kb_t = 0.0
 	dash_left = 0.0
 	spin_t = 0.0
@@ -159,7 +164,9 @@ func update(dt: float) -> void:
 	petrify_t = maxf(0.0, petrify_t - dt)
 	soaked_t = maxf(0.0, soaked_t - dt)
 	tavern_t = maxf(0.0, tavern_t - dt)
-	stay_t = maxf(0.0, stay_t - dt)
+	drink_t = maxf(0.0, drink_t - dt)
+	for k in tell:
+		tell[k] = float(tell[k]) - dt
 	spin_t -= dt
 	dash_t -= dt
 	cry_t -= dt
@@ -209,6 +216,8 @@ func _move(dt: float) -> void:
 	attacking = false
 	if petrify_t > 0.0 or root_t > 0.0:
 		return
+	if drink_t > 0.0 and fear_t <= 0.0 and kb_t <= 0.0:
+		return
 	var speed: float = H["speed"]
 	if slow_t > 0.0:
 		var sl: float = sim.data.rules["status"]["slow"]
@@ -245,7 +254,12 @@ func _move(dt: float) -> void:
 	# Seguir a estrada (ou, na arena, ir até o chefe).
 	var road_dir := Vector2.ZERO
 	if sim.phase == K.Phase.ROAD:
-		if stay_t <= 0.0:
+		if hold:
+			# Disputa de local: fica no local (anda até ele e espera lá).
+			var to := Vector2(hold_x - x, hold_y - y)
+			if to.length() > float(sim.data.rules["locations"].get("hold_radius", 2.5)):
+				road_dir = to.normalized()
+		else:
 			road_dir = (sim.road.point_at(s + 5.0) - Vector2(x, y)).normalized()
 	else:
 		road_dir = (Vector2(sim.arena.bx, sim.arena.by) - Vector2(x, y)).normalized()
@@ -333,11 +347,11 @@ func _validate_target() -> void:
 
 
 func _attack(dt: float) -> void:
-	if petrify_t > 0.0 or target_kind == TGT_NONE:
+	if petrify_t > 0.0 or target_kind == TGT_NONE or drink_t > 0.0:
 		return
 	var m := 1.0
 	if tavern_t > 0.0:
-		m += float(sim.data.rules["locations"]["tavern"]["attack_speed"])
+		m += float(sim.data.rules["locations"]["bridge"]["attack_speed"])
 	if slow_t > 0.0:
 		var sl: float = sim.data.rules["status"]["slow"]
 		if has("steady_boots"):
@@ -362,11 +376,6 @@ func _attack(dt: float) -> void:
 			var ty := sim.units.py[target]
 			sim.hero_hits_unit(target, _unit_mult(target, dmg, true))
 			_cleave(tx, ty, dmg)
-		TGT_LOC:
-			var loc: Dictionary = sim.road.locations[target]
-			loc["hp"] -= dmg
-			if loc["hp"] <= 0.0:
-				sim.location_destroyed(target)
 		TGT_PART:
 			sim.arena.damage_part(target, dmg * _strike(true))
 		TGT_ALTAR:
@@ -401,6 +410,7 @@ func _cleave(tx: float, ty: float, dmg: float) -> void:
 func _strike(big: bool) -> float:
 	if has("heroic_strike") and big and strike_t <= 0.0:
 		strike_t = upgrades["heroic_strike"]["interval"]
+		sim.ability_fired("heroic_strike")
 		return float(upgrades["heroic_strike"]["mult"])
 	return 1.0
 
@@ -416,14 +426,62 @@ func _unit_mult(i: int, dmg: float, main_hit: bool) -> float:
 	return dmg
 
 
+## Aviso de habilidade: a primeira chamada começa a preparação (1 s, evento ABILITY_TELL) e devolve false;
+## devolve true quando a preparação acabou. Se a condição cai no meio, `_untell` cancela.
+func _tell(id: String) -> bool:
+	if not tell.has(id):
+		tell[id] = float(H.get("ability_tell_s", 1.0))
+		sim.emit(K.Ev.ABILITY_TELL, x, y, float(ability_index(id)), 0)
+		return float(tell[id]) <= 0.0
+	if float(tell[id]) > 0.0:
+		return false
+	tell.erase(id)
+	sim.ability_fired(id)
+	return true
+
+
+func _untell(id: String) -> void:
+	tell.erase(id)
+
+
+func ability_index(id: String) -> int:
+	var ups: Array = H["upgrades"]
+	for k in ups.size():
+		if ups[k]["id"] == id:
+			return k
+	return -1
+
+
+## Estado de uma habilidade para a HUD: (recarga que falta, recarga total, preparação que falta ou -1).
+## Habilidades passivas devolvem recarga 0 e total 0.
+func ability_state(id: String) -> Vector3:
+	var tl := float(tell.get(id, -1.0))
+	match id:
+		"sword_spin":
+			return Vector3(maxf(0.0, spin_t), float(upgrades[id]["interval"]), tl)
+		"war_cry":
+			return Vector3(maxf(0.0, cry_t), float(upgrades[id]["cooldown"]), tl)
+		"dash":
+			return Vector3(maxf(0.0, dash_t), float(upgrades[id]["cooldown"]), tl)
+		"heroic_strike":
+			return Vector3(maxf(0.0, strike_t), float(upgrades[id]["interval"]), -1.0)
+		"reflect_shield":
+			return Vector3(maxf(0.0, reflect_t), float(upgrades[id]["cooldown"]), -1.0)
+		"second_wind":
+			return Vector3(1.0 if second_used else 0.0, 1.0 if second_used else 0.0, -1.0)
+	return Vector3(0.0, 0.0, -1.0)
+
+
 func _abilities() -> void:
-	if petrify_t > 0.0:
+	if petrify_t > 0.0 or drink_t > 0.0:
 		return
 	var U := sim.units
 	if has("sword_spin") and spin_t <= 0.0:
 		var p: Dictionary = upgrades["sword_spin"]
 		U.within(x, y, float(p["radius"]) + 0.5, tmp)
-		if tmp.size() > 0:
+		if tmp.is_empty():
+			_untell("sword_spin")
+		elif _tell("sword_spin"):
 			spin_t = p["interval"]
 			sim.emit(K.Ev.SPIN, x, y, float(p["radius"]), 0)
 			var hit := tmp.duplicate()
@@ -437,7 +495,9 @@ func _abilities() -> void:
 		for i in tmp:
 			if U.max_hp[i] < float(p["max_hp"]) and U.arch[i] != K.Arch.STRUCTURE:
 				small += 1
-		if small >= 3:
+		if small < 3:
+			_untell("war_cry")
+		elif _tell("war_cry"):
 			cry_t = p["cooldown"]
 			for i in tmp:
 				if U.max_hp[i] < float(p["max_hp"]) and U.arch[i] != K.Arch.STRUCTURE:
@@ -445,7 +505,9 @@ func _abilities() -> void:
 			sim.emit(K.Ev.FEAR, x, y, float(p["radius"]), 1)
 	if has("dash") and dash_t <= 0.0 and sim.phase == K.Phase.ROAD:
 		var p: Dictionary = upgrades["dash"]
-		if near_count >= int(p["surround"]) or slow_t > 0.0:
+		if not (near_count >= int(p["surround"]) or slow_t > 0.0):
+			_untell("dash")
+		elif _tell("dash"):
 			dash_t = p["cooldown"]
 			var dir := (sim.road.point_at(s + 8.0) - Vector2(x, y)).normalized()
 			dash_x = dir.x
@@ -462,6 +524,7 @@ func _abilities() -> void:
 		var p: Dictionary = upgrades["second_wind"]
 		if hp_frac() < float(p["below"]):
 			second_used = true
+			sim.ability_fired("second_wind")
 			heal(max_hp() * float(p["heal"]))
 
 
@@ -521,6 +584,10 @@ func _choose_target() -> void:
 	var best_score := -INF
 	var arena := sim.phase == K.Phase.ARENA
 	var unit_r := 3.0 if arena else engage
+	# Na arena ele caça atiradores e estruturas mais longe (rodada 09/11/2026); o resto, só de perto.
+	var hunt_r := float(sim.data.rules["arena"].get("hunt_radius", 3.0)) if arena else engage
+	var houses: Array = sim.live_houses()
+	var defend := float(sim.data.rules["locations"]["tavern"].get("defend", 0.0))
 	lure_on = false
 	var nose := has("treasure_nose")
 	var lure_d := INF
@@ -539,12 +606,18 @@ func _choose_target() -> void:
 				lure_x = U.px[i]
 				lure_y = U.py[i]
 			continue
-		if d > unit_r or (U.flags[i] & K.F_STONE) or di == U.d_tower:
+		var far_ok := arena and (U.arch[i] == K.Arch.SHOOTER or U.arch[i] == K.Arch.STRUCTURE)
+		if d > (hunt_r if far_ok else unit_r) or (U.flags[i] & K.F_STONE) or (di == U.d_tower and not arena):
 			continue
 		var th := U.dmg[i] / maxf(U.atk_int[i], 0.1)
-		var sc := th * 0.05 + (1.0 - U.hp[i] / U.max_hp[i]) + float(strat.get(sim.data.cards[di].id, 0.0)) - d * 0.35
+		var sc := th * 0.05 + (1.0 - U.hp[i] / U.max_hp[i]) + float(strat.get(sim.data.cards[di].id, 0.0)) - d * (0.12 if far_ok else 0.35)
 		if arena:
 			sc += 2.0
+		# Taverna em disputa: quem está atacando uma casa vira prioridade.
+		for k in houses:
+			if sim.house_pos(k).distance_to(Vector2(U.px[i], U.py[i])) < 3.0:
+				sc += defend
+				break
 		# Longe demais da estrada: a coleira não deixa alcançar, então nem tenta (senão fica parado olhando).
 		# O alvo atual tem folga, para não trocar de ideia na borda.
 		if not arena and sc > best_score:
@@ -564,19 +637,7 @@ func _choose_target() -> void:
 					lure_on = true
 					lure_x = z["x"]
 					lure_y = z["y"]
-	if not arena:
-		for li in sim.road.locations.size():
-			var loc: Dictionary = sim.road.locations[li]
-			if loc["type"] != "ritual" or loc["state"] != SimRoad.LocState.ACTIVE or not sim.road.is_on_route(loc):
-				continue
-			var d := Vector2(x, y).distance_to(loc["pos"])
-			if d < engage * 1.5:
-				var sc := float(strat.get("ritual", 3.0)) - d * 0.2
-				if sc > best_score:
-					best_score = sc
-					best = li
-					best_kind = TGT_LOC
-	else:
+	if arena:
 		var ar := sim.arena
 		if best_kind == TGT_NONE:
 			for k in ar.part_hp.size():
@@ -672,6 +733,7 @@ func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) 
 	if (kind & DMG_SPELL) and has("reflect_shield") and reflect_t <= 0.0:
 		reflect_t = upgrades["reflect_shield"]["cooldown"]
 		sim.emit(K.Ev.SHIELD_BREAK, x, y, 0.0, 1)
+		sim.ability_fired("reflect_shield")
 		return 0.0
 	var pierce := (kind & (DMG_PIERCE | DMG_AREA)) != 0 or (src_tags & K.TAG_SHADOW) != 0
 	if not pierce and shield_hp > 0.0:

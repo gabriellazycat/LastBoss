@@ -25,7 +25,7 @@
  },
  "souls": {
   "damage_per_soul": 400,
-  "per_location": 2,
+  "per_location": 1,
   "win": 40,
   "win_early_extra": 20
  }

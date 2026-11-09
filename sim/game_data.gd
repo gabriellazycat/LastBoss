@@ -12,6 +12,10 @@ var by_id: Dictionary = {}  # id -> CardDef
 var pool: Array[CardDef] = []  # cartas que podem ser oferecidas (as 32)
 var upgrades: Dictionary = {}  # id -> dict
 var meta: Dictionary = {}      # coleção, custos de desbloqueio e Almas (data/meta.json)
+var relics: Dictionary = {}    # id -> dict (data/relics.json): passivas ganhas no fim de cada ato
+var relic_ids: Array = []      # na ordem do arquivo (sorteio determinístico)
+var events_def: Dictionary = {}  # id -> dict (data/events.json): eventos de texto do local "?"
+var event_ids: Array = []
 
 
 static func load_dir(dir := "res://data") -> GameData:
@@ -23,6 +27,12 @@ static func load_dir(dir := "res://data") -> GameData:
 	for m in _read(dir + "/modifiers.json")["modifiers"]:
 		g.modifiers[m["id"]] = m
 	g.meta = _read(dir + "/meta.json")
+	for r in _read(dir + "/relics.json").get("relics", []):
+		g.relics[r["id"]] = r
+		g.relic_ids.append(r["id"])
+	for e in _read(dir + "/events.json").get("events", []):
+		g.events_def[e["id"]] = e
+		g.event_ids.append(e["id"])
 	var growth := float(g.rules["card_levels"]["growth"])
 	var cj := _read(dir + "/cards.json")
 	for d in cj["cards"]:

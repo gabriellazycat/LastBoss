@@ -5,7 +5,7 @@
   "target_hz": 5,
   "max_units": 1024,
   "despawn_distance": 50.0,
-  "max_run_seconds": 1500
+  "max_run_seconds": 2400
  },
  "elixir": {
   "seconds_per_point": 2.8,
@@ -62,7 +62,7 @@
   "contract_options": 2,
   "level_every": 1,
   "location_win": 3,
-  "location_lose": 1
+  "location_lose": 0
  },
  "contracts": {
   "first_at": [
@@ -70,8 +70,8 @@
    150
   ],
   "interval": [
-   120,
-   180
+   180,
+   240
   ]
  },
  "road": {
@@ -93,58 +93,70 @@
    10
   ],
   "shrines": [
-   2,
-   3
+   1,
+   2
   ],
   "location_weights": {
    "tavern": 2,
    "fountain": 2,
    "ritual": 2,
-   "bridge": 2
+   "bridge": 2,
+   "event": 2
   },
   "shrine_chance": 0.24,
   "shops": [
    1,
-   2
+   1
   ]
  },
  "locations": {
   "tavern": {
-   "radius": 6.0,
-   "duration": 15.0,
-   "attack_speed": -0.4
+   "radius": 8.0,
+   "window": 25.0,
+   "houses": 3,
+   "house_hp": 400.0,
+   "house_ring": 5.0,
+   "aggro_r": 10.0,
+   "defend": 3.0
   },
   "fountain": {
    "radius": 5.0,
-   "heal_units": 0.05,
-   "heal_seconds": 15.0,
-   "heal_radius": 8.0
+   "drink_s": 4.0,
+   "interrupt_damage": 120.0,
+   "heal": 0.15
   },
   "ritual": {
    "radius": 6.0,
    "elixir_mult": 2.0,
-   "hp": 300
+   "kills": 10,
+   "window": 25.0
   },
   "shrine": {
    "radius": 7.0,
-   "countdown": 10.0
+   "hold_s": 6.0,
+   "window": 20.0
   },
   "bridge": {
    "radius": 10.0,
-   "leash": 1.5,
-   "pack_damage": 0.5
+   "duration": 15.0,
+   "attack_speed": -0.4,
+   "win_damage": 150.0
   },
   "shop": {
    "radius": 7.0
-  }
+  },
+  "event": {
+   "radius": 5.0
+  },
+  "hold_radius": 2.5
  },
  "arena": {
   "radius": 15.0,
   "altars": 5,
   "altar_ring": 10.0,
   "altar_hp": 1500,
-  "teleport_cooldown": 8.0,
-  "teleport_cost": 0,
+  "teleport_cooldown": 12.0,
+  "teleport_cost": 2,
   "elixir_mult_head": 2.0,
   "spell_extra_cost_no_left_arm": 2,
   "arm_aura_radius": 3.0,
@@ -152,7 +164,8 @@
   "pillars": 6,
   "pillar_ring": 6.0,
   "pillar_radius": 0.9,
-  "pillar_hp": 350
+  "pillar_hp": 350,
+  "hunt_radius": 10.0
  },
  "curse": {
   "hp_per_stack": 0.03,
@@ -172,12 +185,12 @@
   ],
   "random_win_max": 0.1,
   "arena_arrival_s": [
-   660,
-   780
+   1200,
+   1380
   ],
   "hero_level_arena": [
-   3,
-   4
+   4,
+   6
   ],
   "deck_spread_max": 0.05,
   "card_in_wins_max": 0.7,
@@ -185,6 +198,10 @@
   "player_levels": [
    8,
    12
+  ],
+  "run_s": [
+   1380,
+   1620
   ]
  },
  "units": {
@@ -211,35 +228,26 @@
    "reward": "upgrade"
   },
   "tavern": {
-   "reward": "mod",
-   "win_damage": 150
+   "reward": "mod"
   },
   "fountain": {
-   "reward": "remove",
-   "guard_radius": 6.0,
-   "lose_options": 2
+   "reward": "remove"
   },
   "bridge": {
    "reward": "choice",
-   "win_damage": 200,
    "rarities": [
     "common",
     "uncommon"
-   ],
-   "lose_rarities": [
-    "common"
    ]
   },
   "shop": {
-   "reward": "shop",
-   "win_damage": 150,
-   "discount": 0.3
+   "reward": "shop"
   }
  },
  "sacrifice_cooldown": 8.0,
  "party": {
-  "size": 5,
-  "step": 1.26,
+  "size": 7,
+  "step": 1.2,
   "arrive_s": 8.0
  },
  "gold": {
@@ -258,5 +266,61 @@
   "mod": 60,
   "remove": 50,
   "remove_step": 25
+ },
+ "run": {
+  "acts": 3
+ },
+ "acts": [
+  {
+   "ground_look": 2,
+   "road": {
+    "target_length": 600.0,
+    "route_locations": [
+     7,
+     8
+    ]
+   },
+   "rarity": [
+    0.65,
+    0.25,
+    0.09,
+    0.01
+   ]
+  },
+  {
+   "ground_look": 3,
+   "road": {
+    "target_length": 600.0,
+    "route_locations": [
+     7,
+     8
+    ]
+   },
+   "rarity": [
+    0.5,
+    0.3,
+    0.16,
+    0.04
+   ]
+  },
+  {
+   "ground_look": 4,
+   "road": {
+    "target_length": 600.0,
+    "route_locations": [
+     7,
+     8
+    ]
+   },
+   "rarity": [
+    0.4,
+    0.3,
+    0.22,
+    0.08
+   ]
+  }
+ ],
+ "relics": {
+  "options": 3
  }
 }

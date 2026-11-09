@@ -18,7 +18,7 @@ const KEYWORDS := [
 	"shield", "pierce", "elixir", "sacrifice", "teleport", "altar",
 	"swarm", "monster", "spell", "structure", "route", "lair", "finisher",
 	"veteran", "cheap", "explosive", "cursed", "shadowy",
-	"shop", "tavern", "fountain", "ritual", "shrine", "bridge", "gold",
+	"shop", "tavern", "fountain", "ritual", "shrine", "bridge", "gold", "event",
 ]
 
 static var inst: Tips
@@ -133,16 +133,15 @@ static func _kw_params() -> Dictionary:
 		"shield_hp": _num(Hs["hp"]), "shield_cone": _num(Hs["cone"]), "shield_regen": _num(Hs["regen_seconds"]),
 		"hp_growth": _pct(data.hero["hp_growth"]), "dmg_growth": _pct(data.hero["damage_growth"]),
 		"upg_every": _num(R["hero_xp"].get("upgrade_every", 1)), "upg_max": _num(R["hero_xp"].get("upgrade_max", 15)),
-		"shop_win": _num(R["location_rewards"]["shop"]["win_damage"]), "shop_disc": _pct(R["location_rewards"]["shop"]["discount"]),
 		"gold_dmg": _num(R["gold"]["damage_per_gold"]), "gold_win": _num(R["gold"]["per_contest"]),
-		"tavern_atk": _pct(L["tavern"]["attack_speed"]), "tavern_s": _num(L["tavern"]["duration"]),
-		"fountain_heal": _pct(L["fountain"]["heal_units"]), "fountain_s": _num(L["fountain"]["heal_seconds"]), "fountain_r": _num(L["fountain"]["heal_radius"]), "ritual_mult": _num(L["ritual"]["elixir_mult"]),
-		"ritual_hp": _num(L["ritual"]["hp"]), "shrine_s": _num(L["shrine"]["countdown"]),
-		"bridge_pack": _pct(L["bridge"]["pack_damage"]),
-		"tp_cd": _num(A["teleport_cooldown"]), "altar_hp": _num(A["altar_hp"]),
-		"tavern_win": _num(R["location_rewards"]["tavern"]["win_damage"]),
-		"bridge_win": _num(R["location_rewards"]["bridge"]["win_damage"]),
-		"fountain_guard": _num(R["location_rewards"]["fountain"]["guard_radius"]),
+		"tavern_houses": _num(L["tavern"]["houses"]), "tavern_house_hp": _num(L["tavern"]["house_hp"]),
+		"tavern_aggro": _num(L["tavern"]["aggro_r"]), "tavern_s": _num(L["tavern"]["window"]),
+		"fountain_s": _num(L["fountain"]["drink_s"]), "fountain_dmg": _num(L["fountain"]["interrupt_damage"]),
+		"fountain_heal": _pct(L["fountain"]["heal"]),
+		"ritual_mult": _num(L["ritual"]["elixir_mult"]), "ritual_kills": _num(L["ritual"]["kills"]), "ritual_s": _num(L["ritual"]["window"]),
+		"shrine_s": _num(L["shrine"]["hold_s"]), "shrine_window": _num(L["shrine"]["window"]),
+		"bridge_atk": _pct(L["bridge"]["attack_speed"]), "bridge_s": _num(L["bridge"]["duration"]), "bridge_win": _num(L["bridge"]["win_damage"]),
+		"tp_cd": _num(A["teleport_cooldown"]), "tp_cost": _num(A["teleport_cost"]), "altar_hp": _num(A["altar_hp"]),
 		"sac_cd": _num(R["sacrifice_cooldown"]),
 	}
 	for mid in data.modifiers:

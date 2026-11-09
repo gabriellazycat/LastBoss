@@ -196,6 +196,7 @@ func _env() -> void:
 	rim.light_cull_mask = 1
 	rim.light_specular = 0.0
 	add_child(rim)
+	rim_light = rim
 	var we := WorldEnvironment.new()
 	var env := Environment.new()
 	var sky := Sky.new()
@@ -243,6 +244,36 @@ func _env() -> void:
 	Settings.apply_quality(env, moon, get_viewport())
 
 
+## Capturas: põe o herói no primeiro local da rota, trocado para o tipo pedido, e começa a disputa.
+func _debug_contest(ty: String) -> void:
+	var road := sim.road
+	if road.next_edge() < 0:
+		road.plan_to(road.legs[road.nodes[road.head]["out"][0]]["b"])
+	if road.nodes[road.head]["loc"] < 0:
+		road.advance(road.next_edge())
+	var li: int = road.nodes[road.head]["loc"]
+	var loc: Dictionary = road.locations[li]
+	loc["type"] = ty
+	loc["r"] = float(sim.R["locations"][ty]["radius"])
+	var p: Vector2 = loc["pos"]
+	sim.hero.x = p.x
+	sim.hero.y = p.y
+	sim.hero.s = road.length()
+	sim.hero.s_max = sim.hero.s
+	sim.hero.seg = road.seg_at(sim.hero.s)
+	sim._arrive(li)
+	world.build(sim, cam)
+
+
+## Chão, luz e névoa do ato atual (provisórios: os looks 2, 3 e 4 até a direção de arte nova).
+func _apply_act_look(s: Sim) -> void:
+	built_act = s.act
+	var A: Array = data.rules.get("acts", [])
+	GroundLooks.act_look = int(A[s.act].get("ground_look", -1)) if s.act < A.size() else -1
+	if world_env and sun:
+		GroundLooks.apply_env(world_env, sun, rim_light)
+
+
 func _pad_actions() -> void:
 	var defs := {"pad_prev": JOY_BUTTON_LEFT_SHOULDER, "pad_next": JOY_BUTTON_RIGHT_SHOULDER, "pad_confirm": JOY_BUTTON_A,
 		"pad_back": JOY_BUTTON_B, "pad_map": JOY_BUTTON_BACK, "pad_altar_prev": JOY_BUTTON_DPAD_LEFT,
@@ -262,6 +293,8 @@ var menu_root: Node3D
 var menu_t := 0.0
 var menu: MainMenu
 var sun: DirectionalLight3D
+var rim_light: DirectionalLight3D
+var built_act := -1                 # ato cujo mundo está montado (cada ato tem o seu chão, rodada 09/11/2026)
 var world_env: Environment
 
 
@@ -495,6 +528,7 @@ func _begin(s: Sim) -> void:
 	result_played = false
 	audio.music("music_road")
 	audio.set_intensity(0.0)
+	_apply_act_look(sim)
 	world.build(sim, cam)
 	arena_built = false
 	save_t = sim.t
@@ -543,9 +577,21 @@ func _process(delta: float) -> void:
 		if auto_args.has("offer"):
 			var ow := str(auto_args["offer"]).split(":")
 			if ow[0] == "shop":
-				# --offer=shop (ou shop:0): loja com 200 de ouro.
+				# --offer=shop: loja com 200 de ouro.
 				sim.gold = 200.0
-				sim._open_shop(ow.size() < 2 or ow[1] != "0")
+				sim._open_shop()
+			elif ow[0] == "relic":
+				# --offer=relic: escolha de relíquia do fim do ato.
+				sim._offer_relics()
+			elif ow[0] == "event":
+				# --offer=event (ou event:<id>): evento de texto, com 100 de ouro.
+				sim.gold = 100.0
+				if ow.size() > 1:
+					sim.events_seen = sim.data.event_ids.filter(func(e): return e != ow[1])
+				sim._offer_event()
+			elif ow[0] == "contest":
+				# --offer=contest:<tipo>: o herói chega a um local desse tipo e a disputa começa.
+				_debug_contest(ow[1] if ow.size() > 1 else "tavern")
 			else:
 				sim._offer_location(ow[0], ow.size() < 2 or ow[1] != "0")
 		else:
@@ -572,11 +618,16 @@ func _process(delta: float) -> void:
 			sim.step()
 			acc -= sim.dt
 			world.handle_events(sim.events)
+			hud.handle_events(sim.events)
 			audio.handle_events(sim.events, sim)
 			sim.events.clear()
 			if sim.offers.size() > 0:
 				acc = 0.0
 				break
+	# Ato novo: estrada nova, chão e luz do ato.
+	if sim.phase == K.Phase.ROAD and sim.act != built_act:
+		_apply_act_look(sim)
+		world.build(sim, cam)
 	if sim.phase == K.Phase.ARENA and not arena_built:
 		arena_built = true
 		world.build_arena()
@@ -759,7 +810,7 @@ func _route_test() -> void:
 	var mb := InputEventMouseButton.new()
 	mb.button_index = MOUSE_BUTTON_LEFT
 	mb.pressed = true
-	mb.position = mm.global_position + mm.node_point(far)
+	mb.position = get_viewport().get_final_transform() * (mm.global_position + mm.node_point(far))
 	Input.parse_input_event(mb)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -779,7 +830,7 @@ func _route_test() -> void:
 		var mb2 := InputEventMouseButton.new()
 		mb2.button_index = MOUSE_BUTTON_LEFT
 		mb2.pressed = true
-		mb2.position = st.global_position + st._node_point(alt)
+		mb2.position = get_viewport().get_final_transform() * (st.global_position + st._node_point(alt))
 		Input.parse_input_event(mb2)
 		await get_tree().process_frame
 		await get_tree().process_frame

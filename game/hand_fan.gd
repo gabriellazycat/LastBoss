@@ -89,7 +89,16 @@ func fan_rect() -> Rect2:
 
 
 func _has_point(p: Vector2) -> bool:
-	return sim != null and fan_rect().has_point(p)
+	return sim != null and (fan_rect().has_point(p) or _on_preview(p))
+
+
+## O mouse está sobre a carta ampliada (ela sobe acima do leque): o clique vale para ela (rodada 09/11/2026).
+func _on_preview(p: Vector2) -> bool:
+	if preview == null or hover < 0:
+		return false
+	# Só a parte da carta acima do leque: dentro do leque vale a carta sob o mouse, como antes.
+	var ps := preview.get_combined_minimum_size()
+	return p.y < 0.0 and Rect2(preview.position, ps).has_point(p)
 
 
 ## Centro e rotação de repouso da carta k numa mão de n cartas.
@@ -108,7 +117,11 @@ func card_rect(k: int) -> Rect2:
 
 
 func _slot_at(m: Vector2) -> int:
-	if not fan_rect().has_point(m) or sim.hand.is_empty():
+	if sim.hand.is_empty():
+		return -1
+	if _on_preview(m) and hover < sim.hand.size():
+		return hover
+	if not fan_rect().has_point(m):
 		return -1
 	var k := int(floor((m.x - _fan_left() - CARD.x * 0.5 + STEP * 0.5) / STEP))
 	return clampi(k, 0, sim.hand.size() - 1)

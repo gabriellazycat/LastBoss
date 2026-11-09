@@ -76,6 +76,12 @@ def summarize(runs, goals):
             # Mapa de rotas (09/11/2026): ouro ganho e compras nas lojas.
             "gold": mean([r.get("gold_earned", 0.0) for r in rs]),
             "buys": mean([r.get("shop_buys", 0) for r in rs]),
+            # Run em atos (09/11/2026): atos terminados, relíquias e disputas vencidas/perdidas por tipo.
+            "acts": mean([len(r.get("act_t", [])) for r in rs]),
+            "relics": mean([len(r.get("relics", [])) for r in rs]),
+            "contests": {ty: [sum(r.get("contests", {}).get(ty, [0, 0])[0] for r in rs) / len(rs),
+                              sum(r.get("contests", {}).get(ty, [0, 0])[1] for r in rs) / len(rs)]
+                         for ty in ["ritual", "shrine", "tavern", "bridge", "fountain"]},
         })
     # Cartas: taxa de escolha e de vitória quando escolhida (bots não aleatórios).
     cards = {}
@@ -132,6 +138,8 @@ def goal_score(rows, cards, g):
     if rnd:
         parts["random_win"] = max(0.0, mean([r["win"] for r in rnd]) - g["random_win_max"])
     parts["arena_time"] = dist(mean([r["arena_t"] for r in rows]), *g["arena_arrival_s"])
+    if "run_s" in g:
+        parts["run_time"] = dist(mean([r["game_s"] for r in rows]), *g["run_s"])
     # Grupo de 5 heróis: "herói que chega à arena" = 1 + heróis mortos na estrada, medido no bot bom.
     parts["hero_level"] = dist(mean([r["hero_level_arena"] for r in (heur or rows)]), *g["hero_level_arena"])
     parts["waste"] = max(0.0, mean([r["waste"] for r in rows]) - g["elixir_waste_max"])
@@ -161,6 +169,13 @@ def report_md(s, meta):
                  f"{pct(r['waste'])} | {num(r['wall_ms'], '{:.0f}')} | {num(r['locs_won'])}/{num(r['locs_lost'])} | "
                  f"{num(r['card_levels'])} | {num(r['deck_n'])} | {num(r['souls'], '{:.0f}')} | "
                  f"{num(r['gold'], '{:.0f}')} | {num(r['buys'])} |")
+    L += ["", "## Atos, relíquias e disputas (vencidas/perdidas por run)", "",
+          "| bot | deck | duração (s) | atos | relíquias | ritual | santuário | taverna | ponte | fonte |",
+          "|---|---|---|---|---|---|---|---|---|---|"]
+    for r in s["rows"]:
+        cs = r.get("contests", {})
+        L.append(f"| {r['bot']} | {r['deck']} | {num(r['game_s'], '{:.0f}')} | {num(r.get('acts'))} | {num(r.get('relics'))} | "
+                 + " | ".join(f"{num(cs.get(t, [0, 0])[0])}/{num(cs.get(t, [0, 0])[1])}" for t in ["ritual", "shrine", "tavern", "bridge", "fountain"]) + " |")
     L += ["", "## Metas", "", "| meta | distância |", "|---|---|"]
     for k, v in s["score_parts"].items():
         L.append(f"| {k} | {v:.3f} |")

@@ -96,8 +96,15 @@ const PRESETS := {
 static var _tex: Dictionary = {}
 
 
+## Chão do ato atual (main.gd): cada ato da run tem o seu, quando o look escolhido é um dos chãos de foto (1 a 4).
+static var act_look := -1
+
+
 static func look() -> int:
-	return int(Settings.v.get("look_ground", 0))
+	var v := int(Settings.v.get("look_ground", 0))
+	if act_look > 0 and v >= 1 and v <= 4 and Settings.v.get("act_terrains", true):
+		return act_look
+	return v
 
 
 static func preset() -> Dictionary:
@@ -192,7 +199,8 @@ static func road_material() -> ShaderMaterial:
 
 
 ## Estrada com UV em metros (x através, 0 no centro; y ao longo) e alfa 0 na borda de fora.
-static func road_mesh(pts: PackedVector2Array, width: float) -> ArrayMesh:
+## `lift` separa na altura os trechos que se sobrepõem perto das bifurcações (na mesma altura eles piscavam).
+static func road_mesh(pts: PackedVector2Array, width: float, lift := 0.0) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var n := pts.size()
@@ -213,7 +221,7 @@ static func road_mesh(pts: PackedVector2Array, width: float) -> ArrayMesh:
 			var p: Vector2 = pts[i] + o * float(c[0])
 			# Miolo mais alto que as bordas: onde dois trechos se cruzam (bifurcação), o miolo de um cobre
 			# a borda do outro em vez de brigar com ela na mesma altura (cunhas de borda reta).
-			var y := 0.02 if float(c[1]) > 0.5 else 0.004
+			var y := (0.02 if float(c[1]) > 0.5 else 0.004) + lift
 			row.append([Vector3(p.x, y, p.y), Vector2(float(c[0]), along), float(c[1])])
 		rows.append(row)
 	for i in n - 1:

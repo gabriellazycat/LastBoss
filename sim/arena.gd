@@ -151,20 +151,20 @@ func _collide() -> void:
 
 func can_teleport(k: int) -> bool:
 	return active and tp_cd <= 0.0 and k >= 0 and k < altar_pos.size() and altar_alive[k] and k != altar \
-		and sim.elixir >= float(A["teleport_cost"])
+		and sim.elixir >= sim.teleport_cost()
 
 
 func teleport(k: int) -> bool:
 	if not can_teleport(k):
 		return false
-	sim.elixir -= float(A["teleport_cost"])
+	sim.elixir -= sim.teleport_cost()
 	var p: Vector2 = altar_pos[k]
 	sim.emit(K.Ev.TELEPORT, bx, by, p.x, k)
 	bx = p.x
 	by = p.y
 	face = (Vector2(cx, cy) - p).normalized()
 	altar = k
-	tp_cd = A["teleport_cooldown"]
+	tp_cd = maxf(1.0, float(A["teleport_cooldown"]) + sim.rv("teleport_cd"))
 	sim.last_teleport_t = sim.t
 	sim.stats["teleports"] += 1
 	return true

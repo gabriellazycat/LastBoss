@@ -23,6 +23,7 @@ var deck_row: HBoxContainer
 var my_deck_row: HBoxContainer
 var my_deck_err: Label
 var collection: CollectionScreen
+var compendium: CompendiumScreen
 var settings: SettingsPanel
 var footer: Label
 var fade := 0.0
@@ -60,6 +61,11 @@ func _ready() -> void:
 	collection.visible = false
 	collection.closed.connect(func(): show_screen("decks"))
 	add_child(collection)
+	compendium = CompendiumScreen.new()
+	compendium.setup(data, meta)
+	compendium.visible = false
+	compendium.closed.connect(func(): show_screen("title"))
+	add_child(compendium)
 	settings = SettingsPanel.new()
 	settings.visible = false
 	settings.closed.connect(func(): show_screen("title"))
@@ -103,6 +109,7 @@ func _build_title() -> void:
 	title_box.add_child(main_buttons)
 	continue_btn = _menu_btn("UI_CONTINUE", func(): continue_run.emit())
 	_menu_btn("UI_NEW_RUN", func(): show_screen("decks"))
+	_menu_btn("UI_COMPENDIUM", func(): show_screen("compendium"))
 	_menu_btn("UI_SETTINGS", func(): show_screen("settings"))
 	if OS.get_name() != "Web":
 		_menu_btn("UI_QUIT", func(): get_tree().quit())
@@ -242,6 +249,7 @@ func show_screen(s: String) -> void:
 	title_box.visible = s == "title"
 	deck_screen.visible = s == "decks"
 	collection.visible = s == "collection"
+	compendium.visible = s == "compendium"
 	settings.visible = false
 	if s == "title":
 		continue_btn.visible = SaveGame.exists()
@@ -251,6 +259,8 @@ func show_screen(s: String) -> void:
 		_focus_first_deck.call_deferred()
 	elif s == "collection":
 		collection.open()
+	elif s == "compendium":
+		compendium.open()
 	elif s == "settings":
 		settings.open()
 
@@ -268,9 +278,15 @@ func _notification(what: int) -> void:
 			_fill_decks.call_deferred()
 		elif screen == "collection":
 			collection.refresh.call_deferred()
+		elif screen == "compendium":
+			compendium.show_tab.call_deferred(compendium.tab)
 
 
 func _unhandled_input(e: InputEvent) -> void:
+	if visible and screen == "compendium" and e.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		show_screen("title")
+		return
 	if visible and screen == "decks" and e.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		show_screen("title")
@@ -293,6 +309,8 @@ func _process(delta: float) -> void:
 	deck_screen.modulate.a = fade
 	collection.position = Vector2((vs.x - collection.size.x) * 0.5, (vs.y - collection.size.y) * 0.5 + (1.0 - fade) * 24.0)
 	collection.modulate.a = fade
+	compendium.position = Vector2((vs.x - compendium.size.x) * 0.5, (vs.y - compendium.size.y) * 0.5 + (1.0 - fade) * 24.0)
+	compendium.modulate.a = fade
 	settings.position = (vs - settings.size) * 0.5
 	footer.text = VERSION + "   ·   " + tr("UI_MENU_KEYS")
 	footer.position = Vector2(m, vs.y - 34)

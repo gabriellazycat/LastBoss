@@ -6,7 +6,7 @@ extends RefCounted
 ## O jogador escolhe o ramo (`plan_to`); o herói anda pela rota já decidida, que cresce ligação por ligação.
 ## Coordenadas no plano (x, y); o herói anda no sentido -y.
 
-const LOC_TYPES := ["shop", "tavern", "fountain", "ritual", "shrine", "bridge"]
+const LOC_TYPES := ["shop", "tavern", "fountain", "ritual", "shrine", "bridge", "event"]
 enum LocState { ACTIVE, USED, DESTROYED, WON }
 
 var nodes: Array = []       # {"row", "lane", "pos", "out": [ligação], "in": [ligação], "loc"}; 0 = início, último = covil
@@ -24,9 +24,15 @@ var lair := Vector2.ZERO
 var lair_dir := Vector2(0, -1)
 
 
-func generate(rng: RandomNumberGenerator, rules: Dictionary) -> void:
-	var R: Dictionary = rules["road"]
+var shop_row := -1          # fileira de um nó só com a Loja: toda rota passa por ela (rodada 09/11/2026)
+
+
+## `cfg` sobrepõe rules.road (cada ato tem o seu comprimento e número de locais).
+func generate(rng: RandomNumberGenerator, rules: Dictionary, cfg: Dictionary = {}) -> void:
+	var R: Dictionary = rules["road"].duplicate()
+	R.merge(cfg, true)
 	rows = rng.randi_range(int(R["route_locations"][0]), int(R["route_locations"][1]))
+	shop_row = rng.randi_range(2, maxi(2, rows - 3)) if int(R["shops"][1]) > 0 else -1
 	var lanes := int(R["lanes"])
 	var lane_w: float = R["lane_width"]
 	var gap: float = float(R["target_length"]) / (rows + 1)
@@ -40,7 +46,7 @@ func generate(rng: RandomNumberGenerator, rules: Dictionary) -> void:
 		var dir := Vector2(sin(ang), -cos(ang))
 		c += dir * gap
 		var perp := Vector2(-dir.y, dir.x)
-		var count := rng.randi_range(int(R["row_nodes"][0]), mini(int(R["row_nodes"][1]), lanes))
+		var count := 1 if r == shop_row else rng.randi_range(int(R["row_nodes"][0]), mini(int(R["row_nodes"][1]), lanes))
 		var pick: Array = range(lanes)
 		while pick.size() > count:
 			pick.remove_at(rng.randi_range(0, pick.size() - 1))
@@ -62,8 +68,9 @@ func generate(rng: RandomNumberGenerator, rules: Dictionary) -> void:
 		for p in pairs:
 			target = maxf(target, nodes[p[0]]["pos"].distance_to(nodes[p[1]]["pos"]))
 		target = target * float(R["length_slack"]) + 3.0
+		var sgn := 1.0 if rng.randf() < 0.5 else -1.0
 		for p in pairs:
-			var pts := _wavy(rng, nodes[p[0]]["pos"], nodes[p[1]]["pos"], target, R["point_step"])
+			var pts := _kinked(rng, nodes[p[0]]["pos"], nodes[p[1]]["pos"], target, R["point_step"], sgn)
 			var e := legs.size()
 			legs.append({"kind": "edge", "a": p[0], "b": p[1], "pts": [pts], "len": [_length(pts)], "chosen": -1, "closed": -1})
 			nodes[p[0]]["out"].append(e)
@@ -74,7 +81,7 @@ func generate(rng: RandomNumberGenerator, rules: Dictionary) -> void:
 	var last: PackedVector2Array = legs[nodes[-1]["in"][0]]["pts"][0]
 	lair = nodes[-1]["pos"]
 	lair_dir = (lair - last[last.size() - 2]).normalized()
-	_place_locations(rng, rules)
+	_place_locations(rng, rules, R)
 	path = [0]
 	head = 0
 	route.append(Vector2.ZERO)
@@ -150,34 +157,42 @@ func _crosses(pairs: Array, x: int, y: int, lane: Callable) -> bool:
 	return false
 
 
-## Caminho de a até b com o comprimento `target`: a sobra vira ondas laterais suaves (zero nas pontas).
-func _wavy(rng: RandomNumberGenerator, a: Vector2, b: Vector2, target: float, step: float) -> PackedVector2Array:
-	var k := 2 + rng.randi_range(0, 1)
-	var sgn := 1.0 if rng.randf() < 0.5 else -1.0
+## Caminho de a até b com o comprimento `target`, em trechos retos: a sobra vira um desvio lateral
+## de altura h (a → canto → canto → b), achado por bissecção. `sgn` é o lado do desvio (o mesmo para
+## todas as ligações de uma transição, para os ramos vizinhos não se cruzarem).
+func _kinked(rng: RandomNumberGenerator, a: Vector2, b: Vector2, target: float, step: float, sgn: float) -> PackedVector2Array:
+	var t1 := rng.randf_range(0.25, 0.4)
+	var t2 := rng.randf_range(0.6, 0.75)
 	var lo := 0.0
-	var hi := 40.0
-	var pts := _wave(a, b, 0.0, k, step)
-	for it in 30:
-		var amp := (lo + hi) * 0.5
-		pts = _wave(a, b, amp * sgn, k, step)
-		var l := _length(pts)
+	var hi := 60.0
+	var h := 0.0
+	for it in 40:
+		h = (lo + hi) * 0.5
+		var l := _length(_dogleg(a, b, h * sgn, t1, t2))
 		if absf(l - target) < 0.02:
 			break
 		if l < target:
-			lo = amp
+			lo = h
 		else:
-			hi = amp
-	return pts
+			hi = h
+	return _resample(_dogleg(a, b, h * sgn, t1, t2), step)
 
 
-func _wave(a: Vector2, b: Vector2, amp: float, k: int, step: float) -> PackedVector2Array:
+static func _dogleg(a: Vector2, b: Vector2, h: float, t1: float, t2: float) -> PackedVector2Array:
 	var d := b - a
-	var n := maxi(8, int(ceil(d.length() * 1.15 / step)))
 	var perp := d.normalized().orthogonal()
-	var out := PackedVector2Array()
-	for i in n + 1:
-		var t := float(i) / n
-		out.append(a + d * t + perp * amp * sin(k * PI * t) * sin(PI * t))
+	return PackedVector2Array([a, a + d * t1 + perp * h, a + d * t2 + perp * h, b])
+
+
+## Reamostra a polilinha a cada `step` metros, mantendo os cantos (a projeção do herói usa pontos curtos).
+static func _resample(poly: PackedVector2Array, step: float) -> PackedVector2Array:
+	var out := PackedVector2Array([poly[0]])
+	for i in poly.size() - 1:
+		var p0 := poly[i]
+		var p1 := poly[i + 1]
+		var n := maxi(1, int(ceil(p0.distance_to(p1) / step)))
+		for k in range(1, n + 1):
+			out.append(p0.lerp(p1, float(k) / n))
 	return out
 
 
@@ -201,9 +216,8 @@ static func _point_on(pts: PackedVector2Array, d: float) -> Vector2:
 # ---------------------------------------------------------------- locais
 
 ## Um local por nó. Os nós da mesma fileira têm tipos diferentes (a escolha é de prêmio); toda rota passa
-## por `shrines` Santuários; há `shops` Lojas no mapa, nunca duas na mesma rota.
-func _place_locations(rng: RandomNumberGenerator, rules: Dictionary) -> void:
-	var R: Dictionary = rules["road"]
+## por `shrines` Santuários e por exatamente uma Loja (a fileira `shop_row` tem um nó só).
+func _place_locations(rng: RandomNumberGenerator, rules: Dictionary, R: Dictionary) -> void:
 	var w: Dictionary = R["location_weights"]
 	var members: Array = []
 	for r in rows:
@@ -214,14 +228,7 @@ func _place_locations(rng: RandomNumberGenerator, rules: Dictionary) -> void:
 	var best_err := INF
 	for attempt in 400:
 		var types := {}
-		var shops_left := rng.randi_range(int(R["shops"][0]), int(R["shops"][1]))
-		var shop_rows: Array = []
-		for tries in 20:
-			if shop_rows.size() >= shops_left:
-				break
-			var r := rng.randi_range(2, maxi(2, rows - 3))
-			if not shop_rows.has(r):
-				shop_rows.append(r)
+		var shop_rows: Array = [shop_row] if shop_row >= 0 else []
 		var shrine_p := float(R["shrine_chance"])
 		for row in rows:
 			var m: Array = members[row].duplicate()

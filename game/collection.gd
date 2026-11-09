@@ -168,6 +168,7 @@ func _grid_button(d: CardDef) -> Button:
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var c := cell(d)
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiKit.ignore_mouse(c)   # a célula inteira é o botão (antes só a parte de baixo respondia)
 	if UiSkins.covil() and c.material:
 		c.material = c.material.duplicate()
 		(c.material as ShaderMaterial).set_shader_parameter("shadow", 0.0)

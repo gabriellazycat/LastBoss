@@ -10,6 +10,8 @@ const INK := Color(0.98, 0.95, 0.88)
 
 var id := ""
 var pulse := 0.0                   # > 0: acabou de ganhar (o aro pulsa)
+var cd_frac := 0.0                 # recarga que falta (0 a 1): fatia escura por cima (rodada 09/11/2026)
+var telling := false               # vai disparar em 1 s: aro aceso
 
 
 static func make(id_: String, s := 32.0) -> UpgradeIcon:
@@ -126,6 +128,8 @@ func _draw() -> void:
 			_star(q.call(0.55, -0.55), k * 0.55, Color(1.0, 0.85, 0.4))
 		_:
 			draw_circle(c, k * 0.3, INK)
+	_draw_cd(c, r)
+
 
 
 func _sword(q: Callable, w: float, x0: float, y0: float, x1: float, y1: float) -> void:
@@ -161,3 +165,17 @@ func _star(p: Vector2, r: float, col: Color) -> void:
 		var a := TAU * i / 8.0 - PI * 0.5
 		pts.append(p + Vector2(cos(a), sin(a)) * (r if i % 2 == 0 else r * 0.35))
 	draw_colored_polygon(pts, col)
+
+
+## Recarga: fatia escura no sentido horário a partir do topo; aviso de disparo: aro branco piscando.
+func _draw_cd(c: Vector2, r: float) -> void:
+	if cd_frac > 0.001:
+		var pts := PackedVector2Array([c])
+		var n := 24
+		for i in n + 1:
+			var a := -PI * 0.5 + TAU * cd_frac * float(i) / n
+			pts.append(c + Vector2(cos(a), sin(a)) * r * 0.92)
+		draw_colored_polygon(pts, Color(0.0, 0.0, 0.0, 0.62))
+	if telling:
+		var blink := 0.6 + 0.4 * sin(Time.get_ticks_msec() * 0.025)
+		draw_arc(c, r * 0.95, 0.0, TAU, 32, Color(1, 1, 1, blink), maxf(2.0, r * 0.18), true)
