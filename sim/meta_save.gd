@@ -11,11 +11,15 @@ var unlocked: Array = []
 var deck: Array = []
 var pact := "horde"
 var runs := 0
+## Para onde salvar. Os modos de teste da janela trocam para outro arquivo: o --menutest gravava o Pacto
+## escolhido no meta do jogador (rodada 09/11/2026).
+var file := PATH
 
 
 static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 	var m := MetaSave.new()
 	m.data = d
+	m.file = path
 	m.unlocked = d.meta["start_collection"].duplicate()
 	m.deck = d.deck("horde")["cards"].duplicate()
 	var f := FileAccess.open(path, FileAccess.READ)
@@ -34,8 +38,8 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 	return m
 
 
-func save(path := PATH) -> bool:
-	var f := FileAccess.open(path, FileAccess.WRITE)
+func save(path := "") -> bool:
+	var f := FileAccess.open(file if path == "" else path, FileAccess.WRITE)
 	if f == null:
 		return false
 	f.store_var({"souls": souls, "unlocked": unlocked, "deck": deck, "pact": pact, "runs": runs})
@@ -102,7 +106,7 @@ static func souls_for(d: GameData, stats: Dictionary) -> int:
 
 
 ## Credita a run terminada e grava.
-func add_run(stats: Dictionary, path := PATH) -> int:
+func add_run(stats: Dictionary, path := "") -> int:
 	var n := souls_for(data, stats)
 	souls += n
 	runs += 1

@@ -59,6 +59,7 @@ var fan: HandFan
 var pad := false
 var elixir_bar: ElixirBar
 var elixir_badge: PanelContainer
+var elixir_tray: HBoxContainer
 var sac_zone: Button
 # Mensagens.
 var info_label: Label
@@ -258,7 +259,9 @@ func _build_bottom() -> void:
 		eb.draw.connect(func(): UiCovil.draw_plate(eb, "soft", Vector2(14, 8)))
 		eb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	eb.add_theme_constant_override("separation", 12)
-	eb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A bandeja do elixir é sólida: o clique nela não pode cair no mundo atrás (rodada 09/11/2026).
+	eb.mouse_filter = Control.MOUSE_FILTER_STOP
+	elixir_tray = eb
 	sac_zone = Button.new()
 	sac_zone.text = "UI_SACRIFICE"
 	sac_zone.tooltip_text = "UI_TIP_SACRIFICE"
@@ -670,6 +673,16 @@ func _hints() -> void:
 			hint("route")
 		elif ci and ci.def.category == "finisher" and sim.phase == K.Phase.ROAD:
 			hint("finisher")
+
+
+## Ponto da tela onde soltar uma carta não vale: fora da janela ou em cima de uma peça sólida da HUD.
+func blocks_world(p: Vector2) -> bool:
+	if not get_viewport().get_visible_rect().has_point(p):
+		return true
+	for c in [hero_badge, elixir_tray, tool_row, gold_label]:
+		if c and c.is_visible_in_tree() and c.get_global_rect().has_point(p):
+			return true
+	return false
 
 
 func say(txt: String) -> void:

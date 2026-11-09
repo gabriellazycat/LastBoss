@@ -4,6 +4,9 @@ extends RefCounted
 ## A retomada é idêntica: o estado do gerador aleatório vai junto.
 
 const PATH := "user://run.save"
+## Arquivo em uso. Os modos de teste e de captura da janela (main.gd com argumentos) trocam para outro
+## arquivo: antes, o salvamento automático deles sobrescrevia a run salva do jogador (rodada 09/11/2026).
+static var current := PATH
 const VERSION := 2                  # 2: estrada em rede de nós (09/11/2026); salvamentos antigos não carregam
 const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script"]
 const PARTS := ["units", "hero", "road", "arena"]
@@ -22,13 +25,18 @@ static func _dump(obj: Object) -> Dictionary:
 	return d
 
 
+static func _p(path: String) -> String:
+	return current if path == "" else path
+
+
 static func _ci(c) -> Variant:
 	if c == null:
 		return null
 	return {"uid": c.uid, "id": c.def.id, "mods": c.mods, "level": c.level}
 
 
-static func save(sim: Sim, path := PATH) -> bool:
+static func save(sim: Sim, path := "") -> bool:
+	path = _p(path)
 	var d := _dump(sim)
 	d["hand"] = sim.hand.map(_ci)
 	d["queue"] = sim.queue.map(_ci)
@@ -45,16 +53,18 @@ static func save(sim: Sim, path := PATH) -> bool:
 	return true
 
 
-static func exists(path := PATH) -> bool:
-	return FileAccess.file_exists(path)
+static func exists(path := "") -> bool:
+	return FileAccess.file_exists(_p(path))
 
 
-static func erase(path := PATH) -> void:
+static func erase(path := "") -> void:
+	path = _p(path)
 	if exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
-static func load_run(data: GameData, path := PATH) -> Sim:
+static func load_run(data: GameData, path := "") -> Sim:
+	path = _p(path)
 	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		return null

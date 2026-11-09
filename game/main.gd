@@ -31,6 +31,9 @@ func _ready() -> void:
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
 			auto_args[kv[0]] = kv[1]
+	# Testes e capturas salvam num arquivo próprio: nunca tocam na run salva do jogador.
+	if not auto_args.is_empty():
+		SaveGame.current = "user://test_run.save"
 	for t in str(auto_args.get("shots", "")).split(",", false):
 		shots.append(float(t))
 	# --set=ui_scale:1.15,language:en muda configurações só nesta execução (não salva).
@@ -51,6 +54,8 @@ func _ready() -> void:
 		UiCovil.sync(get_viewport())
 	data = GameData.load_dir()
 	meta = MetaSave.load_or_new(data)
+	if not auto_args.is_empty():
+		meta.file = "user://test_meta.save"
 	Tips.data = data
 	add_child(Tips.new())
 	audio = GameAudio.new()
@@ -111,6 +116,10 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 				var w = st.target_at(sp - st.global_position)
 				if w != null:
 					_play_at(w)
+			elif hud.blocks_world(sp):
+				# Soltar fora da janela ou em cima da HUD cancela o arrasto (antes jogava a carta num
+				# ponto do chão escondido, rodada 09/11/2026).
+				hud.selected = -1
 			else:
 				_click_world(sp))
 	if DisplayServer.get_name() != "headless":
@@ -143,6 +152,11 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 	if auto_args.has("tiptest"):
 		_start("horde")
 		_tip_test()
+	if auto_args.has("chaostest"):
+		_start("horde")
+		var ct := ChaosTest.new()
+		add_child(ct)
+		ct.run(self)
 	# Nas capturas, o cursor físico parado sobre a janela abria a prévia de uma carta em toda foto.
 	if auto_args.has("shots"):
 		hud.fan.mouse_override = Vector2(-10000, -10000)
@@ -816,6 +830,7 @@ func _button(root: Node, key: String) -> Button:
 ## Teste do menu com entrada real: Nova run → deck → pausa → configurações → salvar e voltar → Continuar.
 func _menu_test() -> void:
 	var fails: Array = []   # lambdas capturam por valor: um bool não voltaria daqui
+	SaveGame.erase()   # o arquivo de teste; a run salva do jogador fica em outro
 	var had_save := SaveGame.exists()
 	await get_tree().create_timer(0.5).timeout
 	var step := func(name: String, cond: bool):
@@ -1080,6 +1095,8 @@ func _altar_step(dir: int) -> void:
 
 
 func _click_world(screen: Vector2) -> void:
+	if not get_viewport().get_visible_rect().has_point(screen):
+		return
 	var g := _ground_point(screen)
 	var p := Vector2(g.x, g.z)
 	if hud.selected >= 0:
