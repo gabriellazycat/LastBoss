@@ -20,6 +20,7 @@ func _ready() -> void:
 	t_elixir_and_ring()
 	t_costs()
 	t_sacrifice_and_cycle()
+	t_hand_cap()
 	t_determinism()
 	t_save()
 	t_hero_ai()
@@ -109,6 +110,17 @@ func t_sacrifice_and_cycle() -> void:
 		s.step()
 	s.hand[0] = live
 	check(s.sacrifice(0), "depois da recarga, qualquer carta volta a sacrificar")
+
+
+## Rodada 09/11/2026: compras extras não têm teto e a mão passava de 9 (só há teclas de 1 a 9).
+func t_hand_cap() -> void:
+	var s := _sim()
+	var lib := Sim.CardInst.new()
+	lib.def = data.card("forbidden_library")
+	for k in 6:
+		s.lair.erase("forbidden_library")
+		s._apply(lib, s.hero.x, s.hero.y)
+	check(s.hand.size() <= 9 and s.hand_size <= 9, "Biblioteca repetida não passa do teto da mão (%d, tamanho %d)" % [s.hand.size(), s.hand_size])
 
 
 func _run(seed_: int, deck: String, bot: String, max_ticks := 100000) -> Sim:

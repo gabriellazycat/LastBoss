@@ -41,6 +41,8 @@ var queue: Array = []
 var cards: Array = []
 var card_of_uid: Dictionary = {}
 var hand_size := 5
+## Teto da mão (as teclas vão de 1 a 9): compras extras (Pacto Sombrio, Biblioteca) param aqui (rodada 09/11/2026).
+const HAND_MAX := 9
 var next_uid := 1
 var party_idx := 0                 # herói da fila (0 a size-1); o nível dele é party_idx + 1
 var gate_pos := Vector2.ZERO       # portão da arena, onde o herói seguinte entra
@@ -933,8 +935,8 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			lair_val[d.id] = float(lair_val.get(d.id, 0.0)) + d.fxv(key, lv)
 		"forbidden_library":
 			lair[d.id] = int(lair.get(d.id, 0)) + 1
-			hand_size += int(fx["hand"])
-			if queue.size() > 0:
+			hand_size = mini(HAND_MAX, hand_size + int(fx["hand"]))
+			if queue.size() > 0 and hand.size() < HAND_MAX:
 				hand.append(queue.pop_front())
 		"cosmic_ray":
 			if arena.hero_in_front(d.fxv("cone", lv), float(fx["range"]) + 2.0):
@@ -955,7 +957,7 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			if arena.drain_part(float(fx["drain"])):
 				elixir = elixir_max
 				for k in int(d.fxv("draw", lv)):
-					if queue.size() > 0:
+					if queue.size() > 0 and hand.size() < HAND_MAX:
 						hand.append(queue.pop_front())
 
 
