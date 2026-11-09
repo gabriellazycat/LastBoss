@@ -345,7 +345,7 @@ KWD_root,"Preso no lugar: o herói não anda, mas ainda ataca quem estiver ao al
 KWD_shield,"O herói bloqueia o dano que vem da frente (cone de {shield_cone}°), até {shield_hp} de dano. Quebrado, volta inteiro em {shield_regen} s. Não bloqueia dano em área, de [[shadow|Sombra]] nem o que [[pierce|atravessa o escudo]].","The hero blocks damage coming from the front ({shield_cone}° cone), up to {shield_hp} damage. Once broken, it comes back whole after {shield_regen} s. It does not block area damage, [[shadow|Shadow]] or anything that [[pierce|pierces the shield]]."
 KWD_pierce,Esse dano ignora o [[shield|Escudo]] do herói.,This damage ignores the hero's [[shield|Shield]].
 KWD_elixir,O recurso para jogar cartas. Enche sozinho com o tempo; o custo fica no losango de cada carta.,The resource for playing cards. It refills over time; the cost is in each card's diamond.
-KWD_sacrifice,"Manda uma carta da mão para o fim do deck. Devolve 1 de [[elixir|Elixir]] no máximo a cada {sac_cd} s. Clique direito na carta, X + número ou arraste até o botão Sacrificar.","Sends a card from your hand to the bottom of the deck. Refunds 1 [[elixir|Elixir]] at most once every {sac_cd} s. Right-click the card, X + number or drag it to the Sacrifice button."
+KWD_sacrifice,"Manda uma carta da mão para o fim do deck e devolve 1 de [[elixir|Elixir]]. Recarga de {sac_cd} s; durante ela, só giram as cartas que não dá para jogar agora (como uma [[finisher|Finalização]] na estrada). Clique direito na carta, X + número ou arraste até o botão Sacrificar.","Sends a card from your hand to the bottom of the deck and refunds 1 [[elixir|Elixir]]. {sac_cd} s cooldown; meanwhile only cards you cannot play right now cycle (like a [[finisher|Finisher]] on the road). Right-click the card, X + number or drag it to the Sacrifice button."
 KWD_teleport,"Na arena, você (o chefe) salta para um [[altar|Altar]]. Recarga de {tp_cd} s. Use Q/E ou clique num altar.","In the arena, you (the boss) jump to an [[altar|Altar]]. {tp_cd} s cooldown. Use Q/E or click an altar."
 KWD_altar,Pontos da arena para onde o chefe se [[teleport|teleporta]]. O herói pode quebrá-los ({altar_hp} de vida).,Arena spots the boss can [[teleport|teleport]] to. The hero can break them ({altar_hp} health).
 KWD_swarm,Tipo de carta: várias unidades pequenas de uma vez.,Card type: several small units at once.
@@ -448,7 +448,7 @@ LVLK_hero_hp_loss,Vida do herói,Hero health
 LVLK_cone,Cone (°),Cone (°)
 LVLK_root,Preso (s),Root (s)
 LVLK_petrify,Petrificação (s),Petrify (s)
-UI_SACRIFICE_CD,Sacrificar (girar),Sacrifice (cycle)
+UI_SACRIFICE_CD,Sacrificar (recarga),Sacrifice (recharging)
 LOC_shop,Loja,Shop
 KW_shop,Loja,Shop
 KWD_shop,"Quando o herói sai do raio, a loja abre: gaste [[gold|Ouro]] em cartas, nível de carta, modificador ou remoção. Cause {shop_win} de dano no herói enquanto ele está lá para ganhar {shop_disc}% de desconto.","When the hero leaves its radius, the shop opens: spend [[gold|Gold]] on cards, a card level, a modifier or a removal. Deal {shop_win} damage to the hero while he is there for a {shop_disc}% discount."
@@ -471,3 +471,4 @@ UI_ROUTE_CHOOSE,Escolha o caminho,Choose the path
 UI_ROUTE_KEYS,"Clique num local da próxima fileira · 1, 2 e 3 escolhem da esquerda para a direita","Click a place on the next row · 1, 2 and 3 pick from left to right"
 UI_MAP_PICK,Clique num local à frente para planejar o caminho,Click a place ahead to plan the path
 UI_GOLD,{g} de ouro,{g} gold
+UI_SACRIFICE_WAIT,"Sacrifício recarregando: agora só gira carta que não dá para jogar","Sacrifice recharging: only cards you cannot play cycle now"

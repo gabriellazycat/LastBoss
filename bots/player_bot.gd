@@ -71,7 +71,7 @@ func _greedy(sim: Sim) -> void:
 				continue
 			var c: Sim.CardInst = sim.hand[i]
 			if c.def.id == "soul_feast" and not _feast_ok(sim):
-				if sim.elixir >= sim.elixir_max - 1.0:
+				if sim.elixir >= sim.elixir_max - 1.0 and sim.sacrifice_ready():
 					sim.sacrifice(i)
 					return
 				continue
@@ -185,7 +185,7 @@ func _smart(sim: Sim) -> void:
 			# Carta que este perfil nunca joga (cara demais) só trava a mão: vira elixir.
 			var hc: Sim.CardInst = sim.hand[i]
 			if hc.def.category == "field" and sim.card_cost(hc) > int(P.get("max_cost", 10)):
-				if sim.elixir < sim.elixir_max - 0.5:
+				if sim.elixir < sim.elixir_max - 0.5 and sim.sacrifice_ready():
 					sim.sacrifice(i)
 					return
 				continue

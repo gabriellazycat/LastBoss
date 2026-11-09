@@ -1015,6 +1015,8 @@ func _select(i: int) -> void:
 func _sacrifice(i: int) -> void:
 	if sim and sim.sacrifice(i):
 		hud.selected = -1
+	elif sim and i >= 0 and i < sim.hand.size() and not sim.sacrifice_ready():
+		hud.say(tr("UI_SACRIFICE_WAIT"))
 
 
 func _play_at(p: Vector2) -> void:

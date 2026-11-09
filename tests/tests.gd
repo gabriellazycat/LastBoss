@@ -91,9 +91,24 @@ func t_sacrifice_and_cycle() -> void:
 	var first: Sim.CardInst = s.hand[0]
 	check(s.sacrifice(0), "sacrifício aceito")
 	check(absf(s.elixir - 4.0) < 0.001, "sacrifício dá +1 de elixir")
-	check(s.sacrifice(0) and absf(s.elixir - 4.0) < 0.001, "sacrifício seguido só gira a mão (sem elixir até a recarga)")
 	check(s.queue.has(first) or s.hand.has(first), "carta sacrificada volta ao deck")
 	check(s.cards.size() == 10, "sacrifício não remove a carta")
+	# Rodada 09/11/2026: girar de graça uma carta jogável deixava cavar o deck sem parar (o bot sacrificava
+	# ~1400 vezes por run na Ruína atrás do Raio Sombrio). Na recarga, só carta morta gira.
+	var live := Sim.CardInst.new()
+	live.def = data.card("rat_horde")
+	s.hand[0] = live
+	check(not s.sacrifice(0) and s.hand[0] == live, "na recarga, carta jogável não gira")
+	s.elixir = 0.0
+	check(not s.sacrifice(0), "na recarga, carta só sem elixir também não gira")
+	var dead := Sim.CardInst.new()
+	dead.def = data.card("cosmic_ray")
+	s.hand[0] = dead
+	check(s.can_play(0) == K.Block.WRONG_PHASE and s.sacrifice(0) and s.elixir < 0.001, "na recarga, finalização na estrada gira (sem elixir)")
+	for i in int(round(float(data.rules["sacrifice_cooldown"]) / s.dt)) + 1:
+		s.step()
+	s.hand[0] = live
+	check(s.sacrifice(0), "depois da recarga, qualquer carta volta a sacrificar")
 
 
 func _run(seed_: int, deck: String, bot: String, max_ticks := 100000) -> Sim:

@@ -826,8 +826,11 @@ func _cycle(hi_: int) -> void:
 func sacrifice(hi_: int) -> bool:
 	if phase == K.Phase.OVER or offers.size() > 0 or hi_ < 0 or hi_ >= hand.size() or hand[hi_] == null:
 		return false
-	# Sacrificar sempre gira a mão; o elixir vem no máximo uma vez a cada `sacrifice_cooldown` s
-	# (sem isso, sacrificar sem parar era elixir infinito).
+	# O elixir vem no máximo uma vez a cada `sacrifice_cooldown` s (sem isso, sacrificar sem parar era
+	# elixir infinito). Durante a recarga só gira carta morta (fora de fase, condição, limite): girar de
+	# graça qualquer carta deixava cavar o deck sem parar atrás da melhor (rodada de 09/11/2026).
+	if not sacrifice_ready() and not sacrifice_free(hi_):
+		return false
 	if sacrifice_ready():
 		elixir = minf(elixir_max, elixir + float(R["sacrifice_elixir"]))
 		sac_elixir_t = t
@@ -841,6 +844,11 @@ func sacrifice(hi_: int) -> bool:
 
 func sacrifice_ready() -> bool:
 	return t - sac_elixir_t >= float(R.get("sacrifice_cooldown", 0.0))
+
+
+## Carta que não dá para jogar agora por outro motivo que não o elixir: gira mesmo durante a recarga.
+func sacrifice_free(hi_: int) -> bool:
+	return can_play(hi_) in [K.Block.WRONG_PHASE, K.Block.CONDITION, K.Block.STACK_LIMIT]
 
 
 func _apply(c: CardInst, x: float, y: float) -> void:
