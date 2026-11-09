@@ -67,17 +67,24 @@ def main():
     ap.add_argument("--runs", type=int, default=6)
     ap.add_argument("--margin", type=float, default=0.15)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--decks", default="horde,ruin,treasure")
+    ap.add_argument("--data", default="res://data")
     a = ap.parse_args()
     rng = random.Random(a.seed)
     with open(os.path.join(BOTS, "heuristic.json"), encoding="utf-8") as f:
         base = json.load(f)
     seed_ind = {k: base.get(k, rand_gene(rng, k)) for k in GENES}
     pop = [seed_ind] + [mutate(rng, seed_ind, 0.6) for _ in range(a.pop // 2)]
+    # Os outros perfis "smart" também entram como semente: o Economista já foi melhor que o Heurístico.
+    for other in ("economist", "swarm"):
+        with open(os.path.join(BOTS, other + ".json"), encoding="utf-8") as f:
+            o = json.load(f)
+        pop.append({k: o.get(k, seed_ind[k]) for k in GENES})
     while len(pop) < a.pop:
         pop.append({k: rand_gene(rng, k) for k in GENES})
-    decks = ["horde", "ruin", "treasure"]
+    decks = a.decks.split(",")
     log = []
-    ref_runs, _ = rb.run_all(["heuristic"], decks, a.runs, 7000, None, "res://data", os.path.join(ROOT, "reports", "explorer", "ref"))
+    ref_runs, _ = rb.run_all(["heuristic"], decks, a.runs, 7000, None, a.data, os.path.join(ROOT, "reports", "explorer", "ref"))
     ref = fitness(ref_runs, "heuristic")
     print("Heurístico (referência): %.0f%%" % (ref * 100))
     best = (seed_ind, -1.0)
@@ -88,7 +95,7 @@ def main():
                 n = "_exp_%d" % k
                 write(n, ind)
                 names.append(n)
-            runs, errs = rb.run_all(names, decks, a.runs, 7000, None, "res://data", os.path.join(ROOT, "reports", "explorer", "g%d" % g))
+            runs, errs = rb.run_all(names, decks, a.runs, 7000, None, a.data, os.path.join(ROOT, "reports", "explorer", "g%d" % g))
             scored = sorted(((fitness(runs, n), ind) for n, ind in zip(names, pop)), key=lambda x: -x[0])
             print("geração %d: melhor %.0f%%, média %.0f%%" % (g, scored[0][0] * 100, sum(s for s, _ in scored) / len(scored) * 100))
             log.append({"gen": g, "best": scored[0][0], "genes": scored[0][1]})

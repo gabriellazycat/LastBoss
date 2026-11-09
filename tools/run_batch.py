@@ -90,15 +90,25 @@ def summarize(runs, goals):
             c["picked"] += v
             c["runs_picked"] += 1
             c["wins_picked"] += is_win(r)
+    # "Nas vitórias" conta só as cartas ganhas na run (cópias acima das do deck pronto do Pacto): contar o
+    # deck inicial punha o Goblin em 94% das vitórias só por estar em 2 dos 3 decks prontos (rodada 09/11/2026).
+    starters = _starters()
     for r in wins:
+        start = starters.get(r["deck"], [])
         for k in set(r["deck_final"]):
-            cards.setdefault(k, {"offered": 0, "picked": 0, "runs_picked": 0, "wins_picked": 0, "in_wins": 0})["in_wins"] += 1
+            if r["deck_final"].count(k) > start.count(k):
+                cards.setdefault(k, {"offered": 0, "picked": 0, "runs_picked": 0, "wins_picked": 0, "in_wins": 0})["in_wins"] += 1
     for k, c in cards.items():
         c["pick_rate"] = c["picked"] / c["offered"] if c["offered"] else None
         c["win_when_picked"] = c["wins_picked"] / c["runs_picked"] if c["runs_picked"] else None
         c["in_wins_frac"] = c["in_wins"] / len(wins) if wins else None
     score, parts = goal_score(rows, cards, goals)
     return {"rows": rows, "cards": cards, "score": score, "score_parts": parts}
+
+
+def _starters():
+    with open(os.path.join(ROOT, "data", "boss_lorde.json"), encoding="utf-8") as f:
+        return {d["id"]: d["cards"] for d in json.load(f)["decks"]}
 
 
 def dist(v, lo, hi):
@@ -122,7 +132,8 @@ def goal_score(rows, cards, g):
     if rnd:
         parts["random_win"] = max(0.0, mean([r["win"] for r in rnd]) - g["random_win_max"])
     parts["arena_time"] = dist(mean([r["arena_t"] for r in rows]), *g["arena_arrival_s"])
-    parts["hero_level"] = dist(mean([r["hero_level_arena"] for r in rows]), *g["hero_level_arena"])
+    # Grupo de 5 heróis: "herói que chega à arena" = 1 + heróis mortos na estrada, medido no bot bom.
+    parts["hero_level"] = dist(mean([r["hero_level_arena"] for r in (heur or rows)]), *g["hero_level_arena"])
     parts["waste"] = max(0.0, mean([r["waste"] for r in rows]) - g["elixir_waste_max"])
     top = max([c["in_wins_frac"] or 0.0 for k, c in cards.items() if not k.startswith(("mod:", "remove"))] or [0.0])
     parts["card_dominance"] = max(0.0, top - g["card_in_wins_max"])
