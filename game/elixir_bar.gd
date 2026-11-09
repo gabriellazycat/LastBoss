@@ -21,6 +21,13 @@ func _draw() -> void:
 	for i in n:
 		var r := Rect2(i * (w + gap), 0, w, h)
 		var f := clampf(value - i, 0.0, 1.0)
+		if UiSkins.diario():
+			UiDiario.draw_pip(self, r, f, UiKit.ELIXIR, t)
+			if cost > 0 and i >= int(value) - cost and i < int(value):
+				draw_arc(r.get_center() + Vector2(0, r.size.y * 0.08), r.size.y * 0.62, 0, TAU, 20, Color(0.6, 0.08, 0.05, 0.45 + 0.35 * sin(t * 6.0)), 2.0, true)
+			elif cost > 0 and int(value) < cost and i >= int(value) and i < cost:
+				draw_line(r.position + Vector2(2, 2), r.end - Vector2(2, 2), Color(0.6, 0.08, 0.05, 0.85), 2.0, true)
+			continue
 		if UiSkins.covil():
 			UiCovil.draw_pip(self, r, f, UiKit.ELIXIR, t + i * 0.4)
 			if cost > 0 and i >= int(value) - cost and i < int(value):

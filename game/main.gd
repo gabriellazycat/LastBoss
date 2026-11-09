@@ -64,6 +64,8 @@ func _ready() -> void:
 		get_tree().node_added.connect(UiCovil.on_node_added)
 	elif not UiSkins.covil() and get_tree().node_added.is_connected(UiCovil.on_node_added):
 		get_tree().node_added.disconnect(UiCovil.on_node_added)
+	if UiSkins.diario() and not get_tree().node_added.is_connected(UiDiario.on_node_added):
+		get_tree().node_added.connect(UiDiario.on_node_added)
 	if DisplayServer.get_name() != "headless":
 		UiCovil.sync(get_viewport())
 	data = GameData.load_dir()
@@ -357,6 +359,19 @@ func _on_settings(key: String) -> void:
 func _build_menu_scene() -> void:
 	if menu_root:
 		menu_root.queue_free()
+	# Pele Diário: a mesa do Lorde com os papéis do menu (DeskScene) no lugar do covil.
+	if UiSkins.diario():
+		var dk := DeskScene.new()
+		dk.setup(cam, world_env, [sun, rim_light], menu, data)
+		menu_root = dk
+		add_child(dk)
+		menu.desk = dk
+		dk.paper_clicked.connect(func(id: String):
+			if id == "continue":
+				_continue()
+			else:
+				menu.show_screen(id))
+		return
 	menu_root = Node3D.new()
 	add_child(menu_root)
 	var k := Models.Kit.new()
@@ -525,7 +540,7 @@ func _start(deck: String) -> void:
 	var seed_ := int(auto_args.get("seed", int(Time.get_unix_time_from_system()) % 1000000))
 	# Os modos de teste e de captura jogam o deck pronto do Pacto com a coleção inteira (reproduzível).
 	if auto_args.is_empty():
-		s.setup(data, seed_, deck, meta.deck, meta.unlocked)
+		s.setup(data, seed_, deck, [], meta.unlocked)
 	else:
 		s.setup(data, seed_, deck)
 	# Capturas e testes de janela sem bot seguem o primeiro ramo (com --routewait, esperam a escolha como no jogo).
@@ -560,7 +575,7 @@ func _process(delta: float) -> void:
 	life += delta
 	if DisplayServer.get_name() != "headless":
 		UiCovil.sync(get_viewport())
-	if menu_root and not running:
+	if menu_root and not running and not (menu_root is DeskScene):
 		menu_t += delta * 0.15
 		var a := sin(menu_t * 2.0) * 0.55
 		cam.position = Vector3(sin(a) * 12.0, 2.6, -cos(a) * 12.0 - 1.0)
@@ -626,7 +641,8 @@ func _process(delta: float) -> void:
 	if world.hitstop > 0.0:
 		world.hitstop -= delta
 		stopped = true
-	if not paused and not stopped:
+	# Com o mapa em tela cheia aberto, a run fica parada (nas bifurcações o herói já espera).
+	if not paused and not stopped and not hud.minimap.visible:
 		acc = minf(acc + delta * speed, sim.dt * 12.0)
 		while acc >= sim.dt:
 			sim.step()
@@ -862,7 +878,16 @@ func _ui_shot(tag: String) -> void:
 
 
 func _click(c: Control) -> void:
-	var p := c.get_global_rect().get_center()
+	# Pele Diário: a tela do menu sobe da mesa animada; o clique espera ela parar (até 1,5 s).
+	var wait := 0.0
+	while menu.visible and UiSkins.diario() and (menu.fade < 1.0 or menu.prev_fade < 1.0) and wait < 1.5:
+		await get_tree().process_frame
+		wait += get_process_delta_time()
+	if c == null:
+		return
+	# O clique entra em pixels da janela: passa pela escala do conteúdo (como no --routetest) e pela escala e
+	# giro do próprio Control (as telas do Diário encolhem para caber e ficam levemente tortas).
+	var p := get_viewport().get_final_transform() * (c.get_global_transform() * (c.size * 0.5))
 	for down in [true, false]:
 		var mb := InputEventMouseButton.new()
 		mb.button_index = MOUSE_BUTTON_LEFT
@@ -904,11 +929,42 @@ func _menu_test() -> void:
 			fails.append(name)
 	await _click(_button(menu, "UI_NEW_RUN"))
 	step.call("Nova run abre os decks", menu.screen == "decks")
+	_ui_shot("menu_decks")
 	await _key(KEY_ESCAPE)
 	step.call("Esc volta ao título", menu.screen == "title")
+	if menu_root is DeskScene:
+		# Clique no papel da Coleção deitado na mesa (picking 3D) abre a tela; Esc devolve o título.
+		var dp := get_viewport().get_final_transform() * (menu_root as DeskScene).screen_point("compendium")
+		# Como uma pessoa: o mouse chega no papel antes do clique (o picking 3D usa a última posição).
+		var mm := InputEventMouseMotion.new()
+		mm.position = dp
+		mm.global_position = dp
+		Input.parse_input_event(mm)
+		for _f in 3:
+			await get_tree().physics_frame
+		for down in [true, false]:
+			var mb := InputEventMouseButton.new()
+			mb.button_index = MOUSE_BUTTON_LEFT
+			mb.pressed = down
+			mb.position = dp
+			mb.global_position = dp
+			Input.parse_input_event(mb)
+			await get_tree().physics_frame
+			await get_tree().process_frame
+		for _f in 4:
+			await get_tree().process_frame
+		step.call("Papel da mesa abre a tela", menu.screen == "compendium")
+		await _key(KEY_ESCAPE)
+		await _click(null)
 	await _click(_button(menu, "UI_NEW_RUN"))
-	await _click(_button(menu, "UI_PLAY_DECK"))
-	step.call("Jogar com o deck começa a run", running and sim != null and sim.deck_id == "horde" and not menu.visible)
+	await _click(_button(menu, "UI_PACT_SIGN" if UiSkins.diario() else "UI_PICK_DECK"))
+	step.call("Escolher o deck abre o grupo de heróis", menu.screen == "group")
+	_ui_shot("menu_group")
+	await _key(KEY_ESCAPE)
+	step.call("Esc volta aos decks", menu.screen == "decks")
+	await _click(_button(menu, "UI_PACT_SIGN" if UiSkins.diario() else "UI_PICK_DECK"))
+	await _click(_button(menu, "UI_START_RUN"))
+	step.call("Começar a run com o deck e o grupo", running and sim != null and sim.deck_id == "horde" and not menu.visible)
 	await get_tree().create_timer(0.3).timeout
 	await _key(KEY_ESCAPE)
 	step.call("Esc pausa", paused and hud.pause_layer.visible)
@@ -1209,6 +1265,10 @@ func _unhandled_input(e: InputEvent) -> void:
 			KEY_ESCAPE:
 				if paused and hud.back():
 					pass
+				elif not paused and hud.minimap.visible and not sim.route_wait:
+					# Esc fecha o mapa (e solta a carta que o abriu, como o Incêndio).
+					hud.selected = -1
+					_toggle_map()
 				elif not paused and (hud.selected >= 0 or sac_mode):
 					hud.selected = -1
 					sac_mode = false

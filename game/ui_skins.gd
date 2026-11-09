@@ -1,11 +1,11 @@
 class_name UiSkins
 extends RefCounted
-## Peles da HUD e dos menus (Settings.v["look_hud"]): 0 = Covil (a padrão, em UiCovil), 1..4 = as variações de
-## 07/11/2026, 5 = a clássica (a antiga 0, caixas chapadas). O UiKit pergunta aqui
+## Peles da HUD e dos menus (Settings.v["look_hud"]): 6 = Diário (a padrão desde 09/11/2026, em UiDiario),
+## 0 = Covil (UiCovil), 1..4 = as variações de 07/11/2026, 5 = a clássica (a antiga 0, caixas chapadas). O UiKit pergunta aqui
 ## a paleta, as fontes e o desenho de painéis, botões, barras e selos. As texturas dos painéis
 ## são geradas por código (madeira, pedra, laca); fontes OFL do Google Fonts em assets/fonts.
 
-const NAMES := ["Covil", "Madeira e ouro", "Pedra rúnica", "Vidro arcano", "Gótico carmesim", "Clássica (a antiga)"]
+const NAMES := ["Covil", "Madeira e ouro", "Pedra rúnica", "Vidro arcano", "Gótico carmesim", "Clássica (a antiga)", "Diário"]
 const F := "res://assets/fonts/"
 const DEFAULT := {
 	"BG": Color(0.055, 0.04, 0.085, 0.92), "BG_SOFT": Color(0.05, 0.035, 0.08, 0.72), "EDGE": Color(0.42, 0.3, 0.6),
@@ -58,14 +58,19 @@ static func on() -> bool:
 	return skin >= 1 and skin <= 4
 
 
-## A pele Covil (UiCovil), a padrão.
+## A pele Covil (UiCovil).
 static func covil() -> bool:
 	return skin == 0
 
 
+## A pele Diário (UiDiario), a padrão.
+static func diario() -> bool:
+	return skin == 6
+
+
 ## Lê a pele das configurações e troca a paleta do UiKit.
 static func apply() -> void:
-	var k := int(Settings.v.get("look_hud", 0))
+	var k := int(Settings.v.get("look_hud", 6))
 	if k == _applied:
 		return
 	_applied = k
@@ -75,11 +80,14 @@ static func apply() -> void:
 	_title = null
 	_body = null
 	var pal: Dictionary = DEFAULT.duplicate()
-	if k == 0:
+	if k == 6:
+		pal.merge(UiDiario.PAL, true)
+	elif k == 0:
 		pal.merge(UiCovil.PAL, true)
 	elif not S.is_empty():
 		pal.merge(S["pal"], true)
-	UiKit.RARITY_COLORS = (UiCovil.RARITY if k == 0 else DEFAULT_RARITY).duplicate()
+	UiKit.RARITY_COLORS = (UiDiario.RARITY if k == 6 else (UiCovil.RARITY if k == 0 else DEFAULT_RARITY)).duplicate()
+	Tips.KW_COLOR = Color(0.5, 0.09, 0.05) if k == 6 else Color(1.0, 0.84, 0.42)
 	UiKit.BG = pal["BG"]
 	UiKit.BG_SOFT = pal["BG_SOFT"]
 	UiKit.EDGE = pal["EDGE"]

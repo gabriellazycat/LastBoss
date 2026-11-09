@@ -1,5 +1,15 @@
 # Progresso — Last Boss
 
+## Fluxo de nova run e mapa em tela cheia (09/11/2026)
+
+Feito a pedido, sem alterar a simulação. Ainda não commitado.
+
+- **Nova run:** Nova run → escolhe o deck (Horda, Ruína ou Tesouro, com as 10 cartas do deck em foco à vista) → confirma o grupo de heróis (fila de 7, com nível, habilidades, vida e golpe de cada um) → começa. Saiu o "Meu deck" e o construtor: o deck é sempre o do Pacto. A Coleção ficou no menu principal só para ver cartas e desbloquear com Almas.
+- **Grupo:** hoje só existe um grupo (os 7 Escudeiros), então a tela é de confirmação; a estrutura já comporta mais grupos.
+- **Mapa:** ocupa a tela inteira, em estilo de mapa antigo (pergaminho, trilhas a tinta: feitas em traço cheio, possíveis e planejada tracejadas, ramos fechados com X, bússola, rabiscos de montanha e árvore). A run fica parada com o mapa aberto; Esc, M ou o botão Fechar o fecham (na bifurcação a escolha é obrigatória).
+- **Testes:** 0 falhas; `--menutest` e `--routetest` OK (o `_click` agora aplica a escala da janela, o que fazia o `--menutest` falhar); `--uitest` só falha no arrastar, como antes.
+
+
 ## Run em 3 atos, disputas novas, relíquias, eventos e compêndio (09/11/2026)
 
 Feito a partir do seu playtest, com você fora; **na `main` desde 09/11/2026**, junto com a direção de arte D como padrão. Executável: `export/LastBoss.exe` (os atalhos por estilo estão em `export/atos_e_arte/`). O resumo, as decisões que tomei no seu lugar e os riscos estão em `docs/RUN_EM_ATOS.md`.

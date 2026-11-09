@@ -1,0 +1,351 @@
+<title>Last Boss · UI do Diário</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Patrick+Hand&family=Permanent+Marker&family=Caveat:wght@700&family=Cormorant+SC:wght@700&family=Nunito:wght@700;800&display=swap">
+<style>
+/* Layout: uma tela 16:9 por faixa, em tamanho grande, com uma linha de legenda. A carta B corrigida abre a página. Página escura de propósito. */
+:root{
+  --page:#15120e; --page2:#201b15; --text:#ece4d4; --muted:#a99d88; --line:#3a332a; --pick:#e7b54a;
+  --ink:#1d1915; --blood:#7a150d; --mon:rgba(170,35,25,.85); --spl:rgba(116,76,198,.8); --str:rgba(222,178,62,.93); --mask:rgba(226,211,160,.92);
+  --f-ui:"Nunito",system-ui,sans-serif; --f-head:"Cormorant SC",Georgia,serif;
+  --f-type:"Special Elite","Courier New",monospace; --f-hand:"Patrick Hand","Comic Sans MS",cursive; --f-mark:"Permanent Marker","Impact",sans-serif;
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .32 0 0 0 0 .22 0 0 0 0 .12 0 0 0 .5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --paper:var(--grain),radial-gradient(ellipse at 78% 86%,rgba(90,55,25,.3),transparent 45%),radial-gradient(circle at 14% 12%,rgba(90,55,25,.22),transparent 32%),linear-gradient(168deg,#ddd2b8,#c6b893);
+  color-scheme:dark;
+}
+body{background:var(--page);color:var(--text);font-family:var(--f-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:26px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:24px}
+header.top h1{font-family:var(--f-head);font-size:clamp(30px,5vw,46px);line-height:1.05;margin:0 0 10px;text-wrap:balance}
+header.top p{margin:0 0 8px;color:var(--muted);max-width:66ch}
+header.top p b{color:var(--text)}
+.fix{display:flex;gap:18px;font-size:17px;padding:10px}
+nav.jump{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+nav.jump a{color:var(--text);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;background:var(--page2)}
+nav.jump a:hover,nav.jump a:focus-visible{border-color:var(--pick);outline:none}
+@media (max-width:760px){header.top{grid-template-columns:minmax(0,1fr)}.fix{font-size:clamp(9px,3vw,15px);justify-content:center}}
+section.s{padding:34px 0 6px}
+.sh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:10px}
+.sh .n{font-family:var(--f-head);font-size:34px;line-height:1;color:var(--pick)}
+.sh h2{font-family:var(--f-head);font-size:25px;margin:0}
+.sh p{margin:0;color:var(--muted);flex-basis:100%;max-width:90ch}
+footer.end{padding-top:30px;color:var(--muted);max-width:86ch}
+footer.end b{color:var(--text)}
+
+/* ---------- tela 16:9 ---------- */
+.screen{container-type:inline-size;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.scr{position:relative;width:100%;height:100%;font-size:1cqw;overflow:hidden;color:var(--ink)}
+.desk{background:radial-gradient(ellipse 50% 60% at 82% 18%,rgba(255,180,90,.22),transparent 70%),radial-gradient(ellipse at 50% 50%,transparent 45%,rgba(0,0,0,.6)),
+  repeating-linear-gradient(94deg,rgba(0,0,0,.12) 0 .15em,transparent .15em 1.1em,rgba(255,220,170,.04) 1.1em 1.3em,transparent 1.3em 2.6em),linear-gradient(180deg,#3b2618,#2a1a10)}
+.road{background:radial-gradient(ellipse 9em 4em at 52% 46%,rgba(40,30,20,.35),transparent 70%),linear-gradient(32deg,transparent 38%,#c99a63 39%,#d4a874 45%,#c99a63 51%,transparent 52%),linear-gradient(-28deg,transparent 58%,#c99a63 59%,#d1a46f 63%,#c99a63 67%,transparent 68%),radial-gradient(circle at 20% 30%,#89ad5c,transparent 30%),radial-gradient(circle at 80% 70%,#6f9a4c,transparent 35%),#7da456}
+.road .tufts{position:absolute;inset:0;background-image:radial-gradient(.3em .9em at 10% 20%,#4d7a35 50%,transparent),radial-gradient(.3em .9em at 30% 70%,#4d7a35 50%,transparent),radial-gradient(.3em .9em at 70% 25%,#4d7a35 50%,transparent),radial-gradient(.3em .9em at 85% 55%,#4d7a35 50%,transparent),radial-gradient(.3em .9em at 62% 82%,#4d7a35 50%,transparent),radial-gradient(.3em .9em at 22% 48%,#4d7a35 50%,transparent)}
+.road .hero{position:absolute;left:52%;top:40%;width:3em;height:3.6em;border-radius:45% 45% 30% 30%;background:linear-gradient(#e9ecef 50%,#d64a4a 50%);box-shadow:.6em .5em 0 rgba(30,20,30,.25)}
+.dim::after{content:"";position:absolute;inset:0;background:rgba(20,12,8,.55);z-index:5}
+.top5{position:absolute;z-index:6}
+.abs{position:absolute}
+
+/* papel solto */
+.pp{position:absolute;isolation:isolate;transform:rotate(var(--r,0deg));box-sizing:border-box}
+.pp::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--paper);box-shadow:inset 0 0 2em rgba(70,40,15,.5);filter:url(#rough) drop-shadow(0 .35em .5em rgba(0,0,0,.55))}
+.pp.lined::before{background:var(--grain),linear-gradient(90deg,transparent 3.2em,rgba(190,40,40,.5) 3.2em 3.32em,transparent 3.32em),repeating-linear-gradient(transparent 0 2.26em,rgba(60,90,170,.32) 2.26em 2.36em),linear-gradient(168deg,#e6e1cf,#cfc8ae)}
+.tp{position:absolute;width:6em;height:1.7em;background:var(--mask);opacity:.92;z-index:3;clip-path:polygon(0 10%,4% 0,8% 12%,92% 0,96% 14%,100% 4%,97% 92%,100% 100%,94% 88%,6% 100%,3% 88%,0 96%)}
+.tp::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.5}
+.tp.a{left:-1.6em;top:-.4em;transform:rotate(-38deg)}.tp.b{right:-1.6em;top:-.4em;transform:rotate(36deg)}
+.tp.c{left:50%;top:-.8em;margin-left:-3em;transform:rotate(-3deg)}
+.stain{position:absolute;border-radius:50%;border:.25em solid rgba(105,65,30,.28);filter:url(#wobble)}
+
+/* fita com texto (título e botão) */
+.tape{position:relative;display:inline-block;isolation:isolate;padding:.35em 1.1em .3em;font-family:var(--f-mark);color:#fff6e6;transform:rotate(var(--r,-1.5deg));white-space:nowrap}
+.tape::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--grain),var(--tc,var(--mon));clip-path:polygon(0 8%,3% 0,6% 10%,9% 2%,92% 0,95% 12%,98% 3%,100% 15%,98% 90%,100% 100%,96% 88%,92% 100%,8% 96%,4% 100%,2% 86%,0 100%);filter:drop-shadow(0 .15em .15em rgba(0,0,0,.35))}
+.tape.mask{color:var(--ink);--tc:var(--mask)}
+.tape.vio{--tc:var(--spl)}
+.tape.yel{color:var(--ink);--tc:var(--str)}
+.btn{font-family:var(--f-type);font-size:1.45em;padding:.45em 1.3em .4em;cursor:default}
+.btn.mask{color:var(--ink)}
+.btn small{font-family:var(--f-type);font-size:.6em;opacity:.65;margin-left:.6em}
+.keys{font-family:var(--f-type);font-size:1.05em;color:#efe6d0;text-shadow:0 .08em .15em rgba(0,0,0,.8)}
+
+/* ---------- carta B corrigida ---------- */
+.cw{position:relative;width:13em;height:18.6em;flex:none;transform:rotate(var(--rot,0deg));filter:drop-shadow(0 .45em .6em rgba(0,0,0,.55))}
+.card{position:absolute;inset:0;display:flex;flex-direction:column;box-sizing:border-box;isolation:isolate;--ink:#1d1915;--sw:2;--fill:#e2d8c0;--acc:#7e1710;--glow:#1d1915;--dk:#1d1915;color:var(--ink)}
+.card .paper{position:absolute;inset:0;z-index:-2;background:var(--paper);box-shadow:inset 0 0 1.6em rgba(70,40,15,.55)}
+.card .band{position:absolute;z-index:-1;left:-.3em;right:-.3em;top:-.1em;height:3.15em;background:var(--grain),var(--tp);transform:rotate(-1.2deg);
+  clip-path:polygon(0 8%,3% 0,6% 10%,9% 2%,92% 0,95% 12%,98% 3%,100% 15%,98% 90%,100% 100%,96% 88%,92% 100%,8% 96%,4% 100%,2% 86%,0 100%)}
+.t-mon{--tp:var(--mon)}.t-spl{--tp:var(--spl)}.t-str{--tp:var(--str)}
+.t-mon .card{--ink:#4a120b;--acc:#8e1a10;--dk:#4a120b}
+.t-spl .card{--ink:#3a2580;--acc:#7a3fd0;--dk:#3a2580;--glow:#7a3fd0}
+.t-str .card{--ink:#3a3b38;--dk:#3a3b38;--sw:1.7}
+.head{height:3em;flex:none;display:flex;align-items:center;gap:.4em;padding:0 .55em 0 .8em;position:relative;z-index:3;transform:rotate(-1.2deg)}
+.head .nm{flex:1;min-width:0;font-family:var(--f-type);font-size:1.02em;line-height:1.02;color:#fff8ea;text-wrap:balance;text-shadow:0 .05em .1em rgba(0,0,0,.35)}
+.head .nm.long{font-size:.86em}
+.t-str .head .nm{color:#1d1915;text-shadow:none}
+.head .cost{flex:none;width:2.15em;height:2.15em;display:grid;place-items:center;font-family:var(--f-type);font-size:1.05em;color:#fff1de;position:relative;z-index:0}
+.head .cost::before{content:"";position:absolute;inset:0;z-index:-1;background:#5e0f09;border-radius:50% 44% 55% 46%;filter:url(#blot);box-shadow:0 0 0 .14em rgba(255,240,215,.75)}
+.card .art{position:relative;flex:none;margin:.3em .8em 0;aspect-ratio:1/.8;z-index:0}
+.card .art svg{width:100%;height:100%;overflow:visible;display:block;filter:url(#wobble)}
+.t-spl .art svg{filter:url(#wobble) drop-shadow(0 0 .25em rgba(122,63,208,.45))}
+.card .kind{font-family:var(--f-type);font-size:.6em;text-transform:uppercase;letter-spacing:.12em;text-align:center;opacity:.8;margin-top:.25em;display:flex;align-items:center;gap:.6em;padding:0 1.4em;position:relative;z-index:3}
+.card .kind::before,.card .kind::after{content:"";flex:1;height:.1em;background:currentColor;opacity:.45}
+.card .text{flex:1;margin:.3em .65em .65em;position:relative;z-index:3;display:grid;place-items:center;text-align:center;font-family:var(--f-hand);font-size:1.02em;line-height:1.08;color:#1d1915;padding:.25em .4em}
+.card .text::before{content:"";position:absolute;inset:0;z-index:-1;background:rgba(244,236,214,.82);filter:url(#rough);transform:rotate(.6deg)}
+.grime{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;mix-blend-mode:multiply;opacity:.85}
+.note{position:absolute;font-family:"Caveat",cursive;font-weight:700;font-size:.95em;color:#3b3530;opacity:.85;transform:rotate(-9deg);white-space:nowrap;z-index:2}
+.mini .kind,.mini .text,.mini .note{display:none}
+.mini .cw,.mini.cw{height:13.7em}
+.sk2{opacity:.35;transform:translate(.9px,.7px) rotate(.5deg)}
+.ln{fill:none;stroke:var(--ink);stroke-width:var(--sw);stroke-linecap:round;stroke-linejoin:round}
+.th{stroke-width:calc(var(--sw) * .6)}.bw{stroke-width:calc(var(--sw) * 1.5)}
+.fl{fill:var(--fill);stroke:var(--ink);stroke-width:var(--sw);stroke-linejoin:round}
+.sh{fill:url(#pencil)}.dk{fill:var(--dk)}
+.ac{fill:var(--acc);stroke:var(--ink);stroke-width:var(--sw)}
+.gl{fill:none;stroke:var(--glow);stroke-width:calc(var(--sw) * .8);stroke-linecap:round}
+.ink-only{--ink:#2a1e16;--sw:2.2;--fill:#e2d8c0;--acc:#7e1710;--dk:#2a1e16;--glow:#2a1e16}
+
+/* HUD */
+.hpb{position:relative;height:1.7em;margin:.3em 0}
+.hpb::before{content:"";position:absolute;inset:0;border:.16em solid var(--ink);filter:url(#wobble)}
+.hpb i{position:absolute;left:.2em;top:.2em;bottom:.2em;width:calc(var(--v) - .4em);background:repeating-linear-gradient(68deg,#8e1a10 0 .2em,rgba(142,26,16,.35) .2em .4em)}
+.hpb span{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-type);font-size:1em;color:#1d1915;text-shadow:0 0 .2em #efe6d0,0 0 .2em #efe6d0}
+.drops{display:flex;gap:.55em;align-items:center}
+.drops i{width:1.35em;height:1.35em;border:.14em solid #3a2580;border-radius:50% 0 50% 50%;transform:rotate(-45deg);display:block;filter:url(#wobble)}
+.drops i.on{background:#5b33b0}
+.sq{position:absolute;width:3.6em;height:3.6em;display:grid;place-items:center;font-family:var(--f-type);font-size:1.25em}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="pencil" width="3.4" height="3.4" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+      <rect width="3.4" height="3.4" fill="#d2c6a8"/><path d="M0 0V3.4" stroke="#3a332c" stroke-width="1.1" opacity=".75"/>
+    </pattern>
+    <filter id="wobble" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.8"/></filter>
+    <filter id="rough" x="-4%" y="-4%" width="108%" height="108%"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter>
+    <filter id="blot" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".12" numOctaves="2" seed="2"/><feDisplacementMap in="SourceGraphic" scale="6"/><feGaussianBlur stdDeviation=".4"/></filter>
+    <filter id="stamp" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="5" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 1.6" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>A UI inteira no Diário do Covil</h1>
+      <p>A carta <b>B (fita larga no topo)</b> com o texto corrigido: o nome fica centrado na fita, o custo vira uma mancha com o número, e a descrição vai numa etiqueta clara, com letra de mão mais legível e sem sujeira por cima.</p>
+      <p>Embaixo, todas as telas no mesmo estilo: papéis presos com fita, botões de fita crepe e títulos a pincel atômico.</p>
+      <nav class="jump" id="jump"></nav>
+    </div>
+    <div class="fix" id="fix"></div>
+  </header>
+  <main id="screens"></main>
+  <footer class="end">
+    <p><b>Próximo passo:</b> diga o que trocar em qualquer tela (pode ser pelo número dela). Quando você aprovar, passo o estilo para o Godot em todas as telas e redesenho as 30 cartas.</p>
+  </footer>
+</div>
+
+<script>
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const A={
+ skel:`<path class="ln bw" d="M70 13 Q91 48 70 83"/><path class="ln th" d="M70 13 L57 48 L70 83"/><path class="ln" d="M44 48 L88 48"/><path class="ac" d="M89 48 l-7 -4 v8z"/><path class="ln th" d="M47 48 l-3 -3.5 M47 48 l-3 3.5"/><path class="ln" d="M42 35 V66"/><path class="ln" d="M33 42 Q42 37 51 42 M32 48 Q42 43 52 48 M33 54 Q42 49 51 54"/><path class="ln" d="M50 40 L61 44 L71 48 M35 40 L41 47 L57 48"/><path class="fl sh" d="M34 66 Q42 60 50 66 Q48 72 42 72 Q36 72 34 66z"/><path class="ln" d="M37 71 L33 84 L31 95 M47 71 L51 84 L54 95 M26 95 h7 M52 95 h7"/><path class="fl" d="M30 22 a12 12 0 1 1 24 0 v6 q0 4 -4 4 h-16 q-4 0 -4 -4z"/><circle class="dk" cx="37" cy="22" r="3.2"/><circle class="dk" cx="47" cy="22" r="3.2"/><path class="dk" d="M42 26 l-1.6 3.4 h3.2z"/><path class="ln th" d="M36 32 v3 M40 32 v3 M44 32 v3 M48 32 v3"/>`,
+ rat:`<path class="ln" d="M26 66 Q8 60 12 76 Q16 88 5 92"/><ellipse class="fl sh" cx="48" cy="64" rx="25" ry="16"/><path class="fl" d="M64 50 Q84 46 92 61 Q82 68 66 66Z"/><circle class="fl" cx="68" cy="47" r="6.5"/><circle class="ac" cx="81" cy="56" r="2"/><path class="ln" d="M36 78 l-2 9 M56 79 l2 9"/><path class="ln th" d="M90 61 l8 -3 M90 62 l8 3"/><path class="ln th" d="M22 40 q4 -2 8 0 M30 36 q4 -2 8 0" opacity=".6"/>`,
+ web:(()=>{const cx=50,cy=48,n=9,rings=[9,17,26,35,44];let s="";const ang=i=>-Math.PI/2+i*2*Math.PI/n+.12;for(let i=0;i<n;i++){const a=ang(i);s+=`<path class="ln th" d="M${cx} ${cy} L${(cx+Math.cos(a)*48).toFixed(1)} ${(cy+Math.sin(a)*48).toFixed(1)}"/>`;}rings.forEach(r=>{let d="";for(let i=0;i<=n;i++){const a=ang(i%n),x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;if(i===0)d+=`M${x.toFixed(1)} ${y.toFixed(1)}`;else{const am=(ang(i-1)+a)/2+(i===n?Math.PI:0),rm=r*.8;d+=` Q${(cx+Math.cos(am)*rm).toFixed(1)} ${(cy+Math.sin(am)*rm).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;}}s+=`<path class="ln th" d="${d}"/>`;});return s+`<path class="ln th" d="M70 66 l-7 -5 M70 66 l-8 1 M70 66 l-6 6 M70 66 l-1 8 M74 66 l7 -5 M74 66 l8 1 M74 66 l6 6 M74 66 l1 8"/><ellipse class="fl sh" cx="72" cy="70" rx="5" ry="6.5"/><circle class="fl" cx="72" cy="61.5" r="3"/><circle class="ac" cx="71" cy="61" r=".9"/><circle class="ac" cx="73" cy="61" r=".9"/>`})(),
+ oil:`<circle class="ln th" cx="44" cy="38" r="3"/><circle class="ln th" cx="57" cy="30" r="4"/><circle class="ln th" cx="49" cy="20" r="2.5"/><path class="fl sh" d="M23 52 Q23 86 50 86 Q77 86 77 52Z"/><ellipse class="fl" cx="50" cy="52" rx="28" ry="6"/><ellipse class="ac" cx="50" cy="52" rx="23" ry="3.6"/><path class="ln" d="M32 83 l-5 9 M68 83 l5 9"/><path class="ac" d="M36 99 Q37 89 43 93 Q45 83 51 91 Q57 85 62 99Z"/>`,
+ tower:`<path class="ln th" d="M10 94 H90 M18 97 H34 M60 97 H80"/><path class="fl sh" d="M32 93 L36 40 H64 L68 93 Z"/><path class="fl" d="M33 41 V30 H40 V35 H46 V30 H54 V35 H60 V30 H67 V41 Z"/><path class="ln th" d="M37 52 H63 M36 64 H64 M35 76 H65 M34 88 H66 M45 41 V52 M55 52 V64 M45 64 V76 M56 76 V88"/><path class="dk" d="M47.5 56 q2.5 -4 5 0 v8 h-5z"/><path class="fl sh" d="M45 25 Q34 13 25 17 Q31 19 30 24 Q35 22 37 27 Q41 24 45 29Z"/><path class="fl sh" d="M55 25 Q66 13 75 17 Q69 19 70 24 Q65 22 63 27 Q59 24 55 29Z"/><path class="fl" d="M44 31 Q43 21 50 20 Q57 21 56 31Z"/><circle class="fl" cx="50" cy="16" r="4.6"/><path class="ln th" d="M47 12 l-2.5 -4.5 M53 12 l2.5 -4.5"/><circle class="ac" cx="48.3" cy="16" r="1.1"/><circle class="ac" cx="51.7" cy="16" r="1.1"/>`,
+ forge:`<path class="ln th" d="M8 91 H92"/><path class="gl" d="M42 39 l-6 -8 M49 37 l0 -10 M58 39 l6 -7 M35 43 l-9 -3 M66 42 l9 -4"/><path class="ac" d="M22 46 L68 43.5 L77 46 L68 48.5 L22 47.5Z"/><path class="fl sh" d="M14 50 H80 V58 Q67 59 63 64 V74 L72 80 V87 H28 V80 L37 74 V64 Q33 59 22 58 Q10 57 5 52 Q8 50 14 50Z"/><path class="ln th" d="M17 53.5 H77"/><path class="ln bw" d="M63 17 L86 40"/><rect class="fl" x="47" y="5" width="24" height="11" rx="1.5" transform="rotate(45 59 10.5)"/>`,
+ bolt:`<path class="ac" d="M58 6 L30 54 H50 L38 96 L74 40 H54 L66 6Z"/><path class="gl" d="M24 30 l-8 -4 M80 70 l9 3 M22 70 l-8 4"/>`,
+ chest:`<path class="fl sh" d="M18 50 H82 V88 H18Z"/><path class="fl" d="M18 50 Q18 28 50 26 Q82 28 82 50Z"/><path class="ln th" d="M22 50 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7"/><circle class="ac" cx="40" cy="39" r="3"/><circle class="ac" cx="60" cy="39" r="3"/><path class="ln th" d="M30 57 V88 M70 57 V88"/><path class="ac" d="M44 58 Q50 76 58 59Z"/>`,
+ shield:`<path class="fl" d="M20 12 H80 V50 Q80 78 50 92 Q20 78 20 50Z"/>`,
+};
+const C={
+ skel:{t:"mon",name:"Esqueletos Arqueiros",cost:3,kind:"Monstro · Morto-vivo",text:"2 arqueiros que atacam de longe e recuam.",note:"← recuam!",nx:"58%",ny:"18%"},
+ rat:{t:"mon",name:"Horda de Ratos",cost:2,kind:"Enxame · Bando",text:"8 ratos rápidos e frágeis.",note:"muitos!",nx:"8%",ny:"12%"},
+ web:{t:"spl",name:"Teia",cost:2,kind:"Feitiço",text:"Lentidão em área por 4 s.",note:"gruda o herói",nx:"50%",ny:"60%"},
+ oil:{t:"spl",name:"Óleo Fervente",cost:3,kind:"Feitiço · Fogo",text:"Poça que queima com Fogo e deixa o herói Encharcado.",note:"queima!",nx:"64%",ny:"14%"},
+ tower:{t:"str",name:"Torre de Gárgula",cost:4,kind:"Estrutura · Construto",text:"Atira de longe; vira pedra com o herói perto.",note:"não chegar perto",nx:"4%",ny:"26%"},
+ forge:{t:"str",name:"Forja Sombria",cost:4,kind:"Covil",text:"Monstros entram com +25% de vida.",note:"+vida",nx:"6%",ny:"10%"},
+};
+function grime(r,t){let s="";
+  for(let k=0;k<4;k++)s+=`<ellipse cx="${(r()*100).toFixed(0)}" cy="${(r()*143).toFixed(0)}" rx="${(6+r()*14).toFixed(1)}" ry="${(4+r()*10).toFixed(1)}" fill="#5a3818" opacity="${(.08+r()*.12).toFixed(2)}" filter="url(#blot)"/>`;
+  const cx=20+r()*60,cy=40+r()*50,rr=11+r()*7;
+  s+=`<circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="${rr.toFixed(1)}" fill="none" stroke="#6b4520" stroke-width="${(1.2+r()*1.4).toFixed(1)}" opacity=".28" stroke-dasharray="${(rr*4).toFixed(0)} ${(rr*1.4).toFixed(0)}" filter="url(#wobble)"/>`;
+  let fp="";for(let k=1;k<=7;k++)fp+=`<ellipse rx="${(k*1.1).toFixed(1)}" ry="${(k*1.45).toFixed(1)}"/>`;
+  s+=`<g transform="translate(${(r()<.5?8+r()*10:80+r()*10).toFixed(0)} ${(30+r()*50).toFixed(0)}) rotate(${(r()*80-40).toFixed(0)})" fill="none" stroke="#2a1e14" stroke-width=".45" opacity=".26" filter="url(#wobble)">${fp}</g>`;
+  if(t==="mon"){let sp="";const sx=20+r()*60,sy=40+r()*40;for(let k=0;k<10;k++){const a=r()*6.28,d=r()*9;sp+=`<circle cx="${(sx+Math.cos(a)*d).toFixed(1)}" cy="${(sy+Math.sin(a)*d).toFixed(1)}" r="${(.4+r()*1.4).toFixed(1)}"/>`;}s+=`<g fill="#6e130c" opacity=".55">${sp}</g>`;}
+  return s;}
+function clip(r){const p=[],j=()=>(r()-.5)*1.1,n=11;
+  for(let k=0;k<=n;k++)p.push(`${(k*100/n).toFixed(1)}% ${(j()+.4).toFixed(2)}%`);
+  for(let k=1;k<=n;k++)p.push(`${(99.6+j()).toFixed(2)}% ${(k*100/n).toFixed(1)}%`);
+  for(let k=n-1;k>=0;k--)p.push(`${(k*100/n).toFixed(1)}% ${(99.6+j()).toFixed(2)}%`);
+  for(let k=n-1;k>0;k--)p.push(`${(.4+j()).toFixed(2)}% ${(k*100/n).toFixed(1)}%`);
+  return `polygon(${p.join(",")})`;}
+let SEED=1;
+function card(id,o={}){const c=C[id],r=rng(SEED++*31+7),rot=o.rot??((r()-.5)*3).toFixed(2),a=A[id];
+  return `<div class="cw t-${c.t}${o.mini?" mini":""}" style="--rot:${rot}deg;${o.style||""}">
+   <div class="card" style="clip-path:${clip(r)}"><div class="paper"></div><div class="band"></div>
+    <div class="head"><div class="nm${c.name.length>15?" long":""}">${c.name}</div><div class="cost" aria-label="custo ${c.cost}">${c.cost}</div></div>
+    <div class="art"><svg viewBox="0 0 100 100" aria-hidden="true"><g class="sk2">${a}</g><g>${a}</g></svg><span class="note" style="left:${c.nx};top:${c.ny}">${c.note}</span></div>
+    <div class="kind">${c.kind}</div><div class="text">${c.text}</div>
+    <svg class="grime" viewBox="0 0 100 143" preserveAspectRatio="none" aria-hidden="true">${grime(r,c.t)}</svg>
+   </div></div>`;}
+function draw(id,cls="ink-only"){const a=A[id];return `<svg class="${cls}" viewBox="0 0 100 100" style="width:100%;height:100%;overflow:visible;filter:url(#wobble)" aria-hidden="true"><g class="sk2">${a}</g><g>${a}</g></svg>`;}
+const tp=(k="a b")=>k.split(" ").map(x=>`<span class="tp ${x}"></span>`).join("");
+const btn=(t,cls="mask",r=-1.5,extra="")=>`<span class="tape btn ${cls}" style="--r:${r}deg">${t}${extra}</span>`;
+
+const route=(h)=>{const r=rng(5);let d="M50 6",pts=[];for(let i=1;i<=11;i++){const y=6+i*(88/11),x=50+Math.sin(i*1.3)*22;pts.push([x,y]);d+=` Q${(x+(r()-.5)*30).toFixed(0)} ${(y-4).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)}`;}
+  const cols=["#8e1a10","#3a2580","#b98a22","#2f6b3a","#3a3b38"];
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;filter:url(#wobble)"><path d="${d}" fill="none" stroke="#2a1e16" stroke-width="1.6" stroke-dasharray="${h?"4 2.5":"none"}" vector-effect="non-scaling-stroke"/></svg>
+   ${pts.map((p,i)=>`<b style="position:absolute;left:${p[0]}%;top:${p[1]}%;width:${i===7?1.5:1}em;height:${i===7?1.5:1}em;margin:-.5em 0 0 -.5em;border-radius:50% 44% 55% 46%;background:${i===7?"transparent":cols[i%5]};${i===7?"border:.22em solid #8e1a10;":""}filter:url(#wobble)"></b>`).join("")}
+   <span style="position:absolute;left:50%;top:2%;transform:translateX(-50%);font-family:var(--f-mark);font-size:1.3em;color:#7a150d">✕</span>`;};
+
+const S=[];
+/* 1 · Menu principal */
+S.push({id:"menu",name:"Menu principal",cap:"O título é um papel preso na mesa do Lorde, e cada opção é uma fita crepe. A primeira, vermelha, é a ação principal. Na direita, cartas soltas e a luz de uma vela. Também dá para manter o Lorde 3D desse lado.",
+ html:`<div class="scr desk">
+  <div class="stain" style="left:58%;top:62%;width:9em;height:9em"></div>
+  <div class="pp" style="left:5cqw;top:3cqw;width:43em;height:41em;--r:-1.4deg;padding:3.4em 3.4em">${tp()}
+    <div style="font-family:var(--f-type);font-size:1.15em;letter-spacing:.1em;opacity:.75">UM JOGO DE CARTAS EM QUE VOCÊ É O CHEFE FINAL</div>
+    <div style="font-family:var(--f-mark);font-size:6.2em;line-height:1;color:#6e130c;margin-top:.15em;transform:rotate(-2deg)">LAST BOSS</div>
+    <svg viewBox="0 0 300 20" style="width:31em;height:1.6em;display:block;margin:-.4em 0 0 .4em;filter:url(#wobble)" aria-hidden="true"><path d="M4 12 Q80 2 150 10 T296 8 M10 16 Q120 8 280 14" fill="none" stroke="#6e130c" stroke-width="3" stroke-linecap="round"/></svg>
+    <div style="font-family:var(--f-hand);font-size:1.6em;line-height:1.15;margin:.5em 0 1em;max-width:21em">O herói está a caminho. Molde quem vai bater à sua porta.</div>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:.55em;font-size:.88em">
+      ${btn("Continuar run salva","",-1.6)}${btn("Nova run","mask",1)}${btn("Coleção","mask",-.8)}${btn("Compêndio","mask",1.4)}${btn("Configurações","mask",-1.2)}${btn("Sair","mask",.6)}
+    </div>
+  </div>
+  <div class="abs" style="left:58cqw;top:7cqw;font-size:1.25em">${card("tower",{rot:9})}</div>
+  <div class="abs" style="left:70cqw;top:13cqw;font-size:1.25em">${card("skel",{rot:-7})}</div>
+  <div class="abs" style="left:62cqw;top:30cqw;font-size:1.05em">${card("web",{rot:16})}</div>
+  <div class="keys abs" style="right:3cqw;bottom:1.6cqw">v0.1 · MVP · Enter confirma · Esc volta</div>
+ </div>`});
+/* 2 · Pacto */
+const pact=(nm,desc,lines,art,r,sel)=>`<div class="pp" style="width:27em;height:33em;--r:${r}deg;padding:2.6em 2.2em 2em;display:flex;flex-direction:column;position:relative">${tp("c")}
+  <div style="height:11em;margin:0 2em">${draw(art)}</div>
+  <div style="font-family:var(--f-mark);font-size:3em;line-height:1;color:#6e130c;margin-top:.25em">${nm}</div>
+  <div style="font-family:var(--f-hand);font-size:1.5em;line-height:1.1;margin:.3em 0 .4em">${desc}</div>
+  <div style="font-family:var(--f-hand);font-size:1.25em;line-height:1.2;flex:1">${lines.map(l=>"– "+l).join("<br>")}</div>
+  <div>${btn("Jogar com este Pacto",sel?"":"mask",-1.2)}</div></div>`;
+S.push({id:"pacto",name:"Escolha do Pacto",cap:"Cada Pacto vira uma folha com o próprio desenho a nanquim. O deck aparece embaixo como uma fileira de cartas pequenas sobre a mesa.",
+ html:`<div class="scr desk">
+  <div class="abs" style="left:5cqw;top:2.4cqw;font-size:1.9em">${`<span class="tape" style="--r:-1.5deg">Escolha o Pacto do Lorde das Trevas</span>`}</div>
+  <div class="keys abs" style="left:5.4cqw;top:7.6cqw">O Pacto muda as regras da run; as cartas vêm do deck que você montou na coleção.</div>
+  <div class="abs" style="left:5cqw;top:10.5cqw;display:flex;gap:3.4em">
+   ${pact("HORDA","Muitas unidades baratas.",["Mão de 6 cartas","Monstros dão 110% do XP normal ao herói"],"rat",-1.6,true)}
+   ${pact("RUÍNA","Feitiços e estruturas.",["Feitiços causam 115% de dano","Monstros custam +1 de Elixir"],"bolt",1.1,false)}
+   ${pact("TESOURO","Economia e enganação.",["Começa com 8 de Elixir","Level-ups oferecem 2 opções"],"chest",-.6,false)}
+  </div>
+  <div class="abs" style="left:5cqw;top:45.5cqw;display:flex;align-items:flex-end;gap:.8em;font-size:.6em">
+   <div style="font-family:var(--f-mark);font-size:2.6em;color:#efe6d0;margin-right:.6em;transform:rotate(-3deg)">Seu deck<br><span style="font-family:var(--f-type);font-size:.5em">Almas: 0</span></div>
+   ${["web","rat","rat","oil","skel","skel","forge","tower"].map(i=>card(i,{mini:true})).join("")}
+  </div>
+  <div class="abs" style="right:4cqw;top:48cqw">${btn("Montar deck","mask",1.5)}</div>
+  <div class="abs" style="right:4cqw;top:3cqw">${btn("Voltar","mask",2)}</div>
+ </div>`});
+/* 3 · Estrada */
+S.push({id:"estrada",name:"Estrada (HUD da run)",cap:"Os painéis são papéis colados por cima do mundo. A vida do herói é uma barra riscada a lápis, o Elixir são gotas de tinta roxa e o mapa da rota é uma tira de papel com o caminho a nanquim.",
+ html:`<div class="scr road"><div class="tufts"></div><div class="hero"></div>
+  <div class="abs" style="left:2cqw;top:1.6cqw;font-size:2.2em"><span class="tape mask" style="--r:-2deg;font-family:var(--f-type)">05:06</span></div>
+  <div class="pp" style="left:33cqw;top:1.3cqw;width:32em;height:8.6em;--r:-.6deg;padding:1.1em 1.6em;display:grid;grid-template-columns:3.6em 1fr;gap:0 1.2em;align-items:center">${tp("a")}
+    <div style="grid-row:span 3;width:3.6em;height:3.6em;position:relative">${draw("shield")}<span style="position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-type);font-size:1.4em">2</span></div>
+    <div style="font-family:var(--f-type);font-size:1.15em;letter-spacing:.12em">O HERÓI <span style="font-family:var(--f-hand);letter-spacing:0;font-size:1.1em;opacity:.8;margin-left:.4em">2 de 5</span></div>
+    <div class="hpb" style="--v:49%"><i></i><span>1156 / 2356</span></div>
+    <div style="font-family:var(--f-hand);font-size:1.2em;opacity:.85">aprendeu: <b style="color:#6e130c">Investida</b></div>
+  </div>
+  <div class="pp sq" style="right:10.2cqw;top:1.6cqw;--r:2deg">II</div><div class="pp sq" style="right:5.8cqw;top:1.4cqw;--r:-2deg">1x</div><div class="pp sq" style="right:1.4cqw;top:1.7cqw;--r:1.5deg">⌖</div>
+  <div class="pp" style="left:1.6cqw;top:9cqw;width:4em;height:38em;--r:.8deg">${route(true)}</div>
+  <div class="abs" style="left:6.6cqw;top:30cqw"><span class="tape mask" style="--r:-3deg;font-family:var(--f-type);font-size:1.05em">Bifurcação · 70 m</span></div>
+  <div class="abs" style="left:8cqw;bottom:1.4cqw;display:flex;gap:.5em;align-items:flex-end;font-size:.42em">
+    <div style="font-family:var(--f-hand);font-size:2.6em;color:#fff;text-shadow:0 0 .3em #000;margin-right:.3em">próximas</div>${card("forge",{mini:true})}${card("web",{mini:true})}${card("rat",{mini:true})}</div>
+  <div class="abs" style="left:28cqw;bottom:8.6cqw;display:flex;font-size:.74em">
+    ${["rat","skel","oil","tower","skel","web"].map((i,k)=>card(i,{mini:true,rot:(k-2.5)*3.2,style:`margin:0 -.5em;transform:translateY(${Math.abs(k-2.5)*.9-(k===2?2.4:0)}em) rotate(${(k-2.5)*3.2}deg)`})).join("")}
+  </div>
+  <div class="pp" style="left:24cqw;bottom:.9em;width:52em;height:5em;--r:.3deg;display:flex;align-items:center;gap:1.4em;padding:0 1.4em">
+    ${btn("Sacrificar","mask",-2,"")}
+    <div class="drops" style="flex:1">${Array.from({length:10},(_,i)=>`<i class="${i<3?"on":""}"></i>`).join("")}</div>
+    <div style="font-family:var(--f-type);font-size:1.25em;white-space:nowrap">166 de ouro</div>
+  </div>
+ </div>`});
+/* 4 · Oferta */
+const opt=(head,cls,id,foot)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:1.2em">
+  <span class="tape ${cls}" style="font-family:var(--f-type);font-size:1.25em;--r:-2deg">${head}</span>
+  <div style="font-size:1.38em">${card(id)}</div>
+  ${foot?`<div class="pp" style="position:relative;--r:1deg;padding:.6em 1.2em;font-family:var(--f-hand);font-size:1.25em;max-width:17em;text-align:center">${foot}</div>`:`<div style="height:2.9em"></div>`}</div>`;
+S.push({id:"oferta",name:"Subiu de nível (oferta)",cap:"O título é uma fita vermelha a pincel. Cada opção ganha um rótulo em fita, e o efeito da melhoria vem num bilhete. A tela da estrada fica escura atrás.",
+ html:`<div class="scr road dim"><div class="tufts"></div>
+  <div class="top5" style="left:0;right:0;top:2.2cqw;text-align:center"><span class="tape" style="font-size:3.2em;--r:-1.5deg">Subiu de nível! Escolha 1</span>
+   <div class="keys" style="margin-top:.9em">Clique numa opção ou aperte o número dela · 0 recusa</div></div>
+  <div class="top5" style="left:0;right:0;top:15.5cqw;display:flex;justify-content:center;gap:5em">
+   ${opt("Carta nova · Comum","mask","oil","")}${opt("Melhorar: Barato","yel","rat","<b>Barato:</b> −1 de custo de Elixir")}${opt("Melhorar: Sombrio","vio","skel","<b>Sombrio:</b> não conta para a recompensa de queda")}
+  </div>
+  <div class="top5" style="left:0;right:0;bottom:2.4cqw;text-align:center">${btn("Recusar","mask",1)}</div>
+ </div>`});
+/* 5 · Mapa */
+S.push({id:"mapa",name:"Mapa da rota (tecla M)",cap:"O mapa é uma folha grande presa com fita, com o caminho a nanquim e a legenda escrita à mão. O ✕ marca o seu covil.",
+ html:`<div class="scr road"><div class="tufts"></div><div class="hero"></div>
+  <div class="pp" style="left:1.6cqw;top:9cqw;width:4em;height:38em;--r:.8deg">${route(true)}</div>
+  <div class="pp" style="right:3cqw;top:4cqw;width:38em;height:46em;--r:1.2deg;padding:2.2em 2.4em">${tp()}
+   <div style="font-family:var(--f-mark);font-size:2.5em;color:#6e130c;transform:rotate(-2deg)">Mapa da rota</div>
+   <div style="position:absolute;left:8cqw;right:8cqw;top:7cqw;bottom:9cqw">${route(false)}</div>
+   <div style="position:absolute;left:2.4cqw;right:2.4cqw;bottom:2cqw;display:grid;grid-template-columns:repeat(4,auto);gap:.3em 1.2em;font-family:var(--f-hand);font-size:1.25em">
+    ${[["#8e1a10","Vila"],["#3a2580","Taverna"],["#b98a22","Fonte Sagrada"],["#2f6b3a","Círculo de Ritual"],["#3a3b38","Santuário"],["#7a5a3a","Ponte"],["transparent","Herói"],["#7a150d","Seu covil ✕"]].map(([c,t])=>`<span><b style="display:inline-block;width:.75em;height:.75em;border-radius:50%;background:${c};border:${c==="transparent"?".15em solid #8e1a10":"none"};margin-right:.35em;vertical-align:-.05em"></b>${t}</span>`).join("")}
+   </div>
+  </div>
+ </div>`});
+/* 6 · Pausa */
+S.push({id:"pausa",name:"Pausa",cap:"Um bilhete com o carimbo de PAUSADO por cima. O tempo e o deck vão datilografados, os botões continuam sendo fita crepe.",
+ html:`<div class="scr road dim"><div class="tufts"></div>
+  <div class="pp top5" style="left:34cqw;top:8cqw;width:32em;height:38em;--r:-1deg;padding:3em 3em;display:flex;flex-direction:column;align-items:center;gap:1.1em">${tp("c")}
+   <div style="font-family:var(--f-type);font-size:4em;letter-spacing:.12em;color:#7a150d;border:.12em solid #7a150d;padding:.05em .4em;transform:rotate(-6deg);filter:url(#stamp);margin:.3em 0 .4em">PAUSADO</div>
+   <div style="font-family:var(--f-type);font-size:1.15em;text-align:center;line-height:1.5">05:06 de run · deck Horda<br>Ato 1 de 3</div>
+   <div style="display:flex;flex-direction:column;align-items:center;gap:1em;margin-top:.8em">${btn("Continuar","",-1.4)}${btn("Configurações","mask",1)}${btn("Menu principal","mask",-.8)}</div>
+  </div>
+ </div>`});
+/* 7 · Resultado */
+const row=(k,v,hl)=>`<div style="display:flex;align-items:baseline;gap:.4em;font-size:1.15em"><span style="font-family:var(--f-type)">${k}</span><span style="flex:1;border-bottom:.12em dotted rgba(29,25,21,.5)"></span><span style="font-family:var(--f-hand);font-size:1.45em;${hl?"color:#7a150d;border:.12em solid #7a150d;border-radius:50%;padding:0 .4em;filter:url(#wobble)":""}">${v}</span></div>`;
+S.push({id:"resultado",name:"Fim de run",cap:"O resultado vira um relatório datilografado, com o carimbo de DERROTA (ou VITÓRIA) por cima e as almas ganhas circuladas em vermelho.",
+ html:`<div class="scr desk">
+  <div class="pp" style="left:28cqw;top:3cqw;width:44em;height:50em;--r:.8deg;padding:3em 3.6em">${tp()}
+   <div style="font-family:var(--f-type);font-size:1.3em;letter-spacing:.14em">RELATÓRIO DA RUN Nº 014</div>
+   <div style="font-family:var(--f-hand);font-size:1.5em;margin:.2em 0 1.2em">Seu núcleo foi destruído.</div>
+   <div style="display:flex;flex-direction:column;gap:.75em">
+    ${row("Tempo","17:40")}${row("Nível do herói","20")}${row("Seu nível","15")}${row("Abates do herói","276")}${row("Santuários","0")}${row("Contratos","0")}${row("Partes perdidas","2")}${row("Carta mais jogada","Esqueletos Arqueiros")}${row("Almas ganhas","+46",true)}
+   </div>
+   <div style="display:flex;gap:2em;margin-top:1.6em">${btn("Nova run","",-1.5)}${btn("Menu principal","mask",1)}</div>
+   <div style="position:absolute;right:2.4cqw;top:1.6cqw;font-family:var(--f-type);font-size:3.3em;letter-spacing:.08em;color:#9b1a10;border:.1em solid #9b1a10;outline:.04em solid #9b1a10;outline-offset:.08em;padding:0 .3em;transform:rotate(-9deg);filter:url(#stamp);opacity:.85;mix-blend-mode:multiply">DERROTA</div>
+  </div>
+ </div>`});
+/* 8 · Coleção */
+S.push({id:"colecao",name:"Coleção e deck",cap:"O deck é uma lista à mão numa folha pautada. As abas de filtro usam as mesmas fitas das cartas, então a cor do tipo vale em todo o jogo.",
+ html:`<div class="scr desk">
+  <div class="abs" style="left:4cqw;top:2.4cqw;font-size:1.9em"><span class="tape" style="--r:-1.5deg">Coleção</span></div>
+  <div class="abs" style="left:27cqw;top:3cqw;display:flex;gap:.9em;font-size:1.15em">
+   <span class="tape mask" style="--r:-2deg;font-family:var(--f-type)">Todas</span><span class="tape" style="--r:1deg;font-family:var(--f-type)">Monstros</span><span class="tape vio" style="--r:-1deg;font-family:var(--f-type)">Feitiços</span><span class="tape yel" style="--r:2deg;font-family:var(--f-type)">Estruturas</span></div>
+  <div class="abs" style="left:4cqw;top:9cqw;display:grid;grid-template-columns:repeat(4,auto);gap:1.8em 1.8em;font-size:.95em">
+   ${["skel","rat","web","oil","tower","forge","rat","web"].map(i=>card(i)).join("")}</div>
+  <div class="pp lined" style="right:3.4cqw;top:4cqw;width:28em;height:48em;--r:1.4deg;padding:2em 1.6em 2em 4.4em">${tp("c")}
+   <div style="font-family:var(--f-mark);font-size:2.2em;color:#6e130c;line-height:1.2">Seu deck <span style="font-family:var(--f-hand);font-size:.7em;color:var(--ink)">(12 cartas)</span></div>
+   <div style="font-family:var(--f-hand);font-size:1.5em;line-height:1.57;margin-top:.4em">
+    ${[["2×","Horda de Ratos","2","#8e1a10"],["2×","Esqueletos Arqueiros","3","#8e1a10"],["1×","Goblin Dinamiteiro","3","#8e1a10"],["2×","Teia","2","#3a2580"],["1×","Óleo Fervente","3","#3a2580"],["1×","Banquete de Almas","1","#3a2580"],["1×","Torre de Gárgula","4","#5a4a1a"],["1×","Forja Sombria","4","#5a4a1a"],["1×","Ninho de Morcegos","5","#5a4a1a"]].map(([n,t,c,col])=>`<div style="display:flex;gap:.4em;color:${col}"><span style="width:1.6em">${n}</span><span style="flex:1">${t}</span><span style="font-family:var(--f-type);font-size:.8em;opacity:.8">${c}</span></div>`).join("")}
+   </div>
+   <div style="position:absolute;left:4.4cqw;bottom:2cqw">${btn("Pronto","",-1.5)}</div>
+  </div>
+ </div>`});
+/* 9 · Configurações */
+const sl=(t,v)=>`<div style="display:grid;grid-template-columns:12em 1fr;align-items:center;gap:1em"><span style="font-family:var(--f-type);font-size:1.15em">${t}</span>
+  <span style="position:relative;height:1.6em;display:block"><svg viewBox="0 0 100 10" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;filter:url(#wobble)"><path d="M1 5 H99" stroke="#1d1915" stroke-width="1.2" vector-effect="non-scaling-stroke"/>${Array.from({length:11},(_,i)=>`<path d="M${1+i*9.8} ${i%5?3.5:2} V${i%5?6.5:8}" stroke="#1d1915" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join("")}</svg>
+  <b style="position:absolute;left:${v}%;top:50%;width:1.5em;height:1.5em;margin:-.75em 0 0 -.75em;background:#5e0f09;border-radius:50% 44% 55% 46%;filter:url(#blot)"></b></span></div>`;
+const ck=(t,on)=>`<div style="display:flex;align-items:center;gap:.8em;font-family:var(--f-type);font-size:1.15em"><span style="width:1.3em;height:1.3em;border:.14em solid #1d1915;display:grid;place-items:center;font-family:var(--f-mark);color:#7a150d;filter:url(#wobble)">${on?"✕":""}</span>${t}</div>`;
+S.push({id:"config",name:"Configurações",cap:"Um formulário preenchido à mão. Os volumes são réguas com uma mancha de tinta no lugar do controle, e as opções são caixinhas marcadas com X.",
+ html:`<div class="scr desk">
+  <div class="pp" style="left:25cqw;top:3cqw;width:50em;height:50em;--r:-.8deg;padding:3em 4em;display:flex;flex-direction:column;gap:1.5em">${tp()}
+   <div style="font-family:var(--f-mark);font-size:3em;color:#6e130c;transform:rotate(-1.5deg)">Configurações</div>
+   <div style="font-family:var(--f-type);font-size:.95em;letter-spacing:.18em;opacity:.7">SOM</div>
+   ${sl("Geral",80)}${sl("Música",55)}${sl("Efeitos",70)}
+   <div style="font-family:var(--f-type);font-size:.95em;letter-spacing:.18em;opacity:.7;margin-top:.6em">JOGO</div>
+   ${ck("Tela cheia",true)}${ck("Mostrar dicas",true)}${ck("Mostrar FPS",false)}
+   <div style="display:flex;align-items:center;gap:1em;font-family:var(--f-type);font-size:1.15em">Idioma: <span style="font-family:var(--f-hand);font-size:1.3em;border:.12em solid #7a150d;border-radius:50%;padding:0 .5em;filter:url(#wobble)">Português</span><span style="font-family:var(--f-hand);font-size:1.3em;opacity:.6">English</span></div>
+   <div style="margin-top:auto">${btn("Voltar","mask",1)}</div>
+  </div>
+ </div>`});
+
+document.getElementById("fix").innerHTML=card("skel",{rot:-1.5})+card("web",{rot:1})+card("tower",{rot:-.5});
+document.getElementById("jump").innerHTML=S.map((s,i)=>`<a href="#t-${s.id}">${i+1} · ${s.name}</a>`).join("");
+document.getElementById("screens").innerHTML=S.map((s,i)=>`<section class="s" id="t-${s.id}"><div class="sh"><span class="n">${i+1}</span><h2>${s.name}</h2><p>${s.cap}</p></div><div class="screen">${s.html}</div></section>`).join("");
+try{const q=new URLSearchParams(location.search).get("show");if(q){document.querySelector("header.top").style.display="none";document.querySelectorAll("section.s").forEach(x=>{if(x.id!=="t-"+q)x.style.display="none"});document.querySelector("footer.end").style.display="none"}}catch(e){}
+</script>

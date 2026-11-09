@@ -821,6 +821,9 @@ static func _draw_icon(b: Button, kind: String) -> void:
 ## Fundo de um Control que se desenha sozinho (faixa de rota, mapa grande): põe o material e desenha a placa.
 ## Chamar no começo do _draw; devolve false nas outras peles (o chamador desenha o fundo antigo).
 static func draw_plate(c: Control, kind := "soft", grow := Vector2.ZERO) -> bool:
+	if UiSkins.diario():
+		UiDiario.draw_plate(c, kind, grow)
+		return true
 	if not UiSkins.covil():
 		return false
 	if c.material == null:

@@ -8,7 +8,7 @@ extends CanvasLayer
 ## Marcação no texto (strings.csv): [[id]] mostra o nome da palavra-chave (KW_id); [[id|texto]] mostra "texto".
 ## A explicação vem de KWD_id, com os números lidos dos dados (_kw_params).
 
-const KW_COLOR := Color(1.0, 0.84, 0.42)
+static var KW_COLOR := Color(1.0, 0.84, 0.42)
 const GRACE := 0.4
 const MAX_DEPTH := 3
 const BOX_W := 300.0

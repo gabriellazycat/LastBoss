@@ -1,0 +1,443 @@
+<title>Mesa do Lorde</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Patrick+Hand&family=Permanent+Marker&family=Caveat:wght@700&family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Cormorant+SC:wght@700&family=Nunito:wght@700;800&display=swap">
+<style>
+/* Layout: a mesa ocupa a página inteira em 16:9; embaixo, uma linha de instrução e as notas de cada tela. Página escura de propósito. */
+:root{
+  --page:#15120e; --page2:#201b15; --text:#ece4d4; --muted:#a99d88; --line:#3a332a; --pick:#e7b54a;
+  --ink:#1d1915; --blood:#7a150d; --mon:rgba(170,35,25,.85); --spl:rgba(116,76,198,.8); --str:rgba(222,178,62,.93); --mask:rgba(226,211,160,.92);
+  --f-ui:"Nunito",system-ui,sans-serif; --f-head:"Cormorant SC",Georgia,serif;
+  --f-type:"Special Elite","Courier New",monospace; --f-hand:"Patrick Hand","Comic Sans MS",cursive; --f-mark:"Permanent Marker","Impact",sans-serif;
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .32 0 0 0 0 .22 0 0 0 0 .12 0 0 0 .5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --paper:var(--grain),radial-gradient(ellipse at 78% 86%,rgba(90,55,25,.3),transparent 45%),radial-gradient(circle at 14% 12%,rgba(90,55,25,.22),transparent 32%),linear-gradient(168deg,#ddd2b8,#c6b893);
+  color-scheme:dark;
+}
+body{background:#0d0907;color:var(--text);font-family:var(--f-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:1500px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.intro{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 24px;margin-bottom:12px}
+.intro h1{font-family:var(--f-head);font-size:clamp(26px,4vw,38px);margin:0;line-height:1.1}
+.intro p{margin:0;color:var(--muted);max-width:70ch}
+.intro p b{color:var(--text)}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px 28px;margin-top:18px;color:var(--muted);font-size:14px}
+.notes b{color:var(--text)}
+
+/* papel solto */
+.pp{position:absolute;isolation:isolate;transform:rotate(var(--r,0deg));box-sizing:border-box}
+.pp::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--paper);box-shadow:inset 0 0 2em rgba(70,40,15,.5);filter:url(#rough) drop-shadow(0 .35em .5em rgba(0,0,0,.55))}
+.pp.lined::before{background:var(--grain),linear-gradient(90deg,transparent 3.2em,rgba(190,40,40,.5) 3.2em 3.32em,transparent 3.32em),repeating-linear-gradient(transparent 0 2.26em,rgba(60,90,170,.32) 2.26em 2.36em),linear-gradient(168deg,#e6e1cf,#cfc8ae)}
+.tp{position:absolute;width:6em;height:1.7em;background:var(--mask);opacity:.92;z-index:3;clip-path:polygon(0 10%,4% 0,8% 12%,92% 0,96% 14%,100% 4%,97% 92%,100% 100%,94% 88%,6% 100%,3% 88%,0 96%)}
+.tp::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.5}
+.tp.a{left:-1.6em;top:-.4em;transform:rotate(-38deg)}.tp.b{right:-1.6em;top:-.4em;transform:rotate(36deg)}
+.tp.c{left:50%;top:-.8em;margin-left:-3em;transform:rotate(-3deg)}
+.stain{position:absolute;border-radius:50%;border:.25em solid rgba(105,65,30,.28);filter:url(#wobble)}
+
+/* fita com texto (título e botão) */
+.tape{position:relative;display:inline-block;isolation:isolate;padding:.35em 1.1em .3em;font-family:var(--f-mark);color:#fff6e6;transform:rotate(var(--r,-1.5deg));white-space:nowrap}
+.tape::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--grain),var(--tc,var(--mon));clip-path:polygon(0 8%,3% 0,6% 10%,9% 2%,92% 0,95% 12%,98% 3%,100% 15%,98% 90%,100% 100%,96% 88%,92% 100%,8% 96%,4% 100%,2% 86%,0 100%);filter:drop-shadow(0 .15em .15em rgba(0,0,0,.35))}
+.tape.mask{color:var(--ink);--tc:var(--mask)}
+.tape.vio{--tc:var(--spl)}
+.tape.yel{color:var(--ink);--tc:var(--str)}
+.btn{font-family:var(--f-type);font-size:1.45em;padding:.45em 1.3em .4em;cursor:default}
+.btn.mask{color:var(--ink)}
+.btn small{font-family:var(--f-type);font-size:.6em;opacity:.65;margin-left:.6em}
+.keys{font-family:var(--f-type);font-size:1.05em;color:#efe6d0;text-shadow:0 .08em .15em rgba(0,0,0,.8)}
+
+/* ---------- carta B corrigida ---------- */
+.cw{position:relative;width:13em;height:18.6em;flex:none;transform:rotate(var(--rot,0deg));filter:drop-shadow(0 .45em .6em rgba(0,0,0,.55))}
+.card{position:absolute;inset:0;display:flex;flex-direction:column;box-sizing:border-box;isolation:isolate;--ink:#1d1915;--sw:2;--fill:#e2d8c0;--acc:#7e1710;--glow:#1d1915;--dk:#1d1915;color:var(--ink)}
+.card .paper{position:absolute;inset:0;z-index:-2;background:var(--paper);box-shadow:inset 0 0 1.6em rgba(70,40,15,.55)}
+.card .band{position:absolute;z-index:-1;left:-.3em;right:-.3em;top:-.1em;height:3.15em;background:var(--grain),var(--tp);transform:rotate(-1.2deg);
+  clip-path:polygon(0 8%,3% 0,6% 10%,9% 2%,92% 0,95% 12%,98% 3%,100% 15%,98% 90%,100% 100%,96% 88%,92% 100%,8% 96%,4% 100%,2% 86%,0 100%)}
+.t-mon{--tp:var(--mon)}.t-spl{--tp:var(--spl)}.t-str{--tp:var(--str)}
+.t-mon .card{--ink:#4a120b;--acc:#8e1a10;--dk:#4a120b}
+.t-spl .card{--ink:#3a2580;--acc:#7a3fd0;--dk:#3a2580;--glow:#7a3fd0}
+.t-str .card{--ink:#3a3b38;--dk:#3a3b38;--sw:1.7}
+.head{height:3em;flex:none;display:flex;align-items:center;gap:.4em;padding:0 .55em 0 .8em;position:relative;z-index:3;transform:rotate(-1.2deg)}
+.head .nm{flex:1;min-width:0;font-family:var(--f-type);font-size:1.02em;line-height:1.02;color:#fff8ea;text-wrap:balance;text-shadow:0 .05em .1em rgba(0,0,0,.35)}
+.head .nm.long{font-size:.86em}
+.t-str .head .nm{color:#1d1915;text-shadow:none}
+.head .cost{flex:none;width:2.15em;height:2.15em;display:grid;place-items:center;font-family:var(--f-type);font-size:1.05em;color:#fff1de;position:relative;z-index:0}
+.head .cost::before{content:"";position:absolute;inset:0;z-index:-1;background:#5e0f09;border-radius:50% 44% 55% 46%;filter:url(#blot);box-shadow:0 0 0 .14em rgba(255,240,215,.75)}
+.card .art{position:relative;flex:none;margin:.3em .8em 0;aspect-ratio:1/.8;z-index:0}
+.card .art svg{width:100%;height:100%;overflow:visible;display:block;filter:url(#wobble)}
+.t-spl .art svg{filter:url(#wobble) drop-shadow(0 0 .25em rgba(122,63,208,.45))}
+.card .kind{font-family:var(--f-type);font-size:.6em;text-transform:uppercase;letter-spacing:.12em;text-align:center;opacity:.8;margin-top:.25em;display:flex;align-items:center;gap:.6em;padding:0 1.4em;position:relative;z-index:3}
+.card .kind::before,.card .kind::after{content:"";flex:1;height:.1em;background:currentColor;opacity:.45}
+.card .text{flex:1;margin:.3em .65em .65em;position:relative;z-index:3;display:grid;place-items:center;text-align:center;font-family:var(--f-hand);font-size:1.02em;line-height:1.08;color:#1d1915;padding:.25em .4em}
+.card .text::before{content:"";position:absolute;inset:0;z-index:-1;background:rgba(244,236,214,.82);filter:url(#rough);transform:rotate(.6deg)}
+.grime{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;mix-blend-mode:multiply;opacity:.85}
+.note{position:absolute;font-family:"Caveat",cursive;font-weight:700;font-size:.95em;color:#3b3530;opacity:.85;transform:rotate(-9deg);white-space:nowrap;z-index:2}
+.mini .kind,.mini .text,.mini .note{display:none}
+.mini .cw,.mini.cw{height:13.7em}
+.sk2{opacity:.35;transform:translate(.9px,.7px) rotate(.5deg)}
+.ln{fill:none;stroke:var(--ink);stroke-width:var(--sw);stroke-linecap:round;stroke-linejoin:round}
+.th{stroke-width:calc(var(--sw) * .6)}.bw{stroke-width:calc(var(--sw) * 1.5)}
+.fl{fill:var(--fill);stroke:var(--ink);stroke-width:var(--sw);stroke-linejoin:round}
+.sh{fill:url(#pencil)}.dk{fill:var(--dk)}
+.ac{fill:var(--acc);stroke:var(--ink);stroke-width:var(--sw)}
+.gl{fill:none;stroke:var(--glow);stroke-width:calc(var(--sw) * .8);stroke-linecap:round}
+.ink-only{--ink:#2a1e16;--sw:2.2;--fill:#e2d8c0;--acc:#7e1710;--dk:#2a1e16;--glow:#2a1e16}
+
+
+
+/* ---------- palco 3D ---------- */
+.stage{container-type:inline-size;position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:8px;background:radial-gradient(ellipse 60% 50% at 70% 10%,#2a1a10,#0b0705 70%)}
+.cam{position:absolute;inset:0;perspective:130cqw;perspective-origin:50% 35%}
+.world{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(var(--wx,0deg)) rotateY(var(--wy,0deg));transition:transform .5s ease-out}
+.table{position:absolute;left:50%;top:50%;width:150em;height:110em;margin:-55em 0 0 -75em;font-size:1cqw;transform-style:preserve-3d;transform:translateY(5em) rotateX(54deg);
+  background:var(--grain),
+   radial-gradient(ellipse 30% 22% at 82% 26%,rgba(255,170,80,.28),transparent 70%),radial-gradient(ellipse 22% 18% at 14% 40%,rgba(255,170,80,.2),transparent 70%),
+   radial-gradient(ellipse 60% 55% at 50% 50%,transparent 40%,rgba(0,0,0,.75) 85%),
+   repeating-linear-gradient(90deg,rgba(0,0,0,.55) 0 .25em,transparent .25em 21.4em),
+   repeating-linear-gradient(91deg,rgba(0,0,0,.14) 0 .12em,transparent .12em 1.1em,rgba(255,210,160,.05) 1.1em 1.4em,transparent 1.4em 2.9em),
+   linear-gradient(90deg,#4b2f1c,#5a3822 30%,#4a2d1a 60%,#55351f);
+  box-shadow:0 0 0 1.4em #2a180d,0 0 0 2.2em #1a0f08}
+.flat{position:absolute;transform-origin:0 0;transform:translate3d(var(--x),var(--y),.05em) rotate(var(--rz,0deg)) translate(-50%,-50%)}
+.stand{position:absolute;transform-origin:0 0;transform:translate3d(var(--x),var(--y),0) rotateX(90deg) rotateY(var(--ry,0deg)) translate(-50%,-100%)}
+.shadow{position:absolute;transform-origin:0 0;transform:translate3d(var(--x),var(--y),.02em) rotate(var(--rz,0deg)) translate(-50%,-50%);background:radial-gradient(ellipse,rgba(0,0,0,.6),transparent 70%);filter:blur(.6em)}
+.grp{position:absolute;left:0;top:0;transform-origin:0 0;transition:transform .95s cubic-bezier(.2,.75,.15,1);
+  transform:translate3d(var(--x),var(--y),var(--z,.3em)) rotate(var(--rz,0deg)) scale(var(--s,1)) translate(-50%,-50%);cursor:pointer}
+.grp:not(.on):hover{--z:2.2em}
+.grp .pp,.flat .pp{position:relative}
+.grp.on{cursor:default;transform:translate3d(var(--ox,75em),var(--oy,66em),11em) rotateX(-24deg) scale(var(--os,.62)) translate(-50%,-50%)}
+.grp:focus-visible{outline:.3em solid var(--pick);outline-offset:.4em}
+button.tape{all:unset;position:relative;display:inline-block;isolation:isolate;cursor:pointer;transform:rotate(var(--r,-1.5deg));white-space:nowrap;font-family:var(--f-type);font-size:1.5em;padding:.45em 1.3em .4em;color:var(--ink);transition:transform .15s}
+button.tape::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--grain),var(--tc,var(--mask));clip-path:polygon(0 8%,3% 0,6% 10%,9% 2%,92% 0,95% 12%,98% 3%,100% 15%,98% 90%,100% 100%,96% 88%,92% 100%,8% 96%,4% 100%,2% 86%,0 100%);filter:drop-shadow(0 .15em .15em rgba(0,0,0,.35))}
+button.tape.red{--tc:var(--mon);color:#fff6e6}
+button.tape:hover{transform:rotate(var(--r,-1.5deg)) translateY(-.15em) scale(1.04)}
+button.tape:focus-visible{outline:.15em dashed var(--ink);outline-offset:.2em}
+.grp:not(.on) button.tape{pointer-events:none}
+
+.props{position:absolute;inset:0;pointer-events:none;z-index:10;font-size:1cqw}
+.sprite{position:absolute;left:0;top:0;transform-origin:50% 100%}
+.anc{width:1em;height:1em}
+/* luz da vela e vinheta, em cima de tudo */
+.light{position:absolute;inset:0;pointer-events:none;z-index:20;mix-blend-mode:multiply;
+  background:radial-gradient(ellipse 120% 95% at 55% 40%,transparent 35%,rgba(10,5,2,.78) 85%)}
+.warm{position:absolute;inset:0;pointer-events:none;z-index:21;mix-blend-mode:screen;opacity:.55;
+  background:radial-gradient(ellipse 30% 30% at 86% 22%,rgba(255,150,60,.35),transparent 70%),radial-gradient(ellipse 22% 26% at 9% 38%,rgba(255,150,60,.25),transparent 70%);animation:flick 2.3s infinite steps(1)}
+@keyframes flick{0%{opacity:.55}13%{opacity:.48}27%{opacity:.6}41%{opacity:.5}58%{opacity:.57}73%{opacity:.46}86%{opacity:.6}}
+.flame{transform-origin:50% 100%;animation:fl 1.1s infinite ease-in-out alternate}
+.flame.b{animation-duration:.8s;animation-delay:-.3s}.flame.c{animation-duration:1.4s;animation-delay:-.6s}
+@keyframes fl{0%{transform:scale(1,1) skewX(0)}30%{transform:scale(.9,1.12) skewX(3deg)}60%{transform:scale(1.05,.94) skewX(-2deg)}100%{transform:scale(.95,1.06) skewX(1deg)}}
+.glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,200,110,.55),rgba(255,140,40,.15) 40%,transparent 70%);mix-blend-mode:screen;animation:gl 1.7s infinite alternate ease-in-out;pointer-events:none}
+@keyframes gl{from{opacity:.75;transform:scale(1)}to{opacity:1;transform:scale(1.08)}}
+@media (prefers-reduced-motion:reduce){.flame,.glow,.warm{animation:none}.grp{transition:none}.world{transition:none}}
+
+/* contratos do Pacto */
+.contract{position:relative;width:30em;height:43em;box-sizing:border-box;padding:2.2em 2.3em 1.8em;isolation:isolate;display:flex;flex-direction:column;color:#2a1a10;transition:transform .9s cubic-bezier(.2,.75,.15,1)}
+.contract::before{content:"";position:absolute;inset:0;z-index:-2;filter:url(#rough) drop-shadow(0 .4em .5em rgba(0,0,0,.6));
+  background:var(--grain),
+   linear-gradient(90deg,transparent 49.6%,rgba(255,250,235,.35) 49.8%,rgba(60,35,15,.22) 50.2%,transparent 50.6%),
+   linear-gradient(0deg,transparent 33%,rgba(60,35,15,.16) 33.2%,rgba(255,250,235,.25) 33.5%,transparent 33.8%),
+   radial-gradient(ellipse at 85% 90%,rgba(110,60,20,.35),transparent 30%),radial-gradient(circle at 10% 8%,rgba(110,60,20,.3),transparent 25%),
+   linear-gradient(170deg,#e4d6b4,#cdb98c);
+  box-shadow:inset 0 0 2.6em rgba(80,40,10,.75),inset 0 0 .6em rgba(60,25,5,.8)}
+.contract::after{content:"";position:absolute;inset:1em;z-index:-1;border:.14em solid rgba(42,26,16,.75);outline:.06em solid rgba(42,26,16,.6);outline-offset:.35em;filter:url(#wobble)}
+.contract .ct-k{font-family:var(--f-type);font-size:.95em;letter-spacing:.3em;text-align:center;opacity:.75}
+.contract .ct-n{font-family:"IM Fell English SC",Georgia,serif;font-size:3.6em;line-height:.95;text-align:center;color:#5e0f09;letter-spacing:.04em}
+.contract .ct-d{font-family:"IM Fell English",Georgia,serif;font-style:italic;font-size:1.25em;text-align:center;margin-top:.15em}
+.contract .ct-art{height:15.5em;margin:.5em -.6em .2em;position:relative}
+.contract .ct-art svg{width:100%;height:100%;overflow:visible;filter:url(#wobble)}
+.contract ol{list-style:none;margin:.2em 0 0;padding:0;font-family:var(--f-type);font-size:1.02em;line-height:1.35;flex:1}
+.contract ol li{display:flex;gap:.6em;padding:.25em 0;border-bottom:.08em dotted rgba(42,26,16,.4)}
+.contract ol li b{font-family:"IM Fell English SC",serif;font-weight:400;color:#5e0f09;min-width:1.6em}
+.contract .sign{display:flex;align-items:flex-end;justify-content:space-between;gap:1em;margin:.3em 0 .6em}
+.contract .sign .ln2{flex:1;border-bottom:.1em solid #2a1a10;position:relative;height:2.6em;font-family:var(--f-type);font-size:.8em}
+.contract .sign .ln2 span{position:absolute;left:0;bottom:-1.5em;opacity:.7}
+.contract .sign svg{position:absolute;left:.4em;bottom:-.2em;width:12em;height:3.2em;overflow:visible}
+.seal{width:5em;height:5em;flex:none;border-radius:50% 46% 52% 48%;background:radial-gradient(circle at 38% 34%,#b43a2a,#7a1a10 62%,#5a0f08);display:grid;place-items:center;color:rgba(255,220,200,.6);font-family:"IM Fell English SC",serif;font-size:1.7em;box-shadow:.1em .2em .3em rgba(0,0,0,.45),inset 0 0 0 .3em rgba(0,0,0,.18);filter:url(#blot)}
+.contract .go{text-align:center}
+.pacto:not(.on) .contract.c2{transform:translate(-31em,1em) rotate(-5deg)}
+.pacto:not(.on) .contract.c3{transform:translate(-63em,-.5em) rotate(4deg)}
+.pacto:not(.on) .deckrow{transform:translate(-20em,-40em) scale(.6) rotate(8deg);opacity:0}
+.deckrow{transition:transform .9s cubic-bezier(.2,.75,.15,1),opacity .6s}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="pencil" width="3.4" height="3.4" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+      <rect width="3.4" height="3.4" fill="#d2c6a8"/><path d="M0 0V3.4" stroke="#3a332c" stroke-width="1.1" opacity=".75"/>
+    </pattern>
+    <filter id="wobble" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.8"/></filter>
+    <filter id="rough" x="-4%" y="-4%" width="108%" height="108%"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter>
+    <filter id="blot" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".12" numOctaves="2" seed="2"/><feDisplacementMap in="SourceGraphic" scale="6"/><feGaussianBlur stdDeviation=".4"/></filter>
+    <filter id="stamp" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="5" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 1.6" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter>
+  <pattern id="xh" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="3" height="3" fill="#d8caa6"/><path d="M0 0V3" stroke="#3a2616" stroke-width=".9" opacity=".8"/><path d="M0 1.5H3" stroke="#3a2616" stroke-width=".5" opacity=".45"/></pattern><radialGradient id="cglow"><stop offset="0" stop-color="#ffd890" stop-opacity=".75"/><stop offset=".45" stop-color="#ff9a40" stop-opacity=".25"/><stop offset="1" stop-color="#ff8a30" stop-opacity="0"/></radialGradient></defs>
+</svg>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Mesa do Lorde</h1>
+    <p>Clique nas fitas do menu, ou em qualquer papel espalhado, para trazer aquela tela para a frente. <b>Voltar</b> devolve o menu. Passe o mouse na cena para mexer um pouco a câmera.</p>
+  </div>
+  <div class="stage" id="stage">
+    <div class="cam"><div class="world" id="world"><div class="table" id="table"></div></div></div>
+    <div class="props" id="props"></div><div class="light"></div>
+  </div>
+  <div class="notes">
+    <p><b>No jogo:</b> a mesa, as velas, a faca e a caveira viram uma cena 3D de verdade no Godot. Os papéis são telas de UI desenhadas numa textura sobre a mesa. Trocar de menu é a câmera e o papel se movendo, sem corte seco.</p>
+    <p><b>Pacto:</b> cada Pacto virou um contrato antigo, com cláusulas datilografadas, a ilustração a nanquim com hachura, a assinatura em sangue e o lacre. Fechados, os três ficam empilhados na mesa.</p>
+    <p><b>Espaço vazio:</b> fora do papel em foco, a mesa fica cheia de coisas: os outros menus como papéis soltos, cartas, moedas, cera derretida, manchas e o cartaz do herói preso pela faca.</p>
+  </div>
+</div>
+
+<script>
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const A={
+ skel:`<path class="ln bw" d="M70 13 Q91 48 70 83"/><path class="ln th" d="M70 13 L57 48 L70 83"/><path class="ln" d="M44 48 L88 48"/><path class="ac" d="M89 48 l-7 -4 v8z"/><path class="ln th" d="M47 48 l-3 -3.5 M47 48 l-3 3.5"/><path class="ln" d="M42 35 V66"/><path class="ln" d="M33 42 Q42 37 51 42 M32 48 Q42 43 52 48 M33 54 Q42 49 51 54"/><path class="ln" d="M50 40 L61 44 L71 48 M35 40 L41 47 L57 48"/><path class="fl sh" d="M34 66 Q42 60 50 66 Q48 72 42 72 Q36 72 34 66z"/><path class="ln" d="M37 71 L33 84 L31 95 M47 71 L51 84 L54 95 M26 95 h7 M52 95 h7"/><path class="fl" d="M30 22 a12 12 0 1 1 24 0 v6 q0 4 -4 4 h-16 q-4 0 -4 -4z"/><circle class="dk" cx="37" cy="22" r="3.2"/><circle class="dk" cx="47" cy="22" r="3.2"/><path class="dk" d="M42 26 l-1.6 3.4 h3.2z"/><path class="ln th" d="M36 32 v3 M40 32 v3 M44 32 v3 M48 32 v3"/>`,
+ rat:`<path class="ln" d="M26 66 Q8 60 12 76 Q16 88 5 92"/><ellipse class="fl sh" cx="48" cy="64" rx="25" ry="16"/><path class="fl" d="M64 50 Q84 46 92 61 Q82 68 66 66Z"/><circle class="fl" cx="68" cy="47" r="6.5"/><circle class="ac" cx="81" cy="56" r="2"/><path class="ln" d="M36 78 l-2 9 M56 79 l2 9"/><path class="ln th" d="M90 61 l8 -3 M90 62 l8 3"/><path class="ln th" d="M22 40 q4 -2 8 0 M30 36 q4 -2 8 0" opacity=".6"/>`,
+ web:(()=>{const cx=50,cy=48,n=9,rings=[9,17,26,35,44];let s="";const ang=i=>-Math.PI/2+i*2*Math.PI/n+.12;for(let i=0;i<n;i++){const a=ang(i);s+=`<path class="ln th" d="M${cx} ${cy} L${(cx+Math.cos(a)*48).toFixed(1)} ${(cy+Math.sin(a)*48).toFixed(1)}"/>`;}rings.forEach(r=>{let d="";for(let i=0;i<=n;i++){const a=ang(i%n),x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;if(i===0)d+=`M${x.toFixed(1)} ${y.toFixed(1)}`;else{const am=(ang(i-1)+a)/2+(i===n?Math.PI:0),rm=r*.8;d+=` Q${(cx+Math.cos(am)*rm).toFixed(1)} ${(cy+Math.sin(am)*rm).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;}}s+=`<path class="ln th" d="${d}"/>`;});return s+`<path class="ln th" d="M70 66 l-7 -5 M70 66 l-8 1 M70 66 l-6 6 M70 66 l-1 8 M74 66 l7 -5 M74 66 l8 1 M74 66 l6 6 M74 66 l1 8"/><ellipse class="fl sh" cx="72" cy="70" rx="5" ry="6.5"/><circle class="fl" cx="72" cy="61.5" r="3"/><circle class="ac" cx="71" cy="61" r=".9"/><circle class="ac" cx="73" cy="61" r=".9"/>`})(),
+ oil:`<circle class="ln th" cx="44" cy="38" r="3"/><circle class="ln th" cx="57" cy="30" r="4"/><circle class="ln th" cx="49" cy="20" r="2.5"/><path class="fl sh" d="M23 52 Q23 86 50 86 Q77 86 77 52Z"/><ellipse class="fl" cx="50" cy="52" rx="28" ry="6"/><ellipse class="ac" cx="50" cy="52" rx="23" ry="3.6"/><path class="ln" d="M32 83 l-5 9 M68 83 l5 9"/><path class="ac" d="M36 99 Q37 89 43 93 Q45 83 51 91 Q57 85 62 99Z"/>`,
+ tower:`<path class="ln th" d="M10 94 H90 M18 97 H34 M60 97 H80"/><path class="fl sh" d="M32 93 L36 40 H64 L68 93 Z"/><path class="fl" d="M33 41 V30 H40 V35 H46 V30 H54 V35 H60 V30 H67 V41 Z"/><path class="ln th" d="M37 52 H63 M36 64 H64 M35 76 H65 M34 88 H66 M45 41 V52 M55 52 V64 M45 64 V76 M56 76 V88"/><path class="dk" d="M47.5 56 q2.5 -4 5 0 v8 h-5z"/><path class="fl sh" d="M45 25 Q34 13 25 17 Q31 19 30 24 Q35 22 37 27 Q41 24 45 29Z"/><path class="fl sh" d="M55 25 Q66 13 75 17 Q69 19 70 24 Q65 22 63 27 Q59 24 55 29Z"/><path class="fl" d="M44 31 Q43 21 50 20 Q57 21 56 31Z"/><circle class="fl" cx="50" cy="16" r="4.6"/><path class="ln th" d="M47 12 l-2.5 -4.5 M53 12 l2.5 -4.5"/><circle class="ac" cx="48.3" cy="16" r="1.1"/><circle class="ac" cx="51.7" cy="16" r="1.1"/>`,
+ forge:`<path class="ln th" d="M8 91 H92"/><path class="gl" d="M42 39 l-6 -8 M49 37 l0 -10 M58 39 l6 -7 M35 43 l-9 -3 M66 42 l9 -4"/><path class="ac" d="M22 46 L68 43.5 L77 46 L68 48.5 L22 47.5Z"/><path class="fl sh" d="M14 50 H80 V58 Q67 59 63 64 V74 L72 80 V87 H28 V80 L37 74 V64 Q33 59 22 58 Q10 57 5 52 Q8 50 14 50Z"/><path class="ln th" d="M17 53.5 H77"/><path class="ln bw" d="M63 17 L86 40"/><rect class="fl" x="47" y="5" width="24" height="11" rx="1.5" transform="rotate(45 59 10.5)"/>`,
+ bolt:`<path class="ac" d="M58 6 L30 54 H50 L38 96 L74 40 H54 L66 6Z"/><path class="gl" d="M24 30 l-8 -4 M80 70 l9 3 M22 70 l-8 4"/>`,
+ chest:`<path class="fl sh" d="M18 50 H82 V88 H18Z"/><path class="fl" d="M18 50 Q18 28 50 26 Q82 28 82 50Z"/><path class="ln th" d="M22 50 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7 l4 7 l4 -7"/><circle class="ac" cx="40" cy="39" r="3"/><circle class="ac" cx="60" cy="39" r="3"/><path class="ln th" d="M30 57 V88 M70 57 V88"/><path class="ac" d="M44 58 Q50 76 58 59Z"/>`,
+ shield:`<path class="fl" d="M20 12 H80 V50 Q80 78 50 92 Q20 78 20 50Z"/>`,
+};
+const C={
+ skel:{t:"mon",name:"Esqueletos Arqueiros",cost:3,kind:"Monstro · Morto-vivo",text:"2 arqueiros que atacam de longe e recuam.",note:"← recuam!",nx:"58%",ny:"18%"},
+ rat:{t:"mon",name:"Horda de Ratos",cost:2,kind:"Enxame · Bando",text:"8 ratos rápidos e frágeis.",note:"muitos!",nx:"8%",ny:"12%"},
+ web:{t:"spl",name:"Teia",cost:2,kind:"Feitiço",text:"Lentidão em área por 4 s.",note:"gruda o herói",nx:"50%",ny:"60%"},
+ oil:{t:"spl",name:"Óleo Fervente",cost:3,kind:"Feitiço · Fogo",text:"Poça que queima com Fogo e deixa o herói Encharcado.",note:"queima!",nx:"64%",ny:"14%"},
+ tower:{t:"str",name:"Torre de Gárgula",cost:4,kind:"Estrutura · Construto",text:"Atira de longe; vira pedra com o herói perto.",note:"não chegar perto",nx:"4%",ny:"26%"},
+ forge:{t:"str",name:"Forja Sombria",cost:4,kind:"Covil",text:"Monstros entram com +25% de vida.",note:"+vida",nx:"6%",ny:"10%"},
+};
+function grime(r,t){let s="";
+  for(let k=0;k<4;k++)s+=`<ellipse cx="${(r()*100).toFixed(0)}" cy="${(r()*143).toFixed(0)}" rx="${(6+r()*14).toFixed(1)}" ry="${(4+r()*10).toFixed(1)}" fill="#5a3818" opacity="${(.08+r()*.12).toFixed(2)}" filter="url(#blot)"/>`;
+  const cx=20+r()*60,cy=40+r()*50,rr=11+r()*7;
+  s+=`<circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="${rr.toFixed(1)}" fill="none" stroke="#6b4520" stroke-width="${(1.2+r()*1.4).toFixed(1)}" opacity=".28" stroke-dasharray="${(rr*4).toFixed(0)} ${(rr*1.4).toFixed(0)}" filter="url(#wobble)"/>`;
+  let fp="";for(let k=1;k<=7;k++)fp+=`<ellipse rx="${(k*1.1).toFixed(1)}" ry="${(k*1.45).toFixed(1)}"/>`;
+  s+=`<g transform="translate(${(r()<.5?8+r()*10:80+r()*10).toFixed(0)} ${(30+r()*50).toFixed(0)}) rotate(${(r()*80-40).toFixed(0)})" fill="none" stroke="#2a1e14" stroke-width=".45" opacity=".26" filter="url(#wobble)">${fp}</g>`;
+  if(t==="mon"){let sp="";const sx=20+r()*60,sy=40+r()*40;for(let k=0;k<10;k++){const a=r()*6.28,d=r()*9;sp+=`<circle cx="${(sx+Math.cos(a)*d).toFixed(1)}" cy="${(sy+Math.sin(a)*d).toFixed(1)}" r="${(.4+r()*1.4).toFixed(1)}"/>`;}s+=`<g fill="#6e130c" opacity=".55">${sp}</g>`;}
+  return s;}
+function clip(r){const p=[],j=()=>(r()-.5)*1.1,n=11;
+  for(let k=0;k<=n;k++)p.push(`${(k*100/n).toFixed(1)}% ${(j()+.4).toFixed(2)}%`);
+  for(let k=1;k<=n;k++)p.push(`${(99.6+j()).toFixed(2)}% ${(k*100/n).toFixed(1)}%`);
+  for(let k=n-1;k>=0;k--)p.push(`${(k*100/n).toFixed(1)}% ${(99.6+j()).toFixed(2)}%`);
+  for(let k=n-1;k>0;k--)p.push(`${(.4+j()).toFixed(2)}% ${(k*100/n).toFixed(1)}%`);
+  return `polygon(${p.join(",")})`;}
+let SEED=1;
+function card(id,o={}){const c=C[id],r=rng(SEED++*31+7),rot=o.rot??((r()-.5)*3).toFixed(2),a=A[id];
+  return `<div class="cw t-${c.t}${o.mini?" mini":""}" style="--rot:${rot}deg;${o.style||""}">
+   <div class="card" style="clip-path:${clip(r)}"><div class="paper"></div><div class="band"></div>
+    <div class="head"><div class="nm${c.name.length>15?" long":""}">${c.name}</div><div class="cost" aria-label="custo ${c.cost}">${c.cost}</div></div>
+    <div class="art"><svg viewBox="0 0 100 100" aria-hidden="true"><g class="sk2">${a}</g><g>${a}</g></svg><span class="note" style="left:${c.nx};top:${c.ny}">${c.note}</span></div>
+    <div class="kind">${c.kind}</div><div class="text">${c.text}</div>
+    <svg class="grime" viewBox="0 0 100 143" preserveAspectRatio="none" aria-hidden="true">${grime(r,c.t)}</svg>
+   </div></div>`;}
+function draw(id,cls="ink-only"){const a=A[id];return `<svg class="${cls}" viewBox="0 0 100 100" style="width:100%;height:100%;overflow:visible;filter:url(#wobble)" aria-hidden="true"><g class="sk2">${a}</g><g>${a}</g></svg>`;}
+const tp=(k="a b")=>k.split(" ").map(x=>`<span class="tp ${x}"></span>`).join("");
+const btn=(t,cls="mask",r=-1.5,extra="")=>`<span class="tape btn ${cls}" style="--r:${r}deg">${t}${extra}</span>`;
+
+
+/* ---------- desenhos elaborados ---------- */
+const rat=(x,y,s,f=1)=>`<g transform="translate(${x} ${y}) scale(${s*f} ${s})">
+ <path class="ln" d="M2 24 Q-20 30 -14 40 Q-6 48 -26 52"/>
+ <path class="fl" style="fill:url(#xh)" d="M0 20 Q2 2 26 2 Q44 2 52 14 Q60 16 66 22 Q56 28 44 28 Q30 34 10 30 Q0 28 0 20Z"/>
+ <path class="ln th" d="M12 7 l-2 -3 M19 4 l-1 -3 M27 3 l1 -3 M35 4 l2 -3 M8 12 l-3 -2"/>
+ <circle class="fl" cx="45" cy="7" r="6"/><circle class="ln th" cx="45" cy="7" r="3"/>
+ <circle class="ac" cx="56" cy="15" r="1.8"/><path class="ln" d="M14 30 l-3 7 l-3 1 M38 29 l2 8 l3 1"/>
+ <path class="ln th" d="M64 22 l10 -4 M64 23 l10 2 M64 24 l8 6"/></g>`;
+const ART={
+ horda:`<path class="ln th" d="M4 128 H196 M10 133 H60 M120 133 H190" opacity=".8"/>
+  <g opacity=".85">${Array.from({length:22},(_,i)=>`<path class="ln th" d="M${8+i*8.6} 128 l-5 6"/>`).join("")}</g>
+  <path class="fl" style="fill:url(#xh)" d="M128 104 Q140 82 162 86 Q184 90 186 112 Q186 124 176 128 H136 Q126 124 128 104Z"/>
+  <path class="ln th" d="M140 128 V118 M148 128 V119 M156 128 V119 M164 128 V118"/><circle class="dk" cx="148" cy="104" r="5.5"/><circle class="dk" cx="168" cy="104" r="5.5"/><path class="dk" d="M158 110 l-3 6 h6z"/>
+  <path class="ln bw" d="M112 122 L190 96 M118 96 L194 124"/><circle class="fl" cx="110" cy="122" r="3.5"/><circle class="fl" cx="192" cy="95" r="3.5"/><circle class="fl" cx="116" cy="95" r="3.5"/><circle class="fl" cx="196" cy="125" r="3.5"/>
+  ${rat(124,50,.72,-1)}${rat(12,74,1.05)}${rat(60,100,.78)}${rat(36,42,.62)}
+  <path class="ln th" d="M6 20 q6 -6 12 0 M14 12 q6 -6 12 0" opacity=".5"/><path class="gl" d="M150 30 l6 -8 M162 34 l9 -5 M170 44 l9 0"/>`,
+ ruina:`<path class="ln" d="M20 30 Q26 14 44 18 Q52 4 70 10 Q86 0 98 14 Q116 8 120 24 Q134 26 128 38 Q110 44 90 38 Q72 46 54 38 Q34 44 20 30Z" style="fill:url(#xh)"/>
+  <path class="ac" d="M84 40 L70 72 H82 L68 108 L100 64 H86 L98 40Z"/>
+  <path class="gl" d="M60 60 l-10 -4 M108 70 l12 -2 M56 90 l-10 4"/>
+  <path class="fl" style="fill:url(#xh)" d="M118 128 L124 58 L132 66 L138 52 L146 62 L152 50 L160 60 L166 128Z"/>
+  <path class="ln th" d="M124 72 H162 M123 86 H163 M122 100 H164 M121 114 H165 M134 58 V72 M150 72 V86 M134 86 V100 M150 100 V114 M140 114 V128"/>
+  <path class="ln" d="M136 76 l6 10 l-4 8 l8 14"/><path class="dk" d="M140 92 q3 -5 6 0 v9 h-6z"/>
+  <rect class="fl" x="168" y="80" width="9" height="6" transform="rotate(25 172 83)"/><rect class="fl" x="176" y="104" width="10" height="6" transform="rotate(-20 181 107)"/><rect class="fl" x="104" y="96" width="8" height="5" transform="rotate(40 108 98)"/>
+  <path class="ln th" d="M4 128 H196"/><g opacity=".85">${Array.from({length:22},(_,i)=>`<path class="ln th" d="M${8+i*8.6} 128 l-5 6"/>`).join("")}</g>
+  <path class="ln th" d="M30 128 q4 -14 10 -2 q4 -16 10 0 M70 128 q3 -10 8 0" /><path class="ln th" d="M176 126 l4 -4 M184 127 l3 -5 M100 127 l-3 -5"/>`,
+ tesouro:`<path class="ln th" d="M4 128 H196"/><g opacity=".85">${Array.from({length:22},(_,i)=>`<path class="ln th" d="M${8+i*8.6} 128 l-5 6"/>`).join("")}</g>
+  <path class="fl" style="fill:url(#xh)" d="M50 80 H150 V126 H50Z"/><path class="ln th" d="M66 80 V126 M134 80 V126 M50 102 H150"/>
+  <path class="fl" style="fill:url(#xh)" d="M52 80 Q48 26 100 22 Q152 26 148 80Z" transform="rotate(-8 52 80)"/>
+  <path class="ln th" d="M56 80 l5 9 l5 -9 l5 9 l5 -9 l5 9 l5 -9 l5 9 l5 -9 l5 9 l5 -9 l5 9 l5 -9 l5 9 l5 -9 l5 9 l5 -9 l5 9 l5 -9" />
+  <path class="ln th" d="M58 74 l5 -8 l5 6 l5 -8 l5 6 l5 -8 l5 6 l5 -8 l5 6 l5 -8 l5 6 l5 -8 l5 6 l5 -8 l5 6 l5 -8 l5 6 l5 -8" transform="rotate(-8 52 80)"/>
+  <circle class="fl" cx="82" cy="44" r="7" transform="rotate(-8 52 80)"/><circle class="ac" cx="83" cy="45" r="3.4" transform="rotate(-8 52 80)"/>
+  <circle class="fl" cx="114" cy="40" r="7" transform="rotate(-8 52 80)"/><circle class="ac" cx="115" cy="41" r="3.4" transform="rotate(-8 52 80)"/>
+  <path class="ac" d="M92 88 Q100 120 128 112 Q118 104 110 90Z"/>
+  ${[[24,122,9],[36,126,8],[30,115,8],[164,124,9],[176,120,8],[168,112,7],[186,126,8],[14,127,7]].map(([x,y,r])=>`<ellipse class="fl" cx="${x}" cy="${y}" rx="${r}" ry="${(r*.45).toFixed(1)}"/><path class="ln th" d="M${x-r*.5} ${y} h${r}"/>`).join("")}
+  <path class="gl" d="M20 96 l0 -8 M16 92 h8 M180 90 l0 -8 M176 86 h8 M160 40 l0 -6 M157 37 h6"/>`,
+};
+const sig=(d)=>`<svg viewBox="0 0 120 32" aria-hidden="true"><path d="${d}" fill="none" stroke="#7a150d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#wobble)"/><circle cx="96" cy="26" r="1.6" fill="#7a150d"/><circle cx="101" cy="29" r="1" fill="#7a150d"/></svg>`;
+const contract=(c,cls,name,desc,art,rules,seal,sigd,red)=>`<div class="contract ${cls}">
+  <div class="ct-k">PACTO DA</div><div class="ct-n">${name}</div><div class="ct-d">${desc}</div>
+  <div class="ct-art"><svg viewBox="0 0 200 140" class="ink-only" aria-hidden="true">${art}</svg></div>
+  <ol>${rules.map((r,i)=>`<li><b>§${i+1}</b><span>${r}</span></li>`).join("")}</ol>
+  <div class="sign"><div class="ln2">${sig(sigd)}<span>o Lorde das Trevas</span></div><div class="seal">${seal}</div></div>
+  <div class="go"><button class="tape${red?" red":""}" style="--r:-1.2deg" data-go="menu">Assinar este Pacto</button></div></div>`;
+
+/* ---------- objetos de pé ---------- */
+const candle=(h,w,fl)=>`<svg viewBox="0 0 40 ${h+40}" style="width:${w}em;height:${(h+40)*w/40}em;overflow:visible" aria-hidden="true">
+  <path d="M8 ${h+30} Q8 34 10 34 H30 Q32 34 32 ${h+30}Z" fill="#e8dcc0"/><path d="M8 ${h+30} Q8 34 10 34 H14 Q12 ${h/2} 14 ${h+30}Z" fill="#fff4dc" opacity=".6"/><path d="M26 34 H30 Q32 34 32 ${h+30} H27 Q29 ${h/2} 26 34Z" fill="#b9a884"/>
+  <path d="M10 34 Q10 46 8 52 Q12 54 12 44 Q14 40 16 34Z M24 34 Q25 40 23 58 Q27 60 27 46 Q28 38 30 34Z" fill="#f2e6cc"/>
+  <ellipse cx="20" cy="34" rx="10" ry="2.6" fill="#f6ecd4"/><path d="M20 34 v-5" stroke="#1d1410" stroke-width="1.2"/>
+  <circle cx="20" cy="18" r="22" fill="url(#cglow)" class="flame ${fl}" style="mix-blend-mode:screen"/><g class="flame ${fl}"><path d="M20 4 Q28 18 24 26 Q20 31 16 26 Q12 18 20 4Z" fill="#ffd27a"/><path d="M20 12 Q24 21 22 25 Q20 28 18 25 Q16 21 20 12Z" fill="#fff6d8"/></g>
+  <ellipse cx="20" cy="${h+30}" rx="16" ry="4" fill="#2a1a10"/><path d="M4 ${h+30} Q4 ${h+38} 20 ${h+38} Q36 ${h+38} 36 ${h+30}" fill="#3a2414"/></svg>`;
+const knife=`<svg viewBox="0 0 40 150" style="width:4.2em;height:15.75em;overflow:visible" aria-hidden="true">
+  <path d="M15 112 L25 112 L23 150 L17 150Z" fill="#9aa0a4"/><path d="M20 112 L25 112 L23 150 L20 150Z" fill="#d7dcde"/>
+  <rect x="5" y="104" width="30" height="8" rx="2" fill="#6b5a3a"/><rect x="5" y="104" width="30" height="3" rx="1.5" fill="#a8925e"/>
+  <path d="M13 104 Q12 60 15 22 H25 Q28 60 27 104Z" fill="#3b2416"/>
+  ${Array.from({length:9},(_,i)=>`<path d="M13 ${30+i*8.5} Q20 ${27+i*8.5} 27 ${30+i*8.5}" stroke="#1f120a" stroke-width="2.2" fill="none"/>`).join("")}
+  <path d="M15 24 Q14 60 15 102" stroke="#6a4a30" stroke-width="1.5" fill="none" opacity=".7"/>
+  <circle cx="20" cy="17" r="7" fill="#7a6a48"/><circle cx="18" cy="15" r="2.5" fill="#c8b27c"/></svg>`;
+const skull=`<svg viewBox="0 0 60 60" style="width:7em;height:7em;overflow:visible" aria-hidden="true">
+  <path d="M8 28 Q8 4 30 4 Q52 4 52 28 Q52 38 44 42 V52 Q44 56 38 56 H22 Q16 56 16 52 V42 Q8 38 8 28Z" fill="#e2d6b8"/>
+  <path d="M30 4 Q52 4 52 28 Q52 38 44 42 V52 Q44 56 38 56 H34 Q42 40 40 22 Q38 8 30 4Z" fill="#b8a886"/>
+  <ellipse cx="21" cy="29" rx="7" ry="6.5" fill="#1d1410"/><ellipse cx="39" cy="29" rx="7" ry="6.5" fill="#1d1410"/><path d="M30 36 l-4 7 h8z" fill="#1d1410"/>
+  <path d="M22 50 v6 M26 50 v6 M30 50 v6 M34 50 v6 M38 50 v6" stroke="#5a4a36" stroke-width="1.2"/><path d="M14 16 Q20 10 26 12" stroke="#fff6e0" stroke-width="1.5" fill="none" opacity=".6"/></svg>`;
+const inkpot=`<svg viewBox="0 0 60 90" style="width:6em;height:9em;overflow:visible" aria-hidden="true">
+  <path d="M30 60 L48 2" stroke="#2a1a10" stroke-width="1.2"/><path d="M48 2 Q60 10 52 30 Q46 44 34 52 Q40 30 48 2Z" fill="#d9cdb0"/><path d="M48 2 Q50 26 36 50" stroke="#8a7a5a" stroke-width=".8" fill="none"/>
+  <path d="M14 58 H46 L50 86 Q30 92 10 86Z" fill="#1c1a24"/><path d="M14 58 H22 L20 88 Q14 87 10 86Z" fill="#3a3850" opacity=".7"/><rect x="20" y="50" width="20" height="9" rx="2" fill="#2a2632"/><ellipse cx="30" cy="50" rx="10" ry="2.5" fill="#0c0b10"/></svg>`;
+
+/* ---------- conteúdo de cada papel ---------- */
+const menuSheet=`<div class="pp" style="width:44em;height:50em;padding:3.6em 3.6em;--r:0deg">${tp()}
+  <div style="font-family:var(--f-type);font-size:1.15em;letter-spacing:.1em;opacity:.75">UM JOGO DE CARTAS EM QUE VOCÊ É O CHEFE FINAL</div>
+  <div style="font-family:var(--f-mark);font-size:6.4em;line-height:1;color:#6e130c;margin-top:.12em;transform:rotate(-2deg)">LAST BOSS</div>
+  <svg viewBox="0 0 300 20" style="width:32em;height:1.6em;display:block;margin:-.4em 0 0 .4em;filter:url(#wobble)" aria-hidden="true"><path d="M4 12 Q80 2 150 10 T296 8 M10 16 Q120 8 280 14" fill="none" stroke="#6e130c" stroke-width="3" stroke-linecap="round"/></svg>
+  <div style="font-family:var(--f-hand);font-size:1.7em;line-height:1.15;margin:.5em 0 1em;max-width:21em">O herói está a caminho. Molde quem vai bater à sua porta.</div>
+  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:.55em">
+   <button class="tape red" style="--r:-1.6deg" data-go="continuar">Continuar run salva</button>
+   <button class="tape" style="--r:1deg" data-go="pacto">Nova run</button>
+   <button class="tape" style="--r:-.8deg" data-go="colecao">Coleção</button>
+   <button class="tape" style="--r:1.4deg" data-go="compendio">Compêndio</button>
+   <button class="tape" style="--r:-1.2deg" data-go="config">Configurações</button>
+   <button class="tape" style="--r:.6deg" data-go="sair">Sair</button>
+  </div>
+  <div style="position:absolute;left:3.6em;bottom:2.2em;font-family:var(--f-type);font-size:.9em;opacity:.6">v0.1 · Enter confirma · Esc volta</div>
+  <div class="stain" style="right:3em;top:15em;width:8em;height:8em"></div>
+  <svg viewBox="0 0 100 110" class="ink-only" style="position:absolute;right:3.4em;bottom:5.2em;width:15em;height:16.5em;overflow:visible;filter:url(#wobble);--ink:#3a1a10" aria-hidden="true">
+   <path class="fl" style="fill:url(#xh)" d="M24 30 L30 8 L40 22 L50 4 L60 22 L70 8 L76 30Z"/><circle class="ac" cx="50" cy="16" r="3"/>
+   <path class="fl" d="M22 54 Q22 30 50 30 Q78 30 78 54 Q78 66 68 70 V82 Q68 88 60 88 H40 Q32 88 32 82 V70 Q22 66 22 54Z"/>
+   <ellipse class="dk" cx="38" cy="56" rx="8" ry="7"/><ellipse class="dk" cx="62" cy="56" rx="8" ry="7"/><circle cx="38" cy="56" r="2" fill="#b8321f"/><circle cx="62" cy="56" r="2" fill="#b8321f"/><path class="dk" d="M50 64 l-4 8 h8z"/>
+   <path class="ln th" d="M40 80 v8 M45 80 v8 M50 80 v8 M55 80 v8 M60 80 v8"/><path class="ln th" d="M14 100 Q50 92 88 102" opacity=".7"/></svg>
+  <div style="position:absolute;right:2.6em;bottom:3.4em;font-family:'Caveat',cursive;font-weight:700;font-size:1.5em;color:#6e130c;transform:rotate(-6deg)">eu, o chefe final</div></div>`;
+const back=(r=1.5)=>`<button class="tape" style="--r:${r}deg" data-go="menu">Voltar</button>`;
+const pactoSheet=`<div style="display:flex;flex-direction:column;align-items:center;gap:2.4em">
+  <div style="display:flex;gap:2em;align-items:flex-start">
+   ${contract(0,"c1","Horda","Muitas unidades baratas.",ART.horda,["Sua mão tem 6 cartas.","Monstros dão 110% do XP normal ao herói.","Ratos e enxames custam 1 a menos no primeiro ato."],"H","M4 22 Q10 4 16 20 Q20 30 26 14 Q30 4 34 18 Q38 28 46 12 Q54 2 58 18 L66 16 Q76 10 84 20 Q92 26 104 14",true)}
+   ${contract(0,"c2","Ruína","Feitiços e estruturas.",ART.ruina,["Feitiços causam 115% de dano.","Monstros custam +1 de Elixir.","O herói treina 200% do normal."],"R","M4 18 Q14 2 20 22 Q26 28 30 10 L40 26 Q48 6 58 22 Q66 30 74 12 Q86 4 96 20 L108 16",false)}
+   ${contract(0,"c3","Tesouro","Economia e enganação.",ART.tesouro,["Começa com 8 de Elixir.","Level-ups oferecem só 2 opções.","Ouro do herói morto vem dobrado."],"T","M4 16 Q12 28 22 10 Q30 2 34 22 Q40 30 50 12 Q60 4 64 20 Q72 28 82 14 Q94 6 106 18",false)}
+  </div>
+  <div class="deckrow" style="display:flex;align-items:center;gap:1.2em">
+   <div style="font-family:var(--f-mark);font-size:2.8em;color:#efe2c6;transform:rotate(-3deg);text-shadow:0 .1em .2em #000;line-height:1">Seu deck<br><span style="font-family:var(--f-type);font-size:.42em">12 cartas · 0 almas</span></div>
+   <div style="display:flex;gap:.6em;font-size:.72em">${["web","rat","rat","oil","skel","skel","forge","tower"].map(i=>card(i,{mini:true})).join("")}</div>
+   <div style="display:flex;flex-direction:column;gap:.8em;align-items:flex-start"><button class="tape" style="--r:-2deg" data-go="colecao">Montar deck</button>${back()}</div>
+  </div></div>`;
+const colSheet=`<div style="display:flex;gap:3em;align-items:flex-start">
+  <div class="pp" style="width:60em;padding:2.6em 2.6em 2.8em;--r:0deg">${tp("a")}
+   <div style="display:flex;align-items:center;gap:1.2em;margin-bottom:1.6em"><span style="font-family:var(--f-mark);font-size:2.8em;color:#6e130c;margin-right:.4em">Coleção</span>
+    <span class="tape mask" style="--r:-2deg;font-family:var(--f-type);font-size:1.15em">Todas</span><span class="tape" style="--r:1deg;font-family:var(--f-type);font-size:1.15em">Monstros</span><span class="tape vio" style="--r:-1deg;font-family:var(--f-type);font-size:1.15em">Feitiços</span><span class="tape yel" style="--r:2deg;font-family:var(--f-type);font-size:1.15em">Estruturas</span></div>
+   <div style="display:grid;grid-template-columns:repeat(4,auto);gap:1.6em;font-size:.98em;justify-content:center">${["skel","rat","web","oil","tower","forge","rat","web"].map(i=>card(i)).join("")}</div></div>
+  <div class="pp lined" style="width:28em;height:52em;padding:2em 1.6em 2em 4.4em;--r:2deg">${tp("c")}
+   <div style="font-family:var(--f-mark);font-size:2.2em;color:#6e130c;line-height:1.2">Seu deck <span style="font-family:var(--f-hand);font-size:.7em;color:var(--ink)">(12 cartas)</span></div>
+   <div style="font-family:var(--f-hand);font-size:1.5em;line-height:1.57;margin-top:.4em">
+    ${[["2×","Horda de Ratos","2","#8e1a10"],["2×","Esqueletos Arqueiros","3","#8e1a10"],["1×","Goblin Dinamiteiro","3","#8e1a10"],["2×","Teia","2","#3a2580"],["1×","Óleo Fervente","3","#3a2580"],["1×","Banquete de Almas","1","#3a2580"],["1×","Torre de Gárgula","4","#5a4a1a"],["1×","Forja Sombria","4","#5a4a1a"],["1×","Ninho de Morcegos","5","#5a4a1a"]].map(([n,t,c,col])=>`<div style="display:flex;gap:.4em;color:${col}"><span style="width:1.6em">${n}</span><span style="flex:1">${t}</span><span style="font-family:var(--f-type);font-size:.8em;opacity:.8">${c}</span></div>`).join("")}
+   </div>
+   <div style="position:absolute;left:4.4em;bottom:2em;display:flex;gap:1em"><button class="tape red" style="--r:-1.5deg" data-go="menu">Pronto</button></div></div></div>`;
+const sl=(t,v)=>`<div style="display:grid;grid-template-columns:12em 1fr;align-items:center;gap:1em"><span style="font-family:var(--f-type);font-size:1.15em">${t}</span>
+  <span style="position:relative;height:1.6em;display:block"><svg viewBox="0 0 100 10" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;filter:url(#wobble)"><path d="M1 5 H99" stroke="#1d1915" stroke-width="1.2" vector-effect="non-scaling-stroke"/>${Array.from({length:11},(_,i)=>`<path d="M${1+i*9.8} ${i%5?3.5:2} V${i%5?6.5:8}" stroke="#1d1915" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join("")}</svg>
+  <b style="position:absolute;left:${v}%;top:50%;width:1.5em;height:1.5em;margin:-.75em 0 0 -.75em;background:#5e0f09;border-radius:50% 44% 55% 46%;filter:url(#blot)"></b></span></div>`;
+const ck=(t,on)=>`<div style="display:flex;align-items:center;gap:.8em;font-family:var(--f-type);font-size:1.15em"><span style="width:1.3em;height:1.3em;border:.14em solid #1d1915;display:grid;place-items:center;font-family:var(--f-mark);color:#7a150d;filter:url(#wobble)">${on?"✕":""}</span>${t}</div>`;
+const cfgSheet=`<div class="pp" style="width:46em;height:50em;padding:3em 3.6em;display:flex;flex-direction:column;gap:1.4em;--r:0deg">${tp()}
+  <div style="font-family:var(--f-mark);font-size:3em;color:#6e130c;transform:rotate(-1.5deg)">Configurações</div>
+  <div style="font-family:var(--f-type);font-size:.95em;letter-spacing:.18em;opacity:.7">SOM</div>${sl("Geral",80)}${sl("Música",55)}${sl("Efeitos",70)}
+  <div style="font-family:var(--f-type);font-size:.95em;letter-spacing:.18em;opacity:.7;margin-top:.6em">JOGO</div>${ck("Tela cheia",true)}${ck("Mostrar dicas",true)}${ck("Mostrar FPS",false)}
+  <div style="display:flex;align-items:center;gap:1em;font-family:var(--f-type);font-size:1.15em">Idioma: <span style="font-family:var(--f-hand);font-size:1.3em;border:.12em solid #7a150d;border-radius:50%;padding:0 .5em;filter:url(#wobble)">Português</span><span style="font-family:var(--f-hand);font-size:1.3em;opacity:.6">English</span></div>
+  <div style="margin-top:auto">${back(1)}</div></div>`;
+const compSheet=`<div class="pp" style="width:62em;padding:2.8em 3em 5.4em;--r:0deg">${tp()}
+  <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-family:var(--f-mark);font-size:3em;color:#6e130c">Compêndio</span><span style="font-family:var(--f-type);opacity:.7">página 3 de 12 · criaturas</span></div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.4em 2.4em;margin-top:1em">
+   ${[["skel","Esqueletos Arqueiros","Atiram de longe e recuam quando o herói chega perto."],["rat","Horda de Ratos","Oito ratos rápidos. Frágeis, mas cercam o herói."],["tower","Torre de Gárgula","Vira pedra quando o herói chega perto."],["web","Teia","Deixa tudo na área mais lento por 4 s."],["oil","Óleo Fervente","Queima e deixa o herói Encharcado."],["forge","Forja Sombria","Monstros saem do covil com mais vida."]].map(([a,n,t])=>`<div style="display:grid;grid-template-columns:7em 1fr;gap:.8em;align-items:center;border-bottom:.1em dashed rgba(29,25,21,.35);padding-bottom:1em"><div style="height:7em;--ink:${C[a].t==="mon"?"#4a120b":C[a].t==="spl"?"#3a2580":"#3a3b38"}">${draw(a,"")}</div><div><div style="font-family:var(--f-type);font-size:1.1em">${n}</div><div style="font-family:var(--f-hand);font-size:1.25em;line-height:1.1;margin-top:.2em">${t}</div></div></div>`).join("")}
+  </div><div style="position:absolute;right:3em;bottom:2.4em">${back(-1)}</div></div>`;
+const contSheet=`<div class="pp" style="width:36em;padding:2.8em 3em;display:flex;flex-direction:column;gap:.8em;--r:0deg">${tp("c")}
+  <div style="font-family:var(--f-type);font-size:1.1em;letter-spacing:.2em;opacity:.7">RUN SALVA</div>
+  <div style="font-family:var(--f-mark);font-size:2.8em;color:#6e130c;line-height:1">Pacto da Horda</div>
+  <div style="font-family:var(--f-hand);font-size:1.6em;line-height:1.25">Ato 2 de 3 · 12:40 de run<br>Herói 3 de 5 vindo pela Ponte<br>Seu núcleo: 4 de 5 partes</div>
+  <div style="display:flex;gap:1.2em;margin-top:1em"><button class="tape red" style="--r:-1.5deg" data-go="menu">Continuar</button>${back()}</div></div>`;
+const sairSheet=`<div class="pp" style="width:30em;height:20em;padding:2.6em 2.8em;display:flex;flex-direction:column;gap:.8em;--r:0deg">${tp("c")}
+  <div style="font-family:var(--f-mark);font-size:2.6em;color:#6e130c">Fechar o covil?</div>
+  <div style="font-family:var(--f-hand);font-size:1.5em">A run salva continua aqui na mesa.</div>
+  <div style="display:flex;gap:1.2em;margin-top:auto"><button class="tape red" style="--r:-1.5deg" data-go="menu">Sim, sair</button><button class="tape" style="--r:1deg" data-go="menu">Não</button></div></div>`;
+const wanted=`<div class="pp" style="width:20em;height:27em;padding:2em 1.8em;text-align:center;--r:0deg">
+  <div style="font-family:'IM Fell English SC',serif;font-size:2.6em;line-height:1;color:#2a1a10">PROCURA-SE</div>
+  <div style="height:12em;margin:.6em 1.5em;border:.15em solid #2a1a10;display:grid;place-items:center;--ink:#2a1a10;--fill:#e2d8c0;--sw:2.2"><svg viewBox="0 0 100 100" style="width:80%;height:90%;filter:url(#wobble)"><path class="fl" style="fill:url(#xh)" d="M28 96 Q30 64 50 62 Q70 64 72 96Z"/><path class="fl" d="M34 40 Q34 14 50 14 Q66 14 66 40 V52 Q66 60 50 62 Q34 60 34 52Z"/><path class="ln" d="M34 34 H66 M40 44 H48 M52 44 H60 M50 30 V44"/><path class="ln th" d="M44 54 Q50 57 56 54"/><path class="ln" d="M62 72 L86 36"/><path class="ln th" d="M80 40 l8 -12 l2 8z"/></svg></div>
+  <div style="font-family:var(--f-type);font-size:1.05em">o herói · 5 vidas</div>
+  <div style="font-family:var(--f-hand);font-size:1.6em;color:#7a150d;margin-top:.2em">recompensa: o reino</div></div>`;
+
+/* ---------- montar a mesa ---------- */
+const T=document.getElementById("table");
+const add=(html)=>T.insertAdjacentHTML("beforeend",html);
+const flat=(x,y,rz,html,extra="")=>add(`<div class="flat" style="--x:${x}em;--y:${y}em;--rz:${rz}deg;${extra}">${html}</div>`);
+const SPR=[];const PL=document.getElementById("props");
+const stand=(x,y,html,ry=0)=>{const i=SPR.length;add(`<div class="flat anc" style="--x:${x}em;--y:${y}em" data-a="${i}"></div>`);PL.insertAdjacentHTML("beforeend",`<div class="sprite" data-s="${i}">${html}</div>`);SPR.push(i);};
+const shadow=(x,y,w,h,rz=0,o=1)=>add(`<div class="shadow" style="--x:${x}em;--y:${y}em;--rz:${rz}deg;width:${w}em;height:${h}em;opacity:${o}"></div>`);
+// manchas, cera e respingos direto na madeira
+add(`<svg class="flat" style="--x:75em;--y:55em;width:150em;height:110em;mix-blend-mode:multiply" viewBox="0 0 150 110" aria-hidden="true">
+  <circle cx="104" cy="92" r="5" fill="none" stroke="#1a0c05" stroke-width=".7" opacity=".4" filter="url(#wobble)"/>
+  <g fill="#3a0a05" opacity=".7">${Array.from({length:14},(_,i)=>`<circle cx="${(88+Math.sin(i*2.1)*6).toFixed(1)}" cy="${(96+Math.cos(i*1.7)*3).toFixed(1)}" r="${(.3+(i%4)*.25).toFixed(2)}"/>`).join("")}</g>
+  <path d="M10 30 L44 34 M120 64 L146 60 M60 100 L90 103" stroke="#1a0c05" stroke-width=".25" opacity=".5"/></svg>`);
+add(`<svg class="flat" style="--x:75em;--y:55em;width:150em;height:110em" viewBox="0 0 150 110" aria-hidden="true">
+  <path d="M126 36 q2 -1.5 4 0 q1.5 2 -.5 3 q-3 1.5 -4 -.5 q-1 -1.5 .5 -2.5z" fill="#d8c8a0" opacity=".7" filter="url(#blot)"/><path d="M15 28 q2 -1 3.5 .5 q1 2 -1 2.6 q-2.2 .8 -3 -1z" fill="#d8c8a0" opacity=".7" filter="url(#blot)"/>
+  ${[[86,84],[90,86],[84,88],[93,82],[88,90]].map(([x,y],i)=>`<ellipse cx="${x}" cy="${y}" rx="2.2" ry="1.4" fill="#b9902e" stroke="#5a3e10" stroke-width=".3"/><path d="M${x-1} ${y} h2" stroke="#7a5a18" stroke-width=".25"/>`).join("")}</svg>`);
+// coisas perto da câmera
+flat(30,90,-14,`<div class="pp" style="width:26em;padding:1.6em 2em;--r:0deg;font-family:var(--f-hand);font-size:1.3em;line-height:1.3;color:#3a2010">${tp("c")}<div style="font-family:var(--f-type);font-size:.8em;letter-spacing:.15em;opacity:.7">LEMBRETES</div>– a Ponte cai fácil<br>– herói 3 tem medo de fogo<br>– comprar mais ratos<br><span style="color:#7a150d">– NÃO esquecer o Pacto</span></div>`);
+flat(120,92,9,`<div style="font-size:1.1em">${card("tower",{rot:0})}</div>`);
+flat(146,96,-20,`<div style="font-size:1.1em">${card("oil",{rot:0})}</div>`);
+add(`<svg class="flat" style="--x:80em;--y:96em;width:30em;height:14em" viewBox="0 0 30 14" aria-hidden="true">${[[6,6],[9,8],[12,5],[15,9],[18,6],[22,8],[11,11]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="1.9" ry="1.2" fill="#c49a32" stroke="#5a3e10" stroke-width=".18"/><path d="M${x-.8} ${y} h1.6" stroke="#7a5a18" stroke-width=".15"/>`).join("")}</svg>`);
+// cartas soltas
+flat(10,74,-24,`<div style="font-size:1.05em">${card("skel",{rot:0})}</div>`);
+flat(142,78,18,`<div style="font-size:1.05em">${card("web",{rot:0})}</div>`);
+flat(112,58,-8,`<div style="font-size:.95em">${card("rat",{rot:0})}</div>`);
+// pena deitada
+flat(22,48,-30,`<svg viewBox="0 0 120 30" style="width:14em;height:3.5em" aria-hidden="true"><path d="M2 15 L118 15" stroke="#2a1a10" stroke-width="1"/><path d="M30 15 Q60 -4 116 13 Q70 10 30 15Z M30 15 Q60 32 116 17 Q70 20 30 15Z" fill="#d9cdb0"/><path d="M40 15 L60 6 M50 15 L72 7 M60 15 L84 8 M44 15 L64 24 M56 15 L80 23" stroke="#a8987a" stroke-width=".6"/></svg>`);
+// cartaz preso pela faca
+flat(108,24,6,wanted);
+shadow(111,18,9,3,30,.9);
+stand(108,16,knife,-8);
+// velas
+shadow(132,36,20,10,-20,.7);
+stand(128,32,candle(70,4.5,""));stand(135,36,candle(44,4,"b"));stand(125,40,candle(28,3.6,"c"));
+
+shadow(16,26,10,6,10,.7);stand(16,26,candle(52,4.2,"b"));
+
+// caveira e tinteiro
+shadow(140,58,9,4,0,.8);stand(140,58,skull,-20);
+shadow(20,40,8,4,0,.8);stand(20,40,inkpot,10);
+
+// telas (grupos)
+const G=[
+ {id:"menu",html:menuSheet,x:52,y:46,rz:-6,os:.86,s:.55},
+ {id:"pacto",html:pactoSheet,x:98,y:46,rz:8,os:.66,s:.42},
+ {id:"colecao",html:colSheet,x:28,y:36,rz:5,os:.66,s:.42},
+ {id:"config",html:cfgSheet,x:126,y:64,rz:-14,os:.84,s:.5},
+ {id:"compendio",html:compSheet,x:66,y:26,rz:-3,os:.74,s:.42},
+ {id:"continuar",html:contSheet,x:36,y:60,rz:12,os:.98,s:.5},
+ {id:"sair",html:sairSheet,x:14,y:56,rz:-18,os:1.05,s:.5},
+];
+G.forEach(g=>add(`<div class="grp ${g.id}" data-scr="${g.id}" tabindex="0" role="button" aria-label="${g.id}" style="--x:${g.x}em;--y:${g.y}em;--rz:${g.rz}deg;--s:${g.s||1};--os:${g.os}">${g.html}</div>`));
+let cur="menu";
+function go(id){cur=id;document.querySelectorAll(".grp").forEach(e=>{const on=e.dataset.scr===id;e.classList.toggle("on",on);e.style.zIndex=on?50:"";e.setAttribute("aria-pressed",on)});}
+T.addEventListener("click",ev=>{const b=ev.target.closest("button[data-go]");if(b&&b.closest(".grp.on")){ev.stopPropagation();go(b.dataset.go);return;}
+  const g=ev.target.closest(".grp");if(g&&!g.classList.contains("on"))go(g.dataset.scr);});
+T.addEventListener("keydown",ev=>{const g=ev.target.closest(".grp");if(g&&(ev.key==="Enter"||ev.key===" ")&&ev.target===g){ev.preventDefault();go(g.dataset.scr);}});
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape")go("menu")});
+go(new URLSearchParams(location.search).get("show")||"menu");
+const W=document.getElementById("world"),ST=document.getElementById("stage");
+if(!matchMedia("(prefers-reduced-motion: reduce)").matches)ST.addEventListener("mousemove",e=>{const r=ST.getBoundingClientRect();W.style.setProperty("--wy",((e.clientX-r.left)/r.width-.5)*4+"deg");W.style.setProperty("--wx",((e.clientY-r.top)/r.height-.5)*-2.5+"deg");});
+function place(){const sr=ST.getBoundingClientRect(),u=sr.width/100;
+  document.querySelectorAll(".anc").forEach(a=>{const r=a.getBoundingClientRect(),sp=PL.querySelector(`[data-s="${a.dataset.a}"]`);if(!sp)return;
+   const k=r.width/u,cx=r.left+r.width/2-sr.left,cy=r.top+r.height/2-sr.top;sp.style.transform=`translate(${cx}px,${cy}px) translate(-50%,-100%) scale(${k.toFixed(3)})`;});
+  requestAnimationFrame(place);}
+requestAnimationFrame(place);
+</script>

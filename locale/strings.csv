@@ -195,7 +195,7 @@ UI_NEW_RUN,Nova run,New run
 UI_SETTINGS,Configurações,Settings
 UI_BACK,Voltar,Back
 UI_DEFAULTS,Restaurar padrões,Restore defaults
-UI_CHOOSE_DECK_SUB,O Pacto muda as regras da run; as cartas vêm do deck que você montou na coleção.,The Pact changes the rules of the run; the cards come from the deck you built in the collection.
+UI_CHOOSE_DECK_SUB,"Passe o mouse num Pacto para ver as cartas do deck. Cada Pacto traz o seu deck pronto e muda as regras da run.","Hover a Pact to see its deck. Each Pact comes with a ready-made deck and changes the rules of the run."
 UI_PLAY_DECK,Jogar com este Pacto,Play this Pact
 UI_MENU_KEYS,Enter confirma · Esc volta,Enter confirms · Esc goes back
 UI_TAB_audio,Áudio,Audio
@@ -421,7 +421,7 @@ UI_PICKD_remove,Tire qualquer carta do deck.,Remove any card from your deck.
 UI_MY_DECK,Seu deck,Your deck
 UI_BUILD_DECK,Montar deck,Build deck
 UI_COLLECTION,Coleção,Collection
-UI_COLLECTION_SUB,Clique numa carta para pôr no deck; clique no deck para tirar. Cartas com cadeado se desbloqueiam com Almas e passam a aparecer nas runs.,Click a card to add it to your deck; click the deck to remove it. Locked cards are unlocked with Souls and then show up in runs.
+UI_COLLECTION_SUB,Cartas com cadeado se desbloqueiam com Almas e passam a aparecer nas recompensas das runs.,Locked cards are unlocked with Souls and then show up in run rewards.
 UI_SOULS,Almas: {n},Souls: {n}
 UI_IN_DECK,{n}× no deck,{n}× in deck
 UI_ADD,Pôr no deck,Add to deck
@@ -614,3 +614,24 @@ HCTR_hero_fury,Ataca mais rápido com muitos inimigos perto: use poucos monstros
 HCTR_soul_absorb,Cura a cada abate: evite muitos monstros frágeis perto dele.,Heals on every kill: avoid many fragile monsters near him.
 HCTR_second_wind,Cura 30% uma vez abaixo de 25%: guarde a rajada final para depois dela.,Heals 30% once below 25%: save your final burst for after it.
 HCTR_heroic_strike,Golpe triplo a cada 5 s contra alvos grandes: deixe um monstro barato levar o golpe antes do Ogro.,Triple hit every 5 s against big targets: let a cheap monster take the hit before the Ogre.
+UI_PICK_DECK,Escolher este deck,Pick this deck
+UI_DECK_CONTENTS,"Deck {name} · {n} cartas","{name} deck · {n} cards"
+UI_CHOOSE_GROUP,Escolha o grupo que vai enfrentar,Choose the group you will face
+UI_CHOOSE_GROUP_SUB,Os heróis entram em fila: vence quem derrubar todos; você perde se um deles vencer o chefe.,Heroes come in a queue: you win by felling them all; you lose if one of them beats the boss.
+UI_GROUP_DECK,Deck escolhido: {name},Chosen deck: {name}
+UI_GROUP_SKILLS,{n} habilidades,{n} skills
+UI_GROUP_HP,Vida {n},HP {n}
+UI_GROUP_DMG,Golpe {n},Strike {n}
+UI_START_RUN,Começar a run,Start the run
+UI_UNLOCKED,Desbloqueada,Unlocked
+UI_MAP_CLOSE,Fechar (M),Close (M)
+RULE_hero_hp_mult,Heróis com {p}% de vida,Heroes have {p}% health
+UI_PACT_OF_horde,Pacto da,Pact of the
+UI_PACT_OF_ruin,Pacto da,Pact of
+UI_PACT_OF_treasure,Pacto do,Pact of the
+UI_PACT_LORD,o Lorde das Trevas,the Dark Lord
+UI_PACT_SIGN,Assinar este Pacto,Sign this Pact
+UI_WANTED,PROCURA-SE,WANTED
+UI_ST_you,Heróis derrubados,Heroes defeated
+UI_TITLE_ME,"eu, o chefe final","me, the final boss"
+UI_WANTED_REWARD,recompensa: o reino,reward: the kingdom

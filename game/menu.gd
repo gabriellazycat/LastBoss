@@ -20,13 +20,22 @@ var main_buttons: VBoxContainer
 var continue_btn: Button
 var deck_screen: Control
 var deck_row: HBoxContainer
-var my_deck_row: HBoxContainer
-var my_deck_err: Label
+var preview_head: Label
+var preview_row: HBoxContainer
+var group_screen: Control
+var group_row: HBoxContainer
+var group_deck: Label
+var pending_pact := ""
 var collection: CollectionScreen
 var compendium: CompendiumScreen
 var settings: SettingsPanel
 var footer: Label
 var fade := 0.0
+## Pele Diário: a mesa 3D atrás (main liga) e a folha do título; a tela anterior volta para a mesa.
+var desk: DeskScene
+var title_root: Control
+var prev_screen := ""
+var prev_fade := 1.0
 
 
 func setup(d: GameData, m: MetaSave) -> void:
@@ -54,12 +63,15 @@ func _ready() -> void:
 	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	veil.visible = false
 	add_child(veil)
+	if UiSkins.diario():
+		shade.visible = false
 	_build_title()
 	_build_decks()
+	_build_group()
 	collection = CollectionScreen.new()
 	collection.setup(data, meta)
 	collection.visible = false
-	collection.closed.connect(func(): show_screen("decks"))
+	collection.closed.connect(func(): show_screen("title"))
 	add_child(collection)
 	compendium = CompendiumScreen.new()
 	compendium.setup(data, meta)
@@ -79,14 +91,31 @@ func _ready() -> void:
 func _build_title() -> void:
 	title_box = VBoxContainer.new()
 	title_box.add_theme_constant_override("separation", 6)
-	add_child(title_box)
+	if UiSkins.diario():
+		# Folha presa com duas fitas; o título a pincel e as opções em fita crepe.
+		var sheet := PanelContainer.new()
+		UiDiario.dress(sheet, "paper", 46.0, {"grime": 0.5, "seed": 0.21, "shadow": 12.0, "rough": 3.0})
+		sheet.rotation_degrees = -1.2
+		sheet.draw.connect(_tapes.bind(sheet))
+		sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sheet)
+		sheet.add_child(title_box)
+		title_root = sheet
+	else:
+		add_child(title_box)
+		title_root = title_box
 	var over := UiKit.label(18, UiKit.MUTED, 3)
 	over.text = "UI_TITLE_OVER"
 	title_box.add_child(over)
-	var t := UiKit.title(124 if UiSkins.covil() else 104)
+	var t := UiKit.title(124 if UiSkins.covil() else (100 if UiSkins.diario() else 104))
 	t.text = "LAST BOSS"
 	title_box.add_child(t)
-	if UiSkins.covil():
+	if UiSkins.diario():
+		over.add_theme_font_override("font", UiDiario.font("type"))
+		over.add_theme_color_override("font_color", UiDiario.INK.lightened(0.25))
+		t.rotation_degrees = -2.0
+		title_box.add_child(UiDiario.ornament(470))
+	elif UiSkins.covil():
 		over.add_theme_font_override("font", UiCovil.font("caps"))
 		over.add_theme_color_override("font_color", UiKit.GOLD.darkened(0.15))
 		title_box.add_child(UiCovil.ornament(520))
@@ -106,9 +135,36 @@ func _build_title() -> void:
 	title_box.add_child(gap)
 	main_buttons = VBoxContainer.new()
 	main_buttons.add_theme_constant_override("separation", 10)
-	title_box.add_child(main_buttons)
+	if UiSkins.diario():
+		# Embaixo das fitas, a caveira coroada do Lorde a nanquim (a folha não fica com um vazio do lado).
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 16)
+		title_box.add_child(row)
+		row.add_child(main_buttons)
+		var doodle := VBoxContainer.new()
+		doodle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		doodle.alignment = BoxContainer.ALIGNMENT_END
+		var sk := TextureRect.new()
+		sk.texture = UiDiario.card_tex("lord_skull")
+		sk.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sk.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sk.custom_minimum_size = Vector2(170, 170)
+		doodle.add_child(sk)
+		var me := Label.new()
+		me.text = "UI_TITLE_ME"
+		me.add_theme_font_override("font", UiDiario.font("hand"))
+		me.add_theme_font_size_override("font_size", 24)
+		me.add_theme_color_override("font_color", UiDiario.BLOOD)
+		me.set_meta("no_ink", true)
+		me.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		me.rotation_degrees = -5.0
+		doodle.add_child(me)
+		row.add_child(doodle)
+	else:
+		title_box.add_child(main_buttons)
 	continue_btn = _menu_btn("UI_CONTINUE", func(): continue_run.emit())
 	_menu_btn("UI_NEW_RUN", func(): show_screen("decks"))
+	_menu_btn("UI_COLLECTION", func(): show_screen("collection"))
 	_menu_btn("UI_COMPENDIUM", func(): show_screen("compendium"))
 	_menu_btn("UI_SETTINGS", func(): show_screen("settings"))
 	if OS.get_name() != "Web":
@@ -122,7 +178,10 @@ func _menu_btn(txt: String, cb: Callable) -> Button:
 	b.custom_minimum_size = Vector2(380, 56)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	b.add_theme_font_size_override("font_size", 24)
-	if UiSkins.covil():
+	if UiSkins.diario():
+		b.custom_minimum_size = Vector2(0, 50)
+		UiDiario.menu_button(b, 23, txt == "UI_CONTINUE")
+	elif UiSkins.covil():
 		UiCovil.menu_button(b, 26)
 	b.pressed.connect(cb)
 	b.mouse_entered.connect(func(): b.grab_focus())
@@ -136,7 +195,7 @@ func _build_decks() -> void:
 	add_child(deck_screen)
 	var h := UiKit.title(44)
 	h.text = "UI_CHOOSE_DECK"
-	deck_screen.add_child(h)
+	deck_screen.add_child(UiDiario.tape_title(h) if UiSkins.diario() else h)
 	var hs := UiKit.label(18, UiKit.MUTED)
 	hs.text = "UI_CHOOSE_DECK_SUB"
 	deck_screen.add_child(hs)
@@ -144,31 +203,17 @@ func _build_decks() -> void:
 	deck_row.add_theme_constant_override("separation", 18)
 	deck_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	deck_screen.add_child(deck_row)
-	# O deck montado na coleção vai com qualquer Pacto.
-	var mine := UiKit.panel(UiKit.BG, UiKit.EDGE, 12)
-	var mv := VBoxContainer.new()
-	mv.add_theme_constant_override("separation", 8)
-	mine.add_child(mv)
-	var mh := HBoxContainer.new()
-	mh.add_theme_constant_override("separation", 20)
-	var ml := UiKit.title(26, UiKit.TEXT)
-	ml.text = "UI_MY_DECK"
-	ml.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	mh.add_child(ml)
-	my_deck_err = UiKit.label(16, UiKit.BAD)
-	my_deck_err.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	my_deck_err.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	mh.add_child(my_deck_err)
-	var build := Button.new()
-	build.text = "UI_BUILD_DECK"
-	build.custom_minimum_size = Vector2(240, 46)
-	build.pressed.connect(func(): show_screen("collection"))
-	mh.add_child(build)
-	mv.add_child(mh)
-	my_deck_row = HBoxContainer.new()
-	my_deck_row.add_theme_constant_override("separation", 6)
-	mv.add_child(my_deck_row)
-	deck_screen.add_child(mine)
+	# Prévia: as cartas do deck do Pacto em foco, todas à vista de uma vez.
+	var prev := UiKit.panel(UiKit.BG, UiKit.EDGE, 12)
+	var pv := VBoxContainer.new()
+	pv.add_theme_constant_override("separation", 8)
+	prev.add_child(pv)
+	preview_head = UiKit.title(26, UiKit.TEXT)
+	pv.add_child(preview_head)
+	preview_row = HBoxContainer.new()
+	preview_row.add_theme_constant_override("separation", 6)
+	pv.add_child(preview_row)
+	deck_screen.add_child(prev)
 	var back := Button.new()
 	back.text = "UI_BACK"
 	back.custom_minimum_size = Vector2(200, 48)
@@ -179,7 +224,10 @@ func _build_decks() -> void:
 
 func _fill_decks() -> void:
 	UiKit.clear(deck_row)
-	var errs := meta.deck_errors(meta.deck)
+	if UiSkins.diario():
+		_fill_contracts()
+		_fill_preview(meta.pact if DECKS.has(meta.pact) else DECKS[0])
+		return
 	for id in DECKS:
 		var deck: Dictionary = data.deck(id)
 		var p := UiKit.panel(UiKit.BG, UiKit.EDGE, 16)
@@ -212,42 +260,123 @@ func _fill_decks() -> void:
 		rules.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		v.add_child(rules)
 		var b := Button.new()
-		b.text = "UI_PLAY_DECK"
+		b.text = "UI_PICK_DECK"
 		b.custom_minimum_size = Vector2(0, 54)
 		b.add_theme_font_size_override("font_size", 22)
 		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		b.disabled = errs.size() > 0
 		b.pressed.connect(func():
-			meta.pact = id
-			meta.save()
-			deck_chosen.emit(id))
+			pending_pact = id
+			show_screen("group"))
 		# Material próprio: acender este Pacto não pode acender os painéis que dividem o mesmo material.
 		if p.material:
 			p.material = p.material.duplicate()
 		var lit := func(on: bool): UiKit.set_hot(p, on)
+		b.focus_entered.connect(_fill_preview.bind(id))
 		b.focus_entered.connect(lit.bind(true))
 		b.focus_exited.connect(lit.bind(false))
 		b.mouse_entered.connect(func(): b.grab_focus())
 		p.mouse_entered.connect(func(): b.grab_focus())
 		v.add_child(b)
 		deck_row.add_child(p)
-	UiKit.clear(my_deck_row)
-	var order := meta.deck.duplicate()
+	_fill_preview(meta.pact if DECKS.has(meta.pact) else DECKS[0])
+
+
+## Cartas do deck pronto do Pacto, da mais barata à mais cara.
+func _fill_preview(id: String) -> void:
+	preview_head.text = tr("UI_DECK_CONTENTS").format({"name": tr("DECK_" + id), "n": data.deck(id)["cards"].size()})
+	UiKit.clear(preview_row)
+	var order: Array = data.deck(id)["cards"].duplicate()
 	order.sort_custom(func(a, c): return data.card(a).cost < data.card(c).cost or (data.card(a).cost == data.card(c).cost and a < c))
 	for cid in order:
 		var d: CardDef = data.card(cid)
-		var cell := CollectionScreen.cell(d, 108.0)
+		var cell := CollectionScreen.cell(d, 92.0 if UiSkins.diario() else 112.0)
 		Tips.attach(cell, func(): return Tips.card_entries(d, [], true))
-		my_deck_row.add_child(cell)
-	my_deck_err.text = tr(errs[0]).format({"n": int(data.rules["deck"]["size"])}) if errs.size() > 0 else tr("UI_SOULS").format({"n": meta.souls})
-	my_deck_err.add_theme_color_override("font_color", UiKit.BAD if errs.size() > 0 else UiKit.GOLD)
+		preview_row.add_child(cell)
+
+
+func _build_group() -> void:
+	group_screen = VBoxContainer.new()
+	group_screen.add_theme_constant_override("separation", 18)
+	add_child(group_screen)
+	var h := UiKit.title(44)
+	h.text = "UI_CHOOSE_GROUP"
+	group_screen.add_child(UiDiario.tape_title(h) if UiSkins.diario() else h)
+	var hs := UiKit.label(18, UiKit.MUTED)
+	hs.text = "UI_CHOOSE_GROUP_SUB"
+	group_screen.add_child(hs)
+	group_deck = UiKit.label(22, UiKit.GOLD)
+	group_screen.add_child(group_deck)
+	group_row = HBoxContainer.new()
+	group_row.add_theme_constant_override("separation", 8)
+	group_screen.add_child(group_row)
+	var btns := HBoxContainer.new()
+	btns.add_theme_constant_override("separation", 14)
+	var back := Button.new()
+	back.text = "UI_BACK"
+	back.custom_minimum_size = Vector2(200, 56)
+	back.pressed.connect(func(): show_screen("decks"))
+	btns.add_child(back)
+	var go := Button.new()
+	go.name = "Go"
+	go.text = "UI_START_RUN"
+	go.custom_minimum_size = Vector2(320, 56)
+	go.add_theme_font_size_override("font_size", 24)
+	go.pressed.connect(func():
+		meta.pact = pending_pact
+		meta.save()
+		deck_chosen.emit(pending_pact))
+	btns.add_child(go)
+	group_screen.add_child(btns)
+
+
+## O grupo que o Pacto vai enfrentar: a fila de heróis, com nível, habilidades e força de cada um.
+func _fill_group() -> void:
+	if pending_pact == "":
+		pending_pact = meta.pact if DECKS.has(meta.pact) else DECKS[0]
+	group_deck.text = tr("UI_GROUP_DECK").format({"name": tr("DECK_" + pending_pact)})
+	UiKit.clear(group_row)
+	var P: Dictionary = data.rules["party"]
+	var n := int(P["size"])
+	var mult := float(data.deck(pending_pact)["rules"].get("hero_hp_mult", 1.0))
+	for i in n:
+		if UiSkins.diario():
+			group_row.add_child(_wanted_poster(i, n, P, mult))
+			continue
+		var pnl := UiKit.panel(UiKit.BG, UiKit.EDGE, 12)
+		pnl.custom_minimum_size = Vector2(150, 210)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 8)
+		pnl.add_child(v)
+		var num := UiKit.title(20)
+		num.text = tr("UI_HERO_OF").format({"k": i + 1, "n": n})
+		v.add_child(num)
+		var lv := UiKit.label(18, UiKit.TEXT)
+		lv.text = tr("UI_HERO_LEVEL").format({"n": i + 1})
+		v.add_child(lv)
+		var sk := UiKit.label(16, UiKit.MUTED)
+		sk.text = tr("UI_GROUP_SKILLS").format({"n": i})
+		v.add_child(sk)
+		var hp := UiKit.label(16, UiKit.GOOD)
+		hp.text = tr("UI_GROUP_HP").format({"n": int(round(float(data.hero["hp"]) * pow(float(P["step"]), i) * mult))})
+		v.add_child(hp)
+		var dm := UiKit.label(16, UiKit.BAD)
+		dm.text = tr("UI_GROUP_DMG").format({"n": int(round(float(data.hero["damage"]) * pow(float(P["step"]), i)))})
+		v.add_child(dm)
+		group_row.add_child(pnl)
 
 
 func show_screen(s: String) -> void:
+	if UiSkins.diario() and s != screen and is_node_ready():
+		prev_screen = screen
+		prev_fade = 0.0
 	screen = s
 	fade = 0.0
-	title_box.visible = s == "title"
+	if is_instance_valid(desk):
+		desk.set_current(_desk_id(s))
+		desk.set_continue(SaveGame.exists())
+	title_root.visible = s == "title" or (prev_screen == "title" and prev_fade < 1.0)
 	deck_screen.visible = s == "decks"
+	group_screen.visible = s == "group"
 	collection.visible = s == "collection"
 	compendium.visible = s == "compendium"
 	settings.visible = false
@@ -257,6 +386,9 @@ func show_screen(s: String) -> void:
 	elif s == "decks":
 		_fill_decks()
 		_focus_first_deck.call_deferred()
+	elif s == "group":
+		_fill_group()
+		(group_screen.find_child("Go", true, false) as Button).grab_focus.call_deferred()
 	elif s == "collection":
 		collection.open()
 	elif s == "compendium":
@@ -276,6 +408,8 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
 		if screen == "decks":
 			_fill_decks.call_deferred()
+		elif screen == "group":
+			_fill_group.call_deferred()
 		elif screen == "collection":
 			collection.refresh.call_deferred()
 		elif screen == "compendium":
@@ -287,6 +421,10 @@ func _unhandled_input(e: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		show_screen("title")
 		return
+	if visible and screen == "group" and e.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		show_screen("decks")
+		return
 	if visible and screen == "decks" and e.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		show_screen("title")
@@ -294,6 +432,9 @@ func _unhandled_input(e: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	if not visible:
+		return
+	if UiSkins.diario():
+		_process_desk(delta)
 		return
 	fade = minf(fade + delta * 4.0, 1.0)
 	var vs := get_viewport_rect().size
@@ -307,6 +448,8 @@ func _process(delta: float) -> void:
 	title_box.modulate.a = fade
 	deck_screen.position = Vector2((vs.x - deck_screen.size.x) * 0.5, (vs.y - deck_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
 	deck_screen.modulate.a = fade
+	group_screen.position = Vector2((vs.x - group_screen.size.x) * 0.5, (vs.y - group_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
+	group_screen.modulate.a = fade
 	collection.position = Vector2((vs.x - collection.size.x) * 0.5, (vs.y - collection.size.y) * 0.5 + (1.0 - fade) * 24.0)
 	collection.modulate.a = fade
 	compendium.position = Vector2((vs.x - compendium.size.x) * 0.5, (vs.y - compendium.size.y) * 0.5 + (1.0 - fade) * 24.0)
@@ -314,3 +457,203 @@ func _process(delta: float) -> void:
 	settings.position = (vs - settings.size) * 0.5
 	footer.text = VERSION + "   ·   " + tr("UI_MENU_KEYS")
 	footer.position = Vector2(m, vs.y - 34)
+
+
+# ---------------------------------------------------------------- pele Diário
+
+## Papel da mesa que cada tela usa (o grupo sai do mesmo maço do Pacto).
+func _desk_id(s: String) -> String:
+	return {"group": "decks"}.get(s, s)
+
+
+func _screen_node(s: String) -> Control:
+	match s:
+		"title":
+			return title_root
+		"decks":
+			return deck_screen
+		"group":
+			return group_screen
+		"collection":
+			return collection
+		"compendium":
+			return compendium
+		"settings":
+			return settings
+	return null
+
+
+func _final_pos(s: String, c: Control, vs: Vector2) -> Vector2:
+	if s == "title":
+		var m := clampf(vs.x * 0.06, 28.0, 120.0)
+		return Vector2(m, (vs.y - c.size.y) * 0.5)
+	return (vs - c.size) * 0.5
+
+
+## A tela aberta sobe do papel dela na mesa (escala, giro e posição); a anterior desce de volta.
+func _process_desk(delta: float) -> void:
+	fade = minf(fade + delta * 2.6, 1.0)
+	prev_fade = minf(prev_fade + delta * 3.2, 1.0)
+	var vs := get_viewport_rect().size
+	for s in ["title", "decks", "group", "collection", "compendium"]:
+		var c := _screen_node(s)
+		if c == null:
+			continue
+		var cur: bool = s == screen
+		var leaving: bool = s == prev_screen and prev_fade < 1.0
+		c.visible = cur or leaving
+		if not c.visible:
+			continue
+		var e := ease(fade, -2.2) if cur else 1.0 - ease(prev_fade, 2.0)
+		var from := desk.screen_point(_desk_id(s)) if is_instance_valid(desk) else Vector2(vs.x * 0.5, vs.y * 0.85)
+		var fin := _final_pos(s, c, vs)
+		c.pivot_offset = c.size * 0.5
+		var fit := minf(1.0, minf(vs.y * 0.94 / maxf(c.size.y, 1.0), vs.x * 0.96 / maxf(c.size.x, 1.0)))
+		c.scale = Vector2.ONE * lerpf(0.16, fit, e)
+		c.position = (from - c.size * 0.5).lerp(fin, e)
+		c.rotation = lerpf(deg_to_rad(9.0 if s.length() % 2 == 0 else -9.0), deg_to_rad(-1.2 if s == "title" else 0.0), e)
+		c.modulate.a = clampf(e * 3.0, 0.0, 1.0)
+	settings.position = (vs - settings.size) * 0.5
+	footer.text = VERSION + "   ·   " + tr("UI_MENU_KEYS")
+	footer.position = Vector2(clampf(vs.x * 0.06, 28.0, 120.0), vs.y - 34)
+	footer.add_theme_color_override("font_color", Color(0.85, 0.78, 0.66))
+
+
+## Duas tiras de fita crepe nos cantos de cima da folha.
+func _tapes(sheet: Control) -> void:
+	var w := sheet.size.x
+	for spec in [[Vector2(-10, 4), -38.0], [Vector2(w - 70, -4), 34.0]]:
+		var o: Vector2 = spec[0]
+		var a := deg_to_rad(spec[1])
+		var pts := PackedVector2Array()
+		for q in [Vector2(0, 0), Vector2(86, 0), Vector2(86, 26), Vector2(0, 26)]:
+			pts.append(o + Vector2(36, 0) + (q - Vector2(43, 13)).rotated(a))
+		sheet.draw_colored_polygon(pts, Color(0.9, 0.84, 0.64, 0.88))
+
+
+## Contratos dos Pactos: "Pacto da", nome antigo, desenho a nanquim, cláusulas, assinatura em sangue e lacre.
+func _fill_contracts() -> void:
+	for id in DECKS:
+		var deck: Dictionary = data.deck(id)
+		var p := PanelContainer.new()
+		UiDiario.dress(p, "contract", 34.0, {"grime": 0.7, "seed": UiDiario.seed_of(id), "shadow": 10.0, "rough": 2.6}, true)
+		p.custom_minimum_size = Vector2(360, 0)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 4)
+		p.add_child(v)
+		var k := Label.new()
+		k.text = tr("UI_PACT_OF_" + id).to_upper()
+		k.add_theme_font_override("font", UiDiario.font("type"))
+		k.add_theme_font_size_override("font_size", 15)
+		k.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(k)
+		var nm := Label.new()
+		nm.text = tr("DECK_" + id)
+		nm.add_theme_font_override("font", UiDiario.font("fell"))
+		nm.add_theme_font_size_override("font_size", 46)
+		nm.add_theme_color_override("font_color", UiDiario.BLOOD)
+		nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(nm)
+		var ds := Tips.label(tr("DECKSTYLE_" + id), 19, UiDiario.INK, 300.0, true)
+		ds.add_theme_font_override("normal_font", UiDiario.font("fell_it"))
+		ds.add_theme_font_size_override("normal_font_size", 19)
+		v.add_child(ds)
+		var art := TextureRect.new()
+		art.texture = UiDiario.card_tex("pact_" + {"horde": "horde", "ruin": "ruin", "treasure": "treasure"}[id])
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.custom_minimum_size = Vector2(0, 112)
+		v.add_child(art)
+		var lines: PackedStringArray = UiKit.deck_rules_text(deck["rules"]).split("\n", false)
+		for i in lines.size():
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			var sec := Label.new()
+			sec.text = "§%d" % (i + 1)
+			sec.add_theme_font_override("font", UiDiario.font("fell"))
+			sec.add_theme_font_size_override("font_size", 19)
+			sec.add_theme_color_override("font_color", UiDiario.BLOOD)
+			row.add_child(sec)
+			var rl := Tips.label(lines[i].trim_prefix("• "), 15, UiDiario.INK, 290.0)
+			rl.add_theme_font_override("normal_font", UiDiario.font("type"))
+			rl.add_theme_font_size_override("normal_font_size", 15)
+			row.add_child(rl)
+			v.add_child(row)
+		var gap := Control.new()
+		gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		gap.custom_minimum_size = Vector2(0, 6)
+		v.add_child(gap)
+		var sign := HBoxContainer.new()
+		sign.add_theme_constant_override("separation", 10)
+		var line := Control.new()
+		line.custom_minimum_size = Vector2(0, 52)
+		line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var sd := float(DECKS.find(id)) * 1.7
+		line.draw.connect(func():
+			var y := line.size.y - 14.0
+			line.draw_line(Vector2(0, y), Vector2(line.size.x, y), UiDiario.INK, 1.5, true)
+			var pts := PackedVector2Array()
+			for j in 40:
+				var x := 6.0 + j * (line.size.x * 0.7) / 40.0
+				pts.append(Vector2(x, y - 14.0 + sin(j * 0.9 + sd) * 9.0 * (1.0 - j / 46.0) + sin(j * 2.3) * 3.0))
+			line.draw_polyline(pts, UiDiario.BLOOD, 2.4, true)
+			var f := UiDiario.font("type")
+			line.draw_string(f, Vector2(0, line.size.y - 0.0), tr("UI_PACT_LORD"), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(UiDiario.INK, 0.7)))
+		sign.add_child(line)
+		var seal := UiDiario.badge(UiDiario.BLOOD, 24, 58.0, "crystal")
+		(seal.get_node("N") as Label).text = tr("DECK_" + id).left(1).to_upper()
+		(seal.get_node("N") as Label).add_theme_font_override("font", UiDiario.font("fell"))
+		sign.add_child(seal)
+		v.add_child(sign)
+		var b := Button.new()
+		b.text = "UI_PACT_SIGN"
+		b.custom_minimum_size = Vector2(0, 50)
+		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		b.add_theme_font_size_override("font_size", 21)
+		b.pressed.connect(func():
+			pending_pact = id
+			show_screen("group"))
+		var lit := func(on: bool): UiKit.set_hot(p, on)
+		b.focus_entered.connect(_fill_preview.bind(id))
+		b.focus_entered.connect(lit.bind(true))
+		b.focus_exited.connect(lit.bind(false))
+		b.mouse_entered.connect(func(): b.grab_focus())
+		p.mouse_entered.connect(func(): b.grab_focus())
+		v.add_child(b)
+		p.rotation_degrees = [-1.2, 0.6, 1.4][DECKS.find(id)]
+		deck_row.add_child(p)
+
+
+## Herói do grupo como cartaz de "procura-se".
+func _wanted_poster(i: int, n: int, P: Dictionary, mult: float) -> PanelContainer:
+	var pnl := PanelContainer.new()
+	UiDiario.dress(pnl, "paper", 20.0, {"grime": 0.75, "seed": 0.13 * (i + 1), "shadow": 8.0, "rough": 2.6})
+	pnl.custom_minimum_size = Vector2(186, 0)
+	pnl.rotation_degrees = [-2.0, 1.5, -0.8, 2.2, -1.6][i % 5]
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
+	pnl.add_child(v)
+	var h := Label.new()
+	h.text = "UI_WANTED"
+	h.add_theme_font_override("font", UiDiario.font("fell"))
+	h.add_theme_font_size_override("font_size", 26)
+	h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(h)
+	var art := TextureRect.new()
+	art.texture = UiDiario.card_tex("hero_wanted")
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.custom_minimum_size = Vector2(0, 104)
+	v.add_child(art)
+	var num := UiKit.title(20)
+	num.text = tr("UI_HERO_OF").format({"k": i + 1, "n": n})
+	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(num)
+	for spec in [[tr("UI_HERO_LEVEL").format({"n": i + 1}), UiDiario.INK], [tr("UI_GROUP_SKILLS").format({"n": i}), UiDiario.PAL["MUTED"]],
+			[tr("UI_GROUP_HP").format({"n": int(round(float(data.hero["hp"]) * pow(float(P["step"]), i) * mult))}), UiDiario.PAL["GOOD"]],
+			[tr("UI_GROUP_DMG").format({"n": int(round(float(data.hero["damage"]) * pow(float(P["step"]), i)))}), UiDiario.PAL["BAD"]]]:
+		var l := UiKit.label(16, spec[1])
+		l.text = spec[0]
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(l)
+	return pnl

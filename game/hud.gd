@@ -178,7 +178,7 @@ func _build_left() -> void:
 		var rs := StyleBoxEmpty.new()
 		rs.set_content_margin_all(6)
 		run_panel.add_theme_stylebox_override("panel", rs)
-	run_panel.custom_minimum_size = Vector2(190 if UiSkins.covil() else 300, 0)
+	run_panel.custom_minimum_size = Vector2(190 if UiSkins.covil() else (150 if UiSkins.diario() else 300), 0)
 	run_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
@@ -220,6 +220,7 @@ func _build_right() -> void:
 	minimap.visible = false
 	minimap.world_clicked.connect(func(p): minimap_clicked.emit(p))
 	minimap.node_clicked.connect(func(n): route_clicked.emit(n))
+	minimap.close_requested.connect(func(): map_pressed.emit())
 	add_child(minimap)
 	parts_panel = UiKit.panel(UiKit.BG_SOFT, UiKit.POWER.darkened(0.3), 12)
 	parts_panel.custom_minimum_size = Vector2(290, 0)
@@ -240,7 +241,9 @@ func _build_right() -> void:
 		b.custom_minimum_size = Vector2(52, 44)
 		b.add_theme_font_size_override("font_size", 18)
 		b.pressed.connect(spec[2])
-		if UiSkins.covil() and spec[0] in ["II", "M"]:
+		if UiSkins.diario() and spec[0] in ["II", "M"]:
+			UiDiario.icon_button(b, "pause" if spec[0] == "II" else "map")
+		elif UiSkins.covil() and spec[0] in ["II", "M"]:
 			UiCovil.icon_button(b, "pause" if spec[0] == "II" else "map")
 		tool_row.add_child(b)
 		if spec[0] == "1x":
@@ -259,7 +262,11 @@ func _build_bottom() -> void:
 	bottom_box.add_child(fan)
 	var eb := HBoxContainer.new()
 	eb.alignment = BoxContainer.ALIGNMENT_CENTER
-	if UiSkins.covil():
+	if UiSkins.diario():
+		eb.set_meta("paper", true)
+		eb.draw.connect(func(): UiCovil.draw_plate(eb, "paper", Vector2(18, 10)))
+		eb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	elif UiSkins.covil():
 		# Bandeja de ferro atrás do sacrifício e do elixir: os frascos ficavam soltos sobre o mundo.
 		eb.draw.connect(func(): UiCovil.draw_plate(eb, "soft", Vector2(14, 8)))
 		eb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -274,7 +281,12 @@ func _build_bottom() -> void:
 	sac_zone.custom_minimum_size = Vector2(170, 44)
 	sac_zone.add_theme_font_size_override("font_size", 15)
 	sac_zone.add_theme_color_override("font_color", UiKit.BAD.lightened(0.3))
-	if UiSkins.covil():
+	if UiSkins.diario():
+		sac_zone.set_meta("no_frame", true)
+		sac_zone.material = UiDiario.material("tape", {"button": true, "tint": Color(0.66, 0.15, 0.1, 0.95), "shadow": 4.0, "seed": 0.4})
+		for ck in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			sac_zone.add_theme_color_override(ck, Color(1.0, 0.95, 0.88))
+	elif UiSkins.covil():
 		# Botão de sacrifício: aro de bronze puxado para o vermelho (é o altar).
 		sac_zone.material = UiCovil.material("button", UiCovil.BRONZE.lerp(UiKit.BAD, 0.5), Color(0.17, 0.1, 0.1, 0.97), Color(0.08, 0.04, 0.045, 0.97))
 	sac_zone.pressed.connect(func():
@@ -314,6 +326,11 @@ func _build_messages() -> void:
 		help_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.78))
 	add_child(help_label)
 	toast = UiKit.title(30, Color(1, 0.62, 0.45))
+	if UiSkins.diario():
+		toast.set_meta("no_ink", true)
+		toast.add_theme_color_override("font_color", Color(1.0, 0.93, 0.84))
+		toast.add_theme_constant_override("outline_size", 10)
+		toast.add_theme_color_override("font_outline_color", Color(0.25, 0.04, 0.02))
 	toast.custom_minimum_size = Vector2(900, 0)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.modulate.a = 0.0
@@ -379,14 +396,22 @@ func _build_offer() -> void:
 	offer_skip.custom_minimum_size = Vector2(240, 46)
 	offer_skip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	offer_skip.pressed.connect(func(): offer_chosen.emit(Sim.SKIP))
-	v.add_child(offer_title)
-	v.add_child(offer_sub)
-	v.add_child(sub)
+	if UiSkins.diario():
+		offer_title.add_theme_font_size_override("font_size", 46)
+		v.add_child(UiDiario.tape_title(offer_title))
+		v.add_child(UiDiario.tape_wrap(offer_sub, UiDiario.MASK, 1.0))
+		v.add_child(UiDiario.tape_wrap(sub, UiDiario.MASK, -0.8))
+	else:
+		v.add_child(offer_title)
+		v.add_child(offer_sub)
+		v.add_child(sub)
 	v.add_child(offer_box)
 	v.add_child(offer_skip)
 	offer_layer.add_child(v)
 	offer_layer.visible = false
 	add_child(offer_layer)
+	# O mapa em tela cheia cobre a mão e os painéis, mas fica sob ofertas e pausa.
+	move_child(minimap, offer_layer.get_index())
 
 
 func _build_pause() -> void:
@@ -415,7 +440,14 @@ func _build_pause() -> void:
 		b.pressed.connect(spec[1])
 		b.mouse_entered.connect(func(): b.grab_focus())
 		pause_menu.add_child(b)
-	row.add_child(pause_menu)
+	if UiSkins.diario():
+		var sheet := PanelContainer.new()
+		UiDiario.dress(sheet, "paper", 34.0, {"grime": 0.45, "seed": 0.52, "shadow": 10.0, "rough": 2.6})
+		sheet.rotation_degrees = -1.0
+		sheet.add_child(pause_menu)
+		row.add_child(sheet)
+	else:
+		row.add_child(pause_menu)
 	var info := UiKit.panel(UiKit.BG, UiKit.EDGE, 16)
 	var iv := VBoxContainer.new()
 	iv.add_theme_constant_override("separation", 10)
@@ -524,13 +556,10 @@ func _layout() -> void:
 	var below := top + 10
 	var left := strip.position.x + strip.size.x + 12 if strip.visible else m
 	contract_panel.position = Vector2(left, below)
-	# O mapa grande cabe entre o topo e o leque.
-	var side := clampf(bottom_box.position.y - below - 10.0, 300.0, 620.0)
-	# O mapa de nós precisa de altura (uma linha por fileira): desce até perto da borda de baixo, por cima do leque.
-	var tall := Vector2(side, maxf(side, vs.y - below - 100.0))
-	if minimap.size != tall:
-		minimap.size = tall
-	minimap.position = Vector2(vs.x - minimap.size.x - m, below)
+	# O mapa grande cobre a tela inteira (como o mapa do Slay the Spire); a run fica parada por trás.
+	if minimap.size != vs:
+		minimap.size = vs
+	minimap.position = Vector2.ZERO
 	parts_panel.position = Vector2(vs.x - parts_panel.size.x - m, tool_row.position.y + tool_row.size.y + 8)
 	toast.position = Vector2((vs.x - toast.size.x) * 0.5, vs.y * 0.28)
 	contest_panel.size = contest_panel.get_combined_minimum_size()
@@ -591,6 +620,14 @@ func show_pause(on: bool) -> void:
 	(pause_layer.find_child("DeckHead", true, false) as Label).text = tr("UI_RUN_DECK").format({"n": sim.cards.size()})
 	UiKit.clear(pause_deck)
 	for ci in sim.cards:
+		if UiSkins.diario():
+			var mc := UiKit.mini_card(ci.def, sim.card_cost(ci), UiKit.mod_names(ci), "", 92.0, 120.0, true, ci.level)
+			mc.mouse_filter = Control.MOUSE_FILTER_STOP
+			var mcd: CardDef = ci.def
+			var mmids := UiKit.mod_ids(ci)
+			Tips.attach(mc, func(): return Tips.card_entries(mcd, mmids, true))
+			pause_deck.add_child(mc)
+			continue
 		var cell := UiKit.panel(Color(0.04, 0.03, 0.06), UiKit.RARITY_COLORS[ci.def.rarity], 3)
 		var cd: CardDef = ci.def
 		var mids := UiKit.mod_ids(ci)
@@ -991,6 +1028,8 @@ func _build_offer_options(o: Dictionary) -> void:
 	offer_title.text = _offer_heading(o)
 	var shop: bool = o["source"] == "shop"
 	offer_sub.visible = o["source"] == "location" or shop or o.has("event")
+	if UiSkins.diario():
+		offer_sub.get_parent().visible = offer_sub.visible
 	if o.has("event"):
 		offer_sub.text = tr("EVT_%s_BODY" % str(o["event"]))
 		offer_sub.add_theme_color_override("font_color", UiKit.TEXT)
@@ -1111,9 +1150,20 @@ func _build_offer_options(o: Dictionary) -> void:
 				offer_chosen.emit(k))
 		cp.mouse_entered.connect(func(): slot.set_meta("hover", true))
 		cp.mouse_exited.connect(func(): slot.set_meta("hover", false))
-		slot.add_child(head)
-		slot.add_child(cp)
-		slot.add_child(foot)
+		if UiSkins.diario():
+			head.custom_minimum_size = Vector2(0, 0)
+			head.autowrap_mode = TextServer.AUTOWRAP_OFF
+			head.add_theme_font_override("font", UiDiario.font("type"))
+			slot.add_child(UiDiario.tape_wrap(head, UiDiario.MASK, -2.0 + k * 1.3))
+			slot.add_child(cp)
+			var note := UiDiario.note_wrap(foot)
+			note.custom_minimum_size = Vector2(w * 0.9, 0)
+			note.visible = foot.text.strip_edges() != ""
+			slot.add_child(note)
+		else:
+			slot.add_child(head)
+			slot.add_child(cp)
+			slot.add_child(foot)
 		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		offer_box.add_child(slot)
 		offer_slots.append(slot)

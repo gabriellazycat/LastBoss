@@ -22,6 +22,8 @@ static var _title_font: Font
 
 ## Fonte dos títulos: Cinzel na pele Covil; nas outras, a da pele ou uma serifada do sistema.
 static func title_font() -> Font:
+	if UiSkins.diario():
+		return UiDiario.font("type")
 	if _title_font == null and UiSkins.covil():
 		_title_font = UiCovil.font("title")
 	if _title_font == null:
@@ -56,6 +58,9 @@ static func make_theme() -> Theme:
 	UiSkins.apply()
 	_title_font = null
 	var t := Theme.new()
+	if UiSkins.diario():
+		UiDiario.fill_theme(t)
+		return t
 	if UiSkins.covil():
 		UiCovil.fill_theme(t)
 		return t
@@ -125,6 +130,8 @@ static func _diamond(col: Color) -> ImageTexture:
 
 
 static func panel(bg := BG, border := EDGE, margin := 10) -> PanelContainer:
+	if UiSkins.diario():
+		return UiDiario.panel(bg, border, margin)
 	if UiSkins.covil():
 		return UiCovil.panel(bg, border, margin, "soft" if bg.a < 0.9 else "plate")
 	var p := PanelContainer.new()
@@ -139,13 +146,18 @@ static func label(size := 18, col := TEXT, outline := 4) -> Label:
 	l.add_theme_color_override("font_color", col)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
 	l.add_theme_constant_override("outline_size", outline)
-	if UiSkins.covil():
+	if UiSkins.diario():
+		UiDiario.label(l, size, outline)
+	elif UiSkins.covil():
 		UiCovil.label(l, size, outline)
 	return l
 
 
 static func title(size: int, col := GOLD) -> Label:
 	var l := label(size, col, maxi(4, size / 9))
+	if UiSkins.diario():
+		UiDiario.title(l, size, col)
+		return l
 	if UiSkins.covil():
 		UiCovil.title(l, size, col)
 		return l
@@ -156,6 +168,8 @@ static func title(size: int, col := GOLD) -> Label:
 
 
 static func bar(col: Color, w: float, h: float) -> ProgressBar:
+	if UiSkins.diario():
+		return UiDiario.bar(col, w, h)
 	if UiSkins.covil():
 		return UiCovil.bar(col, w, h)
 	var b := ProgressBar.new()
@@ -178,6 +192,8 @@ static func bar(col: Color, w: float, h: float) -> ProgressBar:
 ## Losango com um número (nível, custo). A pele troca a forma (medalha, hexágono, orbe, losango). Na Covil,
 ## `shape` escolhe a gema: "crystal" (custo, elixir; o padrão), "crest" (herói) ou "sigil" (poder).
 static func badge(col: Color, size := 22, w := 40.0, shape := "crystal") -> PanelContainer:
+	if UiSkins.diario():
+		return UiDiario.badge(col, size, w, shape)
 	if UiSkins.covil():
 		return UiCovil.badge(col, size, w, shape)
 	var g := PanelContainer.new()
@@ -203,6 +219,9 @@ static func clear(n: Node) -> void:
 
 ## Fundo de um painel que não é PanelContainer criado aqui (configurações): moldura da pele ou caixa simples.
 static func panel_style(c: Control, bg: Color, border: Color, margin: int) -> void:
+	if UiSkins.diario():
+		UiDiario.dress(c, "paper", margin + 8, {"grime": 0.35, "seed": 0.6})
+		return
 	if UiSkins.covil():
 		var ic := UiCovil.iron(bg)
 		UiCovil.dress(c, "plate", UiCovil.trim_for(border), ic[0], ic[1], Color(0, 0, 0, 0), margin)
@@ -212,6 +231,9 @@ static func panel_style(c: Control, bg: Color, border: Color, margin: int) -> vo
 
 ## Cor de um título depois de criado (na Covil o degradê de metal segue a cor).
 static func title_color(l: Label, col: Color) -> void:
+	if UiSkins.diario():
+		l.add_theme_color_override("font_color", UiDiario.ink_of(col))
+		return
 	if UiSkins.covil() and l.material is ShaderMaterial:
 		l.material = UiCovil.title_material(l.get_theme_font_size("font_size"), col)
 		return
@@ -220,6 +242,9 @@ static func title_color(l: Label, col: Color) -> void:
 
 ## Estado de uma carta da mão: selecionada (borda dourada) e jogável (brilho verde).
 static func card_state(p: Control, selected: bool, playable: bool) -> void:
+	if UiSkins.diario():
+		UiDiario.card_state(p, selected, playable)
+		return
 	if UiSkins.covil():
 		UiCovil.card_state(p, selected, playable)
 		return
@@ -231,6 +256,9 @@ static func card_state(p: Control, selected: bool, playable: bool) -> void:
 
 ## Painel aceso (Pacto em foco no menu).
 static func set_hot(c: Control, on: bool) -> void:
+	if UiSkins.diario():
+		UiDiario.set_hot(c, on)
+		return
 	if UiSkins.covil():
 		UiCovil.set_hot(c, on)
 		return
@@ -361,6 +389,8 @@ static func mod_names(ci: Sim.CardInst) -> Array:
 
 ## Carta compacta (mão em leque e esteira): arte, custo, atalho e, se `named`, o nome (★ = tem modificador).
 static func mini_card(d: CardDef, cost: int, mods: Array, key := "", w := 116.0, h := 146.0, named := true, level := 1) -> PanelContainer:
+	if UiSkins.diario():
+		return UiDiario.mini_card(d, cost, mods, key, w, h, named, level)
 	if UiSkins.covil():
 		return UiCovil.mini_card(d, cost, mods, key, w, h, named, level)
 	var k := w / 116.0
@@ -417,6 +447,8 @@ static func mini_card(d: CardDef, cost: int, mods: Array, key := "", w := 116.0,
 
 ## Carta desenhada: arte, custo, atalho, nome, tipo, modificadores e texto. `w` define a escala.
 static func card(d: CardDef, cost: int, mods: Array, key := "", w := 168.0, level := 1) -> PanelContainer:
+	if UiSkins.diario():
+		return UiDiario.card(d, cost, mods, key, w, level)
 	if UiSkins.covil():
 		return UiCovil.card(d, cost, mods, key, w, level)
 	var k := w / 168.0
