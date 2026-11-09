@@ -24,6 +24,10 @@ var shots: Array = []
 var life := 0.0
 
 
+## Direções de arte para --estilo (chão, herói, monstros): docs/ESTUDO_DE_ARTE.md.
+const ESTILOS := {"A": [5, 4, 3], "B": [6, 2, 2], "C": [2, 4, 3], "D": [7, 5, 5], "E": [8, 5, 5], "F": [9, 6, 6]}
+
+
 func _ready() -> void:
 	Settings.load_all()
 	Settings.apply(get_tree())
@@ -31,6 +35,16 @@ func _ready() -> void:
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
 			auto_args[kv[0]] = kv[1]
+	# --estilo=D (A a F): direção de arte só nesta execução, para os atalhos de teste do visual.
+	# Não é modo de teste: a run, a coleção e as Almas são as normais (o --set liga o modo de teste).
+	if auto_args.has("estilo"):
+		var looks: Array = ESTILOS.get(str(auto_args["estilo"]).to_upper(), [])
+		auto_args.erase("estilo")
+		for k in looks.size():
+			var key: String = ["look_ground", "look_hero", "look_enemies"][k]
+			if not Settings.session.has(key):
+				Settings.session[key] = Settings.v[key]
+			Settings.v[key] = looks[k]
 	# Testes e capturas salvam num arquivo próprio: nunca tocam na run salva do jogador.
 	if not auto_args.is_empty():
 		SaveGame.current = "user://test_run.save"

@@ -1,0 +1,12 @@
+C rodada1 stress: unidades=500 fps_med=43 fps_min=32
+A rodada1 stress: unidades=500 fps_med=34 fps_min=32
+B rodada1 stress: unidades=500 fps_med=22 fps_min=21
+D rodada1 stress: unidades=500 fps_med=62 fps_min=38
+E rodada1 stress: unidades=505 fps_med=70 fps_min=44
+F rodada1 stress: unidades=500 fps_med=58 fps_min=43
+C rodada2 stress: unidades=500 fps_med=41 fps_min=20
+A rodada2 stress: unidades=500 fps_med=44 fps_min=25
+B rodada2 stress: unidades=503 fps_med=18 fps_min=17
+D rodada2 stress: unidades=500 fps_med=84 fps_min=57
+E rodada2 stress: unidades=503 fps_med=73 fps_min=64
+F rodada2 stress: unidades=500 fps_med=69 fps_min=23

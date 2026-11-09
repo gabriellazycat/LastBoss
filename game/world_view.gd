@@ -694,6 +694,10 @@ func _build_hero() -> void:
 	arm_s = _part(body, "arm_sword", Vector3(0.48, 1.33, 0))
 	arm_h = _part(body, "arm_shield", Vector3(-0.48, 1.33, 0))
 	cape = _part(body, "cape", Vector3(0, 1.4, 0.24))
+	# Look com esqueleto (Looks.hero_rig): as peças acima ficam vazias e o rig se anima sozinho.
+	var rig := Looks.hero_rig(hero_mat)
+	if rig:
+		body.add_child(rig)
 	hero_light = _light(Vector3(0, 3.0, 0), Color(1.0, 0.72, 0.42), 1.1, 11.0)
 	hero_root.add_child(hero_light)
 	slash = MeshInstance3D.new()
