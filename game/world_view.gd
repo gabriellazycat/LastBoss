@@ -38,6 +38,19 @@ const GROUND_LAYER := 2
 
 var sim: Sim
 var cam: Camera3D
+var look_off := Vector3.ZERO      # deslize da câmera para o lado do mouse (metros no chão)
+var look_hold := false            # cena que manda na câmera (morte do herói): sem deslize
+const LOOK_MAX := 9.0             # quanto a câmera anda até a borda da tela
+const LOOK_DEAD := 0.22           # zona morta no meio da tela (fração da meia-tela)
+## Morte do herói (rodada 09/11/2026): câmera lenta no corpo caindo, depois a câmera recua até o herói novo.
+## Só apresentação: a simulação já trocou o herói e espera a recompensa; o HUD segura a oferta até acabar.
+var cine_enabled := true
+var cine_t := -1.0                # tempo real desde a queda; < 0 sem cena
+var cine_from := Vector3.ZERO
+var corpse: Node3D
+const CINE_FOCUS := 1.6           # no corpo, em câmera lenta
+const CINE_TRAVEL := 1.2          # recuando até o herói novo
+const CINE_SLOW := 0.3            # Engine.time_scale no foco
 var mm_by_def: Dictionary = {}
 var flash := PackedFloat32Array()
 var kx := PackedFloat32Array()
@@ -151,6 +164,10 @@ func build_empty() -> void:
 
 
 func build(s: Sim, camera: Camera3D) -> void:
+	# Run nova ou ato novo: nenhuma cena de queda pela metade (o mundo volta à velocidade normal).
+	cine_t = -1.0
+	look_hold = false
+	Engine.time_scale = 1.0
 	build_empty()
 	sim = s
 	cam = camera
@@ -1441,12 +1458,69 @@ func _tick_pools(delta: float, alpha: float) -> void:
 		flash_light.light_energy = maxf(0.0, flash_t / 0.3) * 8.0
 
 
+func cine_active() -> bool:
+	return cine_t >= 0.0
+
+
+## Começa a cena da queda: um corpo do herói fica no lugar e tomba; o mundo desacelera.
+func fall_cinematic(p: Vector3) -> void:
+	if corpse and is_instance_valid(corpse):
+		corpse.queue_free()
+	corpse = hero_root.duplicate() as Node3D
+	add_child(corpse)
+	corpse.position = Vector3(p.x, 0.0, p.z)
+	corpse.rotation = hero_root.rotation
+	cine_from = Vector3(p.x, 0.0, p.z)
+	cine_t = 0.0
+	look_hold = true
+	look_off = Vector3.ZERO
+	Engine.time_scale = CINE_SLOW
+
+
+func _cine(delta: float) -> void:
+	# delta já vem desacelerado pelo time_scale: a cena conta em tempo real.
+	cine_t += delta / maxf(Engine.time_scale, 0.01)
+	var k := clampf(cine_t / CINE_FOCUS, 0.0, 1.0)
+	if corpse and is_instance_valid(corpse):
+		# Tomba de lado devagar (lê bem com a câmera de cima), com um quique pequeno no chão.
+		var e := k * k * (3.0 - 2.0 * k)
+		corpse.rotation.z = PI * 0.5 * e - sin(clampf((k - 0.8) / 0.2, 0.0, 1.0) * PI) * 0.1
+		corpse.position.y = 0.3 * e
+	if cine_t >= CINE_FOCUS:
+		var j := clampf((cine_t - CINE_FOCUS) / CINE_TRAVEL, 0.0, 1.0)
+		Engine.time_scale = lerpf(CINE_SLOW, 1.0, j)
+	if cine_t >= CINE_FOCUS + CINE_TRAVEL:
+		cine_t = -1.0
+		look_hold = false
+		Engine.time_scale = 1.0
+		if corpse and is_instance_valid(corpse):
+			var c := corpse
+			corpse = null
+			var tw := c.create_tween()
+			tw.tween_interval(1.5)
+			tw.tween_property(c, "scale", Vector3.ONE * 0.01, 0.6)
+			tw.tween_callback(c.queue_free)
+
+
 func _camera(alpha: float, delta: float) -> void:
 	var target := hero_pos(alpha)
 	if sim.phase == K.Phase.ARENA:
 		target = target.lerp(Vector3(sim.arena.bx, 0, sim.arena.by), 0.4)
-	cam_pos = cam_pos.lerp(target, clampf(delta * 5.0, 0.0, 1.0))
-	var dist := CAM_DIST + zoom + minf(float(sim.units.count), 300.0) * CAM_PER_UNIT
+	var close := 0.0
+	if cine_t >= 0.0:
+		_cine(delta)
+	if cine_t >= 0.0:
+		# Foco no corpo (aproxima), depois recua deslizando até o herói novo.
+		var j := clampf((cine_t - CINE_FOCUS) / CINE_TRAVEL, 0.0, 1.0)
+		var e := j * j * (3.0 - 2.0 * j)
+		var focus := cine_from.lerp(target, e)
+		close = (1.0 - e) * 6.0
+		cam_pos = cam_pos.lerp(focus, clampf(delta / Engine.time_scale * 6.0, 0.0, 1.0))
+	else:
+		cam_pos = cam_pos.lerp(target, clampf(delta * 5.0, 0.0, 1.0))
+	look_off = look_off.lerp(_look_target(), clampf(delta * 3.0, 0.0, 1.0))
+	target = cam_pos + look_off
+	var dist := CAM_DIST + zoom + minf(float(sim.units.count), 300.0) * CAM_PER_UNIT - close
 	if sim.phase == K.Phase.ARENA:
 		dist += CAM_ARENA
 	arrive_pull = maxf(0.0, arrive_pull - delta)
@@ -1456,9 +1530,28 @@ func _camera(alpha: float, delta: float) -> void:
 	var sh := trauma * trauma
 	var t := Time.get_ticks_msec() / 1000.0
 	var shake := Vector3(sin(t * 47.0) + sin(t * 23.0) * 0.5, sin(t * 39.0 + 1.0) + sin(t * 17.0) * 0.5, 0) * sh * 0.9
-	cam.position = cam_pos + off + shake
-	cam.look_at(cam_pos + Vector3(0, 0, -2) + shake * 0.3, UP)
+	cam.position = target + off + shake
+	cam.look_at(target + Vector3(0, 0, -2) + shake * 0.3, UP)
 	cam.rotation.z += sin(t * 31.0) * sh * 0.03
+
+
+## Para onde o mouse puxa a câmera: fora da zona morta do meio, até LOOK_MAX metros na direção dele. Parado
+## na faixa de baixo (mão, barra de elixir) ou fora da janela, ela volta para o herói.
+func _look_target() -> Vector3:
+	if look_hold or not get_window().has_focus():
+		return Vector3.ZERO
+	var vp := get_viewport()
+	var vs := vp.get_visible_rect().size
+	var m := vp.get_mouse_position()
+	if not Rect2(Vector2.ZERO, vs).has_point(m) or m.y > vs.y * 0.68:
+		return Vector3.ZERO
+	var n := (m - vs * 0.5) / (vs * 0.5)
+	var l := n.length()
+	if l <= LOOK_DEAD:
+		return Vector3.ZERO
+	var k := smoothstep(LOOK_DEAD, 1.0, minf(l, 1.0))
+	var dir := n / l
+	return Vector3(dir.x, 0, dir.y) * LOOK_MAX * k
 
 
 # ---------------------------------------------------------------- efeitos
@@ -1678,6 +1771,8 @@ func handle_events(evs: Array) -> void:
 				if int(ev[3]) % 3 == 0:
 					say("SAY_HERO", 4, false, Color(0.75, 0.88, 1.0))
 			K.Ev.HERO_FALL:
+				if cine_enabled:
+					fall_cinematic(p)
 				number(p + Vector3(0, 2.5, 0), tr("UI_HERO_FALLEN").format({"n": int(ev[3])}), Color(1, 0.82, 0.25), 80)
 				ring_burst(p, 4.5, Color(1, 0.8, 0.3))
 				light_flash(p, Color(1, 0.85, 0.4))

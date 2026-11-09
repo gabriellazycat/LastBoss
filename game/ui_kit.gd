@@ -277,7 +277,12 @@ static func ignore_mouse(n: Node) -> void:
 # ---------------------------------------------------------------- cartas
 
 ## Números do texto da carta no nível dado; frações viram também `<chave>_pct` (0,125 → 13).
-static func card_params(d: CardDef, level := 1) -> Dictionary:
+const UP_COLOR := "#2f7d3a"         # número que o upgrade melhorou (verde), no texto da carta
+const COST_COLOR := "#13808c"       # custo que baixou (azul-água)
+const N3_COLOR := "#8a5a08"         # efeito especial do nível 3 (ouro escuro)
+
+
+static func card_params(d: CardDef, level := 1, mark := false, mids: Array = []) -> Dictionary:
 	var p := {"count": d.count_at(level)}
 	var keys: Array = d.fx.keys()
 	for k in d.n3:
@@ -290,6 +295,32 @@ static func card_params(d: CardDef, level := 1) -> Dictionary:
 			p[k + "_pct"] = int(round(x * 100.0))
 			x = int(round(x)) if is_equal_approx(x, round(x)) or absf(x) >= 20.0 else snappedf(x, 0.1)
 		p[k] = x
+	# Veterano: +1 unidade; no feitiço, dano e duração maiores (como a simulação aplica).
+	var vet_keys: Array = []
+	if mids.has("veteran"):
+		if d.is_unit:
+			p["count"] = int(p["count"]) + 1
+			vet_keys.append("count")
+		elif d.is_spell:
+			var se := 0.2
+			if Tips.data and Tips.data.modifiers.has("veteran"):
+				se = float(Tips.data.modifiers["veteran"]["p"].get("spell_effect", 0.2))
+			for k in ["damage", "duration", "dps"]:
+				if p.has(k) and typeof(p[k]) in [TYPE_INT, TYPE_FLOAT]:
+					var x := float(p[k]) * (1.0 + se)
+					p[k] = int(round(x)) if absf(x) >= 20.0 or is_equal_approx(x, round(x)) else snappedf(x, 0.1)
+					vet_keys.append(k)
+	if mark:
+		for k in vet_keys:
+			p[k] = "[color=%s]%s▲[/color]" % [UP_COLOR, str(p[k])]
+	# Carta upada: os números que cresceram saem em verde com ▲ (o texto já mostra o valor novo).
+	if mark and level > 1:
+		for k in p.keys():
+			var grew: bool = (k == "count" and d.scales("count")) or (d.scales(k) and d.fx.has(k)) or (level >= 3 and d.n3.has(k))
+			if grew and not str(k).ends_with("_pct") and not vet_keys.has(k):
+				p[k] = "[color=%s]%s▲[/color]" % [UP_COLOR, str(p[k])]
+				if p.has(k + "_pct"):
+					p[k + "_pct"] = "[color=%s]%s[/color]" % [UP_COLOR, str(p[k + "_pct"])]
 	return p
 
 
@@ -324,16 +355,41 @@ static func card_name(d: CardDef, level := 1) -> String:
 
 
 ## Texto da carta com a marcação de palavras-chave ([[id]]); Tips.rich/plain convertem. No N3, o especial vem junto.
-static func card_desc(d: CardDef, level := 1) -> String:
-	var p := card_params(d, level)
+static func card_desc(d: CardDef, level := 1, mark := false, mids: Array = []) -> String:
+	var p := card_params(d, level, mark, mids)
 	var t := TranslationServer.translate("DESC_" + d.id).format(p)
 	if level >= 3 and d.n3.size() > 0:
-		t += " " + TranslationServer.translate("N3_" + d.id).format(p)
+		var n3 := TranslationServer.translate("N3_" + d.id).format(p)
+		t += (" [color=%s]★ %s[/color]" % [N3_COLOR, n3]) if mark else " " + n3
+	if mark and level > 1:
+		# Números que o texto não cita (vida e dano das unidades, custo): o antigo riscado, o novo colorido.
+		var parts: Array = []
+		for k in d.lvl:
+			var a: float
+			var b: float
+			var col := UP_COLOR
+			var arrow := "▲"
+			match str(k):
+				"hp":
+					if not d.is_unit:
+						continue
+					a = d.hp; b = d.hp_at(level)
+				"dps":
+					if not d.is_unit:
+						continue
+					a = d.dps; b = d.dps_at(level)
+				"cost":
+					a = d.cost; b = d.cost_at(level); col = COST_COLOR; arrow = "▼"
+				_:
+					continue
+			parts.append("%s [s]%d[/s] [color=%s]%d%s[/color]" % [TranslationServer.translate("LVLK_" + k), int(round(a)), col, int(round(b)), arrow])
+		if parts.size() > 0:
+			t += "\n" + " · ".join(parts)
 	return t
 
 
 ## Texto da carta como BBCode, com as palavras-chave coloridas (sem link: a carta abre as caixas ao lado).
-static func card_rich(d: CardDef, size: int, col: Color, w: float, center := true, level := 1) -> RichTextLabel:
+static func card_rich(d: CardDef, size: int, col: Color, w: float, center := true, level := 1, mids: Array = []) -> RichTextLabel:
 	var l := RichTextLabel.new()
 	l.bbcode_enabled = true
 	l.fit_content = true
@@ -344,7 +400,7 @@ static func card_rich(d: CardDef, size: int, col: Color, w: float, center := tru
 	l.add_theme_color_override("default_color", col)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
 	l.add_theme_constant_override("outline_size", 3)
-	var t := Tips.rich(card_desc(d, level), false)
+	var t := Tips.rich(card_desc(d, level, true, mids), false)
 	l.text = "[center]%s[/center]" % t if center else t
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
@@ -371,20 +427,30 @@ static func deck_rules_text(rules: Dictionary) -> String:
 	return "\n".join(lines)
 
 
+## Modificadores da carta; o primeiro ganho vem na frente (é o dono do papel da carta).
 static func mod_ids(ci: Sim.CardInst) -> Array:
 	var ids: Array = []
 	for mid in K.MOD_IDS:
 		if ci.has_mod(K.MOD_BY_ID[mid]):
-			ids.append(mid)
+			if int(K.MOD_BY_ID[mid]) == ci.first_mod:
+				ids.push_front(mid)
+			else:
+				ids.append(mid)
 	return ids
 
 
 static func mod_names(ci: Sim.CardInst) -> Array:
-	var mods: Array = []
-	for mid in K.MOD_IDS:
-		if ci.has_mod(K.MOD_BY_ID[mid]):
-			mods.append(TranslationServer.translate("MOD_" + mid))
-	return mods
+	return mod_ids(ci).map(func(mid): return TranslationServer.translate("MOD_" + mid))
+
+
+## Ids dos modificadores a partir dos nomes traduzidos (as cartas desenhadas recebem os nomes, na ordem).
+static func mod_ids_of(names: Array) -> Array:
+	var ids: Array = []
+	for nm in names:
+		for mid in K.MOD_IDS:
+			if TranslationServer.translate("MOD_" + mid) == nm:
+				ids.append(mid)
+	return ids
 
 
 ## Carta compacta (mão em leque e esteira): arte, custo, atalho e, se `named`, o nome (★ = tem modificador).

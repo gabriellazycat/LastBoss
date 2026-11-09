@@ -447,8 +447,9 @@ static func type_spec(d: CardDef) -> Array:
 
 
 ## Mancha de custo com o número (nomes "Gem" e "Cost": a mão troca o número quando o custo muda).
-static func _cost_blot(cost: int, s: float) -> PanelContainer:
-	var gem := badge(BLOOD, int(s * 0.52), s, "crystal")
+static func _cost_blot(cost: int, s: float, cheaper := false) -> PanelContainer:
+	# Custo abaixo do original (Barato, nível que barateia): a gema fica azul-água.
+	var gem := badge(Color(0.08, 0.55, 0.6) if cheaper else BLOOD, int(s * 0.52), s, "crystal")
 	gem.name = "Gem"
 	(gem.get_node("N") as Label).name = "Cost"
 	(gem.get_node("Cost") as Label).text = str(cost)
@@ -506,7 +507,7 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 	nl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	nl.custom_minimum_size = Vector2(0, band)
 	head.add_child(nl)
-	var gem := _cost_blot(cost, 27.0 * k)
+	var gem := _cost_blot(cost, 27.0 * k, cost < d.cost)
 	gem.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(gem)
 	var pad2 := Control.new()
@@ -531,7 +532,11 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 	tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	tl.custom_minimum_size = Vector2(w - 20.0 * k, 0)
-	var tcol: Color = spec[1]
+	var mids := UiKit.mod_ids_of(mods)
+	var dark := CardFx.is_dark(mids)
+	if dark:
+		tl.add_theme_color_override("font_color", Color(0.92, 0.88, 0.8, 0.9))
+	var tcol: Color = spec[1] if not dark else Color(0.92, 0.88, 0.8)
 	tl.draw.connect(func():
 		var tw := tl.get_theme_font("font").get_string_size(tl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, tl.get_theme_font_size("font_size")).x
 		var y := tl.size.y * 0.55
@@ -550,7 +555,7 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 		ml.set_meta("no_ink", true)
 		ml.add_theme_font_override("font", font("hand"))
 		ml.add_theme_font_size_override("font_size", int(15.0 * k))
-		ml.add_theme_color_override("font_color", BLOOD)
+		ml.add_theme_color_override("font_color", Color(1.0, 0.86, 0.55) if dark else BLOOD)
 		ml.add_theme_constant_override("outline_size", 0)
 		ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ml.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -571,7 +576,7 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 	mg.add_theme_constant_override("margin_bottom", int(7.0 * k))
 	mg.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	mg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var desc := UiKit.card_rich(d, int(15.0 * k), INK, w - 34.0 * k, true, level)
+	var desc := UiKit.card_rich(d, int(15.0 * k), INK, w - 34.0 * k, true, level, mids)
 	desc.set_meta("no_ink", true)
 	desc.add_theme_font_override("normal_font", font("hand"))
 	desc.add_theme_font_override("bold_font", font("type"))
@@ -595,6 +600,7 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 		v.add_child(kc)
 	p.add_child(v)
 	UiKit.ignore_mouse(p)
+	CardFx.attach(p, level, mids, w / 116.0)
 	return p
 
 
@@ -629,7 +635,7 @@ static func mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float,
 		nl.position = Vector2(7.0 * k, 0)
 		nl.size = Vector2(w - gs - 12.0 * k, band)
 		body.add_child(nl)
-	var gem := _cost_blot(cost, gs)
+	var gem := _cost_blot(cost, gs, cost < d.cost)
 	gem.position = Vector2(w - gs - 3.0 * k, (band - gs) * 0.5 if named else 2.0)
 	gem.size = Vector2(gs, gs)
 	body.add_child(gem)
@@ -640,6 +646,7 @@ static func mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float,
 	p.add_child(body)
 	UiKit.ignore_mouse(p)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	CardFx.attach(p, level, UiKit.mod_ids_of(mods), w / 116.0)
 	return p
 
 

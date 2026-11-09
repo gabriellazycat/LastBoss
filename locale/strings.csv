@@ -293,7 +293,7 @@ UI_OPT_MOD_HEAD,Melhorar: {mod},Upgrade: {mod}
 UI_OPT_REMOVE_HEAD,Tirar do deck,Remove from deck
 UI_YOUR_BODY,Seu corpo,Your body
 UI_HELP_ARENA,1–6 carta · clique posiciona · Q/E ou clique no altar teleporta · Espaço pausa · F velocidade,1–6 card · click to place · Q/E or click an altar to teleport · Space pauses · F speed
-UI_NEXT,Próximas,Next
+UI_NEXT,Baralho,Deck
 UI_STRIP_FORK,Bifurcação · {m} m,Fork · {m} m
 UI_STRIP_DIST,{name} · {m} m,{name} · {m} m
 UI_STRIP_LAIR,Covil · {m} m,Lair · {m} m
@@ -635,3 +635,15 @@ UI_WANTED,PROCURA-SE,WANTED
 UI_ST_you,Heróis derrubados,Heroes defeated
 UI_TITLE_ME,"eu, o chefe final","me, the final boss"
 UI_WANTED_REWARD,recompensa: o reino,reward: the kingdom
+UI_GOAL_ritual,Mate {g} no círculo!,Kill {g} in the circle!
+UI_GOALSUB_ritual,Faça monstros morrerem no ritual · {s} s,Get monsters killed in the ritual · {s} s
+UI_GOAL_shrine,Segure o santuário!,Hold the shrine!
+UI_GOALSUB_shrine,{g} s com monstros no círculo · {s} s,{g} s with monsters in the circle · {s} s
+UI_GOAL_tavern,Destrua {g} casas!,Destroy {g} houses!
+UI_GOALSUB_tavern,Antes que o herói descanse · {s} s,Before the hero rests · {s} s
+UI_GOAL_bridge,Cause {g} de dano!,Deal {g} damage!
+UI_GOALSUB_bridge,Enquanto o herói atravessa a ponte · {s} s,While the hero crosses the bridge · {s} s
+UI_GOAL_fountain,Interrompa o herói!,Interrupt the hero!
+UI_GOALSUB_fountain,"Medo, raiz, empurrão ou {g} de dano · {s} s","Fear, root, knockback or {g} damage · {s} s"
+UI_BANNER_WON,Vitória!,Victory!
+UI_BANNER_LOST,Falhou!,Failed!

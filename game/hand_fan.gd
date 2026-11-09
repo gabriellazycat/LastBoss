@@ -14,7 +14,10 @@ const ANGLE := 3.5                 # inclinação por carta, em graus
 const DROOP := 5.0                 # quanto as pontas do arco descem
 const LIFT := 30.0                 # carta selecionada
 const QUEUE_W := 214.0             # largura reservada à esteira (dos dois lados, para o leque ficar no centro)
-const QUEUE_SIZES := [Vector2(66, 86), Vector2(48, 62), Vector2(42, 54), Vector2(36, 46)]
+const QUEUE_SIZES := [Vector2(66, 86)]   # só a carta do topo do baralho, virada para cima
+const DECK_BACK := Vector2(66, 86)       # cartas de costas empilhadas embaixo dela
+const DECK_LAYERS := 7                   # quantas costas a pilha desenha no máximo
+const DRAW_TIME := 0.42                  # a carta comprada voa do baralho até a mão
 const PREVIEW_W := 204.0
 const TIP_HOLD := 0.6              # parado na carta por este tempo: abrem as caixas ao lado
 
@@ -34,12 +37,13 @@ var queue_panels: Array = []
 var queue_sig := ""
 var queue_more: Label
 var queue_head: Label
+var deck_pile: Control                   # pilha de costas do baralho (desenhada)
+var deck_pos := Vector2()                # canto da carta do topo (local)
 var press_i := -1
 var t := 0.0
 var mouse_override = null          # posição local fixa do mouse (só no teste da entrada real)
 var tip_uid := -1                  # carta sob o mouse e há quanto tempo (caixas ao lado)
 var tip_t := 0.0
-var tip_sticky := false            # a carta só continua ampliada porque o mouse está nas caixas dela
 
 
 func _init() -> void:
@@ -50,6 +54,10 @@ func _init() -> void:
 	add_child(queue_head)
 	queue_more = UiKit.label(15, UiKit.MUTED, 3)
 	add_child(queue_more)
+	deck_pile = Control.new()
+	deck_pile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	deck_pile.draw.connect(_draw_pile)
+	add_child(deck_pile)
 
 
 func bind(s: Sim) -> void:
@@ -116,6 +124,15 @@ func card_rect(k: int) -> Rect2:
 	return Rect2(global_position + r[0] - CARD * 0.5, CARD)
 
 
+## O mouse chega mesmo à mão: nada por cima dela o pega (mapa em tela cheia, ofertas, pausa). O leque lê a posição
+## do mouse a cada quadro; sem isto, as cartas atrás do mapa acendiam e abriam as caixas.
+func _mouse_reaches_me() -> bool:
+	if mouse_override != null:
+		return true
+	var h := get_viewport().gui_get_hovered_control()
+	return h != null and (h == self or is_ancestor_of(h))
+
+
 func _slot_at(m: Vector2) -> int:
 	if sim.hand.is_empty():
 		return -1
@@ -165,16 +182,9 @@ func refresh(delta: float) -> void:
 	var motion := clampf(float(Settings.v["shake"]), 0.0, 1.0)
 	var n := sim.hand.size()
 	var m: Vector2 = get_local_mouse_position() if mouse_override == null else mouse_override
-	hover = _slot_at(m) if press_i < 0 and not pad else -1
+	hover = _slot_at(m) if press_i < 0 and not pad and _mouse_reaches_me() else -1
 	if hover >= 0 and sim.hand[hover] == null:
 		hover = -1
-	# Lendo as caixas da carta (o mouse saiu do leque para dentro delas): a carta continua ampliada.
-	tip_sticky = false
-	if hover < 0 and press_i < 0 and not pad and Tips.is_open("hand:%d" % tip_uid):
-		for k in n:
-			if sim.hand[k] and sim.hand[k].uid == tip_uid:
-				hover = k
-				tip_sticky = true
 	_refresh_queue(delta)
 	# Cartas da mão: cria as novas (saindo da esteira), descarta as jogadas.
 	var seen := {}
@@ -193,9 +203,12 @@ func refresh(delta: float) -> void:
 			panels[ci.uid] = p2
 		elif not panels.has(ci.uid):
 			var p := _make_card(ci, k)
-			var from: Vector2 = queue_panels[0].position + queue_panels[0].size * 0.5 if queue_panels.size() > 0 else Vector2(_fan_left(), size.y)
+			var from: Vector2 = deck_pos + DECK_BACK * 0.5 if sim.queue.size() > 0 or queue_panels.size() > 0 else Vector2(_fan_left(), size.y)
 			p.position = from - CARD * 0.5
 			p.scale = Vector2(0.5, 0.5)
+			p.rotation = -0.5
+			p.set_meta("fly", 0.0)
+			p.set_meta("fly_from", from)
 			panels[ci.uid] = p
 		panel_sig[ci.uid] = sig
 	for uid in panels.keys():
@@ -219,9 +232,24 @@ func refresh(delta: float) -> void:
 			c.y -= LIFT
 			rot *= 0.3
 		p.pivot_offset = CARD * 0.5
-		p.position = p.position.lerp(c - CARD * 0.5, a)
-		p.rotation = lerp_angle(p.rotation, rot, a)
-		p.scale = p.scale.lerp(Vector2.ONE, a)
+		if p.has_meta("fly"):
+			# Compra: sai do baralho girando, faz um arco por cima e chega na mão com um leve exagero de escala.
+			var f := minf(float(p.get_meta("fly")) + delta / DRAW_TIME, 1.0)
+			p.set_meta("fly", f)
+			var e := 1.0 - pow(1.0 - f, 3.0)
+			var from: Vector2 = p.get_meta("fly_from")
+			var to := c
+			var mid := (from + to) * 0.5 + Vector2(0, -150.0)
+			var q := from.lerp(mid, e).lerp(mid.lerp(to, e), e)
+			p.position = q - CARD * 0.5
+			p.rotation = lerp_angle(-0.5 - TAU, rot, e) if motion > 0.0 else rot
+			p.scale = Vector2.ONE * (0.5 + 0.5 * e + 0.18 * sin(e * PI))
+			if f >= 1.0:
+				p.remove_meta("fly")
+		else:
+			p.position = p.position.lerp(c - CARD * 0.5, a)
+			p.rotation = lerp_angle(p.rotation, rot, a)
+			p.scale = p.scale.lerp(Vector2.ONE, a)
 		p.z_index = 2 if k == selected else 0
 		var b := sim.can_play(k)
 		(p.find_child("Cost", true, false) as Label).text = str(sim.card_cost(ci))
@@ -244,13 +272,13 @@ func _refresh_tips(delta: float) -> void:
 		tip_t = 0.0
 	elif uid >= 0:
 		tip_t += delta
-	# Segura só com o mouse na carta; nas caixas, quem as mantém abertas é o próprio Tips.
-	if ci == null or tip_t < TIP_HOLD or preview == null or tip_sticky:
+	# Segura só com o mouse na carta; as caixas são só de leitura (não pegam o mouse) e somem junto com ela.
+	if ci == null or tip_t < TIP_HOLD or preview == null:
 		return
 	var d := ci.def
 	var mids := UiKit.mod_ids(ci)
 	var lv := ci.level
-	Tips.hold("hand:%d" % uid, preview.get_global_rect(), func(): return Tips.card_entries(d, mids, false, lv))
+	Tips.hold("hand:%d" % uid, preview.get_global_rect(), func(): return Tips.card_entries(d, mids, false, lv), true)
 
 
 func _make_card(ci: Sim.CardInst, k: int) -> PanelContainer:
@@ -381,27 +409,48 @@ func _refresh_queue(delta: float) -> void:
 			var qm := UiKit.mod_ids(ci)
 			var ql := ci.level
 			Tips.attach(q, func(): return Tips.card_entries(qd, qm, true, ql))
-			# Quem já estava na esteira desliza da posição antiga.
+			# A carta nova do topo vira da pilha (de costas para frente).
 			if old.has(ci.uid):
 				q.position = old[ci.uid].position
 				old.erase(ci.uid)
 			else:
-				q.position = Vector2(_fan_left() - 16.0 - sz.x, size.y - sz.y - 6.0)
+				q.position = deck_pos
+				q.pivot_offset = sz * 0.5
+				q.scale = Vector2(0.0, 1.0)
 			add_child(q)
 			queue_panels.append(q)
 		for q in old.values():
 			q.queue_free()
-		var more := sim.queue.size() - QUEUE_SIZES.size()
-		queue_more.text = "+%d" % more if more > 0 else ""
-	# Da direita (perto do leque) para a esquerda, encolhendo e apagando.
-	var x := _fan_left() - 16.0
+		queue_more.text = str(sim.queue.size()) if sim.queue.size() > 0 else ""
+		deck_pile.queue_redraw()
+	# Baralho à esquerda do leque: pilha de costas e a carta do topo virada por cima.
+	var layers := mini(maxi(sim.queue.size() - 1, 0), DECK_LAYERS)
+	var base := Vector2(_fan_left() - 40.0 - DECK_BACK.x, size.y - DECK_BACK.y - 12.0)
+	deck_pos = base - Vector2(layers, layers) * 2.4
 	var a := clampf(delta * 10.0, 0.0, 1.0)
-	for i in queue_panels.size():
-		var q: Control = queue_panels[i]
-		var sz: Vector2 = QUEUE_SIZES[i]
-		x -= sz.x + 6.0
-		q.position = q.position.lerp(Vector2(x, size.y - sz.y - 10.0), a)
-		q.modulate = Color(1, 1, 1, 1.0 - 0.17 * i)
-	queue_head.position = Vector2(_fan_left() - 22.0 - QUEUE_SIZES[0].x, size.y - QUEUE_SIZES[0].y - 32.0)
+	for q in queue_panels:
+		q.position = q.position.lerp(deck_pos, a)
+		q.pivot_offset = q.size * 0.5
+		q.scale = q.scale.lerp(Vector2.ONE, clampf(delta * 9.0, 0.0, 1.0))
+	deck_pile.position = base
+	deck_pile.size = DECK_BACK
+	deck_pile.set_meta("layers", layers)
+	queue_head.position = Vector2(deck_pos.x, deck_pos.y - 22.0)
 	queue_head.visible = queue_panels.size() > 0
-	queue_more.position = Vector2(x - 30.0, size.y - 40.0)
+	queue_more.position = Vector2(base.x - 24.0, base.y + DECK_BACK.y - 20.0)
+
+
+## Costas das cartas do baralho, da de baixo para a de cima (subindo para a esquerda e para cima).
+func _draw_pile() -> void:
+	var layers: int = deck_pile.get_meta("layers", 0)
+	for i in layers + 1:
+		var o := -Vector2(i, i) * 2.4
+		var r := Rect2(o, DECK_BACK)
+		deck_pile.draw_rect(Rect2(r.position + Vector2(2, 3), r.size), Color(0, 0, 0, 0.25))
+		deck_pile.draw_rect(r, Color(0.3, 0.12, 0.1))
+		deck_pile.draw_rect(r.grow(-4.0), Color(0.42, 0.18, 0.14))
+		deck_pile.draw_rect(r.grow(-4.0), Color(0.85, 0.7, 0.45, 0.8), false, 1.2)
+		var c := r.get_center()
+		var s := 11.0
+		deck_pile.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -s), c + Vector2(s * 0.7, 0), c + Vector2(0, s), c + Vector2(-s * 0.7, 0)]), Color(0.85, 0.7, 0.45, 0.85))
+		deck_pile.draw_rect(r, Color(0.1, 0.05, 0.04), false, 1.0)

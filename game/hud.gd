@@ -35,6 +35,8 @@ var upg_icons: Dictionary = {}       # habilidade -> ícone na HUD (recarga dese
 var contest_panel: PanelContainer     # disputa do local em andamento (rodada 09/11/2026)
 var contest_label: RichTextLabel
 var contest_text := ""
+var hold_offers := false             # cena da morte do herói: a recompensa e as cartas esperam
+var banner: BigBanner                  # letreiro grande: objetivo do local, resultado, ato (rodada 09/11/2026)
 var relic_row: HBoxContainer          # relíquias do covil ganhas na run
 var curse_label: Label
 # Esquerda: run e contrato.
@@ -85,6 +87,9 @@ var offer_keys: Label
 var gold_label: Label
 var offer_sig := ""
 var offer_slots: Array = []
+var offer_rays: Juice.Rays             # raios de luz atrás da oferta (impacto, rodada 09/11/2026)
+var offer_obj = null                   # oferta já animada (a mesma oferta reconstruída não anima de novo)
+var sfx: Callable                      # som da interface: sfx.call(id, tom)
 var souls_gained := 0
 var pause_layer: Control
 var pause_menu: VBoxContainer
@@ -354,6 +359,8 @@ func _build_messages() -> void:
 	contest_panel.add_child(contest_label)
 	contest_panel.visible = false
 	add_child(contest_panel)
+	banner = BigBanner.new()
+	add_child(banner)
 	# Relíquias do covil ganhas na run, em fila no canto de baixo à direita.
 	relic_row = HBoxContainer.new()
 	relic_row.add_theme_constant_override("separation", 6)
@@ -371,6 +378,9 @@ func _dim() -> ColorRect:
 
 func _build_offer() -> void:
 	offer_layer = _dim()
+	offer_rays = Juice.Rays.new()
+	offer_rays.set_anchors_preset(Control.PRESET_FULL_RECT)
+	offer_layer.add_child(offer_rays)
 	offer_layer.color.a = 0.55
 	var v := VBoxContainer.new()
 	v.name = "Box"
@@ -764,6 +774,8 @@ func refresh(delta: float, fps: float) -> void:
 	fan.selected = selected
 	fan.pad = pad
 	fan.sac_rect = sac_zone.get_global_rect()
+	fan.mouse_filter = Control.MOUSE_FILTER_IGNORE if hold_offers else Control.MOUSE_FILTER_STOP
+	fan.modulate.a = lerpf(fan.modulate.a, 0.35 if hold_offers else 1.0, clampf(delta * 8.0, 0.0, 1.0))
 	fan.refresh(delta)
 	var sel := sim.hand_card(selected) if selected >= 0 else null
 	# Alvos que a faixa destaca para a carta de rota selecionada.
@@ -959,14 +971,22 @@ func handle_events(evs: Array) -> void:
 	for e in evs:
 		match int(e[0]):
 			K.Ev.CONTEST:
-				if int(e[4]) != 0:
-					say(tr("UI_CONTEST_WON" if int(e[4]) > 0 else "UI_CONTEST_LOST"))
+				if int(e[4]) == 0 and sim.contest.size() > 0:
+					# Chegou no local: o objetivo bate grande no meio e voa para o painel da disputa no topo.
+					var c := sim.contest
+					var f := {"g": int(c["goal"]), "s": int(ceil(float(c["window"])))}
+					var dock := Vector2(get_viewport_rect().size.x * 0.5, duel.position.y + duel.size.y + 26.0)
+					banner.show_banner(tr("UI_GOAL_" + str(c["type"])).format(f), tr("UI_GOALSUB_" + str(c["type"])).format(f), UiKit.GOLD, dock)
+				elif int(e[4]) > 0:
+					banner.show_banner(tr("UI_BANNER_WON"), tr("UI_CONTEST_WON"), Color(0.55, 1.0, 0.55), Vector2(-1, -1), 0.8)
+				elif int(e[4]) < 0:
+					banner.show_banner(tr("UI_BANNER_LOST"), tr("UI_CONTEST_LOST"), Color(1.0, 0.45, 0.4), Vector2(-1, -1), 0.6)
 			K.Ev.ACT_START:
-				say(tr("UI_ACT_OF").format({"n": int(e[3]) + 1, "m": sim.acts()}))
+				banner.show_banner(tr("UI_ACT_OF").format({"n": int(e[3]) + 1, "m": sim.acts()}), "", UiKit.GOLD, Vector2(-1, -1), 1.0)
 
 
 func _refresh_offer() -> void:
-	var on := sim.offers.size() > 0
+	var on := sim.offers.size() > 0 and not hold_offers
 	offer_layer.visible = on
 	if not on:
 		offer_sig = ""
@@ -976,6 +996,9 @@ func _refresh_offer() -> void:
 	if sig != offer_sig:
 		offer_sig = sig
 		_build_offer_options(o)
+		if not is_same(o, offer_obj):
+			offer_obj = o
+			_offer_entrance()
 	for k in offer_slots.size():
 		var slot: Control = offer_slots[k]
 		var hot: bool = k == selected or slot.get_meta("hover", false)
@@ -1077,7 +1100,9 @@ func _build_offer_options(o: Dictionary) -> void:
 				lv = _inst_level(int(op["uid"]))
 				mids = [str(op["mod"])]
 				head.text = tr("UI_OPT_MOD_HEAD").format({"mod": tr("MOD_" + str(op["mod"]))})
-				cp = UiKit.card(cd, cd.cost_at(lv), [tr("MOD_" + str(op["mod"]))], key, w, lv)
+				# Barato já mostra o custo novo na carta (gema azul-água).
+				var mc := cd.cost_at(lv) - (1 if str(op["mod"]) == "cheap" else 0)
+				cp = UiKit.card(cd, maxi(mc, 1), [tr("MOD_" + str(op["mod"]))], key, w, lv)
 				Tips.set_text(foot, "[[%s]]: %s" % [op["mod"], tr("MODDESC_" + str(op["mod"]))])
 			"upgrade":
 				cd = sim.data.card(str(op["card"]))
@@ -1165,10 +1190,36 @@ func _build_offer_options(o: Dictionary) -> void:
 			slot.add_child(cp)
 			slot.add_child(foot)
 		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.set_meta("card", cp)
+		slot.set_meta("special", lv > 1 or mids.size() > 0 or str(op["kind"]) in ["upgrade", "mod"])
+		slot.set_meta("fx_col", Color(0.55, 1.0, 0.55) if str(op["kind"]) == "upgrade" else (CardFx.MOD_COLOR.get(mids[0], UiKit.GOLD).lightened(0.3) if mids.size() > 0 else UiKit.GOLD))
 		offer_box.add_child(slot)
 		offer_slots.append(slot)
 	# O quadro encolhe quando a oferta seguinte é menor.
 	(offer_layer.get_node("Box") as Control).size = Vector2.ZERO
+
+
+## Entrada da oferta: raios acendem, o título bate e as cartas chegam uma a uma, cada uma com faíscas e um
+## som um tom acima da anterior; carta upada ganha clarão.
+func _offer_entrance() -> void:
+	offer_rays.kick()
+	Juice.slam(offer_title)
+	if sfx.is_valid():
+		sfx.call("reward", 0.8)
+	for k in offer_slots.size():
+		var slot: Control = offer_slots[k]
+		var cp: Control = slot.get_meta("card")
+		if cp == null:
+			continue
+		var special: bool = slot.get_meta("special", false)
+		var col: Color = slot.get_meta("fx_col", UiKit.GOLD)
+		var pitch := 1.0 + 0.1 * k
+		Juice.card_in(cp, 0.18 + 0.11 * k, special, func():
+			if not is_instance_valid(cp):
+				return
+			Juice.burst(offer_layer, cp.get_global_rect().get_center() - offer_layer.get_global_rect().position, col, 26 if special else 16, 1.25 if special else 0.9)
+			if sfx.is_valid():
+				sfx.call("card_play" if not special else "level_player", pitch))
 
 
 func _refresh_arena() -> void:

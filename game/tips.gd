@@ -196,7 +196,9 @@ static func attach(c: Control, builder: Callable) -> void:
 
 
 ## Chamado a cada quadro enquanto um objeto está sob o mouse: abre (se preciso) e segura o nível 0.
-static func hold(owner: String, anchor: Rect2, builder: Callable) -> void:
+## `passive`: caixas só de leitura (não pegam o mouse nem bloqueiam o que está embaixo) e fecham no mesmo quadro em
+## que o objeto deixa de ser segurado, sem a espera GRACE (cartas da mão: somem junto com a carta ampliada).
+static func hold(owner: String, anchor: Rect2, builder: Callable, passive := false) -> void:
 	if inst == null:
 		return
 	if inst.levels.size() > 0 and inst.levels[0]["owner"] == owner:
@@ -205,7 +207,7 @@ static func hold(owner: String, anchor: Rect2, builder: Callable) -> void:
 	var entries: Array = builder.call()
 	if entries.is_empty():
 		return
-	inst._open(0, owner, anchor, entries, null)
+	inst._open(0, owner, anchor, entries, null, passive)
 
 
 ## Entrada de caixa: título, corpo (com marcação), ícone opcional, id da palavra-chave (não vira link de si mesma).
@@ -276,7 +278,7 @@ func _word_exit(level: int, l: RichTextLabel) -> void:
 		levels[level]["word"] = null
 
 
-func _open(level: int, owner: String, anchor: Rect2, entries: Array, word: RichTextLabel) -> void:
+func _open(level: int, owner: String, anchor: Rect2, entries: Array, word: RichTextLabel, passive := false) -> void:
 	_close_from(level)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 6)
@@ -284,7 +286,7 @@ func _open(level: int, owner: String, anchor: Rect2, entries: Array, word: RichT
 	var boxes: Array = []
 	var kws: Array = []
 	for e in entries:
-		var b := _make_box(e, level)
+		var b := _make_box(e, level, passive)
 		col.add_child(b)
 		boxes.append(b)
 		if e["kw"] != "":
@@ -305,12 +307,12 @@ func _open(level: int, owner: String, anchor: Rect2, entries: Array, word: RichT
 		x = anchor.position.x - cs.x - 8.0
 	y = clampf(y, 8.0, maxf(vs.y - cs.y - 8.0, 8.0))
 	col.position = Vector2(clampf(x, 8.0, maxf(vs.x - cs.x - 8.0, 8.0)), y)
-	levels.append({"owner": owner, "col": col, "boxes": boxes, "kws": kws, "word": word, "seen": Engine.get_process_frames(), "t": 0.0})
+	levels.append({"owner": owner, "col": col, "boxes": boxes, "kws": kws, "word": word, "seen": Engine.get_process_frames(), "t": 0.0, "passive": passive})
 
 
-func _make_box(e: Dictionary, level: int) -> PanelContainer:
+func _make_box(e: Dictionary, level: int, passive := false) -> PanelContainer:
 	var p := UiKit.panel(Color(0.06, 0.04, 0.1, 0.97), UiKit.GOLD.darkened(0.15), 10)
-	p.mouse_filter = Control.MOUSE_FILTER_PASS
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE if passive else Control.MOUSE_FILTER_PASS
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -335,8 +337,11 @@ func _make_box(e: Dictionary, level: int) -> PanelContainer:
 	body.custom_minimum_size = Vector2(BOX_W, 0)
 	body.add_theme_font_size_override("normal_font_size", 15)
 	body.add_theme_color_override("default_color", Color(0.92, 0.9, 0.98))
-	body.text = rich(e["body"], level + 1 < MAX_DEPTH, e["kw"])
-	_wire(body, level + 1)
+	body.text = rich(e["body"], level + 1 < MAX_DEPTH and not passive, e["kw"])
+	if passive:
+		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	else:
+		_wire(body, level + 1)
 	v.add_child(body)
 	return p
 
@@ -376,6 +381,12 @@ func _process(delta: float) -> void:
 			lv["word"] = null
 			w = null
 		var alive: bool = deeper or w != null or frame - int(lv["seen"]) <= 1 or _mouse_in(lv, m)
+		if lv.get("passive", false):
+			alive = frame - int(lv["seen"]) <= 1
+			if not alive:
+				_close_from(i)
+				deeper = false
+				continue
 		if alive:
 			lv["t"] = 0.0
 		else:

@@ -1,5 +1,19 @@
 # Progresso — Last Boss
 
+## Polimento: bugs da mão, upgrades visíveis e impacto (09/11/2026)
+
+Pedido em lista de playtest; decisões na conversa (grilling). Ainda não commitado.
+
+- **Bugs:** com o mapa aberto, as cartas atrás dele acendiam e abriam caixas (a mão lia o mouse sem ver o que estava por cima). As caixas das cartas da mão agora são só de leitura: somem junto com a carta e não bloqueiam o mouse (não abrem caixa aninhada; os ícones de habilidade continuam abrindo). O `--tiptest` ganhou 4 checagens que falham no código antigo.
+- **Upgrades visíveis** (`game/card_fx.gd`): o nível é dono da moldura (N2 aço, N3 ouro pulsando com reflexo holográfico) e dos losangos no pé; cada modificador troca o papel da carta e ganha selo e efeito (Barato: recibo verde-água e gema pulsando; Veterano: estandarte azul e reflexo metálico; Explosivo: chamuscado e faíscas; Amaldiçoado: roxo com tinta escorrendo; Sombrio: carvão e fumaça). Em combo vale o papel do primeiro modificador ganho (`CardInst.first_mod`, salvo no save; saves antigos carregam sem ele). Os números já vêm recalculados: valor antigo riscado e o novo em verde com ▲, custo menor com a gema azul-água, Veterano já soma +1 unidade (ou +20% no feitiço). Galeria: `godot --path . res://tools/gallery/card_fx_gallery.tscn -- --out=<pasta>/`.
+- **Baralho:** a fila "Próximas" virou uma pilha de costas com a carta do topo virada para cima e o total ao lado; a carta comprada voa girando em arco até a mão.
+- **Câmera:** desliza até 9 m na direção do mouse (zona morta no centro; parada com o mouse na faixa da mão ou fora da janela).
+- **Aviso de objetivo** (`game/big_banner.gd`): ao chegar num local com disputa, o objetivo bate grande no meio ("CAUSE 150 DE DANO!"), segura ~1 s e voa para o painel da disputa. Também para vitória/derrota da disputa e início de ato. Não pausa.
+- **Morte do herói:** o corpo fica no lugar e tomba de lado em câmera lenta (Engine.time_scale 0,3), a câmera aproxima, depois recua deslizando até o herói novo; só então abre a recompensa. Cartas travadas durante a cena. Bots e headless pulam a cena. Captura: `--killat=<s>`.
+- **Impacto nas recompensas** (`game/juice.gd`): raios de luz girando atrás, título que bate, cartas que entram uma a uma girando, com faíscas e som subindo de tom; carta upada ganha clarão. A oferta de Barato já mostra o custo novo.
+- **Testes:** `tests.tscn` 0 falhas; `--tiptest` e `--routetest` OK; `--uitest` só falha no arrastar, como antes; `--menutest` falha em "Papel da mesa abre a tela" também no commit anterior (não é desta rodada).
+- Capturas: `docs/visual/upgrades/`.
+
 ## Fluxo de nova run e mapa em tela cheia (09/11/2026)
 
 Feito a pedido, sem alterar a simulação. Ainda não commitado.

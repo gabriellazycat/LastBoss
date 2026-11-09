@@ -78,6 +78,8 @@ func _ready() -> void:
 	add_child(audio)
 	_env()
 	world = WorldView.new()
+	# Bots e lotes rodam sem a cena da queda (ela segura a recompensa por ~3 s).
+	world.cine_enabled = not auto_args.has("autoplay") and DisplayServer.get_name() != "headless"
 	add_child(world)
 	var fx_layer := CanvasLayer.new()
 	fx_layer.layer = 0
@@ -110,6 +112,15 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 	hud.quit_game.connect(_quit)
 	hud.speed_pressed.connect(_cycle_speed)
 	hud.map_pressed.connect(func(): if sim: _toggle_map())
+	hud.sfx = func(id: String, pitch: float):
+		if audio:
+			audio.play(id, 0.02, pitch)
+	# Letreiro grande bate na tela: tranco de câmera e som (rodada 09/11/2026, impacto).
+	hud.banner.on_slam = func(p: float):
+		if world:
+			world.add_trauma(0.45 * p)
+		if audio:
+			audio.play("part_destroyed", 0.02)
 	hud.settings_changed.connect(_on_settings)
 	menu = MainMenu.new()
 	menu.theme = UiKit.make_theme()
@@ -326,6 +337,8 @@ func _to_menu(decks: bool) -> void:
 	if running and sim and sim.phase != K.Phase.OVER and not auto_args.has("autoplay"):
 		SaveGame.save(sim)
 	running = false
+	Engine.time_scale = 1.0
+	world.cine_t = -1.0
 	paused = false
 	sim = null
 	world.build_empty()
@@ -626,6 +639,12 @@ func _process(delta: float) -> void:
 		else:
 			sim._offer_level()
 			sim.damage_hero(1.0, sim.hero.x, sim.hero.y + 5.0, 0, SimHero.DMG_PIERCE, "test")
+	# Cena da morte do herói: a recompensa só abre quando a câmera chega no herói novo; cartas travadas.
+	hud.hold_offers = world.cine_active()
+	# --killat=<s>: derruba o herói nesse instante (captura da cena da queda).
+	if auto_args.has("killat") and life >= float(auto_args["killat"]):
+		auto_args.erase("killat")
+		sim.damage_hero(sim.hero.hp + 99999.0, sim.hero.x, sim.hero.y + 1.0, 0, SimHero.DMG_PIERCE, "test")
 	if auto_bot:
 		auto_bot.think(sim)
 	# Bifurcação sem escolha: o jogo espera e o mapa grande abre sozinho.
@@ -1057,6 +1076,33 @@ func _tip_test() -> void:
 	await get_tree().create_timer(0.5).timeout
 	step.call("Parar na carta abre as caixas ao lado", Tips.reading() and Tips.inst.levels[0]["owner"].begins_with("hand:"))
 	_ui_shot("tip_card")
+	# As caixas da carta são só de leitura: não pegam o mouse (o mundo e as outras cartas continuam clicáveis).
+	var grabs := false
+	if Tips.reading():
+		for b in Tips.inst.levels[0]["boxes"]:
+			grabs = grabs or (b as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE
+	step.call("Caixas da carta não bloqueiam o mouse", Tips.reading() and not grabs)
+	# Ir para a carta vizinha: as caixas da anterior somem junto com ela (sem a espera de 0,4 s).
+	var uid0: String = Tips.inst.levels[0]["owner"] if Tips.reading() else ""
+	var c1 := hud.fan.card_rect(1).get_center()
+	hud.fan.mouse_override = c1 - hud.fan.global_position
+	await _hover(c1, 3)
+	step.call("Caixas somem junto com a carta", not Tips.is_open(uid0) and hud.fan.hover == 1)
+	# Mapa grande aberto por cima da mão: o mouse sobre as cartas (atrás do mapa) não acende nenhuma.
+	hud.fan.mouse_override = null
+	Tips.close_all()
+	_toggle_map()
+	await get_tree().process_frame
+	await _hover(c0, 4)
+	await get_tree().create_timer(0.8).timeout
+	step.call("Mapa aberto: cartas atrás dele não reagem ao mouse", hud.minimap.visible and hud.fan.hover < 0 and not Tips.reading())
+	_toggle_map()
+	await get_tree().process_frame
+	# A Godot só recalcula o controle sob o mouse no próximo movimento: mexe e espera assentar.
+	await _hover(c0 + Vector2(4, 0), 2)
+	await _hover(c0, 4)
+	await get_tree().create_timer(0.2).timeout
+	step.call("Mapa fechado: a carta volta a reagir", hud.fan.hover == 0)
 	hud.fan.mouse_override = null
 	Tips.mouse_override = null
 	print("tiptest resultado: ", "OK" if fails.is_empty() else "FALHOU " + str(fails))
@@ -1234,6 +1280,8 @@ func _click_world(screen: Vector2) -> void:
 
 func _unhandled_input(e: InputEvent) -> void:
 	if not running or sim == null:
+		return
+	if world and world.cine_active() and not (e is InputEventMouseMotion):
 		return
 	if e is InputEventMouseMotion:
 		pad_active = false

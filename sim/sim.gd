@@ -6,6 +6,7 @@ extends RefCounted
 class CardInst:
 	var def: CardDef
 	var mods := 0
+	var first_mod := 0      # bit do primeiro modificador ganho (dono do papel da carta)
 	var uid := 0
 	var level := 1
 
@@ -1694,6 +1695,8 @@ func _apply_option(op: Dictionary) -> Array:
 		"mod":
 			for ci in cards:
 				if ci.uid == op["uid"]:
+					if ci.mods == 0:
+						ci.first_mod = int(K.MOD_BY_ID[op["mod"]])
 					ci.mods |= int(K.MOD_BY_ID[op["mod"]])
 		"upgrade":
 			for ci in cards:
@@ -1730,6 +1733,7 @@ func _apply_option(op: Dictionary) -> Array:
 					var cp := _new_inst(ci.def)
 					cp.level = ci.level
 					cp.mods = ci.mods
+					cp.first_mod = ci.first_mod
 					queue.push_front(cp)
 					_refill()
 	return follow

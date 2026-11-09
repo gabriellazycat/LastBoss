@@ -32,7 +32,7 @@ static func _p(path: String) -> String:
 static func _ci(c) -> Variant:
 	if c == null:
 		return null
-	return {"uid": c.uid, "id": c.def.id, "mods": c.mods, "level": c.level}
+	return {"uid": c.uid, "id": c.def.id, "mods": c.mods, "first_mod": c.first_mod, "level": c.level}
 
 
 static func save(sim: Sim, path := "") -> bool:
@@ -87,6 +87,7 @@ static func load_run(data: GameData, path := "") -> Sim:
 		ci.def = data.card(c["id"])
 		ci.uid = c["uid"]
 		ci.mods = c["mods"]
+		ci.first_mod = int(c.get("first_mod", 0))
 		ci.level = int(c.get("level", 1))
 		by_uid[ci.uid] = ci
 		cards.append(ci)

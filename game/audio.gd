@@ -33,7 +33,7 @@ func _ready() -> void:
 	add_child(music_layer)
 
 
-func play(id: String, pitch_var := 0.08) -> void:
+func play(id: String, pitch_var := 0.08, pitch := 1.0) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if now - float(last.get(id, -10.0)) < float(COOLDOWN.get(id, 0.0)):
 		return
@@ -42,7 +42,7 @@ func play(id: String, pitch_var := 0.08) -> void:
 	pool_i = (pool_i + 1) % pool.size()
 	p.stream = streams[id]
 	p.volume_db = VOLUME.get(id, -4.0)
-	p.pitch_scale = randf_range(1.0 - pitch_var, 1.0 + pitch_var)
+	p.pitch_scale = pitch * randf_range(1.0 - pitch_var, 1.0 + pitch_var)
 	p.play()
 
 
