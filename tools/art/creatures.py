@@ -44,6 +44,12 @@ LOOKS = {
             style=dict(ao=0.75, ao_pow=1.1, sky=0.4, height=0.35, edge=0.6, noise=0.03, noise_freq=4.0, hue=1.0, cool=(0.45, 0.4, 0.85), warm=(1.0, 0.9, 0.65))),
     4: Look(4, "sombrio", head=0.92, limb=0.92, spiky=True, eyes="glow", sat=0.62, val=0.78, tint=(0.45, 0.5, 0.7, 0.1),
             style=dict(ao=0.65, ao_pow=1.3, sky=0.25, height=0.35, edge=0.4, noise=0.04, noise_freq=8.0)),
+    # 6 "própria refinada" (docs/ESTUDO_DE_ARTE.md): proporção de boneco (cabeça e mãos grandes, como KayKit e
+    # Megabonk), olhos grandes que leem de longe, cor saturada com valores bem separados, malha mais fina
+    # (res_k) e mais triângulos (budget_k) para a silhueta ficar lisa; a luz fica com o shader do look 5.
+    6: Look(6, "refinada", head=1.38, limb=1.22, spiky=False, eyes="cute", sat=1.22, val=1.06, tint=(1.0, 0.95, 0.85, 0.03),
+            style=dict(ao=0.6, ao_pow=1.15, sky=0.3, height=0.18, edge=0.12, noise=0.0, hue=0.6, cool=(0.55, 0.6, 0.9), warm=(1.0, 0.92, 0.78)),
+            budget_k=1.8, res_k=1.5),
 }
 
 WHITE = (0.97, 0.96, 0.92)
@@ -692,7 +698,7 @@ def hero_part(m, L, part):
         m.hard("torus", (0, 0.72, 0), (0.17, 0.035), leather, seg=20)
         return finish(m, L, budget=1200, res=0.02)
     if part == "head":
-        if L.idx in (1, 2):
+        if L.idx in (1, 2, 6):
             # Elmo aberto: rosto à mostra (olhos grandes), bem cartunesco.
             hr = 0.3 * h
             m.ball((0, 0.28 * h, 0), hr, skin, group="face")

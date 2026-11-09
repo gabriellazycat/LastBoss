@@ -5,7 +5,7 @@ extends SceneTree
 
 func _init() -> void:
 	var n := 0
-	for dir in ["look1", "look2", "look3", "look4", "ground1", "ground2", "ground3", "ground4"]:
+	for dir in ["look1", "look2", "look3", "look4", "look6", "ground1", "ground2", "ground3", "ground4"]:
 		var src := "res://tools/art/out/%s/" % dir
 		var dst := "res://assets/models/%s/" % dir
 		var d := DirAccess.open(src)

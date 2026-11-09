@@ -18,6 +18,8 @@ var rim: DirectionalLight3D
 var floor_: MeshInstance3D
 var plinth: MeshInstance3D
 var plinth_ring: MeshInstance3D
+var key: DirectionalLight3D
+var fill: DirectionalLight3D
 
 
 func _ready() -> void:
@@ -44,7 +46,7 @@ func _ready() -> void:
 	env.environment = e
 	add_child(env)
 	# Principal: quente, do alto à esquerda, com sombra (a mesma direção da luz das molduras).
-	var key := DirectionalLight3D.new()
+	key = DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-42, 38, 0)
 	key.light_energy = 1.45
 	key.light_color = Color(1.0, 0.93, 0.82)
@@ -52,7 +54,7 @@ func _ready() -> void:
 	key.directional_shadow_max_distance = 30.0
 	add_child(key)
 	# Preenchimento frio e fraco pela direita.
-	var fill := DirectionalLight3D.new()
+	fill = DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-12, -60, 0)
 	fill.light_energy = 0.45
 	fill.light_color = Color(0.6, 0.7, 1.0)
@@ -144,6 +146,13 @@ func render_all(data: GameData) -> void:
 		mi.mesh = mesh
 		mi.material_override = Looks.unit_material(0.15, false) if c.is_unit else Models.glow_material(0.15)
 		pivot.add_child(mi)
+		# Direções novas (looks 5 e 6, docs/ESTUDO_DE_ARTE.md): retrato em ação (meio do ataque), luz principal
+		# mais forte e quente, chão do próprio mundo sob o monstro e fundo mais claro: lê como ilustração.
+		var fresh := c.is_unit and Looks.enemies() >= 5
+		if fresh and mi.material_override is ShaderMaterial:
+			(mi.material_override as ShaderMaterial).set_shader_parameter("pose_lunge", 0.5)
+		key.light_energy = 2.0 if fresh else 1.45
+		fill.light_energy = 0.7 if fresh else 0.45
 		var aabb := mesh.get_aabb()
 		var h := maxf(aabb.size.y, maxf(aabb.size.x, aabb.size.z) * 0.8)
 		var center := aabb.get_center()
@@ -170,6 +179,17 @@ func render_all(data: GameData) -> void:
 		env.environment.background_color = bc.darkened(0.5)
 		env.environment.ambient_light_color = bc.lightened(0.45)
 		(bg.material_override as StandardMaterial3D).albedo_color = bc
+		var fm := floor_.material_override as StandardMaterial3D
+		fm.albedo_color = Color.WHITE
+		if fresh:
+			env.environment.ambient_light_color = bc.lightened(0.6)
+			env.environment.ambient_light_energy = 0.8
+			(bg.material_override as StandardMaterial3D).albedo_color = bc.lightened(0.25) * 1.25
+			var gp: Dictionary = GroundLooks.preset().get("params", {})
+			if gp.has("c_grass"):
+				fm.albedo_color = (gp["c_grass"] as Color) * 6.0
+		else:
+			env.environment.ambient_light_energy = 0.55
 		rim.light_color = bc.lightened(0.55)
 		await RenderingServer.frame_post_draw
 		await RenderingServer.frame_post_draw

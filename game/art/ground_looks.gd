@@ -5,7 +5,8 @@ extends RefCounted
 ## Texturas CC0 do Poly Haven em assets/textures/ground (tools/art/fetch_textures.py).
 
 const NAMES := ["Atual", "Campina ao entardecer", "Bosque enluarado", "Outono", "Terra amaldiçoada",
-	"Pintado (direção única)", "Cartum (direção única)"]
+	"Pintado (direção única)", "Cartum (direção única)", "Aventura · dia (RoR2)", "Aventura · noite (Soulstone)",
+	"Própria refinada"]
 const T := "res://assets/textures/ground/"
 
 const PRESETS := {
@@ -91,6 +92,59 @@ const PRESETS := {
 		"fog": Color(0.12, 0.12, 0.22), "fog_d": 0.0015, "vfog": Color(0.55, 0.55, 0.85), "vfog_d": 0.001, "vfog_e": Color(0.02, 0.02, 0.05),
 		"exposure": 1.0, "adj_sat": 1.05,
 	},
+	# Direção "Aventura" (docs/ESTUDO_DE_ARTE.md): modelos CC0 (assets/models/cc0), chão ground_ror.gdshader.
+	# "shader" + "params": chão por shader próprio; "props_dir" + "props_sfx": de onde vem o cenário;
+	# "env"/"sun": propriedades extras do Environment e do sol (névoa por altura, AO, brilho, sombra).
+	7: {
+		"proc": true, "shader": "res://game/art/ground_ror.gdshader", "wshader": 5, "props_dir": "cc0", "props_sfx": "",
+		"params": {"c_grass": Color(0.13, 0.3, 0.2), "c_grass2": Color(0.34, 0.4, 0.18), "c_dirt": Color(0.46, 0.36, 0.25),
+			"c_rock": Color(0.62, 0.6, 0.58), "c_fleck": Color(0.98, 0.86, 0.5), "dirt_amount": 0.35, "rock_amount": 0.22, "bump": 0.7},
+		"road_c": Color(0.56, 0.45, 0.32), "road_dark": Color(0.45, 0.35, 0.25), "road_edge": Color(0.2, 0.24, 0.14), "bands": 0.0,
+		"grass_base": Color(0.07, 0.18, 0.11), "grass_tip": Color(0.4, 0.52, 0.22), "grass": 0.9,
+		"trees": [Color(1.0, 1.0, 1.0), Color(0.92, 1.02, 0.95), Color(1.05, 1.0, 0.9)],
+		"sun_rot": Vector3(-46, -38, 0), "sun_col": Color(1.0, 0.9, 0.76), "sun_e": 2.1,
+		"amb": Color(0.55, 0.66, 0.9), "amb_e": 0.75, "rim_col": Color(1.0, 0.82, 0.7), "rim_e": 0.35,
+		"sky_top": Color(0.32, 0.5, 0.8), "sky_hor": Color(0.96, 0.8, 0.72), "gnd": Color(0.2, 0.24, 0.2),
+		"fog": Color(0.66, 0.72, 0.9), "fog_d": 0.0028, "vfog": Color(0.85, 0.85, 0.95), "vfog_d": 0.0006, "vfog_e": Color(0.0, 0.0, 0.0),
+		"exposure": 1.0, "adj_sat": 1.12,
+		"env": {"fog_height": 0.0, "fog_height_density": 0.04, "fog_sky_affect": 0.7, "fog_aerial_perspective": 0.2,
+			"ssao_intensity": 2.2, "ssao_radius": 1.2, "adjustment_contrast": 1.12, "glow_intensity": 0.6, "glow_bloom": 0.04},
+		"sun": {"shadow_blur": 1.5, "light_angular_distance": 1.0},
+	},
+	8: {
+		"proc": true, "shader": "res://game/art/ground_ror.gdshader", "wshader": 5, "props_dir": "cc0", "props_sfx": "_n",
+		"params": {"c_grass": Color(0.1, 0.13, 0.16), "c_grass2": Color(0.16, 0.13, 0.2), "c_dirt": Color(0.22, 0.16, 0.15),
+			"c_rock": Color(0.3, 0.3, 0.36), "c_fleck": Color(0.6, 0.95, 0.85), "dirt_amount": 0.3, "rock_amount": 0.3, "bump": 0.9,
+			"fleck_amount": 0.8},
+		"road_c": Color(0.34, 0.28, 0.3), "road_dark": Color(0.25, 0.2, 0.24), "road_edge": Color(0.07, 0.06, 0.1), "bands": 0.0,
+		"grass_base": Color(0.04, 0.06, 0.08), "grass_tip": Color(0.18, 0.22, 0.3), "grass": 0.5,
+		"trees": [Color(0.8, 0.8, 0.95), Color(0.7, 0.75, 0.9), Color(0.9, 0.8, 0.95)],
+		"sun_rot": Vector3(-52, -30, 0), "sun_col": Color(0.62, 0.7, 1.0), "sun_e": 1.1,
+		"amb": Color(0.3, 0.3, 0.55), "amb_e": 0.5, "rim_col": Color(1.0, 0.55, 0.35), "rim_e": 0.9,
+		"sky_top": Color(0.02, 0.02, 0.06), "sky_hor": Color(0.16, 0.08, 0.2), "gnd": Color(0.02, 0.02, 0.04),
+		"fog": Color(0.12, 0.08, 0.2), "fog_d": 0.006, "vfog": Color(0.5, 0.4, 0.8), "vfog_d": 0.004, "vfog_e": Color(0.02, 0.01, 0.05),
+		"exposure": 1.05, "adj_sat": 1.15,
+		"env": {"fog_height": 0.0, "fog_height_density": 0.1, "fog_sky_affect": 0.8, "ssao_intensity": 2.0,
+			"adjustment_contrast": 1.15, "glow_intensity": 1.0, "glow_bloom": 0.08},
+	},
+	# Direção "Própria refinada": modelos próprios (look 6) na luz da Aventura, fim de tarde dourado (Titanic
+	# Plains do RoR2), cenário do look de chão 1 (campina) tingido.
+	9: {
+		"proc": true, "shader": "res://game/art/ground_ror.gdshader", "wshader": 6, "props": 1,
+		"params": {"c_grass": Color(0.24, 0.36, 0.17), "c_grass2": Color(0.5, 0.46, 0.2), "c_dirt": Color(0.5, 0.36, 0.24),
+			"c_rock": Color(0.6, 0.55, 0.5), "c_fleck": Color(1.0, 0.75, 0.55), "dirt_amount": 0.3, "rock_amount": 0.2, "bump": 0.8},
+		"road_c": Color(0.6, 0.47, 0.33), "road_dark": Color(0.5, 0.38, 0.27), "road_edge": Color(0.26, 0.24, 0.12), "bands": 0.0,
+		"grass_base": Color(0.12, 0.2, 0.08), "grass_tip": Color(0.62, 0.6, 0.28), "grass": 0.9,
+		"trees": [Color(1.0, 1.0, 1.0), Color(1.08, 0.98, 0.85), Color(0.95, 1.05, 0.9)],
+		"sun_rot": Vector3(-34, -50, 0), "sun_col": Color(1.0, 0.82, 0.6), "sun_e": 2.2,
+		"amb": Color(0.5, 0.55, 0.8), "amb_e": 0.65, "rim_col": Color(1.0, 0.75, 0.55), "rim_e": 0.5,
+		"sky_top": Color(0.26, 0.38, 0.7), "sky_hor": Color(1.0, 0.72, 0.5), "gnd": Color(0.2, 0.18, 0.12),
+		"fog": Color(0.85, 0.7, 0.6), "fog_d": 0.003, "vfog": Color(0.95, 0.8, 0.7), "vfog_d": 0.0008, "vfog_e": Color(0.0, 0.0, 0.0),
+		"exposure": 1.0, "adj_sat": 1.1,
+		"env": {"fog_height": 0.0, "fog_height_density": 0.04, "fog_sky_affect": 0.7, "ssao_intensity": 2.2, "ssao_radius": 1.2,
+			"adjustment_contrast": 1.1, "glow_intensity": 0.6, "glow_bloom": 0.04},
+		"sun": {"shadow_blur": 1.5},
+	},
 }
 
 static var _tex: Dictionary = {}
@@ -142,11 +196,20 @@ static func apply_env(env: Environment, sun: DirectionalLight3D, rim: Directiona
 	env.volumetric_fog_emission = P["vfog_e"]
 	env.tonemap_exposure = P["exposure"]
 	env.adjustment_saturation = P["adj_sat"]
+	for k in P.get("env", {}):
+		env.set(k, P["env"][k])
+	for k in P.get("sun", {}):
+		sun.set(k, P["sun"][k])
 
 
 static func ground_material() -> ShaderMaterial:
 	var P := preset()
 	var m := ShaderMaterial.new()
+	if P.has("shader"):
+		m.shader = load(P["shader"])
+		for k in P["params"]:
+			m.set_shader_parameter(k, P["params"][k])
+		return m
 	if P.get("proc", false):
 		m.shader = load("res://game/art/ground_paint.gdshader")
 		for k in [["c_dark", "g_dark"], ["c_base", "g_base"], ["c_light", "g_light"], ["c_accent", "g_accent"],
@@ -267,7 +330,10 @@ static func grass_material() -> ShaderMaterial:
 static func prop_mesh(id: String) -> Mesh:
 	if look() == 0 or not id in ["tree", "tree_round", "dead_tree", "bush", "rock"]:
 		return null
-	var p := "res://assets/models/ground%d/%s.res" % [int(preset().get("props", look())), id]
+	var P := preset()
+	var p := "res://assets/models/ground%d/%s.res" % [int(P.get("props", look())), id]
+	if P.has("props_dir"):
+		p = "res://assets/models/%s/%s%s.res" % [P["props_dir"], id, P.get("props_sfx", "")]
 	if not _tex.has(p):
 		_tex[p] = load(p) if ResourceLoader.exists(p) else null
 	return _tex[p]
