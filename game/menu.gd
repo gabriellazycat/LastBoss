@@ -386,7 +386,7 @@ func _fill_group() -> void:
 ## Fase que libera o pacto (para o aviso do contrato bloqueado).
 func _phase_unlocking(pid: String) -> int:
 	for ph in data.phases:
-		if str(ph.get("unlock_pact", "")) == pid:
+		if data.villain_id(str(ph.get("unlock_villain", "-"))) == data.villain_id(pid):
 			return int(ph["id"])
 	return 0
 
@@ -418,8 +418,8 @@ func _fill_phases() -> void:
 		phase_row.add_child(b)
 	var ph: Dictionary = data.phase(pending_phase)
 	var txt := tr("PHASED_%d" % pending_phase)
-	if str(ph.get("unlock_pact", "")) != "":
-		txt += "  " + tr("UI_PHASE_UNLOCKS").format({"p": tr("DECK_" + str(ph["unlock_pact"]))})
+	if str(ph.get("unlock_villain", "")) != "":
+		txt += "  " + tr("UI_PHASE_UNLOCKS").format({"p": tr("DECK_" + str(ph["unlock_villain"]))})
 	phase_info.text = txt
 
 

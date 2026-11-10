@@ -1,5 +1,5 @@
 {
- "_doc": "Campanha (rodada autônoma de 09/11/2026). Cada fase é uma run com o seu grupo de heróis; vencer libera a próxima e um pacto. group = o herói que chega levanta o caído (50% da vida, uma vez por herói).",
+ "_doc": "Campanha (rodada autônoma de 09/11/2026). Cada fase é uma run com o seu grupo de heróis; vencer libera a próxima; a fase 1 libera o Dragão, a 2 o Lich; as fases 3 e 4 pagam Almas e uma rara à escolha (C3, 10/11/2026). group = o herói que chega levanta o caído (50% da vida, uma vez por herói).",
  "phases": [
   {
    "id": 0,
@@ -13,8 +13,8 @@
    "hp_mult": 0.4,
    "damage_mult": 0.55,
    "acts": 1,
-   "deck": "horde",
-   "unlock_pact": ""
+   "deck": "plague",
+   "unlock_villain": ""
   },
   {
    "id": 1,
@@ -28,7 +28,7 @@
     "escudeiro",
     "escudeiro"
    ],
-   "unlock_pact": "ruin"
+   "unlock_villain": "dragon"
   },
   {
    "id": 2,
@@ -42,14 +42,12 @@
     "arqueira",
     "escudeiro"
    ],
-   "unlock_pact": "treasure",
    "hp_mult": 1.105,
-   "pact_hp": {
-    "horde": 1.0,
-    "ruin": 1.131,
-    "treasure": 1.238,
-    "crypt": 0.972,
-    "cult": 0.796
+   "unlock_villain": "lich",
+   "villain_hp": {
+    "plague": 1.0,
+    "dragon": 1.184,
+    "lich": 0.884
    }
   },
   {
@@ -64,15 +62,15 @@
     "cleriga",
     "escudeiro"
    ],
-   "unlock_pact": "crypt",
    "hp_mult": 0.994,
-   "pact_hp": {
-    "horde": 1.111,
-    "ruin": 0.855,
-    "treasure": 0.993,
-    "crypt": 0.974,
-    "cult": 0.697
-   }
+   "unlock_villain": "",
+   "villain_hp": {
+    "plague": 1.111,
+    "dragon": 0.924,
+    "lich": 0.835
+   },
+   "reward_souls": 60,
+   "rare_choice": true
   },
   {
    "id": 4,
@@ -88,14 +86,14 @@
    "group": true,
    "revive_hp": 0.5,
    "hp_mult": 0.874,
-   "unlock_pact": "cult",
-   "pact_hp": {
-    "horde": 0.558,
-    "ruin": 1.888,
-    "treasure": 0.998,
-    "crypt": 1.568,
-    "cult": 1.38
-   }
+   "unlock_villain": "",
+   "villain_hp": {
+    "plague": 0.558,
+    "dragon": 1.443,
+    "lich": 1.474
+   },
+   "reward_souls": 60,
+   "rare_choice": true
   }
  ]
 }

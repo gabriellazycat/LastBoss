@@ -48,7 +48,8 @@
      "id": "leave",
      "do": []
     }
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "profane_altar",
@@ -83,7 +84,8 @@
      "id": "leave",
      "do": []
     }
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "prisoner",
@@ -120,7 +122,8 @@
       }
      ]
     }
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "wishing_well",
@@ -169,7 +172,8 @@
      "id": "leave",
      "do": []
     }
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "librarian",
@@ -194,7 +198,8 @@
      "id": "leave",
      "do": []
     }
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "heroes_banquet",
@@ -229,7 +234,8 @@
      "id": "leave",
      "do": []
     }
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "dark_smith",
@@ -268,7 +274,8 @@
      "id": "leave",
      "do": []
     }
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "forgotten_tomb",
@@ -307,7 +314,8 @@
      "id": "leave",
      "do": []
     }
-   ]
+   ],
+   "owner": "common"
   }
  ]
 }

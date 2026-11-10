@@ -1,25 +1,4 @@
 {
- "start_collection": [
-  "rat_horde",
-  "bat_nest",
-  "skeleton_archers",
-  "soul_feast",
-  "web",
-  "shadow_bolt",
-  "goblin_dynamiter",
-  "boiling_oil",
-  "cultists",
-  "gargoyle_tower",
-  "soul_collector",
-  "mimic",
-  "gold_bait",
-  "burn_village",
-  "dark_forge",
-  "rabid_rats",
-  "pack_call",
-  "rat_burrow",
-  "rat_king"
- ],
  "unlock_cost": {
   "common": 40,
   "uncommon": 70,
@@ -31,5 +10,6 @@
   "per_location": 1,
   "win": 40,
   "win_early_extra": 20
- }
+ },
+ "_doc": "Coleção: liberar um vilão entrega as comuns e incomuns dele e as start_rares (data/villains.json); as comuns de owner common de raridade comum/incomum vêm de início. Almas compram só raras e lendárias."
 }

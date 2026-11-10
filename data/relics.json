@@ -7,7 +7,8 @@
    "bot_value": 3.0,
    "fx": {
     "death_elixir_every": 10
-   }
+   },
+   "owner": "lich"
   },
   {
    "id": "portable_altar",
@@ -15,7 +16,8 @@
    "bot_value": 2.0,
    "fx": {
     "sacrifice_cd": -0.5
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "lair_tithe",
@@ -23,7 +25,8 @@
    "bot_value": 1.5,
    "fx": {
     "gold": 0.3
-   }
+   },
+   "owner": "dragon"
   },
   {
    "id": "black_mortar",
@@ -31,7 +34,8 @@
    "bot_value": 2.0,
    "fx": {
     "structure": 0.5
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "victory_horn",
@@ -39,7 +43,8 @@
    "bot_value": 2.0,
    "fx": {
     "contest_elixir": 2
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "cracked_hourglass",
@@ -47,7 +52,8 @@
    "bot_value": 2.5,
    "fx": {
     "contest_window": 0.3
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "jailer_chains",
@@ -55,7 +61,8 @@
    "bot_value": 2.0,
    "fx": {
     "cc": 0.5
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "watchful_eye",
@@ -63,7 +70,8 @@
    "bot_value": 3.0,
    "fx": {
     "free_after_ability": 3.0
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "pack_howl",
@@ -72,7 +80,8 @@
    "fx": {
     "pack_min": 5,
     "pack_dmg": 0.25
-   }
+   },
+   "owner": "plague"
   },
   {
    "id": "merchant_purse",
@@ -81,7 +90,8 @@
    "fx": {
     "shop_cards": 1,
     "shop_price": -0.15
-   }
+   },
+   "owner": "dragon"
   },
   {
    "id": "overflowing_chalice",
@@ -89,7 +99,8 @@
    "bot_value": 2.5,
    "fx": {
     "act_full_elixir": 1
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "shortcut_stone",
@@ -97,7 +108,8 @@
    "bot_value": 2.5,
    "fx": {
     "contest_first_discount": 2
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "profane_earth",
@@ -105,7 +117,8 @@
    "bot_value": 2.5,
    "fx": {
     "loc_raise": 0.25
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "bad_blood",
@@ -113,7 +126,8 @@
    "bot_value": 3.0,
    "fx": {
     "fall_mod_offer": 1
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "heavy_grimoire",
@@ -122,7 +136,8 @@
    "fx": {
     "hand": 1,
     "elixir_max": -1
-   }
+   },
+   "owner": "common"
   }
  ]
 }

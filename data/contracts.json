@@ -12,7 +12,8 @@
     "tag": "fire",
     "min_rarity": "rare"
    },
-   "deadline": 45
+   "deadline": 45,
+   "owner": "dragon"
   },
   {
    "id": "rat_storm",
@@ -26,7 +27,8 @@
     "tag": "pack",
     "min_rarity": "rare"
    },
-   "deadline": 40
+   "deadline": 40,
+   "owner": "plague"
   },
   {
    "id": "no_witnesses",
@@ -38,7 +40,8 @@
     "kind": "card",
     "min_rarity": "rare"
    },
-   "deadline": 40
+   "deadline": 40,
+   "owner": "common"
   },
   {
    "id": "ambush",
@@ -50,7 +53,8 @@
    "reward": {
     "kind": "modifier"
    },
-   "deadline": 60
+   "deadline": 60,
+   "owner": "common"
   },
   {
    "id": "empty_hand",
@@ -62,7 +66,8 @@
     "kind": "card",
     "category": "lair"
    },
-   "deadline": 60
+   "deadline": 60,
+   "owner": "common"
   },
   {
    "id": "evil_architecture",
@@ -75,7 +80,8 @@
     "tag": "construct",
     "min_rarity": "rare"
    },
-   "deadline": 50
+   "deadline": 50,
+   "owner": "common"
   },
   {
    "id": "hunt",
@@ -88,7 +94,8 @@
     "tag": "shadow",
     "min_rarity": "rare"
    },
-   "deadline": 30
+   "deadline": 30,
+   "owner": "lich"
   },
   {
    "id": "ritual_interrupted",
@@ -100,7 +107,8 @@
     "kind": "remove",
     "elixir": 3
    },
-   "deadline": -1
+   "deadline": -1,
+   "owner": "common"
   }
  ]
 }

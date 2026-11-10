@@ -7,7 +7,7 @@ const PATH := "user://run.save"
 ## Arquivo em uso. Os modos de teste e de captura da janela (main.gd com argumentos) trocam para outro
 ## arquivo: antes, o salvamento automático deles sobrescrevia a run salva do jogador (rodada 09/11/2026).
 static var current := PATH
-const VERSION := 4                  # 4: baralho com descarte (10/11/2026)
+const VERSION := 5                  # 5: vilões no lugar dos Pactos; 4: baralho com descarte (10/11/2026)
 const _V3 := 3                  # 3: run em 3 atos, disputas e relíquias (09/11/2026); 2: estrada em rede de nós
 const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script", "followers", "hit_hero"]
 const PARTS := ["units", "hero", "road", "arena"]

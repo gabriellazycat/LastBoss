@@ -18,6 +18,9 @@ var events_def: Dictionary = {}  # id -> dict (data/events.json): eventos de tex
 var event_ids: Array = []
 var hero_classes: Dictionary = {}  # id -> overlay (data/hero_classes.json)
 var phases: Array = []             # fases da campanha (data/campaign.json)
+var villains: Dictionary = {}      # id -> dict (data/villains.json): os 3 vilões (C3, 10/11/2026)
+var villain_ids: Array = []
+var _alias: Dictionary = {}        # id antigo de Pacto -> vilão
 
 
 static func load_dir(dir := "res://data") -> GameData:
@@ -51,6 +54,11 @@ static func load_dir(dir := "res://data") -> GameData:
 		g.upgrades[u["id"]] = u
 	g.hero_classes = _read(dir + "/hero_classes.json").get("classes", {})
 	g.phases = _read(dir + "/campaign.json").get("phases", [])
+	for v in _read(dir + "/villains.json").get("villains", []):
+		g.villains[v["id"]] = v
+		g.villain_ids.append(v["id"])
+		for a in v.get("aliases", []):
+			g._alias[a] = v["id"]
 	return g
 
 
@@ -91,15 +99,48 @@ func card(id: String) -> CardDef:
 	return by_id.get(id)
 
 
+## Vilão pelo id (aceita os ids antigos de Pacto: horde, ruin, treasure, crypt, cult). Desconhecido = o primeiro.
+func villain_id(id: String) -> String:
+	if villains.has(id):
+		return id
+	return str(_alias.get(id, villain_ids[0] if villain_ids.size() > 0 else ""))
+
+
+func villain(id: String) -> Dictionary:
+	return villains.get(villain_id(id), {})
+
+
+## Compatível com o código dos Pactos: {"id", "cards" (baralho inicial), "rules"} do vilão.
 func deck(deck_id: String) -> Dictionary:
-	for d in boss["decks"]:
-		if d["id"] == deck_id:
-			return d
-	return boss["decks"][0]
+	var v := villain(deck_id)
+	return {"id": v.get("id", ""), "cards": v.get("start_deck", []), "rules": v.get("rules", {})}
 
 
 func has_deck(deck_id: String) -> bool:
-	for d in boss["decks"]:
-		if d["id"] == deck_id:
-			return true
-	return false
+	return villains.has(deck_id) or _alias.has(deck_id)
+
+
+## A carta pode aparecer numa run deste vilão (dele ou comum)?
+func in_pool(c: CardDef, vid: String) -> bool:
+	return c.owner == "common" or c.owner == vid
+
+
+## Coleção que liberar o vilão entrega: as comuns e incomuns dele e as raras iniciais.
+func villain_cards(vid: String) -> Array:
+	var out: Array = []
+	for c in pool:
+		if c.owner == vid and c.rarity <= 1:
+			out.append(c.id)
+	for id in villain(vid).get("start_rares", []):
+		if by_id.has(id) and not out.has(id):
+			out.append(id)
+	return out
+
+
+## Comuns (owner common) de raridade comum e incomum: vêm na coleção desde o início.
+func common_cards() -> Array:
+	var out: Array = []
+	for c in pool:
+		if c.owner == "common" and c.rarity <= 1:
+			out.append(c.id)
+	return out

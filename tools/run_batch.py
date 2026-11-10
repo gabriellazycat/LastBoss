@@ -1,6 +1,6 @@
 """Roda lotes headless em paralelo (um processo Godot por núcleo) e gera o relatório.
 
-Uso: python -I tools/run_batch.py --bots random,greedy --decks horde,ruin,treasure --runs 60
+Uso: python -I tools/run_batch.py --bots random,greedy --decks plague,dragon,lich --runs 60
 Saída: reports/<carimbo>/runs.json, summary.json e report.md
 """
 import argparse
@@ -114,8 +114,9 @@ def summarize(runs, goals):
 
 
 def _starters():
-    with open(os.path.join(ROOT, "data", "boss_lorde.json"), encoding="utf-8") as f:
-        return {d["id"]: d["cards"] for d in json.load(f)["decks"]}
+    # Vilões (C3, 10/11/2026): baralho inicial de cada vilão em data/villains.json.
+    with open(os.path.join(ROOT, "data", "villains.json"), encoding="utf-8") as f:
+        return {v["id"]: v["start_deck"] for v in json.load(f)["villains"]}
 
 
 def dist(v, lo, hi):
@@ -213,7 +214,7 @@ def run_all(bots, decks, runs, seed0=1, workers=None, data="res://data", out=Non
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bots", default="random,greedy")
-    ap.add_argument("--decks", default="horde,ruin,treasure")
+    ap.add_argument("--decks", default="plague,dragon,lich")
     ap.add_argument("--runs", type=int, default=60, help="runs por combinação bot×deck")
     ap.add_argument("--seed0", type=int, default=1)
     ap.add_argument("--workers", type=int, default=os.cpu_count() or 4)

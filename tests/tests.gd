@@ -59,17 +59,24 @@ func t_data() -> void:
 	check(data.pool.size() == 41, "41 cartas na pool (%d)" % data.pool.size())
 	check(data.upgrades.size() == 15, "15 upgrades")
 	check(data.contracts.size() == 8, "8 contratos")
-	var m := MetaSave.new()
-	m.data = data
-	m.unlocked = data.meta["start_collection"].duplicate()
-	check(m.deck_errors(data.deck("horde")["cards"]).is_empty(), "Horda é válida com a coleção inicial %s" % str(m.deck_errors(data.deck("horde")["cards"])))
-	for d in data.boss["decks"]:
-		m.unlock_pact(d["id"])
-		check(m.deck_errors(d["cards"]).is_empty(), "deck pronto %s é válido depois de liberar o pacto %s" % [d["id"], str(m.deck_errors(d["cards"]))])
-		var fams := {}
-		for id in d["cards"]:
-			fams[_family(id)] = true
-		check(fams.size() <= 2, "deck %s tem no máximo 2 famílias (%s)" % [d["id"], str(fams.keys())])
+	# Vilões (C3): dono válido em tudo; baralho inicial só com cartas do vilão ou comuns, liberadas com ele.
+	var owners := ["common"] + data.villain_ids
+	var bad: Array = []
+	for c in data.pool:
+		if not owners.has(c.owner):
+			bad.append(c.id)
+	for x in data.relics.values() + data.contracts + data.events_def.values():
+		if not owners.has(str(x.get("owner", ""))):
+			bad.append(str(x["id"]))
+	check(bad.is_empty() and data.villain_ids == ["plague", "dragon", "lich"], "3 vilões; owner válido em cartas, relíquias, contratos e eventos %s" % str(bad))
+	for vid in data.villain_ids:
+		var have: Array = data.villain_cards(vid) + data.common_cards()
+		var miss: Array = []
+		for id in data.deck(vid)["cards"]:
+			if not data.in_pool(data.card(id), vid) or not have.has(id):
+				miss.append(id)
+		check(miss.is_empty(), "baralho inicial de %s é do vilão/comum e vem liberado %s" % [vid, str(miss)])
+	check(data.villain_id("horde") == "plague" and data.villain_id("treasure") == "dragon" and data.villain_id("cult") == "lich", "ids antigos de Pacto viram vilões")
 
 
 func _sim(seed_ := 1, deck := "horde") -> Sim:
@@ -94,19 +101,41 @@ func t_elixir_and_ring() -> void:
 	check(s.valid_target(rats, h.x + 6.0, h.y), "monstro a 6 m é aceito")
 	check(s.valid_target(rats, h.x + 40.0, h.y), "monstro a 40 m é aceito (sem alcance máximo)")
 	check(s.valid_target(web, h.x + 1.0, h.y), "feitiço ignora a distância mínima")
-	check(s.hand.size() == 6, "Horda tem mão de 6")
+	check(s.hand.size() == 5, "Praga tem mão de 5 como todo vilão")
 
 
 func t_costs() -> void:
-	var s := _sim(1, "ruin")
+	var s := _sim(1, "dragon")
 	var g := Sim.CardInst.new()
 	g.def = data.card("goblin_dynamiter")
-	check(s.card_cost(g) == 3, "Ruína: Goblin custa 3 (sem a taxa de monstro desde 09/11)")
+	check(s.card_cost(g) == 3, "Dragão: Goblin custa 3")
 	var tw := Sim.CardInst.new()
 	tw.def = data.card("gargoyle_tower")
-	check(s.card_cost(tw) == 4, "Ruína: Torre (estrutura) continua 4")
-	var t := _sim(1, "treasure")
-	check(int(t.elixir) == 7, "Tesouro começa com 7 de elixir")
+	check(s.card_cost(tw) == 4, "Dragão: Torre (estrutura) continua 4")
+	check(is_equal_approx(s.gold, 30.0), "Dragão começa com 30 de ouro")
+	# Passivas dos vilões.
+	s.gold = 120.0
+	check(is_equal_approx(s.hoard_fire(), 0.10), "Tesouro do Dragão: 120 de ouro = +10%% de fogo (%.2f)" % s.hoard_fire())
+	s.gold = 1000.0
+	check(is_equal_approx(s.hoard_fire(), 0.30), "Tesouro do Dragão: teto de +30%")
+	var l := _sim(1, "lich")
+	var bolt := _inst("shadow_bolt")
+	for k in 8:
+		var j := l.units.spawn(data.card("bone_legion"), l.hero.x + 6.0, l.hero.y, 0.0, 0.0, 0, 999)
+		l.kill_unit(j, K.Death.HERO)
+	check(l.harvest_free and l.card_cost(bolt) == 0, "Colheita do Lich: 8 mortes suas = próximo feitiço custa 0")
+	var p := _sim(1, "plague")
+	var before := p.units.count
+	for k in 200:
+		var j := p.units.spawn(data.card("rat_horde"), p.hero.x + 30.0, p.hero.y, 0.0, 0.0, 0, 999)
+		p.kill_unit(j, K.Death.EXPIRE if k < 0 else K.Death.HERO)
+	var born := p.units.count - before
+	check(born >= 15 and born <= 65, "Infestação da Praga: ~20%% das mortes de Bando deixam um rato (%d de 200)" % born)
+	var ofs := true
+	for k in 20:
+		for o in s._card_options(3, func(cd: CardDef): return true):
+			ofs = ofs and data.in_pool(data.card(o["id"]), "dragon")
+	check(ofs, "ofertas do Dragão só têm cartas dele e comuns")
 
 
 func t_sacrifice_and_cycle() -> void:
@@ -420,7 +449,7 @@ func t_location_rewards() -> void:
 	check(s.offers.is_empty(), "nunca remove abaixo do deck mínimo")
 	# Ofertas só com cartas desbloqueadas.
 	var u := Sim.new()
-	u.setup(data, 2, "horde", [], ["rat_horde", "web", "ogre"])
+	u.setup(data, 2, "plague", [], ["rat_horde", "web", "ogre"])
 	var ok := true
 	for k in 20:
 		for o in u._card_options(3, func(cd: CardDef): return true):
@@ -433,18 +462,32 @@ func t_meta() -> void:
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var m := MetaSave.load_or_new(data, path)
-	check(m.unlocked.size() == data.meta["start_collection"].size() and m.deck_errors(m.deck).is_empty(), "coleção inicial e deck pronto válido")
-	check(m.pacts == ["horde"] and not m.phase_open(2), "começa só com a Horda e a fase 2 fechada")
-	check(m.win_phase(1) == "ruin" and m.pacts.has("ruin") and m.is_unlocked("torch") and m.phase_open(2), "vencer a fase 1 libera a Ruína e as cartas dela")
-	check(not m.can_add("ogre") and m.unlock_cost("ogre") == 70, "Ogro começa bloqueado e custa 70 Almas")
-	m.souls = 75
-	check(m.unlock("ogre") and m.souls == 5 and m.is_unlocked("ogre"), "desbloquear gasta as Almas")
-	check(m.deck_errors(m.deck + ["web"]).has("DECKERR_size"), "deck de 11 é recusado")
-	var three: Array = m.deck.duplicate()
-	three[0] = "web"
-	three[1] = "web"
-	three[2] = "web"
-	check(m.deck_errors(three).has("DECKERR_copies"), "3 cópias é recusado")
+	check(m.villains == ["plague"] and m.villain == "plague" and not m.phase_open(2), "começa só com a Praga e a fase 2 fechada")
+	check(m.is_unlocked("rat_horde") and m.is_unlocked("rat_king") and m.is_unlocked("ogre") and not m.is_unlocked("torch"), "coleção inicial: Praga (comuns, incomuns, raras iniciais) e comuns")
+	check(m.win_phase(1) == "dragon" and m.villains.has("dragon") and m.is_unlocked("torch") and m.phase_open(2), "vencer a fase 1 libera o Dragão e as cartas dele")
+	check(not m.can_buy("torch") and m.can_buy("slime") == false, "Almas não compram comuns nem incomuns")
+	m.win_phase(2)
+	var rare := ""
+	for c in data.pool:
+		if c.rarity == 2 and not m.is_unlocked(c.id) and m.can_buy(c.id):
+			rare = c.id
+			break
+	check(rare != "" and m.unlock_cost(rare) == 100, "rara bloqueada de vilão liberado custa 100 Almas (%s)" % rare)
+	m.souls = 130
+	check(m.unlock(rare) and m.souls == 30 and m.is_unlocked(rare), "desbloquear gasta as Almas")
+	var s0 := m.souls
+	m.win_phase(3)
+	check(m.souls == s0 + 60 and m.rare_choices == 1, "fase 3 paga 60 Almas e uma rara à escolha")
+	var ch := m.rare_choice_options(3, 5)
+	check(ch.size() > 0 and m.choose_rare(ch[0]) and m.is_unlocked(ch[0]) and m.rare_choices == 0, "escolher a rara libera a carta")
+	# Save antigo de Pactos: migra.
+	var old := "user://test_meta_old.save"
+	var f := FileAccess.open(old, FileAccess.WRITE)
+	f.store_var({"souls": 77, "pacts": ["horde", "treasure"], "pact": "treasure", "unlocked": ["cosmic_ray", "ogre"], "phases_won": [1]})
+	f.close()
+	var mo := MetaSave.load_or_new(data, old)
+	check(mo.souls == 77 and mo.villains == ["plague", "dragon"] and mo.villain == "dragon" and not mo.is_unlocked("cosmic_ray"), "save antigo: Pactos viram vilões, Almas ficam, carta removida some")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(old))
 	var st := {"dmg_by_card": {"a": 4000.0}, "locs_visited": 9, "result": "win"}
 	var per_loc := int(data.meta["souls"]["per_location"])
 	check(MetaSave.souls_for(data, st) == 10 + 9 * per_loc + 40, "Almas: dano, locais e vitória (%d)" % MetaSave.souls_for(data, st))
@@ -820,7 +863,7 @@ func t_acts() -> void:
 func t_relics() -> void:
 	var s := _sim(2)
 	s.gain_relic("heavy_grimoire")
-	check(s.hand_size == 7 and s.elixir_max == 9.0, "Grimório Pesado: mão +1, elixir máximo −1 (%d, %.0f)" % [s.hand_size, s.elixir_max])
+	check(s.hand_size == 6 and s.elixir_max == 9.0, "Grimório Pesado: mão +1, elixir máximo −1 (%d, %.0f)" % [s.hand_size, s.elixir_max])
 	s.gain_relic("shortcut_stone")
 	var cost0 := s.card_cost(s.hand[0])
 	s.contest = {"probe": true}
@@ -839,7 +882,7 @@ func t_relics() -> void:
 	check(s.card_cost(s.hand[0]) == 0, "Olho Vigilante: carta grátis logo depois de uma habilidade")
 	SaveGame.save(s, "user://test.save")
 	var c := SaveGame.load_run(data, "user://test.save")
-	check(c.relics == s.relics and c.rv("contest_first_discount") == 2.0 and c.hand_size == 7, "relíquias vão no salvamento")
+	check(c.relics == s.relics and c.rv("contest_first_discount") == 2.0 and c.hand_size == 6, "relíquias vão no salvamento")
 	SaveGame.erase("user://test.save")
 
 

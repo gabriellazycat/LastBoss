@@ -1065,7 +1065,7 @@ func _menu_test() -> void:
 	step.call("Esc volta aos decks", menu.screen == "decks")
 	await _click(_button(menu, "UI_PACT_SIGN" if UiSkins.diario() else "UI_PICK_DECK"))
 	await _click(_button(menu, "UI_START_RUN"))
-	step.call("Começar a run com o deck e o grupo", running and sim != null and sim.deck_id == "horde" and not menu.visible)
+	step.call("Começar a run com o deck e o grupo", running and sim != null and sim.deck_id == "plague" and not menu.visible)
 	await get_tree().create_timer(0.3).timeout
 	await _key(KEY_ESCAPE)
 	step.call("Esc pausa", paused and hud.pause_layer.visible)
@@ -1090,7 +1090,7 @@ func _menu_test() -> void:
 		await _click(_button(hud, "UI_SAVE_MENU"))
 		step.call("Salvar e voltar ao menu", not running and menu.visible and SaveGame.exists())
 		await _click(_button(menu, "UI_CONTINUE"))
-		step.call("Continuar retoma a run", running and sim != null and sim.deck_id == "horde")
+		step.call("Continuar retoma a run", running and sim != null and sim.deck_id == "plague")
 		SaveGame.erase()
 	print("menutest resultado: ", "OK" if fails.is_empty() else "FALHOU " + str(fails))
 	get_tree().quit(0 if fails.is_empty() else 1)

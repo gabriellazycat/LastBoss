@@ -684,6 +684,12 @@ FAMD_death,Seus monstros morrendo alimentam os outros.,Your monsters dying feed 
 FAMD_chain,Feitiço atrás de feitiço: cada um fortalece o próximo.,Spell after spell: each one powers up the next.
 DECK_crypt,Cripta,Crypt
 DECK_cult,Culto,Cult
+DECK_plague,Rainha da Praga,Plague Queen
+DECK_dragon,Dragão Avarento,Greedy Dragon
+DECK_lich,Lich,Lich
+VILLAIN_plague_PASSIVE,"Infestação: criatura de [[pack|Bando]] que morre tem 20% de chance de deixar um rato.","Infestation: a [[pack|Pack]] creature that dies has a 20% chance to leave a rat behind."
+VILLAIN_dragon_PASSIVE,"Tesouro do Dragão: começa com 30 de ouro; cada 50 de ouro guardado dá +5% de dano de fogo (até +30%).","Dragon's Hoard: start with 30 gold; every 50 gold kept gives +5% fire damage (up to +30%)."
+VILLAIN_lich_PASSIVE,"Colheita: a cada 8 mortes de criaturas suas, o próximo feitiço custa 0.","Harvest: every 8 deaths of your creatures, your next spell costs 0."
 UI_PACT_OF_crypt,Pacto da,Pact of the
 UI_PACT_OF_cult,Pacto do,Pact of the
 DECKDESC_crypt,Família Morte: monstros que morrem alimentam os outros. Heróis com +15% de vida.,Death family: monsters that die feed the others. Heroes with +15% health.

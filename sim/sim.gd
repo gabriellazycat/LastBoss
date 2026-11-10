@@ -103,6 +103,8 @@ var contract: Dictionary = {}
 var contract_next := 0.0
 var last_teleport_t := -100.0
 var ritual_mult := 1.0
+var harvest_deaths := 0         # Lich (Colheita): mortes de criaturas suas desde o último feitiço grátis
+var harvest_free := false       # Lich: o próximo feitiço custa 0
 var act_elixir_bonus := 0.0     # eventos: elixir máximo a mais até o fim do ato (Altar Profano)
 var tax_cards := 0              # eventos: quantas das próximas cartas custam `tax_add` a mais
 var tax_add := 0
@@ -124,7 +126,7 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 			party.append("escudeiro")
 	phase_hp_mult = float(phase_cfg.get("hp_mult", 1.0))
 	# Ajuste fino por pacto dentro da fase (10/11/2026): cada pacto tem contras diferentes em cada fase.
-	phase_hp_mult *= float(phase_cfg.get("pact_hp", {}).get(deck, 1.0))
+	phase_hp_mult *= float(phase_cfg.get("villain_hp", {}).get(d.villain_id(deck), 1.0))
 	phase_dmg_mult = float(phase_cfg.get("damage_mult", 1.0))
 	run_seed = seed_
 	rng.seed = seed_
@@ -135,6 +137,7 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	var dk := d.deck(deck)
 	deck_id = dk["id"]
 	deck_rules = dk["rules"]
+	gold = float(deck_rules.get("start_gold", 0.0))
 	hero.setup(self)
 	hand_size = int(deck_rules.get("hand_size", R["hand_size"]))
 	elixir = float(deck_rules.get("elixir_start", R["elixir"]["start"]))
@@ -533,9 +536,15 @@ func gain_relic(id: String) -> void:
 func _relic_pool() -> Array:
 	var pool: Array = []
 	for id in data.relic_ids:
-		if not relics.has(id):
+		if not relics.has(id) and _owner_ok(data.relics[id]):
 			pool.append(id)
 	return pool
+
+
+## Relíquia, contrato ou evento deste vilão ou comum.
+func _owner_ok(x: Dictionary) -> bool:
+	var o := str(x.get("owner", "common"))
+	return o == "common" or o == deck_id
 
 
 func _offer_relics() -> void:
@@ -594,15 +603,23 @@ func free_card_active() -> bool:
 	return t <= free_card_t
 
 
+## Dragão (Tesouro do Dragão): +X% de dano de fogo a cada `hoard_step` de ouro guardado, até o teto.
+func hoard_fire() -> float:
+	var step_ := float(deck_rules.get("hoard_step", 0.0))
+	if step_ <= 0.0:
+		return 0.0
+	return minf(float(deck_rules.get("hoard_fire_max", 0.0)), floorf(gold / step_) * float(deck_rules.get("hoard_fire", 0.0)))
+
+
 # ================================================================ eventos de texto
 
 func _offer_event() -> void:
 	var pool: Array = []
 	for id in data.event_ids:
-		if not events_seen.has(id):
+		if not events_seen.has(id) and _owner_ok(data.events_def[id]):
 			pool.append(id)
 	if pool.is_empty():
-		pool = data.event_ids.duplicate()
+		pool = data.event_ids.filter(func(e): return _owner_ok(data.events_def[e]))
 	if pool.is_empty():
 		return
 	var id: String = pool[rng.randi_range(0, pool.size() - 1)]
@@ -836,6 +853,8 @@ func _finish(r: int) -> void:
 # ================================================================ dano e mortes
 
 func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card_id: String) -> float:
+	if tags & K.TAG_FIRE:
+		amount *= 1.0 + hoard_fire()
 	if (kind & SimHero.DMG_SPELL) and t < mark_until:
 		amount *= 1.0 + mark_bonus
 	var hh: SimHero = hit_hero if hit_hero else hero
@@ -948,6 +967,7 @@ func kill_unit(i: int, cause: int) -> void:
 		_death_in_contest(x, y, c, f)
 	if cause != K.Death.EXPIRE and c.arch != K.Arch.STRUCTURE:
 		_death_payoffs(i, x, y)
+		_villain_on_death(c, x, y)
 	if cause == K.Death.HERO or cause == K.Death.SELF:
 		if f & K.F_EXPLOSIVE:
 			var M: Dictionary = data.modifiers["explosive"]["p"]
@@ -1001,6 +1021,19 @@ func _death_payoffs(i: int, x: float, y: float) -> void:
 
 
 ## Morte de um monstro seu (pelo herói ou explodindo): Ritual, Terra Profana e Coroa de Ossos.
+## Passivas de morte dos vilões: Praga (Infestação) e Lich (Colheita).
+func _villain_on_death(c: CardDef, x: float, y: float) -> void:
+	var inf := float(deck_rules.get("infestation", 0.0))
+	if inf > 0.0 and (c.tags & K.TAG_PACK) and rng.randf() < inf:
+		units.spawn(data.card("rat"), x, y, 0.0, 0.0, 0, 0)
+	var every := int(deck_rules.get("harvest_every", 0))
+	if every > 0 and not harvest_free:
+		harvest_deaths += 1
+		if harvest_deaths >= every:
+			harvest_deaths = 0
+			harvest_free = true
+
+
 func _death_in_contest(x: float, y: float, c: CardDef, f: int) -> void:
 	if c.arch == K.Arch.STRUCTURE:
 		return
@@ -1298,6 +1331,8 @@ func card_cost(c: CardInst) -> int:
 		cost = maxi(mini(cost, 1), cost - 1)
 	if d.category == "field" and (d.type == "monster" or d.type == "swarm"):
 		cost += int(deck_rules.get("monster_cost_add", 0))
+	if d.is_spell and harvest_free:
+		return 0
 	if d.is_spell:
 		if units.n_cultists > 0:
 			var cf: Dictionary = data.card("cultists").fx
@@ -1368,6 +1403,8 @@ func play(hi_: int, x: float, y: float) -> int:
 	free_card_t = -100.0
 	if tax_cards > 0:
 		tax_cards -= 1
+	if c.def.is_spell and harvest_free:
+		harvest_free = false
 	if contest.size() > 0:
 		contest["first"] = true
 	_cycle(hi_)
@@ -1548,6 +1585,8 @@ func _roll_rarity() -> int:
 
 
 func _card_ok(c: CardDef) -> bool:
+	if not data.in_pool(c, deck_id):
+		return false
 	if unlocked.size() > 0 and not unlocked.has(c.id):
 		return false
 	if c.category == "lair" and int(lair.get(c.id, 0)) + _deck_count(c.id) >= int(c.fx.get("stack", 1)):
@@ -2019,7 +2058,7 @@ func _contract() -> void:
 				if loc["type"] == "ritual" and loc["state"] == SimRoad.LocState.ACTIVE and road.is_on_route(loc) and not loc["entered"]:
 					ritual_ahead = true
 			for c in data.contracts:
-				if c["goal"]["kind"] != "ritual_time" or ritual_ahead:
+				if (c["goal"]["kind"] != "ritual_time" or ritual_ahead) and _owner_ok(c):
 					cand.append(c)
 			var c: Dictionary = cand[rng.randi_range(0, cand.size() - 1)]
 			var dl := float(c["deadline"])
