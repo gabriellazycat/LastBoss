@@ -29,6 +29,9 @@ var life := 0.0
 const ESTILOS := {"A": [5, 4, 3], "B": [6, 2, 2], "C": [2, 4, 3], "D": [7, 5, 5], "E": [8, 5, 5], "F": [9, 6, 6]}
 
 
+var overtime_said := false   # aviso da prorrogação da arena já mostrado
+
+
 func _ready() -> void:
 	Settings.load_all()
 	Settings.apply(get_tree())
@@ -135,6 +138,14 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 	menu.settings_changed.connect(_on_settings)
 	hud.minimap_clicked.connect(_minimap_click)
 	hud.route_clicked.connect(_route_click)
+	hud.minimap.cancel_requested.connect(func():
+		if sim == null:
+			return
+		var had := hud.selected >= 0
+		hud.selected = -1
+		# Fecha o mapa que a carta abriu (fora da bifurcação, onde o mapa é a escolha do caminho).
+		if had and hud.minimap.visible and not sim.route_wait:
+			_toggle_map())
 	hud.card_dropped.connect(func(i: int, sp: Vector2):
 		if sim and hud.selected == i:
 			var mm := hud.minimap
@@ -183,6 +194,14 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 	if auto_args.has("tiptest"):
 		_start("horde")
 		_tip_test()
+	if auto_args.has("humantest"):
+		# Teste humano com o mouse (10/11/2026): o bot humano joga pela entrada real; game/human_playtest.gd.
+		_start(str(auto_args.get("deck", "horde")))
+		speed = float(auto_args.get("speed", "3"))
+		hud.speed = speed
+		var hp_ := HumanPlaytest.new()
+		add_child(hp_)
+		hp_.run(self, str(auto_args["humantest"]))
 	if auto_args.has("chaostest"):
 		_start("horde")
 		var ct := ChaosTest.new()
@@ -697,9 +716,13 @@ func _process(delta: float) -> void:
 		arena_built = true
 		world.build_arena()
 		hud.say(tr("UI_ARENA"))
+		overtime_said = false
+	if sim.phase == K.Phase.ARENA and not overtime_said and sim.overtime() > 0.0:
+		overtime_said = true
+		hud.say(tr("UI_OVERTIME"))
 	if sim.phase == K.Phase.ROAD:
 		audio.set_intensity(sim.hero.s / maxf(sim.road.length(), 1.0) * (0.6 if not sim.road.complete else 1.0))
-	if sim.phase != K.Phase.OVER and sim.t - save_t > 10.0 and not auto_args.has("autoplay"):
+	if sim.phase != K.Phase.OVER and sim.t - save_t > 10.0 and not auto_args.has("autoplay") and not auto_args.has("humantest"):
 		save_t = sim.t
 		SaveGame.save(sim)
 	if sim.phase == K.Phase.OVER and not result_played:
@@ -802,24 +825,31 @@ func _ui_test() -> void:
 	ok = ok and zoomed
 	_ui_shot("hover")
 	hud.fan.mouse_override = null
+	# Eventos entram em pixels da janela: passam pela escala do conteúdo (10/11/2026: sem isso, o aperto
+	# caía fora da carta quando a janela não tinha o tamanho base, e o arrasto nunca começava).
+	var win := get_viewport().get_final_transform()
 	var down := InputEventMouseButton.new()
 	down.button_index = MOUSE_BUTTON_LEFT
 	down.pressed = true
-	down.position = c0
-	down.global_position = c0
+	down.position = win * c0
+	down.global_position = win * c0
 	Input.parse_input_event(down)
 	await get_tree().process_frame
 	var tgt := cam.unproject_position(Vector3(sim.hero.x, 0, sim.hero.y) + Vector3(5, 0, -3))
-	var mv := InputEventMouseMotion.new()
-	mv.position = tgt
-	mv.global_position = tgt
-	mv.button_mask = MOUSE_BUTTON_MASK_LEFT
-	Input.parse_input_event(mv)
+	# O arrasto passa por pontos no caminho, como a mão de uma pessoa (um salto só, direto do leque ao
+	# mundo, não chegava a soltar a carta; o --humantest arrasta assim desde 10/11/2026).
+	for k in 5:
+		var mv := InputEventMouseMotion.new()
+		mv.position = win * c0.lerp(tgt, (k + 1) / 5.0)
+		mv.global_position = mv.position
+		mv.button_mask = MOUSE_BUTTON_MASK_LEFT
+		Input.parse_input_event(mv)
+		await get_tree().process_frame
 	var up := InputEventMouseButton.new()
 	up.button_index = MOUSE_BUTTON_LEFT
 	up.pressed = false
-	up.position = tgt
-	up.global_position = tgt
+	up.position = win * tgt
+	up.global_position = win * tgt
 	Input.parse_input_event(up)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -1245,7 +1275,8 @@ func _minimap_click(p: Vector2) -> void:
 
 ## Clique num local do mapa ou da faixa (sem carta selecionada): o herói vai passar por ele.
 func _route_click(n: int) -> void:
-	if sim == null or hud.selected >= 0 or n < 0 or sim.offers.size() > 0:
+	# O nó para onde o herói já vai só é clicável no mapa para o Incêndio: sem carta, não mexe no plano.
+	if sim == null or hud.selected >= 0 or n < 0 or sim.offers.size() > 0 or n == sim.road.head:
 		return
 	if sim.choose_route(n):
 		audio.play("card_play", 0.0)

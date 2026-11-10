@@ -8,6 +8,7 @@ extends Control
 ## O jogo fica parado enquanto o mapa está aberto (quem cuida é o main.gd).
 
 signal world_clicked(pos: Vector2)
+signal cancel_requested
 signal node_clicked(node: int)
 signal close_requested
 
@@ -122,7 +123,11 @@ func node_at(m: Vector2) -> int:
 	var best := -1
 	var bd := 26.0
 	for n in sim.road.reach:
-		if n == sim.road.head or sim.road.nodes[n]["loc"] < 0:
+		if sim.road.nodes[n]["loc"] < 0:
+			continue
+		# O nó para onde o herói já vai não é destino de rota, mas é alvo do Incêndio (10/11/2026: o local
+		# seguinte, o alvo mais natural, não aceitava o clique no mapa grande; na faixa já aceitava).
+		if n == sim.road.head and not sim._burn_targets().has(int(sim.road.nodes[n]["loc"])):
 			continue
 		var d := m.distance_to(node_point(n))
 		if d < bd:
@@ -132,6 +137,12 @@ func node_at(m: Vector2) -> int:
 
 
 func _gui_input(e: InputEvent) -> void:
+	# Botão direito no mapa solta a carta escolhida, como no resto da tela (10/11/2026: com o Incêndio na mão,
+	# o mapa abria e o botão direito não fazia nada; só o Esc saía, e o jogo ficava parado).
+	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_RIGHT and sim:
+		cancel_requested.emit()
+		accept_event()
+		return
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and sim:
 		if close_rect.has_point(e.position) and not sim.route_wait:
 			close_requested.emit()
