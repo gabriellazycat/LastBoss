@@ -482,6 +482,9 @@ static func hero_part(id: String) -> ArrayMesh:
 
 
 static func boss_part(id: String) -> ArrayMesh:
+	# Direção com chefe próprio (Blender v2): mesmas partes, mesma origem e tamanho (tools/art/blender_v2/boss.py).
+	if has_dir_prop("boss_" + id):
+		return prop("boss_" + id)
 	var k := Kit.new()
 	var robe := Color(0.2, 0.08, 0.28)
 	match id:
@@ -541,7 +544,22 @@ static func boss_full() -> Node3D:
 
 # ---------------------------------------------------------------- cenário
 
+## A direção de arte atual tem uma peça própria com esse id (ex.: o piso "arena" do Blender v2)?
+static func has_dir_prop(id: String) -> bool:
+	var pd: String = GroundLooks.preset().get("props_dir", "")
+	return pd != "" and pd != "cc0" and ResourceLoader.exists("res://assets/models/%s/%s.res" % [pd, id])
+
+
 static func prop(id: String) -> ArrayMesh:
+	# Direção com cenário próprio (look de chão com "props_dir", ex.: Blender v2): a peça de lá, se existir.
+	var pd: String = GroundLooks.preset().get("props_dir", "")
+	if pd != "" and pd != "cc0":
+		var key := "pd_%s_%s" % [pd, id]
+		if not _cache.has(key):
+			var p := "res://assets/models/%s/%s.res" % [pd, id]
+			_cache[key] = load(p) if ResourceLoader.exists(p) else null
+		if _cache[key]:
+			return _cache[key]
 	if _cache.has("p_" + id):
 		return _cache["p_" + id]
 	var k := Kit.new()

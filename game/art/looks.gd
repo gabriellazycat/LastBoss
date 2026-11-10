@@ -4,12 +4,13 @@ extends RefCounted
 ## 1..4: malhas geradas por tools/art/build_models.py (Blender) e convertidas por tools/art/import_models.gd.
 ## 5: modelos CC0 (KayKit, Quaternius) convertidos por tools/art/import_cc0.gd, com animação em textura (VAT)
 ##    e herói com esqueleto (HeroRig). 6: modelos próprios refeitos (build_models.py --looks 6). Ver docs/ESTUDO_DE_ARTE.md.
+## 7: monstros e estruturas refeitos no Blender (tools/art/blender_v2, import_v2.gd), com VAT como o 5. Ver docs/ARTE_BLENDER.md.
 
-const NAMES := ["Atual", "Argila", "Cartum", "Pintado", "Sombrio", "Aventura (CC0)", "Própria refinada"]
+const NAMES := ["Atual", "Argila", "Cartum", "Pintado", "Sombrio", "Aventura (CC0)", "Própria refinada", "Blender v2"]
 # Pasta de malhas de cada look (o padrão é assets/models/look<N>/).
-const DIRS := {5: "cc0"}
+const DIRS := {5: "cc0", 7: "v2"}
 # Shader de cada look (o padrão é game/art/look<N>.gdshader): o 6 divide a luz do 5.
-const SHADER_OF := {6: 5}
+const SHADER_OF := {6: 5, 7: 5}
 
 static var _mesh: Dictionary = {}
 static var _shader: Dictionary = {}

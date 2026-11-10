@@ -986,6 +986,11 @@ func build_arena() -> void:
 	var A := sim.arena
 	var c := Vector3(A.cx, 0, A.cy)
 	var r: float = sim.data.rules["arena"]["radius"]
+	if Models.has_dir_prop("arena"):
+		# Piso de lajes da direção (raio 1 m no arquivo): escala pelo raio da regra.
+		var fl := _mi(Models.prop("arena"), c)
+		fl.scale = Vector3(r + 1.0, 1.0, r + 1.0)
+		arena_root.add_child(fl)
 	var k := Models.Kit.new()
 	k.add(Models.cyl(r + 1.0, r + 1.2, 0.3, 40), Vector3(0, -0.12, 0), Color(0.18, 0.14, 0.22))
 	for ring in 4:
@@ -998,7 +1003,8 @@ func build_arena() -> void:
 	for i in 24:
 		var a := TAU * i / 24.0
 		k.add(Models.box(0.12, 0.05, r * 0.95), Vector3(cos(a), 0, sin(a)) * r * 0.5 + Vector3(0, 0.03, 0), Color(0.25, 0.18, 0.32), Vector3(0, -rad_to_deg(a) + 90, 0))
-	arena_root.add_child(_mi(k.done(), c))
+	if not Models.has_dir_prop("arena"):
+		arena_root.add_child(_mi(k.done(), c))
 	var n := 10
 	for i in n:
 		var a := TAU * i / n

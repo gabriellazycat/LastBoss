@@ -6,7 +6,7 @@ extends RefCounted
 
 const NAMES := ["Atual", "Campina ao entardecer", "Bosque enluarado", "Outono", "Terra amaldiçoada",
 	"Pintado (direção única)", "Cartum (direção única)", "Aventura · dia (RoR2)", "Aventura · noite (Soulstone)",
-	"Própria refinada"]
+	"Própria refinada", "Blender v2 · dia", "Blender v2 · outono (ato 2)", "Blender v2 · crepúsculo (ato 3)"]
 const T := "res://assets/textures/ground/"
 
 const PRESETS := {
@@ -145,6 +145,60 @@ const PRESETS := {
 			"adjustment_contrast": 1.1, "glow_intensity": 0.6, "glow_bloom": 0.04},
 		"sun": {"shadow_blur": 1.5},
 	},
+	# Direção "Blender v2" (docs/ARTE_BLENDER.md): monstros, estruturas e cenário refeitos no Blender
+	# (assets/models/v2), na luz da D. Toda peça de Models.prop() que existir em v2 troca pela nova.
+	10: {
+		"proc": true, "shader": "res://game/art/ground_ror.gdshader", "wshader": 5, "props_dir": "v2", "props_sfx": "",
+		"params": {"c_grass": Color(0.16, 0.34, 0.19), "c_grass2": Color(0.38, 0.46, 0.2), "c_dirt": Color(0.5, 0.38, 0.26),
+			"c_rock": Color(0.36, 0.42, 0.3), "c_fleck": Color(1.0, 0.88, 0.55), "dirt_amount": 0.3, "rock_amount": 0.04, "bump": 0.7},
+		"road_c": Color(0.55, 0.46, 0.35), "road_dark": Color(0.45, 0.37, 0.28), "road_edge": Color(0.2, 0.25, 0.14), "bands": 0.0,
+		"grass_base": Color(0.08, 0.2, 0.1), "grass_tip": Color(0.45, 0.6, 0.24), "grass": 0.8,
+		"trees": [Color(1.0, 1.0, 1.0), Color(0.92, 1.04, 0.95), Color(1.06, 1.0, 0.88)],
+		"sun_rot": Vector3(-46, -38, 0), "sun_col": Color(1.0, 0.9, 0.76), "sun_e": 2.1,
+		"amb": Color(0.55, 0.66, 0.9), "amb_e": 0.75, "rim_col": Color(1.0, 0.82, 0.7), "rim_e": 0.35,
+		"sky_top": Color(0.32, 0.5, 0.8), "sky_hor": Color(0.96, 0.8, 0.72), "gnd": Color(0.2, 0.24, 0.2),
+		"fog": Color(0.66, 0.72, 0.9), "fog_d": 0.0028, "vfog": Color(0.85, 0.85, 0.95), "vfog_d": 0.0006, "vfog_e": Color(0.0, 0.0, 0.0),
+		"exposure": 1.0, "adj_sat": 1.04,
+		"env": {"fog_height": 0.0, "fog_height_density": 0.04, "fog_sky_affect": 0.7, "fog_aerial_perspective": 0.2,
+			"ssao_intensity": 2.2, "ssao_radius": 1.2, "adjustment_contrast": 1.1, "glow_intensity": 0.6, "glow_bloom": 0.04},
+		"sun": {"shadow_blur": 1.5, "light_angular_distance": 1.0},
+	},
+	# Blender v2 nos atos 2 e 3 (look() troca 10 -> 11/12 conforme o "ground_look" do ato): as mesmas peças,
+	# com a folhagem tingida por instância, outro chão e outra luz. Ato 2: outono ao fim da tarde.
+	11: {
+		"proc": true, "shader": "res://game/art/ground_ror.gdshader", "wshader": 5, "props_dir": "v2", "props_sfx": "",
+		"params": {"c_grass": Color(0.36, 0.34, 0.16), "c_grass2": Color(0.55, 0.38, 0.16), "c_dirt": Color(0.5, 0.34, 0.22),
+			"c_rock": Color(0.46, 0.4, 0.3), "c_fleck": Color(1.0, 0.6, 0.3), "dirt_amount": 0.38, "rock_amount": 0.05, "bump": 0.8},
+		"road_c": Color(0.56, 0.42, 0.3), "road_dark": Color(0.45, 0.33, 0.24), "road_edge": Color(0.32, 0.22, 0.1), "bands": 0.0,
+		"grass_base": Color(0.22, 0.15, 0.05), "grass_tip": Color(0.85, 0.55, 0.22), "grass": 0.7,
+		"trees": [Color(2.6, 1.0, 0.45), Color(2.2, 0.8, 0.4), Color(2.0, 1.25, 0.5), Color(1.4, 1.1, 0.7)],
+		"sun_rot": Vector3(-30, -60, 0), "sun_col": Color(1.0, 0.78, 0.55), "sun_e": 1.9,
+		"amb": Color(0.55, 0.5, 0.7), "amb_e": 0.65, "rim_col": Color(1.0, 0.7, 0.45), "rim_e": 0.5,
+		"sky_top": Color(0.32, 0.36, 0.6), "sky_hor": Color(1.0, 0.66, 0.42), "gnd": Color(0.22, 0.16, 0.1),
+		"fog": Color(0.78, 0.62, 0.55), "fog_d": 0.003, "vfog": Color(0.95, 0.78, 0.62), "vfog_d": 0.0008, "vfog_e": Color(0.0, 0.0, 0.0),
+		"exposure": 1.0, "adj_sat": 1.05,
+		"env": {"fog_height": 0.0, "fog_height_density": 0.05, "fog_sky_affect": 0.7, "fog_aerial_perspective": 0.25,
+			"ssao_intensity": 2.2, "ssao_radius": 1.2, "adjustment_contrast": 1.1, "glow_intensity": 0.7, "glow_bloom": 0.05},
+		"sun": {"shadow_blur": 1.5, "light_angular_distance": 1.0},
+	},
+	# Ato 3: terra amaldiçoada no crepúsculo, perto do covil (folhagem roxa e cinza, névoa lilás).
+	12: {
+		"proc": true, "shader": "res://game/art/ground_ror.gdshader", "wshader": 5, "props_dir": "v2", "props_sfx": "",
+		"params": {"c_grass": Color(0.2, 0.2, 0.24), "c_grass2": Color(0.3, 0.24, 0.3), "c_dirt": Color(0.32, 0.25, 0.26),
+			"c_rock": Color(0.45, 0.42, 0.48), "c_fleck": Color(0.85, 0.5, 1.0), "dirt_amount": 0.4, "rock_amount": 0.08, "bump": 0.9,
+			"fleck_amount": 0.8},
+		"road_c": Color(0.4, 0.33, 0.34), "road_dark": Color(0.3, 0.24, 0.27), "road_edge": Color(0.12, 0.09, 0.14), "bands": 0.0,
+		"grass_base": Color(0.06, 0.05, 0.08), "grass_tip": Color(0.35, 0.3, 0.42), "grass": 0.5,
+		"trees": [Color(1.3, 0.75, 1.6), Color(0.9, 0.8, 1.2), Color(1.1, 0.6, 1.3), Color(0.8, 0.8, 0.9)],
+		"sun_rot": Vector3(-28, 140, 0), "sun_col": Color(1.0, 0.62, 0.62), "sun_e": 1.5,
+		"amb": Color(0.45, 0.38, 0.62), "amb_e": 0.7, "rim_col": Color(0.9, 0.5, 1.0), "rim_e": 0.8,
+		"sky_top": Color(0.1, 0.06, 0.18), "sky_hor": Color(0.62, 0.3, 0.42), "gnd": Color(0.06, 0.04, 0.08),
+		"fog": Color(0.32, 0.22, 0.4), "fog_d": 0.004, "vfog": Color(0.7, 0.5, 0.85), "vfog_d": 0.002, "vfog_e": Color(0.03, 0.01, 0.04),
+		"exposure": 1.05, "adj_sat": 1.0,
+		"env": {"fog_height": 0.0, "fog_height_density": 0.1, "fog_sky_affect": 0.8, "ssao_intensity": 2.0,
+			"adjustment_contrast": 1.12, "glow_intensity": 0.9, "glow_bloom": 0.07},
+		"sun": {"shadow_blur": 1.5},
+	},
 }
 
 static var _tex: Dictionary = {}
@@ -158,6 +212,9 @@ static func look() -> int:
 	var v := int(Settings.v.get("look_ground", 0))
 	if act_look > 0 and v >= 1 and v <= 4 and Settings.v.get("act_terrains", true):
 		return act_look
+	# Blender v2: o "ground_look" do ato (2, 3, 4 nas regras) escolhe a variação 10, 11 ou 12.
+	if v == 10 and act_look > 0 and Settings.v.get("act_terrains", true):
+		return {3: 11, 4: 12}.get(act_look, 10)
 	return v
 
 

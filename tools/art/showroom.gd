@@ -213,6 +213,12 @@ func _env() -> void:
 	env.adjustment_contrast = 1.05
 	we.environment = env
 	add_child(we)
+	# --ground=N: luz, céu e névoa de um look de chão (ex.: 10 = direção G) no lugar da noite da vitrine.
+	if args.has("ground") and args.get("what", "units") != "props":
+		Settings.v["look_ground"] = int(args["ground"])
+		env.fog_enabled = true
+		GroundLooks.apply_env(env, moon)
+		key.visible = false
 
 
 func _process(delta: float) -> void:

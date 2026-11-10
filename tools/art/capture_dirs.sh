@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fotografa cada direção de arte (game/art/art_directions.gd) nas mesmas cenas, em 1920x1080, e mede o FPS.
-# Uso: bash tools/art/capture_dirs.sh <pasta> [direções: C A B D E F antiga] [--fps]
+# Uso: bash tools/art/capture_dirs.sh <pasta> [direções: C A B D E F G antiga] [--fps]
 # As fotos ficam em <pasta>/<direção>_<cena>.png; o FPS (500 unidades, 25 s, duas rodadas intercaladas) em <pasta>/fps.txt.
 GODOT="${GODOT:-/c/Users/gabri/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64_console.exe}"
 OUT="$1"; shift
@@ -10,6 +10,7 @@ declare -A SET=(
   [C]="look_ground:2,look_hero:4,look_enemies:3" [A]="look_ground:5,look_hero:4,look_enemies:3"
   [B]="look_ground:6,look_hero:2,look_enemies:2" [D]="look_ground:7,look_hero:5,look_enemies:5"
   [E]="look_ground:8,look_hero:5,look_enemies:5" [F]="look_ground:9,look_hero:6,look_enemies:6"
+  [G]="look_ground:10,look_hero:5,look_enemies:7"
   [antiga]="look_ground:0,look_hero:0,look_enemies:0"
 )
 DIRS=(); FPS=0
