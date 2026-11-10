@@ -706,7 +706,9 @@ func _wanted_poster(i: int, n: int, P: Dictionary, mult: float, cls := "escudeir
 	h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(h)
 	var art := TextureRect.new()
-	art.texture = UiDiario.card_tex("hero_wanted")
+	# Um desenho por classe (assets/cards/hero_<classe>.png); sem ele, o cartaz genérico.
+	var hero_tex := UiDiario.card_tex("hero_" + cls)
+	art.texture = hero_tex if hero_tex != null else UiDiario.card_tex("hero_wanted")
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.custom_minimum_size = Vector2(0, 104)
