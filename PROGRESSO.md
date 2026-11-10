@@ -153,3 +153,13 @@ Controles (também na aba Controles das configurações): teclas 1–6 escolhem 
 3. Exploradores (bots que evoluem procurando estratégias que quebram o jogo).
 4. Tutorial guiado (as dicas da primeira vez já existem).
 5. Testes com pessoas: o bot mede equilíbrio, não diversão.
+
+## Bot humano, teste com mouse e pendentes (10/11/2026)
+
+Feita com você fora, com autonomia total. Commits locais na `main`, nada enviado. Relatório, números e decisões que tomei no seu lugar: `docs/RODADA_2026-11-10.md`.
+
+- **Bot humano** (`bots/human_bot.gd`): reação, mira e erros de uma pessoa, com estratégia evoluída. Na média de todas as fases, vence 53%; o heurístico vence 33% e o aleatório 7%.
+- **Teste com mouse** (`--humantest=human`): o bot joga pela entrada real. Achou e corrigiu dois bugs do mapa grande com o Incêndio.
+- **Fase de grupo:** feitiços e zonas acertam todos os heróis (30% nos outros). A Horda na fase 4 foi de 20% para 54%.
+- **Tesouro e estouro de tempo:** herói impaciente e prorrogação da arena. Os estouros caíram para 0,2%.
+- **Pendências:** Tocha e Explosão de Cadáver dominam a fase 4; o aleatório ainda vence 33% no Tesouro fase 1; o `--menutest` tem 2 passos que já falhavam antes.
