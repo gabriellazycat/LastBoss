@@ -54,17 +54,34 @@ static func attach(p: Control, level_: int, mids_: Array, k_: float, big_ := fal
 	if m and pp.size() > 0 and variant() == 0:
 		m.set_shader_parameter("paper_a", pp[0])
 		m.set_shader_parameter("paper_b", pp[1])
+	if m and variant() == 4:
+		m.set_shader_parameter("mat_id", material_for(level_, mids_))
 	p.add_child(fx)
 	return fx
 
 
+## Material da carta na variante 4 (`mat_id` do paper.gdshader): o nível manda (N2 ferro, N3 ouro); no N1 vale o do
+## primeiro modificador. 0 = papel.
+const MOD_MATERIAL := {"shadowy": 3, "cursed": 4, "explosive": 5, "cheap": 6, "veteran": 7}
+
+
+static func material_for(level_: int, mids_: Array) -> int:
+	if level_ >= 3:
+		return 2
+	if level_ == 2:
+		return 1
+	return int(MOD_MATERIAL.get(mids_[0], 0)) if mids_.size() > 0 else 0
+
+
 ## Proposta visual dos upgrades (Settings `card_fx_variant`): 0 = a de hoje; 1 Encadernação, 2 Tinta viva,
-## 3 Carimbos e condecorações (game/card_fx_variants.gd; vitrine em game/upgrade_showroom.tscn).
+## 3 Carimbos e condecorações, 4 Carimbo + material do fundo (game/card_fx_variants.gd; vitrine em game/upgrade_showroom.tscn).
 static func variant() -> int:
 	return int(Settings.v.get("card_fx_variant", 0))
 
 
-static func is_dark(mids_: Array) -> bool:
+static func is_dark(mids_: Array, level_ := 1) -> bool:
+	if variant() == 4:   # fundo escuro (ferro, aço, obsidiana, pedra, brasa): texto claro nas legendas fora da etiqueta
+		return material_for(level_, mids_) in [1, 3, 4, 5, 6, 7]
 	if variant() != 0:
 		return false
 	var pp := paper_for(mids_)

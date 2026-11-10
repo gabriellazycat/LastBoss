@@ -1,8 +1,8 @@
 extends Control
 ## Vitrine dos upgrades de carta: a mesma carta (monstro e feitiço) em todos os estados, grande e compacta.
-## godot --path . res://game/upgrade_showroom.tscn -- --variant=2        (teclas 0-3 trocam a proposta ao vivo)
+## godot --path . res://game/upgrade_showroom.tscn -- --variant=2        (teclas 0-4 trocam a proposta ao vivo)
 ## godot --path . --resolution 1600x900 res://game/upgrade_showroom.tscn -- --out=docs/decisoes_2026-11-10/upgrades/
-##   (salva variante_0..3.png e sai). Propostas: game/card_fx_variants.gd; o padrão do jogo é a 0 (card_fx_variant).
+##   (salva variante_0..4.png e recortes v4_*.png e sai). Propostas: game/card_fx_variants.gd; o padrão do jogo é a 0 (card_fx_variant).
 
 const STATES := [
 	["Base", 1, []], ["Nível 2", 2, []], ["Nível 3", 3, []],
@@ -10,7 +10,7 @@ const STATES := [
 	["Amaldiçoado", 1, ["cursed"]], ["Sombrio", 1, ["shadowy"]],
 	["N3 + Explosivo", 3, ["explosive"]], ["N2 + Amald. + Barato", 2, ["cursed", "cheap"]],
 ]
-const VARIANT_NAMES := ["0 · Hoje", "1 · Encadernação", "2 · Tinta viva", "3 · Carimbos e condecorações"]
+const VARIANT_NAMES := ["0 · Hoje", "1 · Encadernação", "2 · Tinta viva", "3 · Carimbos e condecorações", "4 · Carimbo + material do fundo"]
 const BIG_W := 124.0
 const MINI_W := 108.0
 const SIZE := Vector2i(1600, 900)
@@ -49,18 +49,21 @@ func _ready() -> void:
 			args[kv[0]] = kv[1]
 	variant = int(args.get("variant", Settings.v.get("card_fx_variant", 0)))
 	if args.has("out"):
-		for v in 4:
+		for v in 5:
 			_show(v)
 			for i in 45:
 				await get_tree().process_frame
-			sv.get_texture().get_image().save_png(str(args["out"]) + "variante_%d.png" % v)
+			var img := sv.get_texture().get_image()
+			img.save_png(str(args["out"]) + "variante_%d.png" % v)
+			if v == 4:
+				_save_crops(img, str(args["out"]))
 		get_tree().quit()
 	else:
 		_show(variant)
 
 
 func _unhandled_key_input(e: InputEvent) -> void:
-	if e is InputEventKey and e.pressed and e.keycode >= KEY_0 and e.keycode <= KEY_3:
+	if e is InputEventKey and e.pressed and e.keycode >= KEY_0 and e.keycode <= KEY_4:
 		_show(e.keycode - KEY_0)
 
 
@@ -74,7 +77,7 @@ func _show(v: int) -> void:
 	holder.add_theme_constant_override("separation", 0)
 	sv.add_child(holder)
 	var title := Label.new()
-	title.text = "Upgrades de carta · proposta " + VARIANT_NAMES[v] + "   (teclas 0-3)"
+	title.text = "Upgrades de carta · proposta " + VARIANT_NAMES[v] + "   (teclas 0-4)"
 	title.add_theme_font_size_override("font_size", 17)
 	title.add_theme_color_override("font_color", Color(0.93, 0.87, 0.72))
 	holder.add_child(title)
@@ -109,3 +112,20 @@ func _row(id: String, big: bool) -> Control:
 		col.add_child(cap)
 		row.add_child(col)
 	return row
+
+
+## Recortes da folha da variante 4 (tamanho real: a carta da mão tem ~108 px) para conferir a legibilidade.
+func _save_crops(img: Image, dir: String) -> void:
+	var rows := {"ogro_grande": Rect2i(20, 30, 1580, 232), "ogro_mao": Rect2i(20, 262, 1580, 180),
+		"feitico_grande": Rect2i(20, 441, 1580, 232), "feitico_mao": Rect2i(20, 672, 1580, 180)}
+	for name in rows:
+		img.get_region(rows[name]).save_png(dir + "v4_%s.png" % name)
+	img.save_png(dir + "v4_folha.png")
+	# mão em 2x, em duas metades (base/níveis/modificadores e combinações)
+	var hand := img.get_region(Rect2i(20, 262, 1580, 180))
+	var left := hand.get_region(Rect2i(0, 0, 790, 180))
+	left.resize(1580, 360, Image.INTERPOLATE_LANCZOS)
+	left.save_png(dir + "v4_mao_zoom_a.png")
+	var right := hand.get_region(Rect2i(790, 0, 790, 180))
+	right.resize(1580, 360, Image.INTERPOLATE_LANCZOS)
+	right.save_png(dir + "v4_mao_zoom_b.png")

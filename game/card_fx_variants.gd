@@ -8,6 +8,10 @@ extends RefCounted
 ##                     modificador = mancha de tinta da cor dele ao redor do custo, escorrendo, e vinheta no pé.
 ##  3 "Carimbos e condecorações": nível = medalhas penduradas no pé (N2 uma de prata, N3 prata e ouro);
 ##                     modificador = carimbo grande em diagonal, na cor dele, com o nome.
+##  4 "Carimbo + material": o NÍVEL e o modificador (no N1) trocam o material do fundo no shader (paper.gdshader,
+##                     mat_id: N2 ferro rebitado, N3 ouro com brilho; Sombrio obsidiana, Amaldiçoado pedra rachada,
+##                     Explosivo ferro em brasa, Barato madeira, Veterano aço gravado). Nível e modificador com
+##                     materiais diferentes: o nível manda e o modificador fica só com o carimbo da 3, sem medalhas.
 ## Tudo é desenhado no _draw do CardFx (`n`), sem tocar no papel da carta.
 
 const INK := Color(0.1, 0.08, 0.07)
@@ -35,6 +39,7 @@ static func draw(n: CardFx, r: Rect2, mo: float) -> void:
 		1: _v1(n, r, mo)
 		2: _v2(n, r, mo)
 		3: _v3(n, r, mo)
+		4: _v4(n, r, mo)
 
 
 # ---------------------------------------------------------------- utilidades
@@ -499,7 +504,7 @@ static func _stamp(n: CardFx, r: Rect2, mid: String, idx: int) -> void:
 	n.draw_set_transform(c, rot, Vector2.ONE)
 	var rect := Rect2(-ww, -hh, ww * 2.0, hh * 2.0)
 	# manchinha de tinta fora do carimbo (vazou)
-	n.draw_rect(rect, _a(CREAM, 0.42))
+	n.draw_rect(rect, _a(CREAM, 0.62 if CardFx.variant() >= 4 else 0.42))
 	n.draw_rect(rect.grow(1.6 * k), _a(col, 0.14), false, 3.0 * k)
 	n.draw_rect(rect, _a(col, 0.88), false, 2.4 * k)
 	n.draw_rect(rect.grow(-3.6 * k), _a(col, 0.8), false, 0.9 * k)
@@ -510,3 +515,17 @@ static func _stamp(n: CardFx, r: Rect2, mid: String, idx: int) -> void:
 		var p := Vector2(rect.position.x + rn(i, 2.0 + idx) * rect.size.x, rect.position.y + rn(i, 5.0 + idx) * rect.size.y)
 		n.draw_circle(p, (0.3 + rn(i, 9.0) * 0.5) * k, _a(CREAM, 0.8))
 	n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# ---------------------------------------------------------------- V4 Carimbo + material do fundo
+
+static func _v4(n: CardFx, r: Rect2, mo: float) -> void:
+	var k := n.k
+	# O material (shader) já diz o nível; aqui só um filete de contorno para a carta pequena não se perder no fundo.
+	if n.level == 2:
+		n.draw_rect(r, _a(Color(0.78, 0.84, 0.92), 0.9), false, 1.6 * k)
+	elif n.level >= 3:
+		n.draw_rect(r.grow(2.0 * k), _a(GOLD, 0.2 + 0.12 * sin(n.t * 3.0) * mo), false, 5.0 * k)
+		n.draw_rect(r, GOLD_L, false, 1.8 * k)
+	for i in n.mids.size():
+		_stamp(n, r, n.mids[i], i)

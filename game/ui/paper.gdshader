@@ -19,6 +19,7 @@ uniform float rough = 2.2;               // amplitude do rasgo da borda
 uniform float band = 0.0;                // carta: altura da faixa de fita no topo (unidades de interface)
 uniform float hot = 0.0;                 // 0..1: aceso (seleção, foco)
 uniform float state_mode = 0.0;
+uniform int mat_id = 0;                  // carta (kind 4): 0 papel, 1 ferro, 2 ouro, 3 obsidiana, 4 pedra rachada, 5 ferro em brasa, 6 madeira, 7 aço gravado
 
 varying vec2 quv;
 
@@ -44,6 +45,143 @@ float fbm(vec2 p) {
 
 float n1(float x) {
 	return vnoise(vec2(x, seed * 13.7));
+}
+
+
+// ---- Materiais das cartas (variante 4 do visual de upgrade; game/card_fx.gd escolhe o `mat_id`). Tudo procedural.
+// p = posição em unidades de interface dentro da carta, R = tamanho, e = distância da borda para dentro.
+vec2 cell_hash2(vec2 c) {
+	return vec2(hash(c), hash(c + 17.31));
+}
+
+// Diferença entre o 2º e o 1º ponto de Voronoi mais próximos: perto de 0 = linha entre células (rachadura).
+float vor_edge(vec2 p) {
+	vec2 ip = floor(p);
+	vec2 fp = fract(p);
+	float d1 = 8.0;
+	float d2 = 8.0;
+	for (int j = -1; j <= 1; j++) {
+		for (int i = -1; i <= 1; i++) {
+			vec2 g = vec2(float(i), float(j));
+			vec2 o = cell_hash2(ip + g);
+			float d = length(g + o - fp);
+			if (d < d1) {
+				d2 = d1;
+				d1 = d;
+			} else if (d < d2) {
+				d2 = d;
+			}
+		}
+	}
+	return d2 - d1;
+}
+
+float rivet(vec2 p, vec2 pos, out float cap) {
+	float d = length(p - pos);
+	cap = 1.0 - smoothstep(2.1, 2.7, d);
+	return 1.0 - smoothstep(3.0, 3.9, d);
+}
+
+vec3 material_col(int m, vec2 p, vec2 R, float e, float nz, float g, float tm) {
+	vec3 col = vec3(0.5);
+	float streak = vnoise(vec2(p.x * 0.012, p.y * 0.85));
+	float lift = clamp(1.0 - length((p / R - vec2(0.5, 0.58)) * vec2(1.7, 1.3)), 0.0, 1.0);   // clareia o meio, onde fica o desenho
+	if (m == 1) {
+		// Ferro: chapa fria escovada, bisel e rebites.
+		col = mix(vec3(0.27, 0.285, 0.32), vec3(0.5, 0.52, 0.57), streak * 0.65 + nz * 0.3);
+		col *= 1.0 + 0.18 * (0.5 - g);
+		col += vec3(0.08) * lift;
+		col += vec3(0.16) * (smoothstep(2.4, 3.2, e) - smoothstep(3.6, 4.6, e));
+		col -= vec3(0.13) * (smoothstep(4.6, 5.4, e) - smoothstep(5.8, 6.8, e));
+		float cap;
+		float sh = 0.0;
+		vec2 pts[6] = vec2[](vec2(8.0, 8.0), vec2(R.x - 8.0, 8.0), vec2(8.0, R.y - 8.0), vec2(R.x - 8.0, R.y - 8.0), vec2(8.0, R.y * 0.5), vec2(R.x - 8.0, R.y * 0.5));
+		for (int i = 0; i < 6; i++) {
+			sh = rivet(p, pts[i], cap);
+			col *= 1.0 - 0.45 * sh * (1.0 - cap);
+			float hl = smoothstep(2.4, 0.0, length(p - pts[i] + vec2(0.9, 0.9)));
+			col = mix(col, vec3(0.62, 0.65, 0.7) + vec3(0.3) * hl, cap);
+		}
+	} else if (m == 2) {
+		// Ouro: metal quente com um brilho diagonal que passa de tempos em tempos.
+		float sw = 0.5 + 0.5 * sin(p.x * 0.035 + p.y * 0.06 + nz * 3.0);
+		col = mix(vec3(0.56, 0.35, 0.07), vec3(0.96, 0.77, 0.3), clamp(nz * 0.5 + sw * 0.35 + (1.0 - g) * 0.25, 0.0, 1.0));
+		col += vec3(0.1, 0.08, 0.02) * lift;
+		col += vec3(0.2, 0.17, 0.06) * (smoothstep(2.0, 2.8, e) - smoothstep(3.2, 4.2, e));
+		col -= vec3(0.2, 0.15, 0.05) * (smoothstep(5.0, 5.8, e) - smoothstep(6.2, 7.0, e));
+		float ph = fract(tm / 4.2 + seed * 3.7);
+		float tt = clamp(ph / 0.38, 0.0, 1.0);
+		float act = step(ph, 0.38);
+		float pos = -30.0 + tt * (R.x + R.y * 0.6 + 60.0);
+		float d = p.x + p.y * 0.6 - pos;
+		float gl = exp(-(d * d) / 110.0) * act;
+		float gl2 = exp(-((d + 18.0) * (d + 18.0)) / 30.0) * act;
+		col += vec3(1.0, 0.96, 0.72) * (gl * 0.5 + gl2 * 0.3);
+	} else if (m == 3) {
+		// Obsidiana: vidro escuro com facetas, reflexos longos e borda arroxeada.
+		col = vec3(0.075, 0.07, 0.11);
+		col += vec3(0.05, 0.04, 0.075) * hash(floor(vec2(p.x * 0.05 + p.y * 0.03, p.y * 0.06 - p.x * 0.02)));
+		float s = pow(max(sin((p.x - p.y * 0.8) * 0.12 + nz * 2.0), 0.0), 7.0);
+		col += vec3(0.2, 0.18, 0.32) * s * 0.7;
+		col += vec3(0.28, 0.16, 0.45) * (1.0 - smoothstep(0.0, 13.0, e)) * 0.5;
+		col += vec3(0.16, 0.15, 0.22) * lift;
+	} else if (m == 4) {
+		// Pedra rachada: rocha cinza com rachaduras e um brilho roxo lá dentro.
+		float rock = fbm(p * 0.09 + 3.0);
+		col = mix(vec3(0.24, 0.23, 0.24), vec3(0.47, 0.45, 0.43), rock);
+		col *= 1.0 + (hash(floor(p * 1.6)) - 0.5) * 0.12;
+		float ed = vor_edge(p * 0.034);
+		float mask = step(0.32, vnoise(p * 0.045 + 9.0));
+		float crack = (1.0 - smoothstep(0.012, 0.05, ed)) * mask;
+		float glow = (1.0 - smoothstep(0.0, 0.16, ed)) * mask;
+		float pulse = 0.65 + 0.35 * sin(tm * 2.0 + p.y * 0.04);
+		col = mix(col, col * 0.55, glow * 0.5);
+		col = mix(col, vec3(0.06, 0.02, 0.09), crack);
+		col += vec3(0.4, 0.1, 0.62) * crack * 0.35 * pulse;
+		col += vec3(0.07) * lift;
+	} else if (m == 5) {
+		// Ferro em brasa: chapa escura com veios incandescentes e a borda acesa.
+		float h = fbm(p * 0.045 + vec2(0.0, tm * 0.06));
+		col = mix(vec3(0.17, 0.11, 0.1), vec3(0.33, 0.2, 0.15), streak * 0.7 + nz * 0.3);
+		float vein = 1.0 - smoothstep(0.0, 0.05, abs(h - 0.5));
+		float pulse = 0.75 + 0.25 * sin(tm * 3.0 + h * 9.0);
+		col += vec3(1.0, 0.42, 0.08) * vein * 0.85 * pulse;
+		col += vec3(1.0, 0.35, 0.05) * (1.0 - smoothstep(0.0, 16.0, e)) * 0.5 * pulse;
+		col += vec3(0.9, 0.3, 0.05) * pow(g, 3.0) * 0.4;
+		col += vec3(0.13, 0.07, 0.04) * lift;
+	} else if (m == 6) {
+		// Madeira barata: tábuas com veio, juntas e pregos.
+		float plank = floor(p.y / 38.0);
+		float off = hash(vec2(plank, 5.0)) * 40.0;
+		float ring = sin((p.y + nz * 14.0 + vnoise(vec2(p.x * 0.03 + off, plank)) * 10.0) * 0.55);
+		float grain = vnoise(vec2((p.x + off) * 0.02, p.y * 0.8)) * 0.6 + ring * 0.12 + 0.2;
+		vec3 wc = mix(vec3(0.38, 0.24, 0.12), vec3(0.64, 0.46, 0.25), clamp(grain, 0.0, 1.0));
+		wc *= 0.88 + 0.24 * hash(vec2(plank, 2.0));
+		col = wc;
+		float seam = abs(mod(p.y, 38.0) - 0.5);
+		col *= 1.0 - 0.5 * (1.0 - smoothstep(0.4, 1.4, seam));
+		float nail = 0.0;
+		for (int i = 0; i < 2; i++) {
+			float nx = (i == 0) ? 7.0 : R.x - 7.0;
+			float ny = plank * 38.0 + 19.0;
+			float dn = length(p - vec2(nx, ny));
+			nail = max(nail, 1.0 - smoothstep(1.5, 2.2, dn));
+		}
+		col = mix(col, vec3(0.22, 0.2, 0.2), nail);
+		col += vec3(0.07, 0.06, 0.04) * lift;
+	} else if (m == 7) {
+		// Aço gravado: aço azulado com trama de losangos gravada e filete na borda.
+		col = mix(vec3(0.24, 0.3, 0.42), vec3(0.47, 0.54, 0.66), streak * 0.6 + nz * 0.3);
+		col *= 1.0 + 0.15 * (0.5 - g);
+		float a = abs(fract((p.x + p.y) * 0.045) - 0.5);
+		float b = abs(fract((p.x - p.y) * 0.045) - 0.5);
+		float ln = 1.0 - smoothstep(0.0, 0.05, min(a, b));
+		col *= 1.0 - 0.2 * ln;
+		col += vec3(0.07, 0.08, 0.1) * lift;
+		col -= vec3(0.2) * (smoothstep(4.4, 5.0, e) - smoothstep(5.4, 6.0, e));
+		col += vec3(0.15) * (smoothstep(6.0, 6.6, e) - smoothstep(7.0, 7.6, e));
+	}
+	return clamp(col, 0.0, 1.0);
 }
 
 void fragment() {
@@ -96,6 +234,11 @@ void fragment() {
 		} else {
 			col = mix(paper_a.rgb, paper_b.rgb, g * 0.8 + nz * 0.35);
 			col *= 1.0 + grain * 0.05;
+			float gr = grime;
+			if (kind == 4 && mat_id > 0) {
+				col = material_col(mat_id, p, R, e, nz, g, TIME) * (1.0 + grain * 0.04);
+				gr = grime * 0.3;
+			}
 			if (kind == 2) {
 				float ly = mod(p.y - 34.0, 24.0);
 				col = mix(col, vec3(0.32, 0.42, 0.68), (1.0 - smoothstep(0.0, 1.2 * w + 0.6, abs(ly - 0.6))) * 0.38 * step(30.0, p.y));
@@ -103,14 +246,14 @@ void fragment() {
 			}
 			// Sujeira: manchas largas, borrão de grafite e marca de caneca, conforme a semente.
 			float bl = smoothstep(0.55, 0.85, fbm(sp * 0.012 + 4.0));
-			col *= 1.0 - bl * 0.22 * grime;
+			col *= 1.0 - bl * 0.22 * gr;
 			vec2 ring_c = vec2(hash(vec2(seed, 1.3)), hash(vec2(seed, 7.9))) * R;
 			float ring_r = min(R.x, R.y) * (0.18 + hash(vec2(seed, 3.1)) * 0.14);
 			float rd = abs(length(p - ring_c) - ring_r) - 1.2 - n1(atan(p.y - ring_c.y, p.x - ring_c.x) * 6.0) * 1.6;
 			float arc = step(0.25, n1(atan(p.y - ring_c.y, p.x - ring_c.x) * 1.5 + 5.0));
-			col *= 1.0 - (1.0 - smoothstep(0.0, 1.5, rd)) * 0.28 * grime * arc * step(0.35, grime);
+			col *= 1.0 - (1.0 - smoothstep(0.0, 1.5, rd)) * 0.28 * gr * arc * step(0.35, gr);
 			// Borda queimada/encardida para dentro.
-			col *= mix(0.62, 1.0, smoothstep(0.0, mix(10.0, 26.0, grime), e));
+			col *= mix(mat_id > 0 && kind == 4 ? 0.8 : 0.62, 1.0, smoothstep(0.0, mat_id > 0 && kind == 4 ? 7.0 : mix(10.0, 26.0, gr), e));
 			if (kind == 6) {
 				col *= mix(0.45, 1.0, smoothstep(0.0, 9.0, e));
 			}

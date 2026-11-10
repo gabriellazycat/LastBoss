@@ -19,7 +19,7 @@ static func defaults() -> Dictionary:
 		"fullscreen": false, "vsync": true, "max_fps": 0, "quality": 2, "ui_scale": 1.0,
 		"language": "pt",
 		"shake": 1.0, "flash": true, "damage_numbers": true, "hints": true,
-		"card_fx_variant": 0,   # visual dos upgrades de carta: 0 = o de hoje, 1-3 = propostas (game/card_fx_variants.gd)
+		"card_fx_variant": 4,   # visual dos upgrades de carta: 0 = o de hoje, 1-4 = propostas (a 4 é a escolhida) (game/card_fx_variants.gd)
 		"show_help": true, "show_fps": false, "pad_speed": 1.0,
 		# Variações de arte. Padrão = direção D, "Aventura, dia" (escolhida em 09/11/2026, docs/ESTUDO_DE_ARTE.md):
 		# chão 7, herói e monstros 5 (modelos CC0 KayKit/Quaternius, luz estilo RoR2). Na HUD, 6 = Diário, 0 = Covil, 5 = a antiga.

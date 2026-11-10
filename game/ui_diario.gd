@@ -535,7 +535,7 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 	tl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	tl.custom_minimum_size = Vector2(w - 20.0 * k, 0)
 	var mids := UiKit.mod_ids_of(mods)
-	var dark := CardFx.is_dark(mids)
+	var dark := CardFx.is_dark(mids, level)
 	if dark:
 		tl.add_theme_color_override("font_color", Color(0.92, 0.88, 0.8, 0.9))
 	var tcol: Color = spec[1] if not dark else Color(0.92, 0.88, 0.8)
