@@ -53,8 +53,9 @@ func _random(sim: Sim) -> void:
 	var c: Sim.CardInst = sim.hand[i]
 	var pos := _target(sim, c, true)
 	# Feitiço do aleatório (10/11/2026): mira solta, num ponto qualquer a até `spell_spread` m do herói. Antes
-	# ele acertava todo feitiço em cheio no herói: um "aleatório" com mira perfeita.
-	if c.def.is_spell and c.def.category == "field" and not c.def.id in ["corpse_blast", "shadow_bolt"]:
+	# ele acertava todo feitiço em cheio no herói: um "aleatório" com mira perfeita. Mira num ponto exato
+	# (origem da linha, monstro seu) não se espalha.
+	if c.def.is_spell and c.def.category == "field" and not aim_of(c.def) in ["line", "own_unit"]:
 		var a := rng.randf() * TAU
 		pos += Vector2(cos(a), sin(a)) * sqrt(rng.randf()) * float(P.get("spell_spread", 6.0))
 	sim.play(i, pos.x, pos.y)
@@ -76,7 +77,7 @@ func _greedy(sim: Sim) -> void:
 			if b != K.Block.OK:
 				continue
 			var c: Sim.CardInst = sim.hand[i]
-			if c.def.id == "soul_feast" and not _feast_ok(sim):
+			if not _needs_ok(sim, c):
 				if sim.elixir >= sim.elixir_max - 1.0 and sim.sacrifice_ready():
 					sim.sacrifice(i)
 					return
@@ -126,7 +127,6 @@ func _smart_value(sim: Sim, c: Sim.CardInst) -> float:
 	if d.category == "field" and cost > int(P.get("max_cost", 10)):
 		return -1.0
 	var v := float(cost) + d.rarity * 0.5
-	var h := sim.hero
 	match d.category:
 		"lair":
 			if sim.t < float(P.get("lair_until", 0)):
@@ -137,69 +137,146 @@ func _smart_value(sim: Sim, c: Sim.CardInst) -> float:
 			v -= 1.0
 		"finisher":
 			v += 6.0
+	# Combos e famílias (rodada autônoma de 09/11/2026), agora lidos do campo "ai" da carta (docs/CARD_FX.md).
 	var combo := float(P.get("combo", 0.0))
-	if d.id == "goblin_dynamiter" and (h.slow_t > 0.0 or h.soaked_t > 0.0 or h.root_t > 0.0):
-		v += combo
-	if (d.id == "web" or d.id == "boiling_oil") and sim.elixir >= cost + 3:
-		for o in sim.hand:
-			if o and o.def.id == "goblin_dynamiter":
-				v += combo * 0.7
-	if d.id == "shadow_bolt" and h.shield_hp > 0.0:
-		v += 1.0
-	v += _family_value(sim, d, combo)
+	v = _ai_value(sim, c, v, combo)
 	if v < -0.5:
 		return -1.0
-	if d.id == "soul_feast" and not _feast_ok(sim):
+	if not _needs_ok(sim, c):
 		return -1.0
-	if d.id == "gold_bait":
-		var mimic := false
-		for i in sim.units.hi:
-			if sim.units.alive[i] == 1 and sim.units.def[i] == sim.units.d_mimic:
-				mimic = true
-		if not mimic:
+	var wf: Dictionary = d.ai.get("wait_for", {})
+	if not wf.is_empty():
+		if not _ai_cond(sim, c, wf.get("if", {})):
 			return -1.0
-		v += combo
+		v += _ai_rule_value(sim, c, wf, combo)
 	return v
 
 
-## Combos das famílias (rodada autônoma de 09/11/2026): o bot prepara e detona como um jogador faria.
-func _family_value(sim: Sim, d: CardDef, combo: float) -> float:
-	var h := sim.hero
-	var hand_has := func(ids: Array) -> bool:
-		for o in sim.hand:
-			if o and ids.has(o.def.id):
-				return true
-		return false
-	match d.id:
-		"oil_splash", "tar_net":
-			if h.soaked_t > 2.0:
-				return -2.0
-			return combo * 0.8 if hand_has.call(["torch", "goblin_dynamiter", "fire_imp", "boiling_oil"]) else 0.0
-		"torch", "fire_imp":
-			return combo if h.soaked_t > 0.5 else 0.0
-		"pack_call":
-			return -9.0 if sim.units.n_pack < 6 else combo * minf(2.0, sim.units.n_pack / 10.0)
-		"rabid_rats":
-			return combo * minf(1.5, sim.units.n_pack / 12.0)
-		"corpse_blast":
-			return combo if _own_near_hero(sim, 3.0) >= 0 else -0.5
-		"soul_harvest":
-			var n := 0
-			for i in sim.units.hi:
-				if sim.units.alive[i] == 1 and sim.units.arch[i] != K.Arch.STRUCTURE:
-					n += 1
-			return -9.0 if n < 4 else combo * minf(2.0, n / 8.0)
-		"arcane_spark":
-			return combo * sim.recent_spells(float(d.fx["window"])) * 0.6
-		"shadow_mark":
-			return combo * 0.8 if hand_has.call(["arcane_spark", "shadow_bolt", "torch", "shadow_echo"]) else -1.0
-		"shadow_echo":
-			return combo if sim.last_spell_id in ["arcane_spark", "shadow_bolt", "torch", "pack_call", "soul_harvest"] else 0.0
-		"toll":
-			return 1.0 if sim.elixir < 4.0 else -9.0
-		"cursed_coins":
-			return 0.5
+# ---------------------------------------------------------------- campo "ai" das cartas (docs/CARD_FX.md)
+
+## Mira da carta: ai.aim; sem "ai", feitiço com dano e raio mira no grupo ("cluster"), o resto no herói.
+static func aim_of(d: CardDef) -> String:
+	if d.ai.has("aim"):
+		return str(d.ai["aim"])
+	if d.ai.is_empty() and d.is_spell and d.fx.has("damage") and d.fx.has("radius"):
+		return "cluster"
+	return "hero"
+
+
+## Feitiço que não vale nada sem acertar herói: ai.needs_hit; sem "ai", todo feitiço com dano.
+static func needs_hit(d: CardDef) -> bool:
+	if d.ai.has("needs_hit"):
+		return bool(d.ai["needs_hit"])
+	return d.ai.is_empty() and d.is_spell and d.fx.has("damage")
+
+
+## ai.needs: sem isso a carta não faz nada; todo bot que pensa segura a carta.
+func _needs_ok(sim: Sim, c: Sim.CardInst) -> bool:
+	var nd: Dictionary = c.def.ai.get("needs", {})
+	return nd.is_empty() or _ai_cond(sim, c, nd)
+
+
+## Soma ao valor v a primeira regra de ai.value cuja condição vale ("each_in_hand": uma vez por carta da mão com
+## o rótulo). Nenhuma regra = v.
+func _ai_value(sim: Sim, c: Sim.CardInst, v: float, combo: float) -> float:
+	for r: Dictionary in c.def.ai.get("value", []):
+		if r.has("if") and not _ai_cond(sim, c, r["if"]):
+			continue
+		var x := _ai_rule_value(sim, c, r, combo)
+		if r.has("each_in_hand"):
+			var key: String = r["each_in_hand"]
+			for o in sim.hand:
+				if o and o.def.ai_keys.has(key):
+					v += x
+		else:
+			v += x
+		return v
+	return v
+
+
+## Valor de uma regra: (combo se "combo") × métrica "per" (÷ div, até cap) × add.
+func _ai_rule_value(sim: Sim, c: Sim.CardInst, r: Dictionary, combo: float) -> float:
+	var base := combo if r.get("combo", false) else 1.0
+	if r.has("per"):
+		var n := _ai_metric(sim, c, str(r["per"]))
+		if r.has("div"):
+			n = n / float(r["div"])
+		if r.has("cap"):
+			n = minf(float(r["cap"]), n)
+		base = base * n
+	return base * float(r.get("add", 1.0))
+
+
+func _ai_metric(sim: Sim, c: Sim.CardInst, m: String) -> float:
+	match m:
+		"pack":
+			return float(sim.units.n_pack)
+		"own_units":
+			return float(_own_units(sim))
+		"recent_spells":
+			return float(sim.recent_spells(float(c.def.fx["window"])))
+	push_error("ai: métrica desconhecida " + m)
 	return 0.0
+
+
+## Condições de ai: {nome: parâmetro}; todas têm de valer.
+func _ai_cond(sim: Sim, c: Sim.CardInst, cond: Dictionary) -> bool:
+	var h := sim.hero
+	for key: String in cond:
+		var p: Variant = cond[key]
+		var ok := false
+		match key:
+			"hero_hindered":
+				ok = h.slow_t > 0.0 or h.soaked_t > 0.0 or h.root_t > 0.0
+			"hero_soaked":
+				ok = h.soaked_t > float(p)
+			"hero_shielded":
+				ok = h.shield_hp > 0.0
+			"elixir_spare":
+				ok = sim.elixir >= sim.card_cost(c) + int(p)
+			"elixir_below":
+				ok = sim.elixir < float(p)
+			"hand_has":
+				for o in sim.hand:
+					if o and o.def.ai_keys.has(p):
+						ok = true
+						break
+			"pack_below":
+				ok = sim.units.n_pack < int(p)
+			"own_near_hero":
+				ok = _own_near_hero(sim, float(p)) >= 0
+			"own_units_below":
+				ok = _own_units(sim) < int(p)
+			"last_spell_has":
+				var ld: CardDef = sim.data.card(sim.last_spell_id)
+				ok = ld != null and ld.ai_keys.has(p)
+			"unit_alive":
+				ok = _unit_with_key(sim, str(p)) >= 0
+			"wounded_near_hero":
+				ok = _wounded_near_hero(sim) >= int(p)
+			_:
+				push_error("ai: condição desconhecida " + key)
+		if not ok:
+			return false
+	return true
+
+
+## Seus monstros de pé (sem estruturas).
+func _own_units(sim: Sim) -> int:
+	var n := 0
+	for i in sim.units.hi:
+		if sim.units.alive[i] == 1 and sim.units.arch[i] != K.Arch.STRUCTURE:
+			n += 1
+	return n
+
+
+## Primeira unidade viva cuja carta tem o rótulo (ai.keys), ou -1.
+func _unit_with_key(sim: Sim, key: String) -> int:
+	var U := sim.units
+	for i in U.hi:
+		if U.alive[i] == 1 and sim.data.cards[U.def[i]].ai_keys.has(key):
+			return i
+	return -1
 
 
 ## Seu monstro mais perto do herói (até r m), ou -1.
@@ -325,14 +402,15 @@ func _smart_arena(sim: Sim) -> void:
 			sim.teleport(far)
 
 
-func _feast_ok(sim: Sim) -> bool:
+## Seus monstros com menos da metade da vida a menos de 4 m do herói (Banquete de Almas).
+func _wounded_near_hero(sim: Sim) -> int:
 	var U := sim.units
 	var n := 0
 	for i in U.hi:
 		if U.alive[i] == 1 and U.arch[i] != K.Arch.STRUCTURE and U.hp[i] < U.max_hp[i] * 0.5:
 			if Vector2(U.px[i] - sim.hero.x, U.py[i] - sim.hero.y).length() < 4.0:
 				n += 1
-	return n >= 4
+	return n
 
 
 func _forward(sim: Sim) -> Vector2:
@@ -352,14 +430,15 @@ func _target(sim: Sim, c: Sim.CardInst, randomize: bool) -> Vector2:
 	var ring: Dictionary = sim.R["ring"]
 	if d.category == "field":
 		if d.is_spell:
-			if d.id == "shadow_bolt":
-				return h - _forward(sim) * 3.0
-			if d.id == "corpse_blast":
-				var j := _own_near_hero(sim, 4.0)
-				if j >= 0:
-					return Vector2(sim.units.px[j], sim.units.py[j])
-			if d.id == "cursed_coins":
-				return h + _forward(sim) * 4.0
+			match aim_of(d):
+				"line":
+					return h - _forward(sim) * 3.0
+				"own_unit":
+					var j := _own_near_hero(sim, 4.0)
+					if j >= 0:
+						return Vector2(sim.units.px[j], sim.units.py[j])
+				"ahead":
+					return h + _forward(sim) * 4.0
 			return h
 		if randomize:
 			var a := rng.randf() * TAU
@@ -369,14 +448,14 @@ func _target(sim: Sim, c: Sim.CardInst, randomize: bool) -> Vector2:
 			return b + (h - b).normalized() * 3.0
 		var dist := float(P.get("place_distance", 6.0))
 		return h + _forward(sim).rotated(rng.randf_range(-0.6, 0.6)) * dist
-	match d.id:
-		"gold_bait":
-			var U := sim.units
-			for i in U.hi:
-				if U.alive[i] == 1 and U.def[i] == U.d_mimic:
-					return Vector2(U.px[i], U.py[i])
+	match aim_of(d):
+		"unit_key":
+			# Na sua unidade com o rótulo ai.aim_key (a Isca de Ouro no Mímico); sem ela, 15 m à frente na estrada.
+			var j := _unit_with_key(sim, str(d.ai.get("aim_key", "")))
+			if j >= 0:
+				return Vector2(sim.units.px[j], sim.units.py[j])
 			return sim.road.point_at(sim.hero.s + 15.0)
-		"burn_village":
+		"location":
 			# O local à frente mais próximo do herói (o fogo pega quando ele chega).
 			var best := -1
 			var bd := INF

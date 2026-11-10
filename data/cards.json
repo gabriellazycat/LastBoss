@@ -24,7 +24,8 @@
    "n3": {
     "pierce": true
    },
-   "family": "pack"
+   "family": "pack",
+   "owner": "plague"
   },
   {
    "id": "skeleton_archers",
@@ -55,7 +56,8 @@
     "burn_dps": 5,
     "burn_s": 3.0
    },
-   "family": "death"
+   "family": "death",
+   "owner": "lich"
   },
   {
    "id": "goblin_dynamiter",
@@ -86,7 +88,22 @@
     "fire_s": 4.0,
     "fire_r": 2.5
    },
-   "family": "fire"
+   "family": "fire",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "detonator",
+     "igniter"
+    ],
+    "value": [
+     {
+      "if": {
+       "hero_hindered": true
+      },
+      "combo": true
+     }
+    ]
+   }
   },
   {
    "id": "slime",
@@ -123,7 +140,8 @@
    ],
    "n3": {
     "first_split": 3
-   }
+   },
+   "owner": "plague"
   },
   {
    "id": "shadow_bolt",
@@ -154,7 +172,24 @@
    "n3": {
     "hits": 2
    },
-   "family": "chain"
+   "family": "chain",
+   "owner": "lich",
+   "ai": {
+    "keys": [
+     "mark_payoff",
+     "echo_worthy"
+    ],
+    "aim": "line",
+    "needs_hit": true,
+    "value": [
+     {
+      "if": {
+       "hero_shielded": true
+      },
+      "add": 1.0
+     }
+    ]
+   }
   },
   {
    "id": "bat_nest",
@@ -183,7 +218,8 @@
     "hp",
     "spawn_duration"
    ],
-   "family": "pack"
+   "family": "pack",
+   "owner": "plague"
   },
   {
    "id": "rat_king",
@@ -212,7 +248,8 @@
     "hp",
     "dps"
    ],
-   "family": "pack"
+   "family": "pack",
+   "owner": "plague"
   },
   {
    "id": "bone_totem",
@@ -241,7 +278,8 @@
     "hp",
     "duration"
    ],
-   "family": "death"
+   "family": "death",
+   "owner": "lich"
   },
   {
    "id": "cultists",
@@ -268,7 +306,8 @@
    "lvl": [
     "count"
    ],
-   "family": "chain"
+   "family": "chain",
+   "owner": "lich"
   },
   {
    "id": "ogre",
@@ -294,7 +333,8 @@
    ],
    "n3": {
     "root": 0.5
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "web",
@@ -322,7 +362,23 @@
    "n3": {
     "root": 1.0
    },
-   "family": "fire"
+   "family": "fire",
+   "owner": "common",
+   "ai": {
+    "aim": "cluster",
+    "needs_hit": true,
+    "lingers": true,
+    "value": [
+     {
+      "if": {
+       "elixir_spare": 3
+      },
+      "each_in_hand": "detonator",
+      "combo": true,
+      "add": 0.7
+     }
+    ]
+   }
   },
   {
    "id": "mimic",
@@ -355,7 +411,13 @@
    "n3": {
     "bites": 2
    },
-   "family": "greed"
+   "family": "greed",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "bait_target"
+    ]
+   }
   },
   {
    "id": "boiling_oil",
@@ -383,7 +445,26 @@
    "lvl": [
     "dps"
    ],
-   "family": "fire"
+   "family": "fire",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "igniter"
+    ],
+    "aim": "cluster",
+    "needs_hit": true,
+    "lingers": true,
+    "value": [
+     {
+      "if": {
+       "elixir_spare": 3
+      },
+      "each_in_hand": "detonator",
+      "combo": true,
+      "add": 0.7
+     }
+    ]
+   }
   },
   {
    "id": "ghost",
@@ -410,7 +491,8 @@
    "lvl": [
     "hp",
     "dps"
-   ]
+   ],
+   "owner": "lich"
   },
   {
    "id": "gargoyle_tower",
@@ -441,7 +523,8 @@
    ],
    "n3": {
     "reflect": 0.3
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "werewolf",
@@ -465,7 +548,8 @@
    "lvl": [
     "hp",
     "dps"
-   ]
+   ],
+   "owner": "plague"
   },
   {
    "id": "scrap_golem",
@@ -494,7 +578,8 @@
     "dps",
     "hp_cap"
    ],
-   "family": "death"
+   "family": "death",
+   "owner": "lich"
   },
   {
    "id": "soul_feast",
@@ -521,7 +606,13 @@
    "n3": {
     "bonus_per_card": 2
    },
-   "family": "death"
+   "family": "death",
+   "owner": "lich",
+   "ai": {
+    "needs": {
+     "wounded_near_hero": 4
+    }
+   }
   },
   {
    "id": "gold_bait",
@@ -537,7 +628,18 @@
    "lvl": [
     "cost"
    ],
-   "family": "greed"
+   "family": "greed",
+   "owner": "dragon",
+   "ai": {
+    "aim": "unit_key",
+    "aim_key": "bait_target",
+    "wait_for": {
+     "if": {
+      "unit_alive": "bait_target"
+     },
+     "combo": true
+    }
+   }
   },
   {
    "id": "burn_village",
@@ -553,7 +655,11 @@
    },
    "lvl": [
     "cost"
-   ]
+   ],
+   "owner": "dragon",
+   "ai": {
+    "aim": "location"
+   }
   },
   {
    "id": "soul_collector",
@@ -569,7 +675,8 @@
    "lvl": [
     "elixir_regen"
    ],
-   "family": "greed"
+   "family": "greed",
+   "owner": "common"
   },
   {
    "id": "forbidden_library",
@@ -585,7 +692,8 @@
    "lvl": [
     "cost"
    ],
-   "family": "chain"
+   "family": "chain",
+   "owner": "lich"
   },
   {
    "id": "dark_forge",
@@ -600,7 +708,8 @@
    },
    "lvl": [
     "monster_hp"
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "lair_walls",
@@ -615,7 +724,8 @@
    },
    "lvl": [
     "hero_hp_loss"
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "cosmic_ray",
@@ -634,7 +744,8 @@
    },
    "lvl": [
     "cone"
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "bone_prison",
@@ -650,7 +761,8 @@
    },
    "lvl": [
     "root"
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "petrifying_gaze",
@@ -667,7 +779,8 @@
    },
    "lvl": [
     "petrify"
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "damned_army",
@@ -687,7 +800,8 @@
    "lvl": [
     "hp",
     "dps"
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "dark_fury",
@@ -704,7 +818,8 @@
    },
    "lvl": [
     "damage"
-   ]
+   ],
+   "owner": "common"
   },
   {
    "id": "dark_pact",
@@ -721,7 +836,8 @@
    "lvl": [],
    "n3": {
     "draw": 3
-   }
+   },
+   "owner": "common"
   },
   {
    "id": "rabid_rats",
@@ -752,7 +868,18 @@
     "pierce": true
    },
    "family": "pack",
-   "art": "rat_horde"
+   "art": "rat_horde",
+   "owner": "plague",
+   "ai": {
+    "value": [
+     {
+      "combo": true,
+      "per": "pack",
+      "div": 12.0,
+      "cap": 1.5
+     }
+    ]
+   }
   },
   {
    "id": "pack_call",
@@ -784,7 +911,36 @@
    },
    "model": "dark_fury",
    "family": "pack",
-   "art": "rat_king"
+   "art": "rat_king",
+   "owner": "plague",
+   "ai": {
+    "keys": [
+     "echo_worthy"
+    ],
+    "value": [
+     {
+      "if": {
+       "pack_below": 6
+      },
+      "add": -9.0
+     },
+     {
+      "combo": true,
+      "per": "pack",
+      "div": 10.0,
+      "cap": 2.0
+     }
+    ]
+   },
+   "ops": [
+    {
+     "op": "buff",
+     "slot": "rally",
+     "duration": "duration",
+     "damage": "damage",
+     "speed": "speed"
+    }
+   ]
   },
   {
    "id": "rat_burrow",
@@ -815,7 +971,8 @@
    ],
    "model": "bat_nest",
    "family": "pack",
-   "art": "bat_nest"
+   "art": "bat_nest",
+   "owner": "plague"
   },
   {
    "id": "oil_splash",
@@ -842,7 +999,26 @@
    ],
    "model": "boiling_oil",
    "family": "fire",
-   "art": "boiling_oil"
+   "art": "boiling_oil",
+   "owner": "dragon",
+   "ai": {
+    "aim": "cluster",
+    "value": [
+     {
+      "if": {
+       "hero_soaked": 2.0
+      },
+      "add": -2.0
+     },
+     {
+      "if": {
+       "hand_has": "igniter"
+      },
+      "combo": true,
+      "add": 0.8
+     }
+    ]
+   }
   },
   {
    "id": "torch",
@@ -873,7 +1049,25 @@
    ],
    "model": "burn_village",
    "family": "fire",
-   "art": "burn_village"
+   "art": "burn_village",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "igniter",
+     "mark_payoff",
+     "echo_worthy"
+    ],
+    "aim": "soaked",
+    "needs_hit": true,
+    "value": [
+     {
+      "if": {
+       "hero_soaked": 0.5
+      },
+      "combo": true
+     }
+    ]
+   }
   },
   {
    "id": "fire_imp",
@@ -900,7 +1094,21 @@
    "model": "bat",
    "fly": true,
    "family": "fire",
-   "art": "goblin_dynamiter"
+   "art": "goblin_dynamiter",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "igniter"
+    ],
+    "value": [
+     {
+      "if": {
+       "hero_soaked": 0.5
+      },
+      "combo": true
+     }
+    ]
+   }
   },
   {
    "id": "tar_net",
@@ -931,7 +1139,28 @@
    },
    "model": "web",
    "family": "fire",
-   "art": "web"
+   "art": "web",
+   "owner": "dragon",
+   "ai": {
+    "aim": "cluster",
+    "needs_hit": true,
+    "lingers": true,
+    "value": [
+     {
+      "if": {
+       "hero_soaked": 2.0
+      },
+      "add": -2.0
+     },
+     {
+      "if": {
+       "hand_has": "igniter"
+      },
+      "combo": true,
+      "add": 0.8
+     }
+    ]
+   }
   },
   {
    "id": "gold_merc",
@@ -959,7 +1188,8 @@
    ],
    "model": "goblin_dynamiter",
    "family": "greed",
-   "art": "goblin_dynamiter"
+   "art": "goblin_dynamiter",
+   "owner": "dragon"
   },
   {
    "id": "toll",
@@ -985,7 +1215,31 @@
    ],
    "model": "gold_bait",
    "family": "greed",
-   "art": "gold_bait"
+   "art": "gold_bait",
+   "owner": "dragon",
+   "ai": {
+    "value": [
+     {
+      "if": {
+       "elixir_below": 4.0
+      },
+      "add": 1.0
+     },
+     {
+      "add": -9.0
+     }
+    ]
+   },
+   "ops": [
+    {
+     "op": "pay_gold",
+     "amount": "gold_cost"
+    },
+    {
+     "op": "elixir",
+     "amount": "elixir"
+    }
+   ]
   },
   {
    "id": "cursed_coins",
@@ -1014,7 +1268,16 @@
    ],
    "model": "gold_bait",
    "family": "greed",
-   "art": "gold_bait"
+   "art": "gold_bait",
+   "owner": "dragon",
+   "ai": {
+    "aim": "ahead",
+    "value": [
+     {
+      "add": 0.5
+     }
+    ]
+   }
   },
   {
    "id": "bone_legion",
@@ -1039,7 +1302,8 @@
    ],
    "model": "skeleton",
    "family": "death",
-   "art": "skeleton_archers"
+   "art": "skeleton_archers",
+   "owner": "lich"
   },
   {
    "id": "ghoul",
@@ -1069,7 +1333,8 @@
    ],
    "model": "skeleton",
    "family": "death",
-   "art": "werewolf"
+   "art": "werewolf",
+   "owner": "lich"
   },
   {
    "id": "corpse_blast",
@@ -1100,7 +1365,23 @@
    ],
    "model": "damned_army",
    "family": "death",
-   "art": "damned_army"
+   "art": "damned_army",
+   "owner": "lich",
+   "ai": {
+    "aim": "own_unit",
+    "needs_hit": true,
+    "value": [
+     {
+      "if": {
+       "own_near_hero": 3.0
+      },
+      "combo": true
+     },
+     {
+      "add": -0.5
+     }
+    ]
+   }
   },
   {
    "id": "soul_harvest",
@@ -1129,7 +1410,35 @@
    },
    "model": "soul_feast",
    "family": "death",
-   "art": "soul_feast"
+   "art": "soul_feast",
+   "owner": "lich",
+   "ai": {
+    "keys": [
+     "echo_worthy"
+    ],
+    "value": [
+     {
+      "if": {
+       "own_units_below": 4
+      },
+      "add": -9.0
+     },
+     {
+      "combo": true,
+      "per": "own_units",
+      "div": 8.0,
+      "cap": 2.0
+     }
+    ]
+   },
+   "ops": [
+    {
+     "op": "buff",
+     "slot": "harvest",
+     "duration": "duration",
+     "elixir": "elixir"
+    }
+   ]
   },
   {
    "id": "arcane_spark",
@@ -1159,7 +1468,23 @@
    ],
    "model": "shadow_bolt",
    "family": "chain",
-   "art": "shadow_bolt"
+   "art": "shadow_bolt",
+   "owner": "lich",
+   "ai": {
+    "keys": [
+     "mark_payoff",
+     "echo_worthy"
+    ],
+    "aim": "cluster",
+    "needs_hit": true,
+    "value": [
+     {
+      "combo": true,
+      "per": "recent_spells",
+      "add": 0.6
+     }
+    ]
+   }
   },
   {
    "id": "shadow_echo",
@@ -1184,7 +1509,21 @@
    ],
    "model": "dark_pact",
    "family": "chain",
-   "art": "dark_pact"
+   "art": "dark_pact",
+   "owner": "lich",
+   "ai": {
+    "keys": [
+     "mark_payoff"
+    ],
+    "value": [
+     {
+      "if": {
+       "last_spell_has": "echo_worthy"
+      },
+      "combo": true
+     }
+    ]
+   }
   },
   {
    "id": "acolyte",
@@ -1213,7 +1552,8 @@
    ],
    "model": "cultists",
    "family": "chain",
-   "art": "cultists"
+   "art": "cultists",
+   "owner": "lich"
   },
   {
    "id": "shadow_mark",
@@ -1244,7 +1584,34 @@
    },
    "model": "petrifying_gaze",
    "family": "chain",
-   "art": "petrifying_gaze"
+   "art": "petrifying_gaze",
+   "owner": "lich",
+   "ai": {
+    "value": [
+     {
+      "if": {
+       "hand_has": "mark_payoff"
+      },
+      "combo": true,
+      "add": 0.8
+     },
+     {
+      "add": -1.0
+     }
+    ]
+   },
+   "ops": [
+    {
+     "op": "buff",
+     "slot": "spell_mark",
+     "duration": "duration",
+     "bonus": "bonus"
+    },
+    {
+     "op": "curse",
+     "target": "hero"
+    }
+   ]
   }
  ],
  "aux_units": [
