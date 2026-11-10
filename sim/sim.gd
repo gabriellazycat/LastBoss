@@ -203,6 +203,7 @@ func step() -> void:
 	hero.update(dt)
 	for f in followers:
 		f.update(dt)
+		_follow(f)
 	if tick % 4 == 0:
 		units.apply_auras()
 	units.update(dt)
@@ -475,6 +476,7 @@ func _next_act() -> void:
 	hero.seg = 0
 	hero.face_x = 0.0
 	hero.face_y = -1.0
+	regroup()
 	var fa: Array = R["contracts"]["first_at"]
 	contract_next = t + rng.randf_range(fa[0], fa[1])
 	emit(K.Ev.ACT_START, p0.x, p0.y, act, 0)
@@ -697,6 +699,37 @@ func _revive(fallen: SimHero) -> void:
 	r.oy = r.y
 	followers.append(r)
 	emit(K.Ev.HEAL, r.x, r.y, r.hp, 1)
+
+
+## Seguidor fica perto do herói da vez: pode sair para bater num monstro, mas volta para o lugar dele no grupo.
+func _follow(f: SimHero) -> void:
+	var a := float(f.pidx) * 2.4
+	var goal := Vector2(hero.x + cos(a) * 2.2, hero.y + sin(a) * 2.2)
+	var p := Vector2(f.x, f.y)
+	var d := p.distance_to(goal)
+	var free_r := 7.0 if f.target_kind == SimHero.TGT_UNIT else 2.5
+	if d > free_r:
+		var step_ := minf(d - free_r * 0.5, float(f.H["speed"]) * 1.6 * dt)
+		if d > 25.0:
+			step_ = d - 2.0   # muito longe (troca de ato, portão da arena): reaparece junto do grupo
+		var v := (goal - p).normalized() * step_
+		f.x += v.x
+		f.y += v.y
+		f.face_x = v.normalized().x
+		f.face_y = v.normalized().y
+	f.s = hero.s
+	f.s_max = hero.s_max
+	f.seg = hero.seg
+
+
+## Põe os seguidores em volta do herói da vez (ato novo, arena).
+func regroup() -> void:
+	for f in followers:
+		var a := float(f.pidx) * 2.4
+		f.x = hero.x + cos(a) * 2.2
+		f.y = hero.y + sin(a) * 2.2
+		f.ox = f.x
+		f.oy = f.y
 
 
 ## Todos os heróis de pé (o da vez primeiro).

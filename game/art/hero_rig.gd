@@ -8,11 +8,24 @@ const SCENES := {5: "res://assets/models/cc0/hero_knight.scn"}
 # Peças que o pacote traz todas juntas; ficam só a espada de uma mão, o escudo redondo, o elmo e a capa.
 const HIDE := ["1H_Sword_Offhand", "Badge_Shield", "Rectangle_Shield", "Spike_Shield", "2H_Sword"]
 const HEIGHT := 1.75
+# Classes da campanha (rodada autônoma de 09/11/2026): cena, peças escondidas, ataque e tom de cada uma.
+const CLASS_SCENE := {"escudeiro": "hero_knight", "arqueira": "hero_rogue_hooded", "mago": "hero_mage", "cleriga": "hero_mage"}
+const CLASS_HIDE := {
+	"escudeiro": ["1H_Sword_Offhand", "Badge_Shield", "Rectangle_Shield", "Spike_Shield", "2H_Sword"],
+	"arqueira": ["Knife_Offhand", "2H_Crossbow", "Knife", "Throwable"],
+	"mago": ["Spellbook", "Spellbook_open", "1H_Wand"],
+	"cleriga": ["Spellbook", "1H_Wand", "2H_Staff"],
+}
+const CLASS_ATTACK := {"escudeiro": "1H_Melee_Attack_Slice_Diagonal", "arqueira": "1H_Ranged_Shoot", "mago": "Spellcast_Shoot", "cleriga": "Spellcast_Shoot"}
+const CLASS_TINT := {"cleriga": Color(1.0, 0.92, 0.62)}
 
 var ap: AnimationPlayer
 var view: Node
 var cur := ""
 var swing_seen := 0.0
+var cls := "escudeiro"
+var hero_ref = null          # SimHero desenhado (null = o herói da vez)
+var atk_seen := 0.0
 
 
 static func has_rig(look: int) -> bool:
@@ -33,13 +46,37 @@ static func texture(look: int) -> Texture2D:
 	return t
 
 
-static func make(look: int, mat: Material) -> HeroRig:
+static func scene_path(look: int, cls_: String) -> String:
+	if cls_ == "escudeiro" or not CLASS_SCENE.has(cls_):
+		return SCENES[look]
+	return "res://assets/models/cc0/%s.scn" % CLASS_SCENE[cls_]
+
+
+static func make(look: int, mat: Material, cls_ := "escudeiro") -> HeroRig:
 	var r := HeroRig.new()
-	var ps: PackedScene = load(SCENES[look])
+	r.cls = cls_ if CLASS_SCENE.has(cls_) else "escudeiro"
+	var path := scene_path(look, r.cls)
+	if not ResourceLoader.exists(path):
+		path = SCENES[look]
+		r.cls = "escudeiro"
+	var ps: PackedScene = load(path)
 	var n: Node3D = ps.instantiate()
 	r.add_child(n)
+	if r.cls != "escudeiro" and mat is ShaderMaterial:
+		# Cada pacote tem a sua textura: o material do herói (flash, brilho) é copiado com a textura certa.
+		mat = (mat as ShaderMaterial).duplicate()
+		for mi in n.find_children("*", "MeshInstance3D", true, false):
+			var m0: Material = (mi as MeshInstance3D).get_active_material(0)
+			if m0 is BaseMaterial3D and (m0 as BaseMaterial3D).albedo_texture:
+				(mat as ShaderMaterial).set_shader_parameter("albedo_tex", (m0 as BaseMaterial3D).albedo_texture)
+				(mat as ShaderMaterial).set_shader_parameter("use_tex", true)
+				break
+		if CLASS_TINT.has(r.cls):
+			(mat as ShaderMaterial).set_shader_parameter("tint", CLASS_TINT[r.cls])
+	r.set_meta("mat", mat)
+	var hide: Array = CLASS_HIDE.get(r.cls, HIDE)
 	for mi in n.find_children("*", "MeshInstance3D", true, false):
-		if String(mi.name) in HIDE:
+		if String(mi.name) in hide:
 			mi.visible = false
 		else:
 			(mi as MeshInstance3D).material_override = mat
@@ -86,19 +123,29 @@ func _play(a: String, blend := 0.18, speed := 1.0) -> void:
 func _process(_delta: float) -> void:
 	if view == null or view.sim == null or ap == null:
 		return
-	var h = view.sim.hero
+	var h = hero_ref if hero_ref != null else view.sim.hero
 	var spd: float = Vector2(h.x - h.ox, h.y - h.oy).length() / view.sim.dt
 	if h.petrify_t > 0.0 or h.root_t > 0.0:
 		ap.speed_scale = 0.0 if h.petrify_t > 0.0 else 0.3
 		return
-	var sw: float = view.swing_t
-	if sw > swing_seen + 0.01:
-		# Golpe novo: recomeça a animação de ataque mesmo se já estava nela.
-		cur = ""
-		_play("1H_Melee_Attack_Slice_Diagonal", 0.05, 1.9)
-	swing_seen = sw
-	if sw > 0.0:
-		return
+	var atk: String = CLASS_ATTACK.get(cls, "1H_Melee_Attack_Slice_Diagonal")
+	if hero_ref != null:
+		# Seguidor (fase de grupo): o golpe é a recarga do ataque que recomeça.
+		if h.atk_t > atk_seen + 0.05:
+			cur = ""
+			_play(atk, 0.05, 1.9)
+		atk_seen = h.atk_t
+		if cur == atk and ap.is_playing() and ap.current_animation_position < ap.current_animation_length * 0.8:
+			return
+	else:
+		var sw: float = view.swing_t
+		if sw > swing_seen + 0.01:
+			# Golpe novo: recomeça a animação de ataque mesmo se já estava nela.
+			cur = ""
+			_play(atk, 0.05, 1.9)
+		swing_seen = sw
+		if sw > 0.0:
+			return
 	if h.shield_hp > 0.0 and spd < 0.4:
 		_play("Blocking", 0.2)
 	elif spd > 3.4:

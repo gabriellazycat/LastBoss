@@ -129,6 +129,6 @@ static func hero_material(emit: float) -> ShaderMaterial:
 
 
 ## Herói com esqueleto do look escolhido (ou null: as peças de sempre).
-static func hero_rig(mat: Material) -> HeroRig:
+static func hero_rig(mat: Material, cls := "escudeiro") -> HeroRig:
 	var lk := hero()
-	return HeroRig.make(lk, mat) if HeroRig.has_rig(lk) else null
+	return HeroRig.make(lk, mat, cls) if HeroRig.has_rig(lk) else null

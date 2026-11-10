@@ -187,7 +187,7 @@ RULE_hand_size,Mão de {n} cartas,Hand of {n} cards
 RULE_spell_damage_mult,[[spell|Feitiços]] causam {p}% de dano,[[spell|Spells]] deal {p}% damage
 RULE_monster_cost_add,[[monster|Monstros]] custam +{n} de [[elixir|Elixir]],[[monster|Monsters]] cost +{n} [[elixir|Elixir]]
 RULE_elixir_start,Começa com {n} de [[elixir|Elixir]],Starts with {n} [[elixir|Elixir]]
-RULE_offer_options,Level-ups oferecem {n} opções,Level-ups offer {n} choices
+RULE_offer_options,A recompensa de queda tem {n} opções,The fall reward has {n} choices
 RULE_elixir_mult,[[elixir|Elixir]] regenera a {p}%,[[elixir|Elixir]] regenerates at {p}%
 UI_CONTINUE,Continuar run salva,Continue saved run
 UI_TITLE_OVER,UM JOGO DE CARTAS EM QUE VOCÊ É O CHEFE FINAL,A CARD GAME WHERE YOU ARE THE FINAL BOSS

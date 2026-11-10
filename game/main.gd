@@ -6,6 +6,7 @@ var meta: MetaSave
 var sim: Sim
 var world: WorldView
 var hud: Hud
+var tutorial: Tutorial
 var cam: Camera3D
 var acc := 0.0
 var speed := 1.0
@@ -104,6 +105,9 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 	add_child(layer)
 	hud = Hud.new()
 	layer.add_child(hud)
+	tutorial = Tutorial.new()
+	tutorial.visible = false
+	layer.add_child(tutorial)
 	hud.card_pressed.connect(_select)
 	hud.card_sacrificed.connect(_sacrifice)
 	hud.offer_chosen.connect(func(k): if sim: sim.choose(k))
@@ -337,6 +341,8 @@ func _to_menu(decks: bool) -> void:
 	if running and sim and sim.phase != K.Phase.OVER and not auto_args.has("autoplay"):
 		SaveGame.save(sim)
 	running = false
+	tutorial.visible = false
+	tutorial.sim = null
 	Engine.time_scale = 1.0
 	world.cine_t = -1.0
 	paused = false
@@ -552,10 +558,15 @@ func _start(deck: String) -> void:
 	var s := Sim.new()
 	var seed_ := int(auto_args.get("seed", int(Time.get_unix_time_from_system()) % 1000000))
 	# Os modos de teste e de captura jogam o deck pronto do Pacto com a coleção inteira (reproduzível).
+	var ph := int(auto_args.get("phase", menu.pending_phase if menu else 1))
+	if ph < 0:
+		ph = 1
+	if data.phase(ph).has("deck"):
+		deck = str(data.phase(ph)["deck"])
 	if auto_args.is_empty():
-		s.setup(data, seed_, deck, [], meta.unlocked)
+		s.setup(data, seed_, deck, [], meta.unlocked, ph)
 	else:
-		s.setup(data, seed_, deck)
+		s.setup(data, seed_, deck, [], [], ph)
 	# Capturas e testes de janela sem bot seguem o primeiro ramo (com --routewait, esperam a escolha como no jogo).
 	s.auto_route = not auto_args.is_empty() and not auto_args.has("autoplay") and not auto_args.has("routewait") and not auto_args.has("routetest")
 	_begin(s)
@@ -577,6 +588,10 @@ func _begin(s: Sim) -> void:
 	menu.visible = false
 	hud.bind(sim)
 	hud.speed = speed
+	if sim.phase_cfg.get("tutorial", false):
+		tutorial.bind(sim)
+	else:
+		tutorial.visible = false
 	running = true
 	paused = false
 	acc = 0.0
@@ -661,7 +676,8 @@ func _process(delta: float) -> void:
 		world.hitstop -= delta
 		stopped = true
 	# Com o mapa em tela cheia aberto, a run fica parada (nas bifurcações o herói já espera).
-	if not paused and not stopped and not hud.minimap.visible:
+	tutorial.tick()
+	if not paused and not stopped and not hud.minimap.visible and not tutorial.holding:
 		acc = minf(acc + delta * speed, sim.dt * 12.0)
 		while acc >= sim.dt:
 			sim.step()
@@ -690,6 +706,12 @@ func _process(delta: float) -> void:
 		result_played = true
 		SaveGame.erase()
 		hud.souls_gained = meta.add_run(sim.stats) if auto_args.is_empty() else MetaSave.souls_for(data, sim.stats)
+		if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] and auto_args.is_empty():
+			# Campanha: vencer a fase libera a próxima e, às vezes, um pacto novo.
+			var np := meta.win_phase(sim.campaign_phase)
+			meta.save()
+			if np != "":
+				hud.say(tr("UI_NEW_PACT").format({"p": tr("DECK_" + np)}))
 		audio.music("")
 		audio.play("victory" if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] else "defeat", 0.0)
 	var alpha := clampf(acc / sim.dt, 0.0, 1.0)

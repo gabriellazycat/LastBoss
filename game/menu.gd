@@ -6,9 +6,9 @@ signal deck_chosen(id: String)
 signal continue_run
 signal settings_changed(key: String)
 
-const DECKS := ["horde", "ruin", "treasure"]
+const DECKS := ["horde", "ruin", "treasure", "crypt", "cult"]
 const VERSION := "v0.1 · MVP"
-const PACT_ART := {"horde": "rat_horde", "ruin": "shadow_bolt", "treasure": "mimic"}
+const PACT_ART := {"horde": "rat_horde", "ruin": "goblin_dynamiter", "treasure": "mimic", "crypt": "ghoul", "cult": "acolyte"}
 
 var data: GameData
 var meta: MetaSave
@@ -26,6 +26,9 @@ var group_screen: Control
 var group_row: HBoxContainer
 var group_deck: Label
 var pending_pact := ""
+var pending_phase := -1     # fase da campanha escolhida (-1 = a próxima a vencer)
+var phase_row: HBoxContainer
+var phase_info: Label
 var collection: CollectionScreen
 var compendium: CompendiumScreen
 var settings: SettingsPanel
@@ -261,6 +264,9 @@ func _fill_decks() -> void:
 		v.add_child(rules)
 		var b := Button.new()
 		b.text = "UI_PICK_DECK"
+		if not meta.pacts.has(id):
+			b.text = tr("UI_PACT_LOCKED").format({"n": _phase_unlocking(id)})
+			b.disabled = true
 		b.custom_minimum_size = Vector2(0, 54)
 		b.add_theme_font_size_override("font_size", 22)
 		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -306,6 +312,13 @@ func _build_group() -> void:
 	group_screen.add_child(hs)
 	group_deck = UiKit.label(22, UiKit.GOLD)
 	group_screen.add_child(group_deck)
+	phase_row = HBoxContainer.new()
+	phase_row.add_theme_constant_override("separation", 10)
+	group_screen.add_child(phase_row)
+	phase_info = UiKit.label(18, UiKit.TEXT)
+	phase_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	phase_info.custom_minimum_size = Vector2(900, 0)
+	group_screen.add_child(phase_info)
 	group_row = HBoxContainer.new()
 	group_row.add_theme_constant_override("separation", 8)
 	group_screen.add_child(group_row)
@@ -334,13 +347,18 @@ func _fill_group() -> void:
 	if pending_pact == "":
 		pending_pact = meta.pact if DECKS.has(meta.pact) else DECKS[0]
 	group_deck.text = tr("UI_GROUP_DECK").format({"name": tr("DECK_" + pending_pact)})
+	if pending_phase < 0 or not meta.phase_open(pending_phase):
+		pending_phase = _next_phase()
+	_fill_phases()
 	UiKit.clear(group_row)
 	var P: Dictionary = data.rules["party"]
-	var n := int(P["size"])
-	var mult := float(data.deck(pending_pact)["rules"].get("hero_hp_mult", 1.0))
+	var ph: Dictionary = data.phase(pending_phase)
+	var party: Array = ph.get("party", [])
+	var n := party.size()
+	var mult := float(data.deck(pending_pact)["rules"].get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0))
 	for i in n:
 		if UiSkins.diario():
-			group_row.add_child(_wanted_poster(i, n, P, mult))
+			group_row.add_child(_wanted_poster(i, n, P, mult, str(party[i])))
 			continue
 		var pnl := UiKit.panel(UiKit.BG, UiKit.EDGE, 12)
 		pnl.custom_minimum_size = Vector2(150, 210)
@@ -348,7 +366,7 @@ func _fill_group() -> void:
 		v.add_theme_constant_override("separation", 8)
 		pnl.add_child(v)
 		var num := UiKit.title(20)
-		num.text = tr("UI_HERO_OF").format({"k": i + 1, "n": n})
+		num.text = tr("UI_HERO_OF").format({"k": i + 1, "n": n}) + " · " + tr("HERO_" + str(party[i]))
 		v.add_child(num)
 		var lv := UiKit.label(18, UiKit.TEXT)
 		lv.text = tr("UI_HERO_LEVEL").format({"n": i + 1})
@@ -363,6 +381,46 @@ func _fill_group() -> void:
 		dm.text = tr("UI_GROUP_DMG").format({"n": int(round(float(data.hero["damage"]) * pow(float(P["step"]), i)))})
 		v.add_child(dm)
 		group_row.add_child(pnl)
+
+
+## Fase que libera o pacto (para o aviso do contrato bloqueado).
+func _phase_unlocking(pid: String) -> int:
+	for ph in data.phases:
+		if str(ph.get("unlock_pact", "")) == pid:
+			return int(ph["id"])
+	return 0
+
+
+## A primeira fase ainda não vencida (o tutorial, num jogo novo).
+func _next_phase() -> int:
+	for ph in data.phases:
+		if not meta.phases_won.has(int(ph["id"])):
+			return int(ph["id"])
+	return 1
+
+
+## Botões das fases da campanha: as fechadas ficam desligadas; a escolhida mostra o grupo.
+func _fill_phases() -> void:
+	UiKit.clear(phase_row)
+	for ph in data.phases:
+		var k := int(ph["id"])
+		var b := Button.new()
+		b.text = "%s · %s%s" % [tr("UI_PHASE").format({"n": k}), tr(str(ph["key"])), "  ✓" if meta.phases_won.has(k) else ""]
+		b.custom_minimum_size = Vector2(0, 44)
+		b.toggle_mode = true
+		b.button_pressed = k == pending_phase
+		b.disabled = not meta.phase_open(k)
+		if b.disabled:
+			b.tooltip_text = tr("UI_PHASE_LOCKED")
+		b.pressed.connect(func():
+			pending_phase = k
+			_fill_group())
+		phase_row.add_child(b)
+	var ph: Dictionary = data.phase(pending_phase)
+	var txt := tr("PHASED_%d" % pending_phase)
+	if str(ph.get("unlock_pact", "")) != "":
+		txt += "  " + tr("UI_PHASE_UNLOCKS").format({"p": tr("DECK_" + str(ph["unlock_pact"]))})
+	phase_info.text = txt
 
 
 func show_screen(s: String) -> void:
@@ -537,7 +595,9 @@ func _fill_contracts() -> void:
 		var deck: Dictionary = data.deck(id)
 		var p := PanelContainer.new()
 		UiDiario.dress(p, "contract", 34.0, {"grime": 0.7, "seed": UiDiario.seed_of(id), "shadow": 10.0, "rough": 2.6}, true)
-		p.custom_minimum_size = Vector2(360, 0)
+		p.custom_minimum_size = Vector2(300 if DECKS.size() > 3 else 360, 0)
+		if not meta.pacts.has(id):
+			p.modulate = Color(0.75, 0.72, 0.7)
 		var v := VBoxContainer.new()
 		v.add_theme_constant_override("separation", 4)
 		p.add_child(v)
@@ -559,7 +619,7 @@ func _fill_contracts() -> void:
 		ds.add_theme_font_size_override("normal_font_size", 19)
 		v.add_child(ds)
 		var art := TextureRect.new()
-		art.texture = UiDiario.card_tex("pact_" + {"horde": "horde", "ruin": "ruin", "treasure": "treasure"}[id])
+		art.texture = UiDiario.card_tex("pact_" + id) if id in ["horde", "ruin", "treasure"] else CardArt.textures.get(PACT_ART[id])
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		art.custom_minimum_size = Vector2(0, 112)
@@ -607,6 +667,9 @@ func _fill_contracts() -> void:
 		v.add_child(sign)
 		var b := Button.new()
 		b.text = "UI_PACT_SIGN"
+		if not meta.pacts.has(id):
+			b.text = tr("UI_PACT_LOCKED").format({"n": _phase_unlocking(id)})
+			b.disabled = true
 		b.custom_minimum_size = Vector2(0, 50)
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		b.add_theme_font_size_override("font_size", 21)
@@ -620,12 +683,12 @@ func _fill_contracts() -> void:
 		b.mouse_entered.connect(func(): b.grab_focus())
 		p.mouse_entered.connect(func(): b.grab_focus())
 		v.add_child(b)
-		p.rotation_degrees = [-1.2, 0.6, 1.4][DECKS.find(id)]
+		p.rotation_degrees = [-1.2, 0.6, 1.4, -0.7, 1.0][DECKS.find(id) % 5]
 		deck_row.add_child(p)
 
 
 ## Herói do grupo como cartaz de "procura-se".
-func _wanted_poster(i: int, n: int, P: Dictionary, mult: float) -> PanelContainer:
+func _wanted_poster(i: int, n: int, P: Dictionary, mult: float, cls := "escudeiro") -> PanelContainer:
 	var pnl := PanelContainer.new()
 	UiDiario.dress(pnl, "paper", 20.0, {"grime": 0.75, "seed": 0.13 * (i + 1), "shadow": 8.0, "rough": 2.6})
 	pnl.custom_minimum_size = Vector2(186, 0)
@@ -649,9 +712,15 @@ func _wanted_poster(i: int, n: int, P: Dictionary, mult: float) -> PanelContaine
 	num.text = tr("UI_HERO_OF").format({"k": i + 1, "n": n})
 	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(num)
+	var H := data.hero_of(cls)
+	var cl := UiKit.title(18)
+	cl.text = tr("HERO_" + cls)
+	cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(cl)
+	Tips.attach(pnl, func(): return [Tips.entry(tr("HERO_" + cls), tr("HEROD_" + cls))])
 	for spec in [[tr("UI_HERO_LEVEL").format({"n": i + 1}), UiDiario.INK], [tr("UI_GROUP_SKILLS").format({"n": i}), UiDiario.PAL["MUTED"]],
-			[tr("UI_GROUP_HP").format({"n": int(round(float(data.hero["hp"]) * pow(float(P["step"]), i) * mult))}), UiDiario.PAL["GOOD"]],
-			[tr("UI_GROUP_DMG").format({"n": int(round(float(data.hero["damage"]) * pow(float(P["step"]), i)))}), UiDiario.PAL["BAD"]]]:
+			[tr("UI_GROUP_HP").format({"n": int(round(float(H["hp"]) * pow(float(P["step"]), i) * mult))}), UiDiario.PAL["GOOD"]],
+			[tr("UI_GROUP_DMG").format({"n": int(round(float(H["damage"]) * pow(float(P["step"]), i)))}), UiDiario.PAL["BAD"]]]:
 		var l := UiKit.label(16, spec[1])
 		l.text = spec[0]
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

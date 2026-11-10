@@ -76,7 +76,6 @@
    ],
    "rules": {
     "spell_damage_mult": 1.15,
-    "monster_cost_add": 0,
     "elixir_mult": 1.0,
     "hero_hp_mult": 1.1
    }

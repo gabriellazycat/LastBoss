@@ -438,6 +438,8 @@ static func draw_pip(ci: CanvasItem, r: Rect2, f: float, col: Color, _t: float) 
 static func card_tex(id: String) -> Texture2D:
 	if not _tex.has(id):
 		var path := CARDS + id + ".png"
+		if not ResourceLoader.exists(path):
+			path = CARDS + CardModel.art_of(id) + ".png"
 		_tex[id] = load(path) if ResourceLoader.exists(path) else null
 	return _tex[id]
 

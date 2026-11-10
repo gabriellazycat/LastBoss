@@ -751,7 +751,8 @@
    "n3": {
     "pierce": true
    },
-   "family": "pack"
+   "family": "pack",
+   "art": "rat_horde"
   },
   {
    "id": "pack_call",
@@ -782,7 +783,8 @@
     "damage": 1.0
    },
    "model": "dark_fury",
-   "family": "pack"
+   "family": "pack",
+   "art": "rat_king"
   },
   {
    "id": "rat_burrow",
@@ -812,7 +814,8 @@
     "spawn_duration"
    ],
    "model": "bat_nest",
-   "family": "pack"
+   "family": "pack",
+   "art": "bat_nest"
   },
   {
    "id": "oil_splash",
@@ -838,7 +841,8 @@
     "soaked"
    ],
    "model": "boiling_oil",
-   "family": "fire"
+   "family": "fire",
+   "art": "boiling_oil"
   },
   {
    "id": "torch",
@@ -868,7 +872,8 @@
     "burn_dps"
    ],
    "model": "burn_village",
-   "family": "fire"
+   "family": "fire",
+   "art": "burn_village"
   },
   {
    "id": "fire_imp",
@@ -894,7 +899,8 @@
    ],
    "model": "bat",
    "fly": true,
-   "family": "fire"
+   "family": "fire",
+   "art": "goblin_dynamiter"
   },
   {
    "id": "tar_net",
@@ -924,7 +930,8 @@
     "root": 2.5
    },
    "model": "web",
-   "family": "fire"
+   "family": "fire",
+   "art": "web"
   },
   {
    "id": "gold_merc",
@@ -951,7 +958,8 @@
     "dps"
    ],
    "model": "goblin_dynamiter",
-   "family": "greed"
+   "family": "greed",
+   "art": "goblin_dynamiter"
   },
   {
    "id": "toll",
@@ -976,7 +984,8 @@
     "elixir"
    ],
    "model": "gold_bait",
-   "family": "greed"
+   "family": "greed",
+   "art": "gold_bait"
   },
   {
    "id": "cursed_coins",
@@ -1004,7 +1013,8 @@
     "gold"
    ],
    "model": "gold_bait",
-   "family": "greed"
+   "family": "greed",
+   "art": "gold_bait"
   },
   {
    "id": "bone_legion",
@@ -1028,7 +1038,8 @@
     "count"
    ],
    "model": "skeleton",
-   "family": "death"
+   "family": "death",
+   "art": "skeleton_archers"
   },
   {
    "id": "ghoul",
@@ -1057,7 +1068,8 @@
     "dps"
    ],
    "model": "skeleton",
-   "family": "death"
+   "family": "death",
+   "art": "werewolf"
   },
   {
    "id": "corpse_blast",
@@ -1086,7 +1098,8 @@
     "hp_mult"
    ],
    "model": "damned_army",
-   "family": "death"
+   "family": "death",
+   "art": "damned_army"
   },
   {
    "id": "soul_harvest",
@@ -1114,7 +1127,8 @@
     "elixir": 0.5
    },
    "model": "soul_feast",
-   "family": "death"
+   "family": "death",
+   "art": "soul_feast"
   },
   {
    "id": "arcane_spark",
@@ -1143,7 +1157,8 @@
     "damage"
    ],
    "model": "shadow_bolt",
-   "family": "chain"
+   "family": "chain",
+   "art": "shadow_bolt"
   },
   {
    "id": "shadow_echo",
@@ -1167,7 +1182,8 @@
     "cost"
    ],
    "model": "dark_pact",
-   "family": "chain"
+   "family": "chain",
+   "art": "dark_pact"
   },
   {
    "id": "acolyte",
@@ -1195,7 +1211,8 @@
     "count"
    ],
    "model": "cultists",
-   "family": "chain"
+   "family": "chain",
+   "art": "cultists"
   },
   {
    "id": "shadow_mark",
@@ -1225,7 +1242,8 @@
     "bonus": 0.6
    },
    "model": "petrifying_gaze",
-   "family": "chain"
+   "family": "chain",
+   "art": "petrifying_gaze"
   }
  ],
  "aux_units": [

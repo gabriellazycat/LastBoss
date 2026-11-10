@@ -8,7 +8,7 @@ const PATH := "user://run.save"
 ## arquivo: antes, o salvamento automático deles sobrescrevia a run salva do jogador (rodada 09/11/2026).
 static var current := PATH
 const VERSION := 3                  # 3: run em 3 atos, disputas e relíquias (09/11/2026); 2: estrada em rede de nós
-const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script"]
+const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script", "followers", "hit_hero"]
 const PARTS := ["units", "hero", "road", "arena"]
 
 
@@ -46,6 +46,7 @@ static func save(sim: Sim, path := "") -> bool:
 	d["__rng_state"] = sim.rng.state
 	for part in PARTS:
 		d["__" + part] = _dump(sim.get(part))
+	d["__followers"] = sim.followers.map(func(h): return _dump(h))
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
 		return false
@@ -72,7 +73,7 @@ static func load_run(data: GameData, path := "") -> Sim:
 	if typeof(d) != TYPE_DICTIONARY or int(d.get("__ver", 1)) < VERSION:
 		return null
 	var sim := Sim.new()
-	sim.setup(data, int(d["run_seed"]), str(d["deck_id"]))
+	sim.setup(data, int(d["run_seed"]), str(d["deck_id"]), [], [], int(d.get("campaign_phase", 1)))
 	if d["phase"] != K.Phase.ROAD:
 		sim.arena.setup(sim, Vector2.ZERO, Vector2(0, -1))
 	for part in PARTS:
@@ -100,5 +101,13 @@ static func load_run(data: GameData, path := "") -> Sim:
 	sim.queue = d["queue"].map(func(c): return by_uid.get(c["uid"]))
 	sim.rng.seed = d["__rng_seed"]
 	sim.rng.state = d["__rng_state"]
+	sim.hero.H = data.hero_of(sim.party_class(sim.hero.pidx), sim.phase_hp_mult, sim.phase_dmg_mult)
+	for fd in d.get("__followers", []):
+		var fh := SimHero.new()
+		fh.setup(sim)
+		for k in fd:
+			fh.set(k, fd[k])
+		fh.H = data.hero_of(sim.party_class(fh.pidx), sim.phase_hp_mult, sim.phase_dmg_mult)
+		sim.followers.append(fh)
 	sim.rebuild_rfx()
 	return sim

@@ -56,6 +56,9 @@ var flash := PackedFloat32Array()
 var kx := PackedFloat32Array()
 var ky := PackedFloat32Array()
 var hero_root: Node3D
+var hero_rig_node: Node3D = null    # rig da classe do herói da vez (troca quando a classe muda)
+var rig_cls := "escudeiro"
+var follower_nodes: Dictionary = {} # SimHero -> Node3D (fase de grupo)
 var body: Node3D
 var hero_mat: ShaderMaterial
 var leg_l: Node3D
@@ -176,6 +179,7 @@ func build(s: Sim, camera: Camera3D) -> void:
 	mm_by_def.clear()
 	house_nodes.clear()
 	fx.clear()
+	follower_nodes.clear()
 	arena_root = null
 	flash.resize(sim.units.cap)
 	flash.fill(0.0)
@@ -712,7 +716,9 @@ func _build_hero() -> void:
 	arm_h = _part(body, "arm_shield", Vector3(-0.48, 1.33, 0))
 	cape = _part(body, "cape", Vector3(0, 1.4, 0.24))
 	# Look com esqueleto (Looks.hero_rig): as peças acima ficam vazias e o rig se anima sozinho.
-	var rig := Looks.hero_rig(hero_mat)
+	rig_cls = sim.hero.cls() if sim else "escudeiro"
+	var rig := Looks.hero_rig(hero_mat, rig_cls)
+	hero_rig_node = rig
 	if rig:
 		body.add_child(rig)
 	hero_light = _light(Vector3(0, 3.0, 0), Color(1.0, 0.72, 0.42), 1.1, 11.0)
@@ -1185,8 +1191,41 @@ func hero_pos(alpha: float) -> Vector3:
 	return Vector3(lerpf(h.ox, h.x, alpha), 0.0, lerpf(h.oy, h.y, alpha))
 
 
+## Fase de grupo: os seguidores andam com rig próprio; quem cai some, quem chega aparece.
+func _draw_followers(alpha: float, delta: float) -> void:
+	for f in follower_nodes.keys():
+		if not sim.followers.has(f):
+			(follower_nodes[f] as Node3D).queue_free()
+			follower_nodes.erase(f)
+	for f in sim.followers:
+		if not follower_nodes.has(f):
+			var root := Node3D.new()
+			root.scale = Vector3.ONE * 1.3
+			add_child(root)
+			var rig := Looks.hero_rig(hero_mat, f.cls())
+			if rig:
+				rig.hero_ref = f
+				root.add_child(rig)
+			follower_nodes[f] = root
+			emit_fx("heal", Vector3(f.x, 1.0, f.y), 1.2)
+		var n: Node3D = follower_nodes[f]
+		n.position = Vector3(lerpf(f.ox, f.x, alpha), 0.0, lerpf(f.oy, f.y, alpha))
+		var fv := Vector3(f.face_x, 0, f.face_y)
+		if fv.length() > 0.01:
+			n.rotation.y = lerp_angle(n.rotation.y, atan2(-fv.x, -fv.z), clampf(delta * 14.0, 0.0, 1.0))
+
+
 func _draw_hero(alpha: float, delta: float) -> void:
 	var h := sim.hero
+	if h.cls() != rig_cls and hero_rig_node != null:
+		# Herói da vez de outra classe: troca o rig.
+		rig_cls = h.cls()
+		var parent_ := hero_rig_node.get_parent()
+		hero_rig_node.queue_free()
+		hero_rig_node = Looks.hero_rig(hero_mat, rig_cls)
+		if hero_rig_node:
+			parent_.add_child(hero_rig_node)
+	_draw_followers(alpha, delta)
 	var p := hero_pos(alpha)
 	var speed := Vector2(h.x - h.ox, h.y - h.oy).length() / sim.dt
 	var walk := clampf(speed / 3.0, 0.0, 1.0)

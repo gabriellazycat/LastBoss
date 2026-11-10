@@ -48,6 +48,9 @@ var PROPS := {
 
 var HEROES := {
 	"hero_knight": "kk-Character-Pack-Adventures-1.0/addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+	# Classes da campanha (rodada autônoma de 09/11/2026): Arqueira e Mago/Clériga.
+	"hero_rogue_hooded": "kk-Character-Pack-Adventures-1.0/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue_Hooded.glb",
+	"hero_mage": "kk-Character-Pack-Adventures-1.0/addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
 }
 
 
