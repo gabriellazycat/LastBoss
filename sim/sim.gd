@@ -532,7 +532,25 @@ func _relic_pool() -> Array:
 func _offer_relics() -> void:
 	var pool := _relic_pool()
 	var opts: Array = []
-	for k in int(R.get("relics", {}).get("options", 3)):
+	var want := int(R.get("relics", {}).get("options", 3))
+	# Raridade única por oferta (10/11/2026): a raridade vem de uma relíquia sorteada do que resta; se ela não
+	# tem opções suficientes, a oferta inteira vai para a raridade com mais opções (a mais próxima no empate).
+	if pool.size() > 0:
+		var by := {}
+		for id in pool:
+			var rr := K.RARITIES.find(str(data.relics[id].get("rarity", "common")))
+			if not by.has(rr):
+				by[rr] = []
+			by[rr].append(id)
+		var r0 := K.RARITIES.find(str(data.relics[pool[rng.randi_range(0, pool.size() - 1)]].get("rarity", "common")))
+		var best: int = r0
+		if by[r0].size() < want:
+			for dr in [-1, 1, -2, 2, -3, 3]:
+				var r2: int = r0 + dr
+				if by.has(r2) and by[r2].size() > by[best].size():
+					best = r2
+		pool = by[best]
+	for k in want:
 		if pool.is_empty():
 			break
 		var id: String = pool[rng.randi_range(0, pool.size() - 1)]
@@ -1872,11 +1890,30 @@ func _rarity_filter(names: Array) -> Callable:
 	return func(cd: CardDef): return rs.has(cd.rarity)
 
 
+## Raridade única por oferta (10/11/2026): sorteia a raridade uma vez (peso do ato) e devolve a mais próxima que
+## tem `n` cartas possíveis pelo filtro; sem nenhuma com `n`, aceita menos opções em vez de misturar raridades.
+## -1 = o filtro não deixa carta nenhuma.
+func _single_rarity(f: Callable, n: int, exclude: Array = []) -> int:
+	var cnt := [0, 0, 0, 0]
+	for c in data.pool:
+		if f.call(c) and _card_ok(c) and not exclude.has(c.id):
+			cnt[c.rarity] += 1
+	var r := _roll_rarity()
+	for need in range(maxi(n, 1), 0, -1):
+		for dr in [0, -1, 1, -2, 2, -3, 3]:
+			var rr: int = r + dr
+			if rr >= 0 and rr <= 3 and cnt[rr] >= need:
+				return rr
+	return -1
+
+
 func _card_options(n: int, f: Callable) -> Array:
 	var opts: Array = []
 	var ex: Array = []
+	var one := _single_rarity(f, n)
+	var f1 := func(cd: CardDef): return cd.rarity == one and f.call(cd)
 	for k in n:
-		var c := _pick_card(f, ex)
+		var c := _pick_card(f1, ex)
 		if c:
 			ex.append(c.id)
 			opts.append({"kind": "card", "id": c.id})
@@ -1934,20 +1971,15 @@ func _offer_level() -> void:
 	# Uma oferta nunca mistura tipos (rodada 09/11/2026): sorteia o tipo uma vez.
 	var cards_first := rng.randf() < float(R["offers"]["new_card_weight"])
 	var want_cards := cards_first
+	var one := -2   # raridade única da oferta, sorteada na primeira carta
 	while opts.size() < n and tries < 20:
 		tries += 1
 		if tries == 11 and opts.is_empty():
 			want_cards = not cards_first   # o tipo sorteado não tem opção: tenta o outro
 		if want_cards:
-			var r := _roll_rarity()
-			var c: CardDef = null
-			for dr in [0, -1, 1, -2, 2, -3, 3]:
-				var rr: int = r + dr
-				if rr < 0 or rr > 3:
-					continue
-				c = _pick_card(func(cd: CardDef): return cd.rarity == rr, ex)
-				if c:
-					break
+			if one == -2:
+				one = _single_rarity(func(_cd: CardDef): return true, n)
+			var c := _pick_card(func(cd: CardDef): return cd.rarity == one, ex)
 			if c:
 				ex.append(c.id)
 				opts.append({"kind": "card", "id": c.id})
@@ -1971,10 +2003,14 @@ func _offer_contract(rw: Dictionary) -> void:
 			var cat := str(rw.get("category", ""))
 			var f1 := func(cd: CardDef): return (tag == 0 or (cd.tags & tag)) and (cat == "" or cd.category == cat) and cd.rarity >= minr
 			var f2 := func(cd: CardDef): return (tag == 0 or (cd.tags & tag)) and (cat == "" or cd.category == cat)
+			# Raridade única: primeiro dentro da raridade mínima do contrato; sem carta assim, sem o mínimo.
+			var fsel: Callable = f1
+			var one := _single_rarity(f1, n)
+			if one < 0:
+				fsel = f2
+				one = _single_rarity(f2, n)
 			for k in n:
-				var c := _pick_card(f1, ex)
-				if c == null:
-					c = _pick_card(f2, ex)
+				var c := _pick_card(func(cd: CardDef): return cd.rarity == one and fsel.call(cd), ex)
 				if c:
 					ex.append(c.id)
 					opts.append({"kind": "card", "id": c.id})

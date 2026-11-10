@@ -33,6 +33,7 @@ func _ready() -> void:
 	t_contests()
 	t_fork_after_location()
 	t_offer_single_type()
+	t_offer_single_rarity()
 	t_relics()
 	t_events()
 	t_ability_tell()
@@ -881,6 +882,34 @@ func t_offer_single_type() -> void:
 			if kinds.size() > 1:
 				mixed += 1
 	check(mixed == 0, "oferta de queda nunca mistura tipos (%d misturadas)" % mixed)
+
+
+## Raridade única (10/11/2026): recompensas e escolhas trazem uma raridade só; a loja fica de fora.
+func t_offer_single_rarity() -> void:
+	var mixed := 0
+	var seen := 0
+	for seed_ in range(1, 40):
+		var s := _sim(seed_)
+		for which in 5:
+			s.offers.clear()
+			match which:
+				0: s._offer_level()
+				1: s.offers.append({"options": s._card_options(3, func(_cd: CardDef): return true)})
+				2: s.offers.append({"options": s._card_options(3, func(cd: CardDef): return cd.rarity >= 2)})
+				3: s._offer_contract({"kind": "card", "min_rarity": "uncommon"})
+				4: s._offer_relics()
+			for o in s.offers:
+				var rs := {}
+				for op in o["options"]:
+					if op["kind"] == "card":
+						rs[data.card(op["id"]).rarity] = true
+					elif op["kind"] == "relic":
+						rs[str(data.relics[op["id"]].get("rarity", "common"))] = true
+				if rs.size() > 0:
+					seen += 1
+				if rs.size() > 1:
+					mixed += 1
+	check(seen > 100 and mixed == 0, "ofertas com raridade trazem uma só (%d ofertas, %d misturadas)" % [seen, mixed])
 
 
 func t_ability_tell() -> void:
