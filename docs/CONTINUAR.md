@@ -42,7 +42,7 @@ a tabela de estado do CONTINUAR.md.
 | C5 | Estrada de 300 m, disputas em 3 etapas | não começou |
 | C6 | 43 cartas novas + custos revistos + textos pt/en | não começou |
 | C-UI | Montes de compra/descarte, barra de elixir até 20, HUD da disputa, upgrade antes → depois | não começou |
-| Upg. | Variante 4: carimbo + material do fundo | não começou |
+| Upg. | Variante 4: carimbo + material do fundo | **feito** (padrão em `settings.gd`; capturas `upgrades/v4_*.png`). Assumido: filete de borda no N2/N3 e carimbo mais opaco, para ler em carta pequena |
 | D | Arte v2 de ~91 imagens, 9 modelos animados, 11 variantes, 3 chefes finais | não começou (receita pronta) |
 | E | Testes novos, fuzz, calibração, carga, relatório, planilha | não começou |
 
