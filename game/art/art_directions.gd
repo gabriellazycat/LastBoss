@@ -10,6 +10,7 @@ const LIST := [
 	{"name": "D · Aventura, dia (RoR2, CC0)", "look_ground": 7, "look_hero": 5, "look_enemies": 5},
 	{"name": "E · Aventura, noite (Soulstone, CC0)", "look_ground": 8, "look_hero": 5, "look_enemies": 5},
 	{"name": "F · Própria refinada", "look_ground": 9, "look_hero": 6, "look_enemies": 6},
+	{"name": "G · Blender v2 (monstros, chefe e cenário)", "look_ground": 10, "look_hero": 5, "look_enemies": 7},
 	{"name": "Antiga (tudo 0)", "look_ground": 0, "look_hero": 0, "look_enemies": 0},
 ]
 const KEYS := ["look_ground", "look_hero", "look_enemies"]

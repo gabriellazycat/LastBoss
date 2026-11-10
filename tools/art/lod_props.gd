@@ -2,8 +2,10 @@ extends SceneTree
 ## Copia o cenário de um look de chão gerando níveis de detalhe (LOD) automáticos da Godot.
 ## godot --headless --path . -s res://tools/art/lod_props.gd -- --from=ground1 --to=ground9
 ## As árvores próprias têm até 2,6 mil triângulos e aparecem às centenas: de longe, o LOD corta a maior parte.
+## --only=tree,bush,... só esses ids; --keep=0.45 fração de triângulos que fica (padrão 0,2).
+## Blender v2: rodar UMA vez depois do import_v2.gd, no lugar: --from=v2 --to=v2 --only=<peças espalhadas> --keep=0.45
 
-const KEEP := 0.2
+var KEEP := 0.2
 
 
 func _init() -> void:
@@ -14,11 +16,17 @@ func _init() -> void:
 			from = a.trim_prefix("--from=")
 		elif a.begins_with("--to="):
 			to = a.trim_prefix("--to=")
+		elif a.begins_with("--keep="):
+			KEEP = float(a.trim_prefix("--keep="))
 	var src := "res://assets/models/%s/" % from
 	var dst := "res://assets/models/%s/" % to
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dst))
+	var only: PackedStringArray = []
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--only="):
+			only = a.trim_prefix("--only=").split(",")
 	for f in DirAccess.get_files_at(src):
-		if not f.ends_with(".res"):
+		if not f.ends_with(".res") or (only.size() > 0 and not f.get_basename() in only):
 			continue
 		var m: ArrayMesh = load(src + f)
 		var im := ImporterMesh.new()
