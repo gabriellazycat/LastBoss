@@ -30,6 +30,8 @@ var root: Control
 ## Um dicionário por nível: owner, col, boxes, word (âncora palavra: o rótulo), seen (quadro do último hold), t.
 var levels: Array = []
 var _attached: Control = null
+## Controles com `attach`: a caixa evita cobrir os irmãos (senão eles nunca recebem o mouse).
+var _tipped: Array = []
 
 
 func _ready() -> void:
@@ -189,6 +191,8 @@ static func _wire(l: RichTextLabel, level: int) -> void:
 ## Liga caixas a um controle: com o mouse em cima, abre as entradas de `builder` (chamado só ao abrir).
 static func attach(c: Control, builder: Callable) -> void:
 	c.set_meta("tip_builder", builder)
+	if inst:
+		inst._tipped.append(c)
 	if c.mouse_filter == Control.MOUSE_FILTER_IGNORE:
 		c.mouse_filter = Control.MOUSE_FILTER_PASS
 	c.mouse_entered.connect(func(): if inst: inst._attached = c)
@@ -303,6 +307,11 @@ func _open(level: int, owner: String, anchor: Rect2, entries: Array, word: RichT
 		y = anchor.end.y + 4.0
 		if y + cs.y > vs.y - 8.0:
 			y = anchor.position.y - cs.y - 4.0
+	elif level == 0 and owner.begins_with("obj:"):
+		# Objeto com caixa: acima ou abaixo antes de ao lado, e nunca por cima de outro controle com caixa.
+		var pos := _free_side(anchor, cs, vs, owner)
+		x = pos.x
+		y = pos.y
 	elif x + cs.x > vs.x - 8.0:
 		x = anchor.position.x - cs.x - 8.0
 	y = clampf(y, 8.0, maxf(vs.y - cs.y - 8.0, 8.0))
@@ -310,9 +319,40 @@ func _open(level: int, owner: String, anchor: Rect2, entries: Array, word: RichT
 	levels.append({"owner": owner, "col": col, "boxes": boxes, "kws": kws, "word": word, "seen": Engine.get_process_frames(), "t": 0.0, "passive": passive})
 
 
+## Primeiro lado (acima, abaixo, direita, esquerda) onde a caixa cabe na tela sem cobrir outro controle com caixa.
+## Se nenhum serve, à direita (como antes).
+func _free_side(anchor: Rect2, cs: Vector2, vs: Vector2, owner: String) -> Vector2:
+	_tipped = _tipped.filter(func(c): return is_instance_valid(c))
+	var cx := clampf(anchor.position.x, 8.0, maxf(vs.x - cs.x - 8.0, 8.0))
+	var cands: Array = [
+		Vector2(cx, anchor.position.y - cs.y - 8.0), Vector2(cx, anchor.end.y + 8.0),
+		Vector2(anchor.end.x + 8.0, anchor.position.y), Vector2(anchor.position.x - cs.x - 8.0, anchor.position.y),
+	]
+	var me := owner.trim_prefix("obj:").to_int()
+	for cand in cands:
+		var r := Rect2(cand, cs)
+		if r.position.x < 8.0 or r.position.y < 8.0 or r.end.x > vs.x - 8.0 or r.end.y > vs.y - 8.0:
+			continue
+		var clear := true
+		for c in _tipped:
+			var ctl := c as Control
+			if ctl.get_instance_id() == me or not ctl.is_visible_in_tree():
+				continue
+			if r.intersects(ctl.get_global_rect()):
+				clear = false
+				break
+		if clear:
+			return cand
+	var x := anchor.end.x + 8.0
+	if x + cs.x > vs.x - 8.0:
+		x = anchor.position.x - cs.x - 8.0
+	return Vector2(x, anchor.position.y)
+
+
 func _make_box(e: Dictionary, level: int, passive := false) -> PanelContainer:
 	var p := UiKit.panel(Color(0.06, 0.04, 0.1, 0.97), UiKit.GOLD.darkened(0.15), 10)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE if passive else Control.MOUSE_FILTER_PASS
+	# O painel nunca pega o mouse: só o texto com palavras-chave (abaixo), para não bloquear o que está embaixo.
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -338,7 +378,7 @@ func _make_box(e: Dictionary, level: int, passive := false) -> PanelContainer:
 	body.add_theme_font_size_override("normal_font_size", 15)
 	body.add_theme_color_override("default_color", Color(0.92, 0.9, 0.98))
 	body.text = rich(e["body"], level + 1 < MAX_DEPTH and not passive, e["kw"])
-	if passive:
+	if passive or not "[url=" in body.text:
 		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	else:
 		_wire(body, level + 1)
@@ -380,7 +420,10 @@ func _process(delta: float) -> void:
 		if w != null and (not is_instance_valid(w) or not w.is_visible_in_tree() or not w.get_global_rect().has_point(m)):
 			lv["word"] = null
 			w = null
-		var alive: bool = deeper or w != null or frame - int(lv["seen"]) <= 1 or _mouse_in(lv, m)
+		# Caixa de objeto (nível 0): fecha ao tirar o mouse do objeto, mesmo com o mouse sobre a caixa; só as palavras
+		# ou um nível mais fundo a seguram. As demais (palavra solta, níveis fundos) seguem abertas com o mouse nelas.
+		var by_anchor: bool = i == 0 and str(lv["owner"]).begins_with("obj:")
+		var alive: bool = deeper or w != null or frame - int(lv["seen"]) <= 1 or (not by_anchor and _mouse_in(lv, m))
 		if lv.get("passive", false):
 			alive = frame - int(lv["seen"]) <= 1
 			if not alive:

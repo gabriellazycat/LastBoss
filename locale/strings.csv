@@ -752,3 +752,4 @@ LVLK_elixir,Elixir,Elixir
 LVLK_stop,Parada (s),Stop (s)
 LVLK_gold,Ouro,Gold
 LVLK_hp_mult,Explosão (× vida),Blast (× health)
+UI_OPT_BUY_REMOVE_D,A carta sai do deck para sempre. Você escolhe qual depois de comprar.,The card leaves your deck for good. You pick which one after buying.
