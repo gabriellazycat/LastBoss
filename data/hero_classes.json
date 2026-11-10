@@ -1,0 +1,12 @@
+{
+ "_doc": "Classes de herói (rodada autônoma de 09/11/2026). Cada classe sobrepõe as chaves de hero_escudeiro.json; hp_mult e damage_mult multiplicam a vida e o golpe. Modelos: KayKit Adventurers.",
+ "classes": {
+  "escudeiro": {"model": "knight"},
+  "arqueira": {"model": "rogue_hooded", "hp_mult": 0.72, "damage_mult": 0.8, "attack_range": 7.0, "attack_interval": 0.85, "speed": 3.3,
+   "shield": {"hp": 0, "cone": 0.0, "regen_seconds": 5}, "ranged": true},
+  "cleriga": {"model": "mage_white", "hp_mult": 0.9, "damage_mult": 0.7, "regen": 0.012, "bless_next": 0.25,
+   "shield": {"hp": 170, "cone": 70.0, "regen_seconds": 6}},
+  "mago": {"model": "mage", "hp_mult": 0.68, "damage_mult": 1.25, "attack_range": 5.0, "attack_interval": 1.5, "splash": 2.6, "splash_mult": 0.75,
+   "shield": {"hp": 50, "cone": 60.0, "regen_seconds": 6}, "ranged": true}
+ }
+}

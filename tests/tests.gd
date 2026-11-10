@@ -40,6 +40,9 @@ func _ready() -> void:
 	t_acts()
 	t_meta()
 	t_full_runs()
+	t_combos()
+	t_classes()
+	t_group()
 	t_translations()
 	t_keywords()
 	print("falhas: ", fails)
@@ -47,14 +50,20 @@ func _ready() -> void:
 
 
 func t_data() -> void:
-	check(data.pool.size() == 30, "30 cartas na pool")
+	check(data.pool.size() == 48, "48 cartas na pool (%d)" % data.pool.size())
 	check(data.upgrades.size() == 15, "15 upgrades")
 	check(data.contracts.size() == 8, "8 contratos")
 	var m := MetaSave.new()
 	m.data = data
 	m.unlocked = data.meta["start_collection"].duplicate()
+	check(m.deck_errors(data.deck("horde")["cards"]).is_empty(), "Horda é válida com a coleção inicial %s" % str(m.deck_errors(data.deck("horde")["cards"])))
 	for d in data.boss["decks"]:
-		check(m.deck_errors(d["cards"]).is_empty(), "deck pronto %s é válido com a coleção inicial %s" % [d["id"], str(m.deck_errors(d["cards"]))])
+		m.unlock_pact(d["id"])
+		check(m.deck_errors(d["cards"]).is_empty(), "deck pronto %s é válido depois de liberar o pacto %s" % [d["id"], str(m.deck_errors(d["cards"]))])
+		var fams := {}
+		for id in d["cards"]:
+			fams[_family(id)] = true
+		check(fams.size() <= 2, "deck %s tem no máximo 2 famílias (%s)" % [d["id"], str(fams.keys())])
 
 
 func _sim(seed_ := 1, deck := "horde") -> Sim:
@@ -86,7 +95,7 @@ func t_costs() -> void:
 	var s := _sim(1, "ruin")
 	var g := Sim.CardInst.new()
 	g.def = data.card("goblin_dynamiter")
-	check(s.card_cost(g) == 4, "Ruína: Goblin custa 4")
+	check(s.card_cost(g) == 3, "Ruína: Goblin custa 3 (sem a taxa de monstro desde 09/11)")
 	var tw := Sim.CardInst.new()
 	tw.def = data.card("gargoyle_tower")
 	check(s.card_cost(tw) == 4, "Ruína: Torre (estrutura) continua 4")
@@ -339,7 +348,7 @@ func t_keywords() -> void:
 	check(not Tips.rich("[[fear]]", true, "fear").contains("[url"), "caixa não linka a própria palavra")
 
 
-func _inst(id: String, level: int) -> Sim.CardInst:
+func _inst(id: String, level := 1) -> Sim.CardInst:
 	var ci := Sim.CardInst.new()
 	ci.def = data.card(id)
 	ci.level = level
@@ -424,7 +433,9 @@ func t_meta() -> void:
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var m := MetaSave.load_or_new(data, path)
-	check(m.unlocked.size() == 16 and m.deck_errors(m.deck).is_empty(), "coleção inicial de 16 e deck pronto válido")
+	check(m.unlocked.size() == data.meta["start_collection"].size() and m.deck_errors(m.deck).is_empty(), "coleção inicial e deck pronto válido")
+	check(m.pacts == ["horde"] and not m.phase_open(2), "começa só com a Horda e a fase 2 fechada")
+	check(m.win_phase(1) == "ruin" and m.pacts.has("ruin") and m.is_unlocked("torch") and m.phase_open(2), "vencer a fase 1 libera a Ruína e as cartas dela")
 	check(not m.can_add("ogre") and m.unlock_cost("ogre") == 70, "Ogro começa bloqueado e custa 70 Almas")
 	m.souls = 75
 	check(m.unlock("ogre") and m.souls == 5 and m.is_unlocked("ogre"), "desbloquear gasta as Almas")
@@ -921,3 +932,233 @@ func t_arena_hunt() -> void:
 	var k := (a.arena.altar + 1) % a.arena.altar_pos.size()
 	check(a.teleport(k), "teleporta com elixir")
 	check(is_equal_approx(a.arena.tp_cd, 12.0), "recarga do teleporte de 12 s (%.1f)" % a.arena.tp_cd)
+
+
+var _fam_cache: Dictionary = {}
+
+
+func _family(id: String) -> String:
+	if _fam_cache.is_empty():
+		var j = JSON.parse_string(FileAccess.get_file_as_string("res://data/cards.json"))
+		for c in j["cards"]:
+			_fam_cache[c["id"]] = str(c.get("family", "?"))
+	return str(_fam_cache.get(id, "?"))
+
+
+## Unidades novas de uma carta, a dx do herói (o teste chama _apply direto, sem o anel mínimo).
+func _spawn(s: Sim, id: String, dx := 0.5) -> Array:
+	var before := []
+	for j in s.units.hi:
+		if s.units.alive[j] == 1:
+			before.append(j)
+	s._apply(_inst(id), s.hero.x + dx, s.hero.y)
+	var out := []
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and not before.has(j):
+			out.append(j)
+	return out
+
+
+func _tough(s: Sim) -> void:
+	s.hero.base_hp = 1.0e7
+	s.hero.hp = 1.0e7
+	s.hero.shield_hp = 0.0
+	s.hero.shield_max = 0.0
+
+
+func _hit(s: Sim, j: int) -> float:
+	_tough(s)
+	var h0 := s.hero.hp
+	s.unit_hits_hero(j)
+	return h0 - s.hero.hp
+
+
+## Famílias de cartas (rodada autônoma de 09/11/2026): cada combo funciona e rende mais que a carta sozinha.
+func t_combos() -> void:
+	# Bando: Ratos Raivosos batem mais com mais bicho de bando; Chamado do Bando aumenta.
+	var s := _sim(5)
+	var rr := _spawn(s, "rabid_rats")
+	s.units.n_pack = 1
+	var a := _hit(s, rr[0])
+	s.units.n_pack = 20
+	var b := _hit(s, rr[0])
+	check(b > a * 1.5, "Ratos Raivosos: bando grande bate mais (%.1f → %.1f)" % [a, b])
+	s._apply(_inst("pack_call"), s.hero.x, s.hero.y)
+	var c := _hit(s, rr[0])
+	check(c > b * 1.3, "Chamado do Bando aumenta o dano do bando (%.1f → %.1f)" % [b, c])
+	# Fogo: Balde de Óleo encharca; Tocha em herói encharcado incendeia.
+	s = _sim(5)
+	_tough(s)
+	s._apply(_inst("torch"), s.hero.x, s.hero.y)
+	check(s.burn_t <= 0.0, "Tocha sem óleo não incendeia")
+	s._apply(_inst("oil_splash"), s.hero.x, s.hero.y)
+	check(s.hero.soaked_t > 0.0, "Balde de Óleo encharca o herói")
+	var h0 := s.hero.hp
+	s._apply(_inst("torch"), s.hero.x, s.hero.y)
+	check(s.burn_t > 0.0 and s.burn_src == "torch", "Tocha em herói encharcado incendeia")
+	check(h0 - s.hero.hp > float(data.card("torch").fx["damage"]) * 1.2, "fogo em herói encharcado dói mais (%.0f)" % (h0 - s.hero.hp))
+	s = _sim(5)
+	s._apply(_inst("tar_net"), s.hero.x, s.hero.y)
+	s.step()
+	check(s.hero.root_t > 0.0 and s.hero.soaked_t > 0.0, "Rede de Piche enraíza e encharca")
+	# Cobiça: Mercenário cresce com o ouro; Pedágio troca ouro por elixir; Mímico morde em dobro perto da isca.
+	s = _sim(5)
+	var m0 := _spawn(s, "gold_merc", 4.0)
+	s.gold = 200.0
+	var m1 := _spawn(s, "gold_merc", 4.0)
+	check(s.units.max_hp[m1[0]] > s.units.max_hp[m0[0]] * 1.5, "Mercenário com ouro tem mais vida (%.0f → %.0f)" % [s.units.max_hp[m0[0]], s.units.max_hp[m1[0]]])
+	s.hand[0] = _inst("toll")
+	s.gold = 10.0
+	check(s.can_play(0) == K.Block.CONDITION, "Pedágio sem ouro não joga")
+	s.gold = 100.0
+	s.elixir = 1.0
+	check(s.play(0, s.hero.x, s.hero.y) == K.Block.OK and s.elixir >= 3.9 and s.gold < 100.0, "Pedágio troca ouro por elixir (%.1f)" % s.elixir)
+	s = _sim(5)
+	_tough(s)
+	var mi := _spawn(s, "mimic", 1.0)
+	s.mimic_bite(mi[0])
+	var solo := float(s.stats["dmg_by_card"].get("mimic", 0.0))
+	s.zones.append({"kind": "bait", "x": s.units.px[mi[0]], "y": s.units.py[mi[0]], "r": 1.0, "t": 40.0, "xp": 0.0})
+	s.units.gen[mi[0]] = 0
+	s.mimic_bite(mi[0])
+	var both := float(s.stats["dmg_by_card"].get("mimic", 0.0)) - solo
+	check(both > solo * 1.5, "Mímico morde mais forte perto da Isca (%.0f → %.0f)" % [solo, both])
+	var hp0 := s.hero.hp
+	# Morte: Carniçal cresce com mortes perto; Colheita devolve elixir; Explosão de Cadáver.
+	s = _sim(5)
+	var gh := _spawn(s, "ghoul", 3.0)
+	var g0 := _hit(s, gh[0])
+	var fod := _spawn(s, "bone_legion", 3.5)
+	s.elixir = 0.0
+	s._apply(_inst("soul_harvest"), s.hero.x, s.hero.y)
+	for j in fod:
+		s.kill_unit(j, K.Death.HERO)
+	check(_hit(s, gh[0]) > g0 * 1.4, "Carniçal fica mais forte com mortes perto")
+	check(s.elixir >= 1.0, "Colheita de Almas devolve elixir por morte (%.2f)" % s.elixir)
+	var big := _spawn(s, "ghoul", 1.5)
+	_tough(s)
+	hp0 = s.hero.hp
+	s._apply(_inst("corpse_blast"), s.units.px[big[0]], s.units.py[big[0]])
+	check(s.units.alive[big[0]] == 0 and hp0 - s.hero.hp >= 80.0, "Explosão de Cadáver consome o monstro e fere o herói (%.0f)" % (hp0 - s.hero.hp))
+	# Sequência: Faísca cresce com feitiços recentes; Eco repete; Acólitos atiram junto; Marca aumenta.
+	s = _sim(5)
+	_tough(s)
+	hp0 = s.hero.hp
+	s._apply(_inst("arcane_spark"), s.hero.x, s.hero.y)
+	var sp1 := hp0 - s.hero.hp
+	s.spell_times = [s.t, s.t, s.t]
+	hp0 = s.hero.hp
+	s._apply(_inst("arcane_spark"), s.hero.x, s.hero.y)
+	check(hp0 - s.hero.hp > sp1 * 2.5, "Faísca Arcana cresce com feitiços recentes (%.0f → %.0f)" % [sp1, hp0 - s.hero.hp])
+	s.hand[0] = _inst("shadow_echo")
+	s.last_spell_id = ""
+	check(s.can_play(0) == K.Block.CONDITION, "Eco Sombrio sem feitiço anterior não joga")
+	var echo: Sim.CardInst = s.hand[0]
+	s.hand[1] = _inst("oil_splash")
+	s.elixir = 10.0
+	s.hero.soaked_t = 0.0
+	s.play(1, s.hero.x, s.hero.y)
+	s.hero.soaked_t = 0.0
+	var ei := s.hand.find(echo)
+	check(ei >= 0 and s.play(ei, s.hero.x, s.hero.y) == K.Block.OK and s.hero.soaked_t > 0.0, "Eco Sombrio repete o último feitiço")
+	_spawn(s, "acolyte", 3.0)
+	_tough(s)
+	hp0 = s.hero.hp
+	s._after_spell(_inst("web"))
+	check(hp0 - s.hero.hp > 0.0, "Acólito atira quando você joga um feitiço")
+	s.spell_times.clear()
+	hp0 = s.hero.hp
+	s._apply(_inst("arcane_spark"), s.hero.x, s.hero.y)
+	var nomark := hp0 - s.hero.hp
+	s._apply(_inst("shadow_mark"), s.hero.x, s.hero.y)
+	hp0 = s.hero.hp
+	s._apply(_inst("arcane_spark"), s.hero.x, s.hero.y)
+	check(hp0 - s.hero.hp > nomark * 1.3, "Marca Sombria aumenta o dano de feitiço (%.0f → %.0f)" % [nomark, hp0 - s.hero.hp])
+
+
+func _phase_sim(n: int, seed_ := 7) -> Sim:
+	var s := Sim.new()
+	s.setup(data, seed_, "horde", [], [], n)
+	s.auto_route = true
+	return s
+
+
+func t_classes() -> void:
+	var s := _phase_sim(2)
+	check(s.party_size() == 7 and s.party_class(1) == "arqueira", "Fase 2 alterna Escudeiro e Arqueira")
+	s.offers.clear()
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.hero.cls() == "arqueira" and float(s.hero.H["attack_range"]) >= 6.0 and s.hero.shield_max <= 0.0, "Arqueira ataca de longe e não tem escudo")
+	var s3 := _phase_sim(3)
+	check(s3.hero.cls() == "cleriga", "Fase 3 começa com a Clériga")
+	s3.hero.hp = s3.hero.max_hp() * 0.5
+	for i in 40:
+		s3.hero.update(s3.dt)
+	check(s3.hero.hp > s3.hero.max_hp() * 0.5, "Clériga se cura com o tempo")
+	s3.offers.clear()
+	var base2: float = float(data.hero_of("escudeiro")["hp"]) * pow(float(data.rules["party"]["step"]), 1)
+	s3.hero.hp = 0.0
+	s3._check_end()
+	check(s3.hero.max_hp() > base2 * 1.15, "a bênção da Clériga dá vida ao próximo (%.0f > %.0f)" % [s3.hero.max_hp(), base2])
+	var s4 := _phase_sim(4)
+	check(s4.party_class(3) == "mago", "o 4º herói da Fase 4 é o Mago")
+	var sw := _phase_sim(1)
+	var rats := _spawn(sw, "rat_horde", 2.0)
+	sw.hero.H = data.hero_of("mago")
+	sw.hero.target = rats[0]
+	sw.hero.target_kind = SimHero.TGT_UNIT
+	var alive0 := 0
+	for j in rats:
+		alive0 += sw.units.alive[j]
+	sw.hero._splash(sw.units.px[rats[0]], sw.units.py[rats[0]], 500.0)
+	var alive1 := 0
+	for j in rats:
+		alive1 += sw.units.alive[j]
+	check(alive1 < alive0 - 2, "golpe do Mago atinge vários ratos em volta (%d → %d)" % [alive0, alive1])
+	var s0 := _phase_sim(0)
+	check(s0.party_size() == 3 and s0.acts() == 1 and s0.hero.max_hp() < float(data.hero["hp"]) * 0.6, "tutorial: 3 Escudeiros fracos e 1 ato")
+
+
+func t_group() -> void:
+	var s := _phase_sim(4)
+	check(s.group_mode(), "Fase 4 é de grupo")
+	s.offers.clear()
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.followers.size() == 1 and s.party_idx == 1, "quem chega levanta o caído: 2 heróis de pé (%d seguidores)" % s.followers.size())
+	if s.followers.size() > 0:
+		check(absf(s.followers[0].hp / s.followers[0].max_hp() - 0.5) < 0.05, "o levantado volta com metade da vida")
+		s.offers.clear()
+		s.followers[0].hp = 0.0
+		s._check_end()
+		check(s.followers.size() == 1 and s.party_idx == 2, "o levantado cai de novo e fica no chão; chega o próximo (%d)" % s.followers.size())
+		# Monstro vai no herói mais perto.
+		var f: SimHero = s.followers[0]
+		f.x = s.hero.x + 20.0
+		f.y = s.hero.y
+		f.hp = f.max_hp()
+		var near := _spawn(s, "ghoul", 21.0)
+		var before := f.hp
+		for i in 40:
+			s.units.update(s.dt)
+		check(f.hp < before, "monstro perto do seguidor ataca o seguidor")
+	var n := 0
+	while s.phase != K.Phase.OVER and n < 40:
+		s.offers.clear()
+		s.hero.hp = 0.0
+		for g in s.followers:
+			g.hp = 0.0
+		s._check_end()
+		n += 1
+	check(s.phase == K.Phase.OVER and str(s.stats["result"]) in ["win", "win_early"], "a fase de grupo termina em vitória quando ninguém fica de pé (%s, %d quedas)" % [str(s.stats["result"]), int(s.stats["heroes_fallen"])])
+	var r := Sim.new()
+	r.setup(data, 11, "horde", [], [], 4)
+	r.auto_route = true
+	var bot := PlayerBot.load_bot("heuristic", 11)
+	var k := 0
+	while r.phase != K.Phase.OVER and k < 60000:
+		bot.think(r)
+		r.step()
+		k += 1
+	check(r.phase == K.Phase.OVER, "run completa da Fase 4 com o bot termina (%s em %.0f s, %d quedas)" % [str(r.stats["result"]), r.t, int(r.stats["heroes_fallen"])])

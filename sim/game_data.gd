@@ -16,6 +16,8 @@ var relics: Dictionary = {}    # id -> dict (data/relics.json): passivas ganhas 
 var relic_ids: Array = []      # na ordem do arquivo (sorteio determinístico)
 var events_def: Dictionary = {}  # id -> dict (data/events.json): eventos de texto do local "?"
 var event_ids: Array = []
+var hero_classes: Dictionary = {}  # id -> overlay (data/hero_classes.json)
+var phases: Array = []             # fases da campanha (data/campaign.json)
 
 
 static func load_dir(dir := "res://data") -> GameData:
@@ -47,7 +49,30 @@ static func load_dir(dir := "res://data") -> GameData:
 		g.by_id[c.id] = c
 	for u in g.hero["upgrades"]:
 		g.upgrades[u["id"]] = u
+	g.hero_classes = _read(dir + "/hero_classes.json").get("classes", {})
+	g.phases = _read(dir + "/campaign.json").get("phases", [])
 	return g
+
+
+## Atributos do herói de uma classe: o Escudeiro com a sobreposição da classe (e os multiplicadores da fase).
+func hero_of(cls: String, hp_mult := 1.0, dmg_mult := 1.0) -> Dictionary:
+	var H: Dictionary = hero.duplicate(true)
+	var o: Dictionary = hero_classes.get(cls, {})
+	for k in o:
+		if k == "hp_mult" or k == "damage_mult":
+			continue
+		H[k] = o[k]
+	H["class"] = cls if hero_classes.has(cls) else "escudeiro"
+	H["hp"] = float(hero["hp"]) * float(o.get("hp_mult", 1.0)) * hp_mult
+	H["damage"] = float(hero["damage"]) * float(o.get("damage_mult", 1.0)) * dmg_mult
+	return H
+
+
+func phase(n: int) -> Dictionary:
+	for p in phases:
+		if int(p["id"]) == n:
+			return p
+	return {}
 
 
 static func _read(path: String) -> Dictionary:
@@ -71,3 +96,10 @@ func deck(deck_id: String) -> Dictionary:
 		if d["id"] == deck_id:
 			return d
 	return boss["decks"][0]
+
+
+func has_deck(deck_id: String) -> bool:
+	for d in boss["decks"]:
+		if d["id"] == deck_id:
+			return true
+	return false

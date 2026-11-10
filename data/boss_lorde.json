@@ -45,14 +45,14 @@
    "cards": [
     "rat_horde",
     "rat_horde",
-    "skeleton_archers",
-    "skeleton_archers",
+    "rabid_rats",
+    "rabid_rats",
+    "rat_king",
     "bat_nest",
-    "soul_feast",
-    "web",
-    "goblin_dynamiter",
-    "boiling_oil",
-    "dark_forge"
+    "rat_burrow",
+    "rat_burrow",
+    "pack_call",
+    "pack_call"
    ],
    "rules": {
     "hand_size": 6,
@@ -63,42 +63,82 @@
   {
    "id": "ruin",
    "cards": [
-    "shadow_bolt",
-    "cultists",
-    "cultists",
     "goblin_dynamiter",
+    "goblin_dynamiter",
+    "oil_splash",
+    "oil_splash",
+    "torch",
+    "torch",
+    "fire_imp",
     "boiling_oil",
-    "web",
-    "gargoyle_tower",
-    "gargoyle_tower",
-    "web",
-    "bone_prison"
+    "tar_net",
+    "web"
    ],
    "rules": {
     "spell_damage_mult": 1.15,
-    "monster_cost_add": 1,
-    "elixir_mult": 1.0
+    "monster_cost_add": 0,
+    "elixir_mult": 1.0,
+    "hero_hp_mult": 1.1
    }
   },
   {
    "id": "treasure",
    "cards": [
-    "soul_collector",
-    "soul_collector",
-    "mimic",
-    "mimic",
+    "gold_merc",
+    "gold_merc",
     "gold_bait",
     "gold_bait",
-    "goblin_dynamiter",
-    "skeleton_archers",
-    "rat_horde",
-    "web"
+    "mimic",
+    "mimic",
+    "toll",
+    "toll",
+    "cursed_coins",
+    "soul_collector"
    ],
    "rules": {
     "elixir_start": 7,
     "offer_options": 4,
     "elixir_mult": 1.0,
     "hero_hp_mult": 1.25
+   }
+  },
+  {
+   "id": "crypt",
+   "cards": [
+    "bone_legion",
+    "bone_legion",
+    "ghoul",
+    "ghoul",
+    "corpse_blast",
+    "corpse_blast",
+    "soul_harvest",
+    "bone_totem",
+    "soul_feast",
+    "skeleton_archers"
+   ],
+   "rules": {
+    "elixir_mult": 1.0,
+    "hero_hp_mult": 1.15
+   }
+  },
+  {
+   "id": "cult",
+   "cards": [
+    "arcane_spark",
+    "arcane_spark",
+    "shadow_bolt",
+    "shadow_bolt",
+    "cultists",
+    "cultists",
+    "acolyte",
+    "acolyte",
+    "shadow_mark",
+    "shadow_echo"
+   ],
+   "rules": {
+    "spell_damage_mult": 1.1,
+    "elixir_mult": 1.0,
+    "hero_hp_mult": 1.15
    }
   }
  ]

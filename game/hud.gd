@@ -825,7 +825,7 @@ func _refresh_top() -> void:
 	hero_hp.max_value = h.max_hp()
 	hero_hp.value = h.hp
 	hero_hp_label.text = "%d / %d" % [int(h.hp), int(h.max_hp())]
-	hero_of_label.text = tr("UI_HERO_OF").format({"k": sim.party_idx + 1, "n": int(sim.R["party"]["size"])})
+	hero_of_label.text = tr("UI_HERO_OF").format({"k": sim.party_idx + 1, "n": sim.party_size()})
 	_refresh_upgrades()
 	curse_label.text = tr("UI_CURSES").format({"n": h.curses}) if h.curses > 0 else ""
 

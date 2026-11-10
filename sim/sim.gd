@@ -26,6 +26,10 @@ var phase: int = K.Phase.ROAD
 var result: int = K.Result.NONE
 var units := SimUnits.new()
 var hero := SimHero.new()
+var followers: Array = []          # fase de grupo: heróis que andam junto do da vez
+var revived: Array = []            # índices da fila já levantados uma vez
+var hit_hero: SimHero = null       # herói que a unidade da vez acerta (null = o da vez)
+var group_falls := 0
 var road := SimRoad.new()
 var arena := SimArena.new()
 var zones: Array = []
@@ -46,6 +50,11 @@ var hand_size := 5
 const HAND_MAX := 9
 var next_uid := 1
 var party_idx := 0                 # herói da fila (0 a size-1); o nível dele é party_idx + 1
+var campaign_phase := 1            # fase da campanha (data/campaign.json); 1 = a run clássica de 7 Escudeiros
+var phase_cfg: Dictionary = {}
+var party: Array = []              # classe de cada herói da fila
+var phase_hp_mult := 1.0
+var phase_dmg_mult := 1.0
 var gate_pos := Vector2.ZERO       # portão da arena, onde o herói seguinte entra
 var player_level := 1
 var player_xp := 0.0
@@ -55,6 +64,18 @@ var lair_val: Dictionary = {}   # id -> soma do efeito das cópias, já com o n�
 var unlocked: Array = []        # cartas que as ofertas podem sortear (vazio = todas)
 var burn_t := 0.0               # Arqueiros N3: herói em chamas
 var burn_dps := 0.0
+var burn_src := "skeleton_archers"
+# Famílias de cartas (rodada autônoma de 09/11/2026): estados dos combos.
+var rally_until := -100.0       # Chamado do Bando: até quando o bando corre e bate mais
+var rally_dmg := 0.0
+var rally_spd := 0.0
+var harvest_until := -100.0     # Colheita de Almas: até quando cada morte sua devolve elixir
+var harvest_elixir := 0.0
+var mark_until := -100.0        # Marca Sombria: até quando feitiços machucam mais o herói
+var mark_bonus := 0.0
+var spell_times: Array = []     # instantes dos últimos feitiços jogados (Sequência)
+var last_spell_id := ""         # Eco Sombrio repete este feitiço
+var last_spell_lv := 1
 ## Disputa do local em andamento (rodada 09/11/2026): o herói para no local até ela acabar.
 ## {"li", "type", "t", "window", "progress", "goal"}; vazio = nenhuma.
 var contest: Dictionary = {}
@@ -84,9 +105,17 @@ var tmp := PackedInt32Array()
 
 ## `deck` é o Pacto (regras); `card_list` é o deck montado na coleção (vazio = deck pronto do Pacto);
 ## `unlocked_` limita as ofertas às cartas desbloqueadas (vazio = todas).
-func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocked_: Array = []) -> void:
+func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocked_: Array = [], phase_n := 1) -> void:
 	data = d
 	R = d.rules
+	campaign_phase = phase_n
+	phase_cfg = d.phase(phase_n)
+	party = phase_cfg.get("party", []).duplicate()
+	if party.is_empty():
+		for k in int(R["party"]["size"]):
+			party.append("escudeiro")
+	phase_hp_mult = float(phase_cfg.get("hp_mult", 1.0))
+	phase_dmg_mult = float(phase_cfg.get("damage_mult", 1.0))
 	run_seed = seed_
 	rng.seed = seed_
 	dt = R["sim"]["dt"]
@@ -125,7 +154,15 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 
 
 func acts() -> int:
-	return int(R.get("run", {}).get("acts", 1))
+	return int(phase_cfg.get("acts", R.get("run", {}).get("acts", 1)))
+
+
+func party_size() -> int:
+	return party.size()
+
+
+func party_class(i: int) -> String:
+	return str(party[clampi(i, 0, party.size() - 1)]) if party.size() > 0 else "escudeiro"
 
 
 func _act_cfg(k: int) -> Dictionary:
@@ -164,6 +201,8 @@ func step() -> void:
 	t += dt
 	_elixir()
 	hero.update(dt)
+	for f in followers:
+		f.update(dt)
 	if tick % 4 == 0:
 		units.apply_auras()
 	units.update(dt)
@@ -355,7 +394,7 @@ func _burn() -> void:
 	if burn_t <= 0.0:
 		return
 	burn_t -= dt
-	damage_hero(burn_dps * dt, hero.x, hero.y, K.TAG_FIRE, SimHero.DMG_AREA, "skeleton_archers")
+	damage_hero(burn_dps * dt, hero.x, hero.y, K.TAG_FIRE, SimHero.DMG_AREA, burn_src)
 
 
 func _own_units_near(x: float, y: float, r: float) -> bool:
@@ -586,14 +625,83 @@ func core_destroyed() -> void:
 func _check_end() -> void:
 	if phase == K.Phase.OVER:
 		return
+	if group_mode():
+		_group_check()
+		return
 	if hero.hp <= 0.0:
-		if party_idx < int(R["party"]["size"]) - 1:
+		if party_idx < party_size() - 1:
 			_hero_fell()
 		else:
 			stats["heroes_fallen"] = party_idx + 1
 			_finish(K.Result.WIN_EARLY if phase == K.Phase.ROAD else K.Result.WIN)
 	elif t >= float(R["sim"]["max_run_seconds"]):
 		_finish(K.Result.TIMEOUT)
+
+
+func group_mode() -> bool:
+	return bool(phase_cfg.get("group", false))
+
+
+## Fase de grupo: cada queda traz o próximo da fila, que levanta o caído (uma vez por herói, com revive_hp da vida).
+func _group_check() -> void:
+	var k := followers.size() - 1
+	while k >= 0:
+		var f: SimHero = followers[k]
+		if f.hp <= 0.0:
+			followers.remove_at(k)
+			group_falls += 1
+			stats["heroes_fallen"] = group_falls
+			emit(K.Ev.HERO_FALL, f.x, f.y, f.pidx + 1, 1)
+			if party_idx < party_size() - 1:
+				party_idx += 1
+				var nf := SimHero.new()
+				nf.init_follower(self, party_idx, hero, 1.0)
+				followers.append(nf)
+				_revive(f)
+				emit(K.Ev.HERO_LEVEL, nf.x, nf.y, nf.level, 1)
+				_offer_level()
+		k -= 1
+	if hero.hp > 0.0:
+		if t >= float(R["sim"]["max_run_seconds"]):
+			_finish(K.Result.TIMEOUT)
+		return
+	var fallen := SimHero.new()
+	fallen.init_follower(self, hero.pidx, hero, 0.0)
+	fallen.x = hero.x
+	fallen.y = hero.y
+	group_falls += 1
+	if party_idx < party_size() - 1:
+		_hero_fell()
+		stats["heroes_fallen"] = group_falls
+		_revive(fallen)
+	elif followers.size() > 0:
+		stats["heroes_fallen"] = group_falls
+		emit(K.Ev.HERO_FALL, hero.x, hero.y, hero.pidx + 1, 0)
+		var f: SimHero = followers.pop_front()
+		hero.take_over(f)
+		emit(K.Ev.HERO_LEVEL, hero.x, hero.y, hero.level, 0)
+	else:
+		stats["heroes_fallen"] = group_falls
+		_finish(K.Result.WIN_EARLY if phase == K.Phase.ROAD else K.Result.WIN)
+
+
+func _revive(fallen: SimHero) -> void:
+	if revived.has(fallen.pidx):
+		return
+	revived.append(fallen.pidx)
+	var r := SimHero.new()
+	r.init_follower(self, fallen.pidx, hero, float(phase_cfg.get("revive_hp", 0.5)))
+	r.x = fallen.x
+	r.y = fallen.y
+	r.ox = r.x
+	r.oy = r.y
+	followers.append(r)
+	emit(K.Ev.HEAL, r.x, r.y, r.hp, 1)
+
+
+## Todos os heróis de pé (o da vez primeiro).
+func all_heroes() -> Array:
+	return [hero] + followers
 
 
 func _finish(r: int) -> void:
@@ -620,9 +728,12 @@ func _finish(r: int) -> void:
 # ================================================================ dano e mortes
 
 func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card_id: String) -> float:
-	var real := hero.take_damage(amount, sx, sy, tags, kind)
+	if (kind & SimHero.DMG_SPELL) and t < mark_until:
+		amount *= 1.0 + mark_bonus
+	var hh: SimHero = hit_hero if hit_hero else hero
+	var real := hh.take_damage(amount, sx, sy, tags, kind)
 	var gain := real
-	gain += hero.last_absorbed
+	gain += hh.last_absorbed
 	if gain <= 0.0:
 		return 0.0
 	if real > 0.0:
@@ -655,6 +766,13 @@ func unit_hits_hero(i: int) -> void:
 	var amount := units.dmg[i] * (1.0 + units.buff[i])
 	if (units.tags[i] & K.TAG_PACK) and rv("pack_min") > 0.0 and units.n_pack >= int(rv("pack_min")):
 		amount *= 1.0 + rv("pack_dmg")
+	if c.fx.has("pack_bonus"):
+		# Bando: mais forte quanto mais bicho de bando seu há em campo.
+		amount *= 1.0 + minf(float(c.fx.get("pack_cap", 1.0)), float(c.fx["pack_bonus"]) * units.n_pack)
+	if (units.tags[i] & K.TAG_PACK) and t < rally_until:
+		amount *= 1.0 + rally_dmg
+	if c.fx.has("death_stack"):
+		amount *= 1.0 + float(c.fx["death_stack"]) * units.gen[i]
 	var kind := 0
 	var lv := int(units.lvl[i])
 	var tg := units.tags[i]
@@ -667,6 +785,7 @@ func unit_hits_hero(i: int) -> void:
 		tg |= K.TAG_FIRE
 		burn_t = float(c.n3["burn_s"])
 		burn_dps = float(c.n3["burn_dps"])
+		burn_src = "skeleton_archers"
 	var src := str(card_of_uid.get(units.uid[i], c.id))
 	var real := damage_hero(amount, units.px[i], units.py[i], tg, kind, src)
 	# Contadores das habilidades do herói: Enxame (unidade de uma carta de enxame) e alvos grandes.
@@ -719,6 +838,8 @@ func kill_unit(i: int, cause: int) -> void:
 		if not (f & K.F_REVIVED) and c.id != "spectre":
 			dead_by_def[di] += 1
 		_death_in_contest(x, y, c, f)
+	if cause != K.Death.EXPIRE and c.arch != K.Arch.STRUCTURE:
+		_death_payoffs(i, x, y)
 	if cause == K.Death.HERO or cause == K.Death.SELF:
 		if f & K.F_EXPLOSIVE:
 			var M: Dictionary = data.modifiers["explosive"]["p"]
@@ -753,6 +874,19 @@ func kill_unit(i: int, cause: int) -> void:
 				_totem_revive(i, x, y)
 	emit(K.Ev.DEATH, x, y, di, i)
 	units.release(i)
+
+
+## Família Morte: Colheita de Almas devolve elixir; Carniçais por perto ficam mais fortes.
+func _death_payoffs(i: int, x: float, y: float) -> void:
+	if t < harvest_until:
+		elixir = minf(elixir_max, elixir + harvest_elixir)
+	for j in units.hi:
+		if j == i or units.alive[j] == 0:
+			continue
+		var gc: CardDef = data.cards[units.def[j]]
+		if gc.fx.has("death_stack") and units.gen[j] < int(gc.fx.get("stack_max", 10)):
+			if Vector2(units.px[j] - x, units.py[j] - y).length_squared() <= pow(float(gc.fx.get("stack_radius", 6.0)), 2):
+				units.gen[j] += 1
 
 
 ## Morte de um monstro seu (pelo herói ou explodindo): Ritual, Terra Profana e Coroa de Ossos.
@@ -820,8 +954,11 @@ func kamikaze(i: int) -> void:
 	var x := units.px[i]
 	var y := units.py[i]
 	var src := str(card_of_uid.get(units.uid[i], c.id))
-	if Vector2(hero.x - x, hero.y - y).length() <= r + hero.radius:
-		damage_hero(c.fxv("explode_damage", lv), x, y, units.tags[i], 0, src)
+	for hh in all_heroes():
+		if Vector2(hh.x - x, hh.y - y).length() <= r + hh.radius:
+			hit_hero = hh
+			damage_hero(c.fxv("explode_damage", lv), x, y, units.tags[i], 0, src)
+	hit_hero = null
 	# Goblin N3: a explosão deixa fogo no chão.
 	if c.has_n3(lv, "fire_dps"):
 		zones.append({"kind": "fire", "x": x, "y": y, "r": c.n3["fire_r"], "t": c.n3["fire_s"], "dps": c.n3["fire_dps"], "src": src})
@@ -832,7 +969,12 @@ func kamikaze(i: int) -> void:
 func mimic_bite(i: int) -> void:
 	var c: CardDef = data.cards[units.def[i]]
 	var lv := int(units.lvl[i])
-	damage_hero(c.fxv("bite", lv), units.px[i], units.py[i], units.tags[i], SimHero.DMG_PIERCE, c.id)
+	var bite := c.fxv("bite", lv)
+	for z in zones:
+		if z["kind"] == "bait" and Vector2(units.px[i] - z["x"], units.py[i] - z["y"]).length() <= float(c.fx.get("bait_r", 5.0)):
+			bite *= float(c.fx.get("bait_mult", 2.0))
+			break
+	damage_hero(bite, units.px[i], units.py[i], units.tags[i], SimHero.DMG_PIERCE, c.id)
 	hero.add_curse(int(c.fx.get("curses", 0)))
 	hero.note("mimic", 120.0)
 	# Mímico N3: morde de novo depois de uma pausa (gen conta as mordidas).
@@ -869,6 +1011,10 @@ func hero_gain_xp(_v: float) -> void:
 func _hero_fell() -> void:
 	var fell := party_idx + 1
 	stats["heroes_fallen"] = fell
+	var bless: float = hero.H.get("bless_next", 0.0)
+	if bless > 0.0:
+		# Clériga: a bênção dela fica para o próximo herói.
+		next_hp_mult *= 1.0 + bless
 	emit(K.Ev.HERO_FALL, hero.x, hero.y, fell, 0)
 	party_idx += 1
 	var back := float(R["party"]["arrive_s"]) * float(hero.H["speed"])
@@ -964,6 +1110,8 @@ func _zones() -> void:
 						_cc()
 						hero.root_t = maxf(hero.root_t, float(z.get("root", 0.0)) * cc_mult())
 						hero.add_curse(int(z.get("curse", 0)))
+						if float(z.get("soak", 0.0)) > 0.0:
+							hero.soaked_t = maxf(hero.soaked_t, float(z["soak"]))
 			"oil":
 				if inside:
 					hero.soaked_t = z["soaked"]
@@ -986,6 +1134,14 @@ func _zones() -> void:
 				elif h.distance_to(Vector2(z["x"], z["y"])) <= 1.5:
 					hero_gain_xp(z["xp"])
 					hero.note("bait", 60.0)
+					z["t"] = 0.0
+			"coins":
+				if inside and not z["applied"]:
+					z["applied"] = true
+					hero.root_t = maxf(hero.root_t, float(z["stop"]))
+					hero.add_curse(int(z["curses"]))
+					_earn_gold(float(z["gold"]))
+					_cc()
 					z["t"] = 0.0
 			"army":
 				if z["t"] <= 0.0:
@@ -1039,6 +1195,10 @@ func can_play(hi_: int) -> int:
 				return K.Block.WRONG_PHASE
 			if not finisher_ready(d, c.level):
 				return K.Block.CONDITION
+	if d.fx.has("gold_cost") and gold + 0.0001 < float(d.fx["gold_cost"]):
+		return K.Block.CONDITION
+	if d.id == "shadow_echo" and last_spell_id == "":
+		return K.Block.CONDITION
 	if elixir + 0.0001 < card_cost(c):
 		return K.Block.NO_ELIXIR
 	return K.Block.OK
@@ -1090,7 +1250,28 @@ func play(hi_: int, x: float, y: float) -> int:
 	var pl: Dictionary = stats["played"]
 	pl[c.def.id] = int(pl.get(c.def.id, 0)) + 1
 	_apply(c, x, y)
+	if c.def.is_spell:
+		_after_spell(c)
 	return K.Block.OK
+
+
+## Família Sequência: guarda o feitiço (Eco Sombrio, Faísca Arcana) e faz os Acólitos atirarem junto.
+func _after_spell(c: CardInst) -> void:
+	spell_times.append(t)
+	if c.def.id != "shadow_echo":
+		last_spell_id = c.def.id
+		last_spell_lv = c.level
+	for j in units.hi:
+		if units.alive[j] == 1 and data.cards[units.def[j]].fx.has("echo_shot"):
+			if Vector2(units.px[j] - hero.x, units.py[j] - hero.y).length() <= units.rng[j] + hero.radius + 2.0:
+				unit_hits_hero(j)
+
+
+## Feitiços jogados nos últimos `window` segundos (sem contar o atual).
+func recent_spells(window: float) -> int:
+	while spell_times.size() > 0 and t - float(spell_times[0]) > window:
+		spell_times.pop_front()
+	return spell_times.size()
 
 
 func _cycle(hi_: int) -> void:
@@ -1147,6 +1328,11 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 		if d.type == "structure":
 			hpm *= 1.0 + rv("structure")
 		var dpm := d.mult(lv) if d.scales("dps") else 1.0
+		if d.fx.has("gold_step"):
+			# Cobiça: cada `gold_step` de ouro guardado dá +gold_bonus de vida e dano (até gold_cap).
+			var gm := 1.0 + minf(float(d.fx.get("gold_cap", 1.0)), floorf(gold / float(d.fx["gold_step"])) * float(d.fx["gold_bonus"]))
+			hpm *= gm
+			dpm *= gm
 		# XP cresce menos que o custo (cost_exp < 1): monstro caro não pode alimentar o herói mais do que machuca.
 		var xpv := 0.0   # sem XP (09/11/2026)
 		var f := 0
@@ -1200,6 +1386,74 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			elixir = minf(elixir_max, elixir + refund)
 		"gold_bait":
 			zones.append({"kind": "bait", "x": x, "y": y, "r": 1.0, "t": 40.0, "xp": 0.0})
+		"pack_call":
+			rally_until = t + d.fxv("duration", lv) * vet
+			rally_dmg = d.fxv("damage", lv)
+			rally_spd = d.fxv("speed", lv)
+		"oil_splash":
+			hero.soaked_t = maxf(hero.soaked_t, d.fxv("soaked", lv) * vet)
+			hero.add_curse(curse)
+		"torch":
+			var dmg := d.fxv("damage", lv) * smult * vet
+			if Vector2(hero.x - x, hero.y - y).length() <= float(fx["radius"]) + hero.radius:
+				var was_soaked := hero.soaked_t > 0.0
+				damage_hero(dmg, x, y, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
+				if was_soaked:
+					burn_t = maxf(burn_t, float(fx["burn_s"]))
+					burn_dps = d.fxv("burn_dps", lv) * smult
+					burn_src = d.id
+				hero.add_curse(curse)
+		"tar_net":
+			zones.append({"kind": "web", "x": x, "y": y, "r": fx["radius"], "t": d.fxv("duration", lv) * vet, "applied": false,
+				"root": d.fxv("root", lv), "curse": curse, "soak": fx["soaked"]})
+		"cursed_coins":
+			zones.append({"kind": "coins", "x": x, "y": y, "r": fx["radius"], "t": 30.0, "applied": false,
+				"stop": d.fxv("stop", lv) * vet, "curses": int(fx["curses"]) + curse, "gold": d.fxv("gold", lv)})
+		"toll":
+			gold -= float(fx["gold_cost"])
+			stats["gold_spent"] += int(fx["gold_cost"])
+			elixir = minf(elixir_max, elixir + d.fxv("elixir", lv))
+		"corpse_blast":
+			var best := -1
+			var bd := pow(float(fx["pick_radius"]), 2)
+			for j in units.hi:
+				if units.alive[j] == 0 or units.arch[j] == K.Arch.STRUCTURE:
+					continue
+				var dd := Vector2(units.px[j] - x, units.py[j] - y).length_squared()
+				if dd <= bd:
+					bd = dd
+					best = j
+			if best >= 0:
+				var bx_ := units.px[best]
+				var by_ := units.py[best]
+				var boom := maxf(float(fx["min_damage"]), units.max_hp[best] * d.fxv("hp_mult", lv)) * smult * vet
+				kill_unit(best, K.Death.SACRIFICE)
+				_death_payoffs(best, bx_, by_)
+				if Vector2(hero.x - bx_, hero.y - by_).length() <= float(fx["radius"]) + hero.radius:
+					damage_hero(boom, bx_, by_, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
+				emit(K.Ev.EXPLOSION, bx_, by_, float(fx["radius"]), 0)
+				hero.add_curse(curse)
+		"soul_harvest":
+			harvest_until = t + d.fxv("duration", lv) * vet
+			harvest_elixir = d.fxv("elixir", lv)
+		"arcane_spark":
+			var n_prev := recent_spells(float(fx["window"]))
+			if Vector2(hero.x - x, hero.y - y).length() <= float(fx["radius"]) + hero.radius:
+				var sp := (d.fxv("damage", lv) + n_prev * d.fxv("per_spell", lv)) * smult * vet
+				damage_hero(sp, x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
+				hero.add_curse(curse)
+		"shadow_mark":
+			mark_until = t + d.fxv("duration", lv) * vet
+			mark_bonus = d.fxv("bonus", lv)
+			hero.add_curse(curse)
+		"shadow_echo":
+			var ld: CardDef = data.card(last_spell_id)
+			if ld:
+				var echo := CardInst.new()
+				echo.def = ld
+				echo.uid = c.uid
+				echo.level = maxi(last_spell_lv, lv)
+				_apply(echo, x, y)
 		"burn_village":
 			# Incêndio: marca um local da rota; quando o herói chega, o local pega fogo.
 			var bi := _burn_near(x, y)

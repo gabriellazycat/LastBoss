@@ -11,6 +11,9 @@ var unlocked: Array = []
 var deck: Array = []
 var pact := "horde"
 var runs := 0
+## Campanha (rodada autônoma de 09/11/2026): pactos liberados e fases vencidas.
+var pacts: Array = ["horde"]
+var phases_won: Array = []
 ## Para onde salvar. Os modos de teste da janela trocam para outro arquivo: o --menutest gravava o Pacto
 ## escolhido no meta do jogador (rodada 09/11/2026).
 var file := PATH
@@ -29,6 +32,13 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 			m.souls = int(v.get("souls", 0))
 			m.runs = int(v.get("runs", 0))
 			m.pact = str(v.get("pact", "horde"))
+			for pid in v.get("pacts", []):
+				m.unlock_pact(str(pid))
+			for ph in v.get("phases_won", []):
+				if not m.phases_won.has(int(ph)):
+					m.phases_won.append(int(ph))
+			if not m.pacts.has(m.pact):
+				m.pact = "horde"
 			for id in v.get("unlocked", []):
 				if d.card(id) and not m.unlocked.has(id):
 					m.unlocked.append(id)
@@ -42,8 +52,36 @@ func save(path := "") -> bool:
 	var f := FileAccess.open(file if path == "" else path, FileAccess.WRITE)
 	if f == null:
 		return false
-	f.store_var({"souls": souls, "unlocked": unlocked, "deck": deck, "pact": pact, "runs": runs})
+	f.store_var({"souls": souls, "unlocked": unlocked, "deck": deck, "pact": pact, "runs": runs, "pacts": pacts, "phases_won": phases_won})
 	return true
+
+
+## Libera um pacto e todas as cartas do deck dele na coleção.
+func unlock_pact(id: String) -> void:
+	if not data.has_deck(id):
+		return
+	var dk: Dictionary = data.deck(id)
+	if not pacts.has(id):
+		pacts.append(id)
+	for cid in dk["cards"]:
+		if not unlocked.has(cid):
+			unlocked.append(cid)
+
+
+## Fase vencida: guarda e libera o pacto que ela dá (data/campaign.json).
+func win_phase(n: int) -> String:
+	if not phases_won.has(n):
+		phases_won.append(n)
+	var ph: Dictionary = data.phase(n)
+	var pid := str(ph.get("unlock_pact", ""))
+	if pid != "" and not pacts.has(pid):
+		unlock_pact(pid)
+		return pid
+	return ""
+
+
+func phase_open(n: int) -> bool:
+	return n <= 0 or phases_won.has(n - 1)
 
 
 func is_unlocked(id: String) -> bool:

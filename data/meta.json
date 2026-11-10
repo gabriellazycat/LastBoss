@@ -15,7 +15,11 @@
   "gold_bait",
   "burn_village",
   "dark_forge",
-  "bone_prison"
+  "bone_prison",
+  "rabid_rats",
+  "pack_call",
+  "rat_burrow",
+  "rat_king"
  ],
  "unlock_cost": {
   "common": 40,

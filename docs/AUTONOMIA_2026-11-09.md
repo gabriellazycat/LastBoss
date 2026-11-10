@@ -7,10 +7,10 @@ Branch de trabalho: `campanha-combos` (checkout principal). A arte está numa se
 ## Progresso (atualizado a cada etapa; a retomada automática lê daqui)
 
 Status: EM ANDAMENTO
-Última atualização: 2026-11-09 22:40
+Última atualização: 2026-11-09 23:00
 
-- [ ] 1. Mapear cartas, decks, heróis e menu no código
-- [ ] 2. Famílias de cartas, combos e pactos novos
+- [x] 1. Mapear cartas, decks, heróis e menu no código
+- [ ] 2. Famílias de cartas, combos e pactos novos (simulação e testes prontos; faltam textos, arte das cartas e bots)
 - [ ] 3. Classes Arqueira, Clériga e Mago (KayKit)
 - [ ] 4. Campanha: fases 0 (tutorial) a 4 (grupo que levanta o caído)
 - [ ] 5. Integrar a arte da sessão "Refazer monstros e cenário no Blender" (branch dela)

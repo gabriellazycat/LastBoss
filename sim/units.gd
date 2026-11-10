@@ -181,6 +181,21 @@ func update(dt: float) -> void:
 			continue
 		ox[i] = px[i]
 		oy[i] = py[i]
+		if sim.followers.size() > 0:
+			# Fase de grupo: cada monstro vai no herói mais perto.
+			hero = sim.hero
+			var bd := Vector2(sim.hero.x - px[i], sim.hero.y - py[i]).length_squared()
+			for f in sim.followers:
+				var fd := Vector2(f.x - px[i], f.y - py[i]).length_squared()
+				if fd < bd:
+					bd = fd
+					hero = f
+			hx = hero.x
+			hy = hero.y
+			hr = hero.radius
+			fdx = hero.face_x
+			fdy = hero.face_y
+			sim.hit_hero = hero if hero != sim.hero else null
 		var dx := hx - px[i]
 		var dy := hy - py[i]
 		var d := sqrt(dx * dx + dy * dy)
@@ -210,6 +225,8 @@ func update(dt: float) -> void:
 		if houses.size() > 0 and _house_attack(i, a, houses, aggro, dt):
 			continue
 		var speed := spd[i]
+		if (tags[i] & K.TAG_PACK) and sim.t < sim.rally_until:
+			speed *= 1.0 + sim.rally_spd
 		var attack := false
 		if (flags[i] & K.F_DEFEND) and hero_far_from_boss:
 			_step(i, bx + cos(slot[i]) * 3.0, by + sin(slot[i]) * 3.0, speed, dt)
@@ -292,6 +309,8 @@ func update(dt: float) -> void:
 					px[i] -= dx / d * push
 					py[i] -= dy / d * push
 
+	sim.hit_hero = null
+
 
 ## Ataque à casa mais perto da Taverna em disputa. Devolve false se não há casa ao alcance da vontade.
 func _house_attack(i: int, a: int, houses: Array, aggro: float, dt: float) -> bool:
@@ -338,7 +357,7 @@ func _structure(i: int, di: int, d: float, dt: float, nose: bool) -> void:
 	var c: CardDef = sim.data.cards[di]
 	var hr := sim.hero.radius
 	var smult := 1.0 + sim.rv("structure")
-	if di == d_nest:
+	if c.fx.has("spawn"):
 		var dur := c.fxv("spawn_duration", lvl[i], 15.0) * smult
 		if timer[i] >= timer2[i] and timer2[i] <= dur + 0.001:
 			timer2[i] += float(c.fx.get("spawn_interval", 3.0))

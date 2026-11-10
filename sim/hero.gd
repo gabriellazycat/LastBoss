@@ -25,6 +25,8 @@ var face_x := 0.0
 var face_y := -1.0
 var radius := 0.6
 var level := 1
+var pidx := 0                   # índice deste herói na fila do grupo
+var follower := false           # fase de grupo: anda junto do herói da vez, levantado por quem chegou
 var xp := 0.0
 var hp := 0.0
 var base_hp := 0.0
@@ -88,7 +90,7 @@ var tmp := PackedInt32Array()
 
 func setup(s_: Sim) -> void:
 	sim = s_
-	H = sim.data.hero
+	H = sim.data.hero_of(sim.party_class(0), sim.phase_hp_mult, sim.phase_dmg_mult)
 	AI = H["ai"]
 	base_hp = float(H["hp"]) * float(sim.deck_rules.get("hero_hp_mult", 1.0))
 	hp = base_hp
@@ -106,6 +108,39 @@ func setup(s_: Sim) -> void:
 	oy = y
 
 
+## Fase de grupo: um herói que anda junto do da vez (chegou ou foi levantado), na posição de `lead`.
+func init_follower(s_: Sim, i: int, lead: SimHero, hp_frac: float) -> void:
+	setup(s_)
+	next_hero(i)
+	follower = true
+	hp = base_hp * hp_frac
+	upgrades = lead.upgrades.duplicate(true)
+	upgrade_order = lead.upgrade_order.duplicate()
+	var a := float(i) * 2.4
+	x = lead.x + cos(a) * 1.6
+	y = lead.y + sin(a) * 1.6
+	ox = x
+	oy = y
+	s = lead.s
+	s_max = lead.s_max
+	seg = lead.seg
+
+
+## Copia o estado de outro herói (o seguidor que vira o herói da vez quando a fila acaba).
+func take_over(f: SimHero) -> void:
+	next_hero(f.pidx)
+	hp = f.hp
+	upgrades = f.upgrades.duplicate(true)
+	upgrade_order = f.upgrade_order.duplicate()
+	x = f.x
+	y = f.y
+	ox = x
+	oy = y
+	s = f.s
+	s_max = f.s_max
+	seg = f.seg
+
+
 func has(id: String) -> bool:
 	return upgrades.has(id)
 
@@ -121,6 +156,10 @@ func damage() -> float:
 
 ## Herói seguinte da fila: um nível acima, vida e dano ×step, tudo cheio. Habilidades e dano recebido ficam (são do grupo).
 func next_hero(i: int) -> void:
+	pidx = i
+	H = sim.data.hero_of(sim.party_class(i), sim.phase_hp_mult, sim.phase_dmg_mult)
+	shield_max = H["shield"]["hp"]
+	shield_cos = cos(deg_to_rad(float(H["shield"]["cone"]) * 0.5))
 	level = i + 1
 	base_hp = float(H["hp"]) * pow(float(sim.data.rules["party"]["step"]), i) * float(sim.deck_rules.get("hero_hp_mult", 1.0))
 	curses = 0
@@ -147,6 +186,10 @@ func next_hero(i: int) -> void:
 func xp_needed() -> float:
 	var X: Dictionary = sim.data.rules["hero_xp"]
 	return float(X["level2"]) * pow(1.0 + float(X["growth"]), level - 1)
+
+
+func cls() -> String:
+	return str(H.get("class", "escudeiro"))
 
 
 func hp_frac() -> float:
@@ -176,6 +219,9 @@ func update(dt: float) -> void:
 		shield_t -= dt
 		if shield_t <= 0.0:
 			shield_hp = shield_max
+	var regen: float = H.get("regen", 0.0)
+	if regen > 0.0 and petrify_t <= 0.0 and hp > 0.0:
+		hp = minf(max_hp(), hp + max_hp() * regen * dt)
 	if sim.tick % sim.ai_period == 0:
 		_choose_target()
 		_rebuild_danger()
@@ -376,6 +422,7 @@ func _attack(dt: float) -> void:
 			var ty := sim.units.py[target]
 			sim.hero_hits_unit(target, _unit_mult(target, dmg, true))
 			_cleave(tx, ty, dmg)
+			_splash(tx, ty, dmg)
 		TGT_PART:
 			sim.arena.damage_part(target, dmg * _strike(true))
 		TGT_ALTAR:
@@ -405,6 +452,20 @@ func _cleave(tx: float, ty: float, dmg: float) -> void:
 		var v := Vector2(U.px[i] - x, U.py[i] - y)
 		if v.length() < 0.01 or v.normalized().dot(dir) >= c:
 			sim.hero_hits_unit(i, _unit_mult(i, dmg, false))
+
+
+## Mago: o golpe explode no alvo e atinge todos em volta.
+func _splash(tx: float, ty: float, dmg: float) -> void:
+	var r: float = H.get("splash", 0.0)
+	if r <= 0.0:
+		return
+	var U := sim.units
+	U.within(tx, ty, r, tmp)
+	for i in tmp.duplicate():
+		if i == target or U.alive[i] == 0 or (U.flags[i] & K.F_STONE):
+			continue
+		sim.hero_hits_unit(i, _unit_mult(i, dmg * float(H.get("splash_mult", 0.7)), false))
+	sim.emit(K.Ev.EXPLOSION, tx, ty, r, 2)
 
 
 func _strike(big: bool) -> float:
