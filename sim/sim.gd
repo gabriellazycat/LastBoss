@@ -42,7 +42,12 @@ var deck_rules: Dictionary = {}
 var elixir := 0.0
 var elixir_max := 10.0
 var hand: Array = []
+## Pilha de compra (o nome antigo ficou): a mão compra do começo dela. Baralho com descarte (passo C2, 10/11/2026):
+## carta jogada ou sacrificada vai para `discard`; quando a compra acaba, o descarte é embaralhado e vira a compra.
 var queue: Array = []
+var discard: Array = []
+var benched: Array = []         # cartas de Rota fora do baralho durante a arena
+var returned: Dictionary = {}   # uid -> true: carta "Retorna" que já voltou para a compra desde a última embaralhada
 var cards: Array = []
 var card_of_uid: Dictionary = {}
 var hand_size := 5
@@ -152,8 +157,7 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 		list[j] = tmpc
 	for id in list:
 		queue.append(_new_inst(d.card(id)))
-	for i in hand_size:
-		hand.append(queue.pop_front() if queue.size() > 0 else null)
+	_refill_hand()
 	var fa: Array = R["contracts"]["first_at"]
 	contract_next = rng.randf_range(fa[0], fa[1])
 
@@ -521,8 +525,7 @@ func gain_relic(id: String) -> void:
 	hand_size = clampi(hand_size + int(fx.get("hand", 0)), 1, HAND_MAX)
 	elixir_max = maxf(3.0, elixir_max + float(fx.get("elixir_max", 0)))
 	elixir = minf(elixir, elixir_max)
-	while hand.size() < hand_size and queue.size() > 0:
-		hand.append(queue.pop_front())
+	_refill_hand()
 	rebuild_rfx()
 	emit(K.Ev.RELIC, hero.x, hero.y, data.relic_ids.find(id), 0)
 
@@ -646,9 +649,25 @@ func enter_arena() -> void:
 		units.ox[i] = p.x
 		units.oy[i] = p.y
 	zones.clear()
+	_bench_route_cards()
 	hero.target_kind = SimHero.TGT_NONE
 	stats["hero_hp_arena"] = hero.hp_frac()
 	emit(K.Ev.ARENA, center.x, center.y, 0, 0)
+
+
+## Cartas de Rota não servem na arena: saem da mão, da compra e do descarte até o fim da run. A mão repõe com o
+## que sobrar (baralho menor que a mão = mão menor).
+func _bench_route_cards() -> void:
+	for arr in [queue, discard]:
+		for ci in arr.duplicate():
+			if ci.def.category == "route":
+				arr.erase(ci)
+				benched.append(ci)
+	for i in range(hand.size() - 1, -1, -1):
+		if hand[i] and hand[i].def.category == "route":
+			benched.append(hand[i])
+			hand.remove_at(i)
+	_refill_hand()
 
 
 ## Prorrogação da arena (10/11/2026): minutos passados de overtime_s na arena (0 antes). Na prorrogação a
@@ -1379,21 +1398,58 @@ func recent_spells(window: float) -> int:
 	return spell_times.size()
 
 
+## Carta saiu da mão (jogada ou sacrificada): vai ao descarte e a vaga compra outra. Mão acima do tamanho (efeito
+## que acabou) não repõe a vaga; nenhuma carta é expulsa.
 func _cycle(hi_: int) -> void:
 	var c: CardInst = hand[hi_]
-	queue.push_back(c)
-	if hand.size() > hand_size:
+	_to_discard(c)
+	if hand.size() > mini(hand_size, HAND_MAX):
 		hand.remove_at(hi_)
 	else:
-		hand[hi_] = queue.pop_front()
+		var nc := draw_card()
+		if nc:
+			hand[hi_] = nc
+		else:
+			hand.remove_at(hi_)
 	_refill_hand()
 
 
-## Mão menor que o tamanho (Biblioteca Proibida com o baralho vazio na hora, carta removida da mão): completa
-## assim que houver carta no baralho.
+## "Retorna": volta para a compra em posição aleatória, uma vez por embaralhada; nas outras vezes, descarte.
+func _to_discard(c: CardInst) -> void:
+	if c.def.fx.get("returns", false) and not returned.has(c.uid):
+		returned[c.uid] = true
+		queue.insert(rng.randi_range(0, queue.size()), c)
+	else:
+		discard.push_back(c)
+
+
+## Compra uma carta (embaralha o descarte se a compra acabou). null = não há carta fora da mão.
+func draw_card() -> CardInst:
+	if queue.is_empty() and discard.size() > 0:
+		_reshuffle()
+	return queue.pop_front() if queue.size() > 0 else null
+
+
+func _reshuffle() -> void:
+	var list := discard
+	discard = []
+	for i in range(list.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmpc = list[i]
+		list[i] = list[j]
+		list[j] = tmpc
+	queue.append_array(list)
+	returned.clear()
+	stats["shuffles"] = int(stats.get("shuffles", 0)) + 1
+
+
+## Mão menor que o tamanho (Biblioteca, carta removida, baralho curto): completa enquanto houver carta.
 func _refill_hand() -> void:
-	while hand.size() < mini(hand_size, HAND_MAX) and queue.size() > 0:
-		hand.append(queue.pop_front())
+	while hand.size() < mini(hand_size, HAND_MAX):
+		var c := draw_card()
+		if c == null:
+			break
+		hand.append(c)
 
 
 func sacrifice(hi_: int) -> bool:
@@ -1935,8 +1991,8 @@ func _apply_option(op: Dictionary) -> Array:
 
 func _refill() -> void:
 	for i in hand.size():
-		if hand[i] == null and queue.size() > 0:
-			hand[i] = queue.pop_front()
+		if hand[i] == null:
+			hand[i] = draw_card()
 
 
 func _remove_uid(u: int) -> void:
@@ -1944,9 +2000,12 @@ func _remove_uid(u: int) -> void:
 		if ci.uid == u:
 			cards.erase(ci)
 			queue.erase(ci)
+			discard.erase(ci)
+			benched.erase(ci)
+			returned.erase(ci.uid)
 			var hi_ := hand.find(ci)
 			if hi_ >= 0:
-				hand[hi_] = queue.pop_front() if queue.size() > 0 else null
+				hand[hi_] = draw_card()
 
 
 # ================================================================ contratos

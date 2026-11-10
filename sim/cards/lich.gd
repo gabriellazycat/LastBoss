@@ -96,8 +96,7 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 		"forbidden_library":
 			sim.lair[d.id] = int(sim.lair.get(d.id, 0)) + 1
 			sim.hand_size = mini(Sim.HAND_MAX, sim.hand_size + int(fx["hand"]))
-			if sim.queue.size() > 0 and sim.hand.size() < Sim.HAND_MAX:
-				sim.hand.append(sim.queue.pop_front())
+			sim._refill_hand()
 		_:
 			return false
 	return true

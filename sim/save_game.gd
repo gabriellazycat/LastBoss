@@ -7,7 +7,8 @@ const PATH := "user://run.save"
 ## Arquivo em uso. Os modos de teste e de captura da janela (main.gd com argumentos) trocam para outro
 ## arquivo: antes, o salvamento automático deles sobrescrevia a run salva do jogador (rodada 09/11/2026).
 static var current := PATH
-const VERSION := 3                  # 3: run em 3 atos, disputas e relíquias (09/11/2026); 2: estrada em rede de nós
+const VERSION := 4                  # 4: baralho com descarte (10/11/2026)
+const _V3 := 3                  # 3: run em 3 atos, disputas e relíquias (09/11/2026); 2: estrada em rede de nós
 const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script", "followers", "hit_hero"]
 const PARTS := ["units", "hero", "road", "arena"]
 
@@ -40,6 +41,8 @@ static func save(sim: Sim, path := "") -> bool:
 	var d := _dump(sim)
 	d["hand"] = sim.hand.map(_ci)
 	d["queue"] = sim.queue.map(_ci)
+	d["discard"] = sim.discard.map(_ci)
+	d["benched"] = sim.benched.map(_ci)
 	d["cards"] = sim.cards.map(_ci)
 	d["__ver"] = VERSION
 	d["__rng_seed"] = sim.rng.seed
@@ -93,12 +96,14 @@ static func load_run(data: GameData, path := "") -> Sim:
 		by_uid[ci.uid] = ci
 		cards.append(ci)
 	for k in d:
-		if str(k).begins_with("__") or k in ["hand", "queue", "cards"]:
+		if str(k).begins_with("__") or k in ["hand", "queue", "discard", "benched", "cards"]:
 			continue
 		sim.set(k, d[k])
 	sim.cards = cards
 	sim.hand = d["hand"].map(func(c): return by_uid.get(c["uid"]) if c != null else null)
 	sim.queue = d["queue"].map(func(c): return by_uid.get(c["uid"]))
+	sim.discard = d.get("discard", []).map(func(c): return by_uid.get(c["uid"]))
+	sim.benched = d.get("benched", []).map(func(c): return by_uid.get(c["uid"]))
 	sim.rng.seed = d["__rng_seed"]
 	sim.rng.state = d["__rng_state"]
 	sim.hero.H = data.hero_of(sim.party_class(sim.hero.pidx), sim.phase_hp_mult, sim.phase_dmg_mult)

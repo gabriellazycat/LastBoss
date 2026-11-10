@@ -20,6 +20,7 @@ func _ready() -> void:
 	t_elixir_and_ring()
 	t_costs()
 	t_sacrifice_and_cycle()
+	t_deck_cycle()
 	t_hand_cap()
 	t_determinism()
 	t_save()
@@ -114,7 +115,7 @@ func t_sacrifice_and_cycle() -> void:
 	var first: Sim.CardInst = s.hand[0]
 	check(s.sacrifice(0), "sacrifício aceito")
 	check(absf(s.elixir - 4.0) < 0.001, "sacrifício dá +1 de elixir")
-	check(s.queue.has(first) or s.hand.has(first), "carta sacrificada volta ao deck")
+	check(s.discard.has(first) or s.queue.has(first) or s.hand.has(first), "carta sacrificada volta ao deck")
 	check(s.cards.size() == 10, "sacrifício não remove a carta")
 	# Rodada 09/11/2026: girar de graça uma carta jogável deixava cavar o deck sem parar (o bot sacrificava
 	# ~1400 vezes por run na Ruína atrás do Raio Sombrio). Na recarga, só carta morta gira.
@@ -1388,3 +1389,54 @@ func t_group() -> void:
 		r.step()
 		k += 1
 	check(r.phase == K.Phase.OVER, "run completa da Fase 4 com o bot termina (%s em %.0f s, %d quedas)" % [str(r.stats["result"]), r.t, int(r.stats["heroes_fallen"])])
+
+
+## Baralho com descarte (C2): nenhuma carta some nem duplica; o descarte vira compra; "Retorna" volta uma vez por
+## embaralhada; cartas de Rota saem do baralho na arena.
+func _deck_total(s: Sim) -> int:
+	var n := s.queue.size() + s.discard.size() + s.benched.size()
+	for c in s.hand:
+		if c:
+			n += 1
+	return n
+
+
+func t_deck_cycle() -> void:
+	var s := _sim(3, "treasure")
+	var ok := true
+	var reshuffled := false
+	for k in 60:
+		s.elixir = 20.0
+		s.sac_elixir_t = -100.0
+		s.sacrifice(k % s.hand.size())
+		ok = ok and _deck_total(s) == s.cards.size() and s.hand.size() == mini(s.hand_size, s.cards.size())
+		reshuffled = reshuffled or int(s.stats.get("shuffles", 0)) > 0
+	check(ok, "ciclo compra/mão/descarte conserva as cartas (%d)" % s.cards.size())
+	check(reshuffled, "descarte é embaralhado quando a compra acaba")
+	# Retorna: uma vez por embaralhada.
+	var r := _sim(4)
+	var c: Sim.CardInst = r.hand[0]
+	c.def = CardDef.from_dict({"id": "t_returns", "category": "field", "type": "spell", "cost": 0, "rarity": "rare", "owner": "common", "fx": {"returns": true}}, 0)
+	r._to_discard(c)
+	check(r.queue.has(c) and not r.discard.has(c), "Retorna: volta para a compra")
+	r.queue.erase(c)
+	r._to_discard(c)
+	check(r.discard.has(c), "Retorna: na segunda vez na mesma embaralhada, vai ao descarte")
+	r.queue.clear()
+	r.draw_card()
+	r.discard.erase(c)
+	r._to_discard(c)
+	check(r.queue.has(c), "Retorna: depois de embaralhar, pode voltar de novo")
+	# Rota fora na arena.
+	var a := _sim(5, "treasure")
+	var routes := 0
+	for ci in a.cards:
+		if ci.def.category == "route":
+			routes += 1
+	a.enter_arena()
+	var left := 0
+	for arr in [a.queue, a.discard, a.hand]:
+		for ci in arr:
+			if ci and ci.def.category == "route":
+				left += 1
+	check(routes > 0 and left == 0 and a.benched.size() == routes and _deck_total(a) == a.cards.size(), "cartas de Rota ficam fora do baralho na arena (%d)" % routes)

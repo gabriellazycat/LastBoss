@@ -36,7 +36,7 @@ a tabela de estado do CONTINUAR.md.
 | B | Popup, loja, raridade única, portão nos atos 1 e 2, estrada fundida ao chão, encaixe dos heróis | **feito**, testes 0 falhas |
 | C0 | Efeitos por dono em `sim/cards/*.gd` + `sim/card_fx_lib.gd` (primitivas) + bots por dados | **feito** (replays 240/240 idênticos; esquema em `docs/CARD_FX.md`; teste de hashes `headless/hashes.tscn`) |
 | C1 | Remover 6 Finalizações + Muralhas e dependentes | **feito** (pool 41; Pedra do Atalho, Sem Testemunhas → rara, Altar "sangue" → +2 elixir máx. no ato e 3 cartas +1). Artes/modelos das removidas ficam até a Etapa D porque outras cartas ainda os emprestam |
-| C2 | Baralho compra/descarte/embaralhar; Retorna; Rota fora na arena | não começou |
+| C2 | Baralho compra/descarte/embaralhar; Retorna; Rota fora na arena | **feito** (`queue` segue sendo a pilha de compra; `discard`, `benched`, `returned`, `draw_card()`; `fx.returns`; save v4; teste `t_deck_cycle`; fuzz 30 seeds ok) |
 | C3 | `data/villains.json`, `owner` em tudo, filtro do pool, saves, campanha, menu de vilão | não começou |
 | C4 | Elixir em escada (10/13/16, teto 20), Covil temporário, custo por ato, mão 5 → 7 | não começou |
 | C5 | Estrada de 300 m, disputas em 3 etapas | não começou |

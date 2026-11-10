@@ -180,8 +180,10 @@ static func run_op(sim: Sim, k: Ctx, o: Dictionary, x: float, y: float) -> void:
 			sim.stats["gold_spent"] += int(g)
 		"draw":
 			for i in int(val(k, o.get("n"), 1.0)):
-				if sim.queue.size() > 0 and sim.hand.size() < Sim.HAND_MAX:
-					sim.hand.append(sim.queue.pop_front())
+				if sim.hand.size() < Sim.HAND_MAX:
+					var dc := sim.draw_card()
+					if dc:
+						sim.hand.append(dc)
 		_:
 			push_error("CardFxLib: op desconhecida %s na carta %s" % [str(o.get("op", "")), d.id])
 
