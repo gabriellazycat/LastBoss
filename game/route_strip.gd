@@ -161,8 +161,15 @@ func _draw() -> void:
 			draw_arc(p, rr + 3.0, 0, TAU, 20, Color.WHITE, 1.5)
 	# Covil e progresso.
 	var lp := _lair_point()
+	var is_lair: bool = sim.act + 1 >= sim.acts()
 	draw_circle(lp, 12.5, Color(0, 0, 0, 0.8))
-	if UiSkins.covil():
+	if not is_lair:
+		# Portão de passagem: dois pilares e uma verga, em vez do círculo do covil.
+		var gc := UiKit.GOLD if UiSkins.covil() else Color(0.95, 0.8, 0.5)
+		draw_rect(Rect2(lp + Vector2(-9, -8), Vector2(4, 16)), gc)
+		draw_rect(Rect2(lp + Vector2(5, -8), Vector2(4, 16)), gc)
+		draw_rect(Rect2(lp + Vector2(-10, -10), Vector2(20, 4)), gc)
+	elif UiSkins.covil():
 		UiCovil.draw_rarity(self, lp, 12.0, UiKit.GOLD)
 	else:
 		draw_circle(lp, 11.0, Color(0.8, 0.2, 0.9))
@@ -181,7 +188,7 @@ func _draw() -> void:
 			txt = tr("UI_STRIP_DIST").format({"name": txt, "m": int(s - sim.hero.s)})
 		_text(_loc_point(loc).y, txt, UiKit.TEXT, 14)
 	elif hover_lair:
-		_text(lp.y + 18.0, tr("UI_STRIP_LAIR").format({"m": int(maxf(road.total_length() - sim.hero.s, 0.0))}), UiKit.TEXT, 14)
+		_text(lp.y + 18.0, tr("UI_STRIP_LAIR" if is_lair else "UI_STRIP_ACT_END").format({"n": sim.act + 1, "m": int(maxf(road.total_length() - sim.hero.s, 0.0))}), UiKit.TEXT, 14)
 
 
 func _progress() -> float:

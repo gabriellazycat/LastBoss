@@ -751,3 +751,5 @@ LVLK_elixir,Elixir,Elixir
 LVLK_stop,Parada (s),Stop (s)
 LVLK_gold,Ouro,Gold
 LVLK_hp_mult,Explosão (× vida),Blast (× health)
+UI_MAP_ACT_END,Fim do ato {n},End of act {n}
+UI_STRIP_ACT_END,Fim do ato {n} · {m} m,End of act {n} · {m} m

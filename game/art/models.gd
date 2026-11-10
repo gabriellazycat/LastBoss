@@ -680,6 +680,17 @@ static func prop(id: String) -> ArrayMesh:
 			k.add(cyl(0.7, 0.8, 0.4, 6), Vector3(0, 0.2, 0), C_STONE.darkened(0.2))
 			k.add(cyl(0.5, 0.55, 4.0, 6), Vector3(0, 2.4, 0), C_STONE.darkened(0.05))
 			k.add(cyl(0.75, 0.6, 0.4, 6), Vector3(0, 4.5, 0), C_STONE.darkened(0.2))
+		"gate":
+			# Portão de passagem (fim de ato): dois pilares, verga com ameias e um selo que brilha no centro.
+			for sx in [-4.6, 4.6]:
+				k.add(box(2.0, 0.5, 2.0), Vector3(sx, 0.25, 0), C_STONE.darkened(0.3))
+				k.add(box(1.5, 6.0, 1.5), Vector3(sx, 3.4, 0), C_STONE.darkened(0.08))
+				k.add(box(2.0, 0.5, 2.0), Vector3(sx, 6.65, 0), C_STONE.darkened(0.25))
+				k.add(cone(0.9, 1.4, 4), Vector3(sx, 7.6, 0), C_STONE.darkened(0.3), Vector3(0, 45, 0))
+			k.add(box(11.0, 1.3, 1.7), Vector3(0, 6.3, 0), C_STONE.darkened(0.15))
+			for i in 5:
+				k.add(box(1.2, 0.7, 1.7), Vector3(-4.0 + i * 2.0, 7.3, 0), C_STONE.darkened(0.22))
+			k.add(sph(0.38, 6, 3), Vector3(0, 6.3, -0.9), G(Color(1.0, 0.75, 0.3)), Vector3.ZERO, Vector3(1, 1.4, 0.5))
 		"brazier":
 			k.add(cyl(0.12, 0.2, 1.4, 5), Vector3(0, 0.7, 0), C_DARK.lightened(0.1))
 			k.add(cyl(0.6, 0.3, 0.4, 7), Vector3(0, 1.5, 0), C_DARK.lightened(0.15))
