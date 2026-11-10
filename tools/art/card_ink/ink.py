@@ -36,7 +36,7 @@ def setup_scene():
     w = bpy.data.worlds.new("W"); sc.world = w; w.use_nodes = True
     bg = next(n for n in w.node_tree.nodes if n.type == 'BACKGROUND')
     bg.inputs[0].default_value = (1, 1, 1, 1); bg.inputs[1].default_value = 0.10
-    sun = bpy.data.lights.new("Key", 'SUN'); sun.energy = 1.7; sun.angle = math.radians(1.5)
+    sun = bpy.data.lights.new("Key", 'SUN'); sun.energy = 3.9; sun.angle = math.radians(1.5)
     so = bpy.data.objects.new("Key", sun); sc.collection.objects.link(so)
     so.rotation_euler = (math.radians(52), 0, math.radians(-48))
     return sc
@@ -138,8 +138,8 @@ def build_passes(hatch_scale=26.0):
                 dark_col = 1.0 if (lumv < 0.07 and not emis) else 0.0
             h1 = _hatch(nt, 38, hatch_scale, 0.42)
             h2 = _hatch(nt, -52, hatch_scale * 0.92, 0.40)
-            mid = _math(nt, 'LESS_THAN', L, 0.58)
-            drk = _math(nt, 'LESS_THAN', L, 0.24)
+            mid = _math(nt, 'LESS_THAN', L, 0.46)
+            drk = _math(nt, 'LESS_THAN', L, 0.17)
             blk = _math(nt, 'LESS_THAN', L, 0.035)
             ink = _math(nt, 'MULTIPLY', mid, h1)
             ink = _math(nt, 'MAXIMUM', ink, _math(nt, 'MULTIPLY', drk, h2))
@@ -268,7 +268,7 @@ def render_card(out_dir, cid, kind="monster", hatch_scale=26.0, tmp=None):
     v2[..., 3] = np.maximum(aw, a_ink)
     # v3 — duas tintas: preto-sépia + a cor do tipo chapada nas sombras, papel claro nas luzes
     ink3 = np.array(INKS["ink"], dtype=np.float32)
-    shade = (L < 0.58).astype(np.float32)
+    shade = (L < 0.46).astype(np.float32)
     fill = paper * 1.04 * (1 - shade[..., None]) + (tint * 0.55 + paper * 0.45) * shade[..., None]
     # áreas emissivas (chama, olhos) recebem a cor quente de destaque
     fill = fill * (1 - hot[..., None]) + (c * 0.85 + paper * 0.15) * hot[..., None]

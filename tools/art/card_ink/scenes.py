@@ -19,23 +19,33 @@ def place(root, loc=(0, 0, 0), rot_z=0.0, scale=1.0, rot_x=0.0):
     return root
 
 
+def _tongue(pts, r0, name="tongue"):
+    """Língua de fogo: gota que afina em S até a ponta (cadeia de esferas fundida)."""
+    blobs = []
+    n = 9
+    for i in range(n):
+        t = i / (n - 1.0)
+        # ponto na poligonal
+        f = t * (len(pts) - 1); k = min(int(f), len(pts) - 2); u = f - k
+        p = Vector(pts[k]).lerp(Vector(pts[k + 1]), u)
+        r = r0 * (1.0 - t) ** 0.75 * (1.0 + 0.25 * math.sin(t * 3.14159)) + r0 * 0.03
+        blobs.append(sph(tuple(p), 1, (r, r * 0.8, r * 1.15)))
+    return fuse(blobs, name, max(0.008, r0 * 0.06), smooth=0.5, iters=4)
+
+
 def flame(base, h=0.5, r=0.16, lean=(0.0, 0.0)):
-    """Chama desenhada: línguas de fogo separadas (cada uma ganha contorno) e um miolo claro."""
+    """Chama desenhada: três línguas em S (cada uma ganha contorno próprio) e um miolo claro."""
     x, y, z = base
+    lx = lean[0]
     out = []
     fm = mat("flame", FLAME, 0.4, emit=6.0)
-    b = sph((x, y, z + r * 0.75), 1, (r, r * 0.8, r * 1.05)); shade(b); setmat(b, fm); out.append(b)
-    # (deslocamento lateral, altura relativa, grossura relativa, curva)
-    for (dx, hh, rr, bend) in ((0.0, 1.0, 0.78, 0.3), (-0.62, 0.62, 0.5, -0.55), (0.66, 0.7, 0.52, 0.6), (-0.3, 0.8, 0.45, 0.15), (0.34, 0.48, 0.4, -0.3)):
-        top = z + h * hh
-        t = tube([(x + dx * r, y, z + r * 0.5), (x + dx * r * 1.25 + lean[0] * 0.25, y, z + (top - z) * 0.4),
-                  (x + dx * r * 0.7 + bend * r + lean[0] * 0.7, y + lean[1] * 0.5, z + (top - z) * 0.75),
-                  (x + dx * r * 0.2 + bend * r * 1.7 + lean[0], y + lean[1], top)], r * rr, 0.04, 20)
-        shade(t); setmat(t, fm); out.append(t)
-    cm = mat("flame_core", FLAME_HOT, 0.4, emit=9.0)
-    c = sph((x, y - r * 0.55, z + r * 0.8), 1, (r * 0.55, r * 0.45, r * 0.75)); shade(c); setmat(c, cm); out.append(c)
-    t = tube([(x, y - r * 0.55, z + r * 0.7), (x + lean[0] * 0.3, y - r * 0.55, z + h * 0.3), (x + lean[0] * 0.6 + r * 0.15, y - r * 0.5, z + h * 0.52)], r * 0.36, 0.05, 16)
-    shade(t); setmat(t, cm); out.append(t)
+    main = _tongue([(x, y, z + r * 0.6), (x + r * 0.35 + lx * 0.2, y, z + h * 0.38), (x - r * 0.25 + lx * 0.6, y, z + h * 0.7), (x + r * 0.2 + lx, y, z + h)], r)
+    left = _tongue([(x - r * 0.6, y - r * 0.7, z + r * 0.5), (x - r * 1.25 + lx * 0.2, y - r * 0.7, z + h * 0.3), (x - r * 0.9 + lx * 0.5, y - r * 0.7, z + h * 0.58)], r * 0.6)
+    right = _tongue([(x + r * 0.65, y - r * 0.7, z + r * 0.45), (x + r * 1.3 + lx * 0.1, y - r * 0.7, z + h * 0.24), (x + r * 1.05 + lx * 0.3, y - r * 0.7, z + h * 0.46)], r * 0.55)
+    for o in (main, left, right):
+        setmat(o, fm); out.append(o)
+    core = _tongue([(x, y - r * 1.5, z + r * 0.6), (x + r * 0.2 + lx * 0.15, y - r * 1.5, z + h * 0.3), (x - r * 0.05 + lx * 0.4, y - r * 1.5, z + h * 0.52)], r * 0.42, "core")
+    setmat(core, mat("flame_core", FLAME_HOT, 0.4, emit=9.0)); out.append(core)
     return out
 
 
@@ -137,8 +147,8 @@ def ghoul():
     # cova aberta: lápide torta, terra revirada, um crânio
     G = []
     st = mat("gravestone", STONE, 0.9, bump=0.4, bump_scale=14)
-    slab = box((-0.85, 0.75, 0.55), (0.6, 0.14, 1.1), (6, -9, 14), bevel=0.05); hard(slab); setmat(slab, st); G.append(slab)
-    top = cyl((-0.93, 0.78, 1.08), 0.3, 0.14, rot=(96, -9, 14), seg=24, bevel=0.03); hard(top); setmat(top, st); G.append(top)
+    slab = box((0.95, 0.9, 0.6), (0.62, 0.14, 1.2), (6, 7, -16), bevel=0.05); hard(slab); setmat(slab, st); G.append(slab)
+    top = cyl((1.03, 0.92, 1.18), 0.31, 0.14, rot=(96, 7, -16), seg=24, bevel=0.03); hard(top); setmat(top, st); G.append(top)
     dirt = fuse([sph((0.75, 0.55, 0.05), 1, (0.55, 0.45, 0.2)), sph((1.0, 0.1, 0.03), 1, (0.35, 0.3, 0.13)), sph((0.35, 0.85, 0.04), 1, (0.4, 0.3, 0.15))], "dirt", 0.03)
     setmat(dirt, mat("soilf", DIRT_D, 0.95, bump=0.5, bump_scale=18)); G.append(dirt)
     sk = fuse([sph((0.95, -0.35, 0.12), 1, (0.13, 0.14, 0.12)), sph((0.95, -0.45, 0.07), 1, (0.09, 0.08, 0.06))], "skull", 0.008)
@@ -230,7 +240,7 @@ def torch():
     root.location = (-0.2, 0, 0.1)
     bpy.context.view_layer.update()
     tip = root.matrix_world @ Vector((0, 0, 1.68))
-    F = flame((tip.x - 0.02, tip.y, tip.z - 0.12), h=1.5, r=0.36, lean=(-0.75, 0.0))
+    F = flame((tip.x - 0.05, tip.y, tip.z - 0.2), h=1.7, r=0.42, lean=(-0.85, 0.0))
     for (dx, dz, r) in ((-0.9, 1.1, 0.04), (-1.3, 0.75, 0.032), (-0.4, 1.75, 0.03), (-1.55, 1.3, 0.024), (0.35, 1.2, 0.028), (-1.0, 1.7, 0.02), (0.1, 1.75, 0.02)):
         s = sph((tip.x + dx, tip.y, tip.z + dz), r); shade(s); setmat(s, mat("ember", FLAME, 0.4, emit=6.0)); F.append(s)
     smoke = mat("smoke", (0.5, 0.48, 0.46), 0.95)
@@ -240,8 +250,8 @@ def torch():
         setmat(s, smoke); F.append(s)
     # riscos de movimento atrás do cabo: é um arremesso
     ink_m = mat("speed", (0.03, 0.02, 0.03), 0.9)
-    for (z0, ln) in ((0.18, 0.7), (0.42, 0.5), (-0.05, 0.55)):
-        s = tube([(-1.35 - ln, 0.0, z0), (-1.35, 0.0, z0 + 0.02)], 0.012, 0.3, 4); setmat(s, ink_m); F.append(s)
+    for (z0, ln) in ((0.3, 0.6), (0.52, 0.42), (0.08, 0.5)):
+        s = tube([(-1.0 - ln, 0.0, z0), (-1.0, 0.0, z0 + 0.02)], 0.012, 0.3, 4); setmat(s, ink_m); F.append(s)
     group("fire", F)
     return {"kind": "spell", "dir": (0.0, -1.0, 0.06), "hatch": 22.0}
 

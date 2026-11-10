@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Last Boss · Decisões de 10/11</title>
+<style>
+  :root { --paper:#e3d4a1; --ink:#1f1813; --blood:#6b0f09; --card:#efe3bd; --line:#b8a674; }
+  body { margin:0; background:#2a211b; color:var(--ink); font:16px/1.5 Georgia, 'Times New Roman', serif; }
+  main { max-width:1180px; margin:0 auto; padding:16px; }
+  header, section { background:var(--paper); border-radius:6px; padding:20px 24px; margin:16px 0; box-shadow:0 3px 10px #0008; }
+  h1 { margin:0 0 6px; font-size:30px; } h2 { margin:0 0 10px; color:var(--blood); font-size:24px; }
+  h3 { margin:18px 0 6px; font-size:18px; }
+  .q { background:#fff7; border-left:5px solid var(--blood); padding:10px 14px; margin:12px 0; font-weight:bold; }
+  .grid { display:grid; grid-template-columns: 130px repeat(4, 1fr); gap:10px; align-items:center; margin-top:8px; }
+  .grid .h { font-weight:bold; text-align:center; font-size:14px; }
+  .cell { background:var(--card); border:1px solid var(--line); border-radius:4px; height:190px; display:flex; align-items:center; justify-content:center; padding:6px; }
+  .cell img { max-width:100%; max-height:100%; }
+  .name { font-weight:bold; }
+  .small { font-size:14px; color:#4a3d30; }
+  img.wide { width:100%; border-radius:4px; border:1px solid var(--line); display:block; margin:8px 0; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  table { border-collapse:collapse; width:100%; margin:8px 0; } td, th { border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#d6c58f; } a { color:var(--blood); } ol li { margin:4px 0; }
+  code { background:#fff6; padding:1px 5px; border-radius:3px; }
+  @media (max-width:760px) { .grid { grid-template-columns: 1fr 1fr; } .grid .h { display:none; } .two { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Last Boss · o que você precisa decidir</h1>
+  <p>São <b>5 decisões</b>. Depois delas eu sigo com todo o resto sem perguntar mais nada. Responda no chat, por exemplo: <code>arte v2 · upgrades 3 · cartas ok, tirar a 14 da Praga · chefes ok · regras ok</code>.</p>
+  <ol>
+    <li><a href="#arte">Estilo da arte das cartas</a>: v1, v2 ou v3 (ou outro caminho)</li>
+    <li><a href="#upgrades">Visual dos upgrades</a>: hoje, 1, 2 ou 3 (pode misturar)</li>
+    <li><a href="#cartas">Lista de cartas dos 3 vilões</a>: o que fica, muda ou sai</li>
+    <li><a href="#chefes">Silhueta dos 3 chefes</a></li>
+    <li><a href="#regras">Regras novas</a>: última chance de veto</li>
+  </ol>
+  <p class="small">No fim da página: as <a href="#feito">correções que já estão prontas</a> na branch <code>viloes</code> (nada foi para a main).</p>
+</header>
+
+<section id="arte">
+  <h2>1. Estilo da arte das cartas</h2>
+  <p>Cinco cartas de amostra feitas como você pediu: modelo 3D renderizado com traço de nanquim. O mesmo render gera as três variações, então trocar de estilo depois não custa refazer os modelos. A coluna "hoje" é o desenho que a carta usa agora (emprestado de outra carta).</p>
+  <div class="q">Qual variação vira o padrão? Se nenhuma servir, diga o que incomoda (traço, hachura, cor, os modelos em si).</div>
+  <div class="grid">
+    <div></div><div class="h">Hoje</div><div class="h">v1 · Nanquim puro</div><div class="h">v2 · Aguada</div><div class="h">v3 · Duas tintas</div>
+
+    <div class="name">Toca de Ratos<div class="small">hoje: Ninho de Morcegos</div></div>
+    <div class="cell"><img src="../../assets/cards/bat_nest.png" alt="hoje"></div>
+    <div class="cell"><img src="arte/rat_burrow_v1.png" alt="v1"></div><div class="cell"><img src="arte/rat_burrow_v2.png" alt="v2"></div><div class="cell"><img src="arte/rat_burrow_v3.png" alt="v3"></div>
+
+    <div class="name">Carniçal<div class="small">hoje: Lobisomem</div></div>
+    <div class="cell"><img src="../../assets/cards/werewolf.png" alt="hoje"></div>
+    <div class="cell"><img src="arte/ghoul_v1.png" alt="v1"></div><div class="cell"><img src="arte/ghoul_v2.png" alt="v2"></div><div class="cell"><img src="arte/ghoul_v3.png" alt="v3"></div>
+
+    <div class="name">Diabretes de Fogo<div class="small">hoje: Goblin Dinamiteiro</div></div>
+    <div class="cell"><img src="../../assets/cards/goblin_dynamiter.png" alt="hoje"></div>
+    <div class="cell"><img src="arte/fire_imp_v1.png" alt="v1"></div><div class="cell"><img src="arte/fire_imp_v2.png" alt="v2"></div><div class="cell"><img src="arte/fire_imp_v3.png" alt="v3"></div>
+
+    <div class="name">Tocha<div class="small">hoje: Incêndio (casa em chamas)</div></div>
+    <div class="cell"><img src="../../assets/cards/burn_village.png" alt="hoje"></div>
+    <div class="cell"><img src="arte/torch_v1.png" alt="v1"></div><div class="cell"><img src="arte/torch_v2.png" alt="v2"></div><div class="cell"><img src="arte/torch_v3.png" alt="v3"></div>
+
+    <div class="name">Rainha da Praga<div class="small">retrato do vilão (novo)</div></div>
+    <div class="cell"><span class="small">não existe</span></div>
+    <div class="cell"><img src="arte/plague_queen_v1.png" alt="v1"></div><div class="cell"><img src="arte/plague_queen_v2.png" alt="v2"></div><div class="cell"><img src="arte/plague_queen_v3.png" alt="v3"></div>
+  </div>
+  <h3>Minha leitura, para você discordar</h3>
+  <ul>
+    <li><b>v1</b> é a mais fiel ao Diário de hoje (só tinta sobre o papel), mas é a que menos separa figura e fundo quando há muita hachura.</li>
+    <li><b>v2</b> lê melhor de longe e deixa fogo, olhos e veneno coloridos. É a minha recomendação.</li>
+    <li><b>v3</b> tem o maior contraste e cara de gravura impressa; fica mais "limpa" e menos pintada.</li>
+    <li>Pontos fracos das amostras: a chama da Tocha ainda é simples, as asas dos Diabretes estão arredondadas demais e a Rainha da Praga é o Rei dos Ratos com manto e cetro, não o modelo final (o corpo dela está na seção 4).</li>
+  </ul>
+</section>
+
+<section id="upgrades">
+  <h2>2. Visual dos upgrades</h2>
+  <p>A mesma carta em cada estado: base, nível 2, nível 3, os 5 modificadores e duas combinações. Em cima a carta grande, embaixo a compacta (a da mão). Para ver ao vivo e trocar com as teclas 0 a 3: <code>godot --path . res://game/upgrade_showroom.tscn</code>.</p>
+  <div class="q">Qual proposta fica? Pode misturar: por exemplo "nível da 1 com modificador da 3".</div>
+  <h3>Hoje</h3><img class="wide" src="upgrades/variante_0.png" alt="hoje">
+  <h3>Proposta 1 · Encadernação</h3>
+  <p class="small">Nível muda a encadernação (couro no N2; cantoneiras de ouro e fita marcadora no N3). Modificador é um lacre de cera colorido. Fraqueza: N2 e N3 se parecem de longe; o lacre é pequeno.</p>
+  <img class="wide" src="upgrades/variante_1.png" alt="proposta 1">
+  <h3>Proposta 2 · Tinta viva</h3>
+  <p class="small">Nível vira moldura desenhada (nanquim no N2, iluminura dourada no N3). Modificador é uma mancha de tinta da cor dele escorrendo do custo. Fraqueza: o N2 é discreto na carta compacta.</p>
+  <img class="wide" src="upgrades/variante_2.png" alt="proposta 2">
+  <h3>Proposta 3 · Carimbos e condecorações</h3>
+  <p class="small">Nível vira medalhas penduradas (prata no N2, prata e ouro no N3). Modificador é um carimbo grande em diagonal com o nome. É a mais legível de longe; em troca, o carimbo cobre parte do desenho.</p>
+  <img class="wide" src="upgrades/variante_3.png" alt="proposta 3">
+  <p class="small">Em qualquer escolha, a oferta de upgrade dentro da run passa a mostrar a carta antes e depois, lado a lado.</p>
+</section>
+
+<section id="cartas">
+  <h2>3. Lista de cartas dos 3 vilões</h2>
+  <p>84 cartas: 24 exclusivas por vilão + 12 comuns. 41 já existem, <b>43 são novas</b>, com custos de 0 a 12.</p>
+  <div class="q">Marque o que fica, muda ou sai. Se preferir não ler carta a carta, basta aprovar a ideia e os 3 combos de cada vilão.</div>
+  <table>
+    <tr><th>Vilão</th><th>Ideia</th><th>Passiva</th><th>Poder do fim (ato 3)</th></tr>
+    <tr><td><b>Rainha da Praga</b><br>Bando + Feras</td><td>Quanto mais bichos em campo, mais forte cada um; as feras se alimentam do enxame</td><td>Criatura de Bando que morre tem 20% de chance de deixar um rato</td><td>Besta Alfa (10), Enxame Sem Fim (12)</td></tr>
+    <tr><td><b>Dragão Avarento</b><br>Fogo + Ganância</td><td>Ouro é combustível: encharca, queima, e o tesouro guardado vira dano</td><td>Começa com 30 de ouro; cada 50 guardados dão +5% de fogo</td><td>Erupção (10), Dragão Ancião (12)</td></tr>
+    <tr><td><b>Lich</b><br>Morte + Feitiços</td><td>Seus monstros são munição: cada morte alimenta os feitiços</td><td>A cada 8 mortes suas, o próximo feitiço custa 0</td><td>Colosso de Ossos (10), Apocalipse Arcano (12)</td></tr>
+  </table>
+  <p><b>Onde ler e responder:</b></p>
+  <ul>
+    <li>Planilha <code>Revisao do conteudo - Last Boss.xlsx</code>, aba <b>"Vilões 10-11 - Cartas"</b>: uma linha por carta, com colunas amarelas para a sua decisão e comentário.</li>
+    <li>Texto completo com os combos: <a href="CARTAS_VILOES.md">CARTAS_VILOES.md</a> (abre melhor no editor).</li>
+  </ul>
+</section>
+
+<section id="chefes">
+  <h2>4. Silhueta dos 3 chefes</h2>
+  <p>Esboço em blocos (sem detalhe nem textura), só para aprovar forma e as 4 partes destrutíveis, que fazem o mesmo em todos: membro esquerdo, membro direito, cabeça e núcleo.</p>
+  <div class="q">As três silhuetas servem? Alguma parte está confusa ou sem graça?</div>
+  <img class="wide" src="chefes/chefes.png" alt="os três chefes e o chefe atual">
+  <img class="wide" src="chefes/chefes_partes.png" alt="as quatro partes de cada chefe em cores">
+  <p class="small">Azul = membro esquerdo · vermelho = membro direito · amarelo = cabeça · verde = núcleo.</p>
+</section>
+
+<section id="regras">
+  <h2>5. Regras novas</h2>
+  <p>Os detalhes que eu preenchi a partir do que combinamos. Texto completo em <a href="REGRAS_NOVAS.md">REGRAS_NOVAS.md</a>.</p>
+  <div class="q">Algum destes pontos você quer mudar antes de eu programar?</div>
+  <table>
+    <tr><th></th><th>Ato 1</th><th>Ato 2</th><th>Ato 3 e arena</th></tr>
+    <tr><td>Elixir máximo (base)</td><td>10</td><td>13</td><td>16</td></tr>
+    <tr><td>1 de elixir a cada</td><td>2,8 s</td><td>2,3 s</td><td>1,9 s</td></tr>
+    <tr><td>Custo máximo nas ofertas</td><td>7</td><td>9</td><td>12</td></tr>
+  </table>
+  <ul>
+    <li><b>Teto</b> com cartas e relíquias: elixir 20, mão 7. Mão começa em 5 para todos.</li>
+    <li><b>Baralho</b>: compra → mão → descarte; quando a compra acaba, o descarte é embaralhado. Dois montes clicáveis na tela.</li>
+    <li><b>Retorna</b> (cartas de custo 0): voltam para a compra no máximo uma vez por embaralhada, para não virar laço infinito.</li>
+    <li><b>Cartas de Covil</b> viram efeitos com duração (ex.: Coletor de Almas = +40% de elixir por 30 s) e ficam no ciclo.</li>
+    <li><b>Disputa em 3 etapas</b>: 0 etapas vencidas = nada; 1 ou 2 = ouro; as 3 = recompensa cheia. A 3ª etapa muda por ato.</li>
+    <li><b>Estrada</b> de 300 m por ato, cerca de 12 s de caminhada entre locais; a run continua em ~25 minutos.</li>
+    <li><b>Desbloqueio</b>: Praga livre, Dragão na fase 1, Lich na fase 2. Cada vilão vem com comuns, incomuns e 3 raras; o resto custa Almas.</li>
+    <li><b>Saves antigos</b>: Horda vira Praga; Ruína e Tesouro viram Dragão; Cripta e Culto viram Lich. Almas preservadas.</li>
+  </ul>
+</section>
+
+<section id="feito">
+  <h2>Já está pronto (branch <code>viloes</code>)</h2>
+  <p>Não dependia de decisão sua. Testes automáticos: 0 falhas.</p>
+  <h3>Estrada fundida ao chão</h3>
+  <div class="two">
+    <div><p class="small">Antes: uma faixa por cima da outra</p><img class="wide" src="../visual/viloes/estrada/antes_forkA0.png" alt="antes"></div>
+    <div><p class="small">Depois: uma mancha só de terra</p><img class="wide" src="../visual/viloes/estrada/depois_forkA0.png" alt="depois"></div>
+  </div>
+  <h3>Loja dentro da tela</h3>
+  <div class="two">
+    <div><p class="small">1280x720, interface a 115%, 6 itens</p><img class="wide" src="../visual/viloes/loja/1280x720_ui1.15_6itens.png" alt="loja"></div>
+    <div><p class="small">1600x900, 7 itens (com a Bolsa do Mercador)</p><img class="wide" src="../visual/viloes/loja/1600x900_ui1.0_7itens.png" alt="loja 7 itens"></div>
+  </div>
+  <h3>Portão de passagem nos atos 1 e 2</h3>
+  <div class="two">
+    <div><img class="wide" src="../visual/viloes/fim_de_ato/portao_ato1.png" alt="portão ato 1"></div>
+    <div><img class="wide" src="../visual/viloes/fim_de_ato/portao_ato2.png" alt="portão ato 2"></div>
+  </div>
+  <ul>
+    <li><b>Popup que travava</b>: a caixa de explicação não segura mais o mouse nem cobre a carta vizinha; ao passar para outra carta, ela troca na hora. Vale para todos os menus.</li>
+    <li><b>Raridade única</b>: recompensas, contratos, eventos e relíquias trazem uma raridade só por oferta; a loja continua variada.</li>
+    <li><b>"Seu covil"</b> e o castelo só aparecem no ato 3.</li>
+    <li><b>Heróis do menu</b>: o cartaz já busca um desenho por classe; os 4 desenhos entram junto com a arte em massa.</li>
+  </ul>
+  <p class="small">Ainda não conferido por mim: rolagem da loja com a roda do mouse num baralho grande, o ícone do portão no mapa grande (tecla M) e as outras peles de interface além do Diário.</p>
+</section>
+</main>
+</body>
+</html>
