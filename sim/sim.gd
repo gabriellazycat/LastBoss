@@ -188,6 +188,7 @@ func emit(k: int, x: float, y: float, v: float, e: int) -> void:
 # ================================================================ passo
 
 func step() -> void:
+	_refill_hand()
 	if phase == K.Phase.OVER:
 		return
 	if act_pending:
@@ -1329,6 +1330,14 @@ func _cycle(hi_: int) -> void:
 		hand.remove_at(hi_)
 	else:
 		hand[hi_] = queue.pop_front()
+	_refill_hand()
+
+
+## Mão menor que o tamanho (Biblioteca Proibida com o baralho vazio na hora, carta removida da mão): completa
+## assim que houver carta no baralho.
+func _refill_hand() -> void:
+	while hand.size() < mini(hand_size, HAND_MAX) and queue.size() > 0:
+		hand.append(queue.pop_front())
 
 
 func sacrifice(hi_: int) -> bool:

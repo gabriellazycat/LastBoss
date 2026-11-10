@@ -1097,7 +1097,7 @@ func t_classes() -> void:
 		s3.hero.update(s3.dt)
 	check(s3.hero.hp > s3.hero.max_hp() * 0.5, "Clériga se cura com o tempo")
 	s3.offers.clear()
-	var base2: float = float(data.hero_of("escudeiro")["hp"]) * pow(float(data.rules["party"]["step"]), 1)
+	var base2: float = float(data.hero_of(s3.party_class(1), s3.phase_hp_mult)["hp"]) * pow(float(data.rules["party"]["step"]), 1) * float(s3.deck_rules.get("hero_hp_mult", 1.0))
 	s3.hero.hp = 0.0
 	s3._check_end()
 	check(s3.hero.max_hp() > base2 * 1.15, "a bênção da Clériga dá vida ao próximo (%.0f > %.0f)" % [s3.hero.max_hp(), base2])
