@@ -92,12 +92,11 @@
    }
   },
   {
-   "id": "passage_stone",
+   "id": "shortcut_stone",
    "rarity": "rare",
    "bot_value": 2.5,
    "fx": {
-    "teleport_cost": -2,
-    "teleport_cd": -4.0
+    "contest_first_discount": 2
    }
   },
   {

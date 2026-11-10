@@ -136,7 +136,7 @@ func _act(sim: Sim) -> bool:
 		return _maybe_dump(sim, full)
 	_stuck_since = -1.0
 	var c: Sim.CardInst = sim.hand[best]
-	if sim.phase == K.Phase.ARENA and sim.elixir - sim.card_cost(c) < float(P.get("teleport_reserve", 2.0)) and sim.arena.tp_cd <= 0.0 and c.def.category != "finisher":
+	if sim.phase == K.Phase.ARENA and sim.elixir - sim.card_cost(c) < float(P.get("teleport_reserve", 2.0)) and sim.arena.tp_cd <= 0.0:
 		return false
 	if mistake:
 		stats["mistakes"] += 1

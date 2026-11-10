@@ -57,6 +57,12 @@ static func _one(sim: Sim, a: Dictionary) -> void:
 			sim._push_offer("event", opts, {"event_step": "mod"})
 		"relic":
 			sim.random_relic()
+		"elixir_max_act":
+			sim.act_elixir_bonus += float(a["amount"])
+			sim.elixir_max += float(a["amount"])
+		"card_tax":
+			sim.tax_cards = int(a["n"])
+			sim.tax_add = int(a.get("add", 1))
 		"boss_hp":
 			sim.boss_hp_mult *= float(a["mult"])
 		"hero_curse":
@@ -78,7 +84,7 @@ static func _one(sim: Sim, a: Dictionary) -> void:
 			var pool: Array = []
 			var mx := int(sim.R["deck"].get("max_copies", 2))
 			for ci in sim.cards:
-				if sim._deck_count(ci.def.id) < mx and ci.def.category != "finisher":
+				if sim._deck_count(ci.def.id) < mx:
 					pool.append(ci)
 			sim._push_offer("event", sim._pick_insts(pool, -1, "copy"), {"event_step": "copy"})
 

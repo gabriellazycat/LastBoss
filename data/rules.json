@@ -221,7 +221,6 @@
  "deck": {
   "size": 10,
   "max_copies": 2,
-  "max_finishers": 1,
   "min_in_run": 6
  },
  "location_rewards": {

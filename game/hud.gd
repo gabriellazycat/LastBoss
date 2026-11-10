@@ -746,8 +746,6 @@ func _hints() -> void:
 	for ci in sim.hand:
 		if ci and ci.def.category == "route":
 			hint("route")
-		elif ci and ci.def.category == "finisher" and sim.phase == K.Phase.ROAD:
-			hint("finisher")
 
 
 ## Ponto da tela onde soltar uma carta não vale: fora da janela ou em cima de uma peça sólida da HUD.

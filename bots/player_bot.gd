@@ -135,8 +135,6 @@ func _smart_value(sim: Sim, c: Sim.CardInst) -> float:
 				v -= 2.0
 		"route":
 			v -= 1.0
-		"finisher":
-			v += 6.0
 	# Combos e famílias (rodada autônoma de 09/11/2026), agora lidos do campo "ai" da carta (docs/CARD_FX.md).
 	var combo := float(P.get("combo", 0.0))
 	v = _ai_value(sim, c, v, combo)
@@ -598,8 +596,6 @@ func _opt_value(sim: Sim, o: Dictionary) -> float:
 		"card":
 			var c: CardDef = sim.data.card(o["id"])
 			v = c.cost + c.rarity * 2.0
-			if c.category == "finisher":
-				v -= 2.0 if kind == "greedy" else 2.0 - 3.0 * float(P.get("finisher_pick", 0.0)) * (1.0 if _count(sim, "finisher") < 2 else -1.0)
 			if c.category == "lair":
 				v += float(P.get("lair_bonus", 0.0)) * 0.5
 			if c.category == "field" and sim.card_cost(_tmp_inst(c)) > int(P.get("max_cost", 10)):

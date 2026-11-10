@@ -55,7 +55,7 @@ func _ready() -> void:
 
 
 func t_data() -> void:
-	check(data.pool.size() == 48, "48 cartas na pool (%d)" % data.pool.size())
+	check(data.pool.size() == 41, "41 cartas na pool (%d)" % data.pool.size())
 	check(data.upgrades.size() == 15, "15 upgrades")
 	check(data.contracts.size() == 8, "8 contratos")
 	var m := MetaSave.new()
@@ -125,9 +125,10 @@ func t_sacrifice_and_cycle() -> void:
 	s.elixir = 0.0
 	check(not s.sacrifice(0), "na recarga, carta só sem elixir também não gira")
 	var dead := Sim.CardInst.new()
-	dead.def = data.card("cosmic_ray")
+	dead.def = data.card("shadow_echo")
+	s.last_spell_id = ""
 	s.hand[0] = dead
-	check(s.can_play(0) == K.Block.WRONG_PHASE and s.sacrifice(0) and s.elixir < 0.001, "na recarga, finalização na estrada gira (sem elixir)")
+	check(s.can_play(0) == K.Block.CONDITION and s.sacrifice(0) and s.elixir < 0.001, "na recarga, carta sem condição (Eco sem feitiço) gira (sem elixir)")
 	for i in int(round(float(data.rules["sacrifice_cooldown"]) / s.dt)) + 1:
 		s.step()
 	s.hand[0] = live
@@ -424,13 +425,6 @@ func t_location_rewards() -> void:
 		for o in u._card_options(3, func(cd: CardDef): return true):
 			ok = ok and o["id"] in ["rat_horde", "web", "ogre"]
 	check(ok, "ofertas só sorteiam cartas desbloqueadas")
-	# Pacto Sombrio: tira vida de uma parte em vez de destruí-la.
-	var a := _sim()
-	a.phase = K.Phase.ARENA
-	a.arena.setup(a, Vector2(a.hero.x, a.hero.y + 20.0), Vector2(0, -1))
-	var before := a.arena.destroyed
-	a._apply(_inst("dark_pact", 1), 0.0, 0.0)
-	check(a.arena.destroyed == before and is_equal_approx(a.elixir, a.elixir_max), "Pacto Sombrio não destrói a parte cheia e enche o elixir")
 
 
 func t_meta() -> void:
@@ -826,8 +820,13 @@ func t_relics() -> void:
 	var s := _sim(2)
 	s.gain_relic("heavy_grimoire")
 	check(s.hand_size == 7 and s.elixir_max == 9.0, "Grimório Pesado: mão +1, elixir máximo −1 (%d, %.0f)" % [s.hand_size, s.elixir_max])
-	s.gain_relic("passage_stone")
-	check(s.teleport_cost() == 0.0, "Pedra de Passagem: teleporte de graça")
+	s.gain_relic("shortcut_stone")
+	var cost0 := s.card_cost(s.hand[0])
+	s.contest = {"probe": true}
+	check(s.card_cost(s.hand[0]) == maxi(0, cost0 - 2), "Pedra do Atalho: a primeira carta da disputa custa 2 a menos")
+	s.contest["first"] = true
+	check(s.card_cost(s.hand[0]) == cost0, "Pedra do Atalho: só a primeira carta")
+	s.contest = {}
 	s.gain_relic("bone_crown")
 	s.elixir = 0.0
 	for k in 10:
@@ -839,7 +838,7 @@ func t_relics() -> void:
 	check(s.card_cost(s.hand[0]) == 0, "Olho Vigilante: carta grátis logo depois de uma habilidade")
 	SaveGame.save(s, "user://test.save")
 	var c := SaveGame.load_run(data, "user://test.save")
-	check(c.relics == s.relics and c.teleport_cost() == 0.0 and c.hand_size == 7, "relíquias vão no salvamento")
+	check(c.relics == s.relics and c.rv("contest_first_discount") == 2.0 and c.hand_size == 7, "relíquias vão no salvamento")
 	SaveGame.erase("user://test.save")
 
 
@@ -1246,8 +1245,8 @@ func t_group_spells() -> void:
 	check(h0 - s.hero.hp > (b0 - f.hp) * 1.5, "o primeiro da linha leva o golpe cheio, o segundo metade")
 	s = _two_heroes()
 	f = s.followers[0]
-	_cast(s, "bone_prison", s.hero.x, s.hero.y)
-	check(s.hero.root_t > 0.0 and f.root_t > 0.0, "Prisão de Ossos prende o grupo")
+	for hh in s.all_heroes():
+		hh.root_t = 2.0
 	var fx0 := f.x
 	f.x += 10.0
 	var fx1 := f.x

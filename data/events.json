@@ -69,11 +69,13 @@
      "id": "blood",
      "do": [
       {
-       "kind": "relic"
+       "kind": "elixir_max_act",
+       "amount": 2
       },
       {
-       "kind": "boss_hp",
-       "mult": 0.85
+       "kind": "card_tax",
+       "n": 3,
+       "add": 1
       }
      ]
     },

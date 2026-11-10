@@ -22,13 +22,6 @@ CARD_burn_village,Incêndio,Wildfire
 CARD_soul_collector,Coletor de Almas,Soul Collector
 CARD_forbidden_library,Biblioteca Proibida,Forbidden Library
 CARD_dark_forge,Forja Sombria,Dark Forge
-CARD_lair_walls,Muralhas do Covil,Lair Walls
-CARD_cosmic_ray,Raio Cósmico do Chefão Final,Final Boss Cosmic Ray
-CARD_bone_prison,Prisão de Ossos,Bone Prison
-CARD_petrifying_gaze,Olhar Petrificante,Petrifying Gaze
-CARD_damned_army,Exército dos Condenados,Army of the Damned
-CARD_dark_fury,Fúria Sombria,Dark Fury
-CARD_dark_pact,Pacto Sombrio,Dark Pact
 DESC_rat_horde,{count} ratos rápidos e frágeis.,{count} fast and fragile rats.
 DESC_skeleton_archers,{count} arqueiros que atacam de longe e recuam.,{count} archers that shoot from afar and back off.
 DESC_goblin_dynamiter,Corre até o herói e explode: {explode_damage} de dano de [[fire|Fogo]].,Runs at the hero and explodes: {explode_damage} [[fire|Fire]] damage.
@@ -52,13 +45,6 @@ DESC_burn_village,"Marque um local à frente na rota: quando o herói chegar, o 
 DESC_soul_collector,+{elixir_regen_pct}% de regeneração de [[elixir|Elixir]].,+{elixir_regen_pct}% [[elixir|Elixir]] regeneration.
 DESC_forbidden_library,+1 carta na mão.,+1 card in hand.
 DESC_dark_forge,Monstros entram com +{monster_hp_pct}% de vida.,Monsters enter with +{monster_hp_pct}% health.
-DESC_lair_walls,O herói perde {hero_hp_loss_pct}% da vida ao entrar na arena.,The hero loses {hero_hp_loss_pct}% health entering the arena.
-DESC_cosmic_ray,Herói na frente do chefe (cone de {cone}°): {damage} de dano em linha; [[pierce|atravessa o escudo]].,Hero in front of the boss ({cone}° cone): {damage} damage in a line; [[pierce|pierces the shield]].
-DESC_bone_prison,Logo após um [[teleport|Teleporte]]: deixa o herói [[root|Preso]] por {root} s.,Right after a [[teleport|Teleport]]: leaves the hero [[root|Rooted]] for {root} s.
-DESC_petrifying_gaze,Herói na frente do chefe: [[petrify|petrifica]] por {petrify} s e quebra o [[shield|Escudo]].,Hero in front of the boss: [[petrify|petrifies]] for {petrify} s and breaks the [[shield|Shield]].
-DESC_damned_army,Herói abaixo de 30%: até {max} mortos voltam como espectros.,Hero below 30%: up to {max} dead return as spectres.
-DESC_dark_fury,Com uma parte destruída: as outras curam e batem mais forte.,With a part destroyed: the rest heal and hit harder.
-DESC_dark_pact,Tira {drain_pct}% da vida da sua parte mais inteira; [[elixir|Elixir]] cheio e +{draw} cartas.,Drains {drain_pct}% health from your healthiest part; full [[elixir|Elixir]] and +{draw} cards.
 UPG_sword_spin,Giro de Espada,Sword Spin
 UPG_tower_shield,Escudo Torre,Tower Shield
 UPG_dash,Investida,Dash
@@ -168,7 +154,6 @@ HINT_offer,Escolha uma recompensa para o deck (ou recuse). Cada local da estrada
 HINT_shrine,[[shrine|Santuário]] à frente! Tenha monstros vivos no raio quando a contagem acabar para ganhar uma carta rara.,[[shrine|Shrine]] ahead! Have monsters alive in its radius when the countdown ends to earn a rare card.
 HINT_contract,Contrato! Cumpra o objetivo no prazo para escolher uma recompensa.,Contract! Meet the goal in time to choose a reward.
 HINT_route,Cartas de [[route|Rota]] são jogadas na faixa de rota à esquerda ou no mapa grande (M): clique no local que quer afetar.,[[route|Route]] cards are played on the route strip on the left or on the big map (M): click the place you want to affect.
-HINT_finisher,"Cartas de [[finisher|Finalização]] só funcionam na arena. Na estrada, [[sacrifice|sacrifique-as]] (X + número) por 1 de elixir.","[[finisher|Finisher]] cards only work in the arena. On the road, [[sacrifice|sacrifice]] them (X + number) for 1 elixir."
 HINT_arena,A arena! Proteja o seu corpo. [[teleport|Teleporte]] o chefe com Q/E ou clicando num [[altar|altar]].,The arena! Protect your body. [[teleport|Teleport]] the boss with Q/E or by clicking an [[altar|altar]].
 SAY_HERO_1,Mais forte a cada passo!,Stronger with every step!
 SAY_HERO_2,Obrigado pelos ratinhos!,Thanks for the little rats!
@@ -400,7 +385,6 @@ N3_mimic,N3: morde {bites} vezes.,L3: bites {bites} times.
 N3_ogre,N3: o golpe deixa o herói [[root|Preso]] por {root} s.,L3: its blow leaves the hero [[root|Rooted]] for {root} s.
 N3_gargoyle_tower,"N3: em pedra, devolve {reflect_pct}% do golpe que leva.","L3: as stone, returns {reflect_pct}% of the blows it takes."
 N3_soul_feast,N3: +{bonus_per_card} por carta.,L3: +{bonus_per_card} per card.
-N3_dark_pact,N3: compra {draw} cartas.,L3: draws {draw} cards.
 UI_N3_PREVIEW,No nível 3: {t},At level 3: {t}
 UI_OFFER_LOC_tavern,Taverna: escolha um modificador,Tavern: pick a modifier
 UI_OFFER_LOC_fountain,Fonte: tire uma carta do deck,Fountain: remove a card from your deck
@@ -431,7 +415,6 @@ UI_PRESETS,Decks prontos:,Ready-made decks:
 UI_DECK_OK,Deck pronto para jogar.,Deck ready to play.
 DECKERR_size,O deck precisa de exatamente {n} cartas.,The deck needs exactly {n} cards.
 DECKERR_copies,No máximo 2 cópias de cada carta.,At most 2 copies of each card.
-DECKERR_finishers,No máximo 1 finalização.,At most 1 finisher.
 DECKERR_locked,Há carta bloqueada no deck.,There is a locked card in the deck.
 UI_ST_souls,Almas ganhas,Souls earned
 LVLK_count,Unidades,Units
@@ -525,8 +508,8 @@ REL_merchant_purse,Bolsa do Mercador,Merchant's Purse
 RELD_merchant_purse,A loja tem 1 carta a mais e tudo custa 15% menos.,Shops have 1 extra card and everything costs 15% less.
 REL_overflowing_chalice,Cálice Transbordante,Overflowing Chalice
 RELD_overflowing_chalice,Cada ato e a arena começam com o elixir cheio.,Each act and the arena start with full elixir.
-REL_passage_stone,Pedra de Passagem,Passage Stone
-RELD_passage_stone,O teleporte custa 0 e recarrega 4 s mais rápido.,Teleport costs 0 and recharges 4 s faster.
+REL_shortcut_stone,Pedra do Atalho,Shortcut Stone
+RELD_shortcut_stone,A primeira carta de cada disputa custa 2 a menos.,The first card of each contest costs 2 less.
 REL_profane_earth,Terra Profana,Profane Earth
 RELD_profane_earth,Monstro seu que morre no círculo de um local tem 25% de chance de levantar como Arqueiro Esqueleto.,Your monsters that die in a location circle have a 25% chance to rise as a Skeleton Archer.
 REL_bad_blood,Sangue Ruim,Bad Blood
@@ -546,7 +529,7 @@ EVT_profane_altar_BODY,Um altar pede uma oferenda.,An altar demands an offering.
 EVT_profane_altar_card,Oferecer uma carta,Offer a card
 EVT_profane_altar_card_D,Remova 1 carta e suba outra de nível.,Remove 1 card and level up another.
 EVT_profane_altar_blood,Oferecer sangue,Offer blood
-EVT_profane_altar_blood_D,Ganhe 1 relíquia sorteada; o chefe começa a arena com 15% menos vida em cada parte.,Gain 1 random relic; the boss starts the arena with 15% less health on each part.
+EVT_profane_altar_blood_D,"+2 de elixir máximo até o fim do ato; suas próximas 3 cartas custam 1 a mais.","+2 max elixir until the end of the act; your next 3 cards cost 1 more."
 EVT_profane_altar_leave,Seguir,Move on
 EVT_profane_altar_leave_D,Nada acontece.,Nothing happens.
 EVT_prisoner,Prisioneiro,Prisoner

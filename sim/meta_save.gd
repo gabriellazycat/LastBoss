@@ -106,16 +106,11 @@ func deck_errors(list: Array) -> Array:
 	var errs: Array = []
 	if list.size() != int(D["size"]):
 		errs.append("DECKERR_size")
-	var fin := 0
 	for id in list:
 		if list.count(id) > int(D["max_copies"]) and not errs.has("DECKERR_copies"):
 			errs.append("DECKERR_copies")
 		if not unlocked.has(id) and not errs.has("DECKERR_locked"):
 			errs.append("DECKERR_locked")
-		if data.card(id).category == "finisher":
-			fin += 1
-	if fin > int(D["max_finishers"]):
-		errs.append("DECKERR_finishers")
 	return errs
 
 
@@ -124,8 +119,6 @@ func can_add(id: String) -> bool:
 	var D: Dictionary = data.rules["deck"]
 	if not is_unlocked(id) or deck.size() >= int(D["size"]) or deck.count(id) >= int(D["max_copies"]):
 		return false
-	if data.card(id).category == "finisher":
-		return deck.filter(func(x): return data.card(x).category == "finisher").size() < int(D["max_finishers"])
 	return true
 
 

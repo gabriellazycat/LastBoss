@@ -98,6 +98,9 @@ var contract: Dictionary = {}
 var contract_next := 0.0
 var last_teleport_t := -100.0
 var ritual_mult := 1.0
+var act_elixir_bonus := 0.0     # eventos: elixir máximo a mais até o fim do ato (Altar Profano)
+var tax_cards := 0              # eventos: quantas das próximas cartas custam `tax_add` a mais
+var tax_add := 0
 var dead_by_def := PackedInt32Array()
 var stats: Dictionary = {}
 var tmp := PackedInt32Array()
@@ -473,6 +476,9 @@ func _next_act() -> void:
 		enter_arena()
 		return
 	act += 1
+	elixir_max -= act_elixir_bonus
+	act_elixir_bonus = 0.0
+	elixir = minf(elixir, elixir_max)
 	stats["route_len"] = float(stats.get("route_len", 0.0)) + road.length()
 	road = SimRoad.new()
 	road.generate(rng, R, _act_cfg(act))
@@ -640,9 +646,6 @@ func enter_arena() -> void:
 		units.ox[i] = p.x
 		units.oy[i] = p.y
 	zones.clear()
-	var loss := float(lair_val.get("lair_walls", 0.0))
-	if loss > 0.0:
-		hero.hp = maxf(1.0, hero.hp - hero.max_hp() * loss)
 	hero.target_kind = SimHero.TGT_NONE
 	stats["hero_hp_arena"] = hero.hp_frac()
 	emit(K.Ev.ARENA, center.x, center.y, 0, 0)
@@ -1282,6 +1285,11 @@ func card_cost(c: CardInst) -> int:
 			cost = maxi(int(cf["spell_min_cost"]), cost - int(cf["spell_discount"]))
 		if phase == K.Phase.ARENA and not arena.part_alive("left_arm"):
 			cost += int(R["arena"]["spell_extra_cost_no_left_arm"])
+	if tax_cards > 0:
+		cost += tax_add
+	# Pedra do Atalho: a primeira carta de cada disputa sai mais barata.
+	if contest.size() > 0 and not contest.get("first", false):
+		cost = maxi(0, cost - int(rv("contest_first_discount")))
 	return cost
 
 
@@ -1302,11 +1310,6 @@ func can_play(hi_: int) -> int:
 				return K.Block.STACK_LIMIT
 			if d.id == "burn_village" and _burn_targets().is_empty():
 				return K.Block.CONDITION
-		"finisher":
-			if phase != K.Phase.ARENA:
-				return K.Block.WRONG_PHASE
-			if not finisher_ready(d, c.level):
-				return K.Block.CONDITION
 	if d.fx.has("gold_cost") and gold + 0.0001 < float(d.fx["gold_cost"]):
 		return K.Block.CONDITION
 	if d.id == "shadow_echo" and last_spell_id == "":
@@ -1314,20 +1317,6 @@ func can_play(hi_: int) -> int:
 	if elixir + 0.0001 < card_cost(c):
 		return K.Block.NO_ELIXIR
 	return K.Block.OK
-
-
-func finisher_ready(d: CardDef, level := 1) -> bool:
-	var fx := d.fx
-	match str(fx.get("cond", "none")):
-		"front":
-			return arena.hero_in_front(d.fxv("cone", level), fx["range"])
-		"after_teleport":
-			return t - last_teleport_t <= float(fx["window"])
-		"hero_low":
-			return hero.hp_frac() < float(fx["threshold"])
-		"part_destroyed":
-			return arena.destroyed >= 1
-	return true
 
 
 ## Onde a carta pode ser solta. Devolve true se (x, y) é válido.
@@ -1358,6 +1347,10 @@ func play(hi_: int, x: float, y: float) -> int:
 		return K.Block.BAD_TARGET
 	elixir -= card_cost(c)
 	free_card_t = -100.0
+	if tax_cards > 0:
+		tax_cards -= 1
+	if contest.size() > 0:
+		contest["first"] = true
 	_cycle(hi_)
 	var pl: Dictionary = stats["played"]
 	pl[c.def.id] = int(pl.get(c.def.id, 0)) + 1
