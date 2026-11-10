@@ -31,6 +31,7 @@ var mids: Array = []
 var k := 1.0                # escala da carta (1 = carta compacta de 116 px)
 var t := 0.0
 var gem: Control = null     # gema de custo (o Barato faz ela pulsar)
+var big := false            # carta grande (a compacta não tem texto embaixo)
 
 
 static func paper_for(mids_: Array) -> Array:
@@ -38,25 +39,34 @@ static func paper_for(mids_: Array) -> Array:
 
 
 ## Põe a camada na carta `p` (PanelContainer) e troca o papel pelo do primeiro modificador.
-static func attach(p: Control, level_: int, mids_: Array, k_: float) -> CardFx:
+static func attach(p: Control, level_: int, mids_: Array, k_: float, big_ := false) -> CardFx:
 	if level_ <= 1 and mids_.is_empty():
 		return null
 	var fx := CardFx.new()
 	fx.level = level_
 	fx.mids = mids_
 	fx.k = k_
+	fx.big = big_
 	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fx.name = "CardFx"
 	var pp := paper_for(mids_)
 	var m := p.material as ShaderMaterial
-	if m and pp.size() > 0:
+	if m and pp.size() > 0 and variant() == 0:
 		m.set_shader_parameter("paper_a", pp[0])
 		m.set_shader_parameter("paper_b", pp[1])
 	p.add_child(fx)
 	return fx
 
 
+## Proposta visual dos upgrades (Settings `card_fx_variant`): 0 = a de hoje; 1 Encadernação, 2 Tinta viva,
+## 3 Carimbos e condecorações (game/card_fx_variants.gd; vitrine em game/upgrade_showroom.tscn).
+static func variant() -> int:
+	return int(Settings.v.get("card_fx_variant", 0))
+
+
 static func is_dark(mids_: Array) -> bool:
+	if variant() != 0:
+		return false
 	var pp := paper_for(mids_)
 	return pp.size() > 0 and pp[2]
 
@@ -68,7 +78,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	t += delta
-	if gem and mids.has("cheap"):
+	if gem and mids.has("cheap") and variant() == 0:
 		gem.pivot_offset = gem.size * 0.5
 		gem.scale = Vector2.ONE * (1.0 + 0.09 * maxf(0.0, sin(t * 4.0)) * _motion())
 	queue_redraw()
@@ -81,6 +91,9 @@ func _motion() -> float:
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size).grow(-2.0 * k)
 	var mo := _motion()
+	if variant() != 0:
+		CardFxV.draw(self, r, mo)
+		return
 	_draw_mod_fx(r, mo)
 	if level == 2:
 		draw_rect(r.grow(2.0 * k), Color(0.72, 0.86, 1.0, 0.22), false, 5.0 * k)
@@ -140,23 +153,23 @@ func _seals(r: Rect2) -> void:
 		_seal_icon(mids[i], c, rad * 0.62)
 
 
-func _seal_icon(mid: String, c: Vector2, s: float) -> void:
+func _seal_icon(mid: String, c: Vector2, s: float, ic := CREAM) -> void:
 	var w := maxf(1.2, s * 0.28)
 	match mid:
 		"cheap":   # moeda
-			draw_arc(c, s * 0.85, 0, TAU, 16, CREAM, w, true)
-			draw_line(c + Vector2(0, -s * 0.45), c + Vector2(0, s * 0.45), CREAM, w, true)
+			draw_arc(c, s * 0.85, 0, TAU, 16, ic, w, true)
+			draw_line(c + Vector2(0, -s * 0.45), c + Vector2(0, s * 0.45), ic, w, true)
 		"veteran":   # divisas
 			for dy in [-0.35, 0.25]:
-				draw_polyline(PackedVector2Array([c + Vector2(-s * 0.75, s * (dy + 0.35)), c + Vector2(0, s * (dy - 0.25)), c + Vector2(s * 0.75, s * (dy + 0.35))]), CREAM, w, true)
+				draw_polyline(PackedVector2Array([c + Vector2(-s * 0.75, s * (dy + 0.35)), c + Vector2(0, s * (dy - 0.25)), c + Vector2(s * 0.75, s * (dy + 0.35))]), ic, w, true)
 		"explosive":   # bomba com pavio
-			draw_circle(c + Vector2(-s * 0.1, s * 0.15), s * 0.62, CREAM)
-			draw_line(c + Vector2(s * 0.3, -s * 0.3), c + Vector2(s * 0.7, -s * 0.75), CREAM, w, true)
+			draw_circle(c + Vector2(-s * 0.1, s * 0.15), s * 0.62, ic)
+			draw_line(c + Vector2(s * 0.3, -s * 0.3), c + Vector2(s * 0.7, -s * 0.75), ic, w, true)
 			draw_circle(c + Vector2(s * 0.78, -s * 0.85), s * 0.18, Color(1.0, 0.85, 0.3))
 		"cursed":   # olho
-			draw_arc(c + Vector2(0, s * 0.55), s * 0.95, -PI * 0.82, -PI * 0.18, 10, CREAM, w, true)
-			draw_arc(c + Vector2(0, -s * 0.55), s * 0.95, PI * 0.18, PI * 0.82, 10, CREAM, w, true)
-			draw_circle(c, s * 0.3, CREAM)
+			draw_arc(c + Vector2(0, s * 0.55), s * 0.95, -PI * 0.82, -PI * 0.18, 10, ic, w, true)
+			draw_arc(c + Vector2(0, -s * 0.55), s * 0.95, PI * 0.18, PI * 0.82, 10, ic, w, true)
+			draw_circle(c, s * 0.3, ic)
 		"shadowy":   # fantasma
 			var pts := PackedVector2Array()
 			for i in 9:
@@ -167,7 +180,7 @@ func _seal_icon(mid: String, c: Vector2, s: float) -> void:
 			pts.append(c + Vector2(0, s * 0.75))
 			pts.append(c + Vector2(-s * 0.35, s * 0.5))
 			pts.append(c + Vector2(-s * 0.7, s * 0.75))
-			_poly(pts, CREAM)
+			_poly(pts, ic)
 
 
 ## Efeitos animados de cada modificador (somam-se em combo).
