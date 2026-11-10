@@ -75,6 +75,15 @@ var slash: MeshInstance3D
 var slash_mat: StandardMaterial3D
 var hero_light: OmniLight3D
 var road_meshes: Array = []
+# Estrada em campo único (looks de chão): uma malha só, com a máscara de distância do ato; road_piece_of[li][b] = id do trecho.
+var road_field: MeshInstance3D
+var road_piece_of: Array = []
+var road_state_img: Image
+var road_state_tex: ImageTexture
+var road_state_last := PackedByteArray()
+const ROAD_TEXEL := 0.5      # metros por pixel da máscara
+const ROAD_DMAX := 4.0       # distância máxima guardada (m): além disso não há estrada
+const ROAD_TILE := 16.0      # lado dos ladrilhos da malha (só os que têm estrada)
 var barricades: Array = []      # [nó 3D, ligação]: barreira na entrada de cada ramo, aparece quando o ramo é fechado
 var loc_nodes: Array = []
 var lanterns: Array = []
@@ -175,6 +184,9 @@ func build(s: Sim, camera: Camera3D) -> void:
 	build_empty()
 	sim = s
 	cam = camera
+	road_field = null
+	road_piece_of.clear()
+	road_state_last = PackedByteArray()
 	for a in [road_meshes, barricades, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
 		a.clear()
 	mm_by_def.clear()
@@ -370,17 +382,124 @@ func _ribbon(pts: PackedVector2Array, width: float, col: Color, edge: Color) -> 
 	return st.commit()
 
 
-func _build_road() -> void:
+## Máscara da estrada do ato: distância (m) ao eixo mais próximo entre todos os trechos (R8, 0..ROAD_DMAX) e o id do
+## trecho mais próximo (RG8). Gerada uma vez por ato. Devolve também os ladrilhos que têm estrada.
+func _road_field_images(b: Rect2) -> Array:
+	var w := int(ceil(b.size.x / ROAD_TEXEL))
+	var h := int(ceil(b.size.y / ROAD_TEXEL))
+	var dist := PackedFloat32Array()
+	dist.resize(w * h)
+	dist.fill(ROAD_DMAX)
+	var ids := PackedByteArray()
+	ids.resize(w * h * 2)
+	var tiles := {}
+	var piece := 0
+	road_piece_of.clear()
+	for li in sim.road.legs.size():
+		var row := []
+		for br in sim.road.legs[li]["pts"].size():
+			row.append(piece)
+			var pts: PackedVector2Array = sim.road.legs[li]["pts"][br]
+			var lo := piece & 255
+			var hi := piece >> 8
+			for k in pts.size() - 1:
+				var a: Vector2 = pts[k]
+				var e: Vector2 = pts[k + 1]
+				var ab := e - a
+				var l2 := maxf(ab.length_squared(), 0.0001)
+				var x0 := maxi(int(floor((minf(a.x, e.x) - ROAD_DMAX - b.position.x) / ROAD_TEXEL)), 0)
+				var x1 := mini(int(ceil((maxf(a.x, e.x) + ROAD_DMAX - b.position.x) / ROAD_TEXEL)), w - 1)
+				var y0 := maxi(int(floor((minf(a.y, e.y) - ROAD_DMAX - b.position.y) / ROAD_TEXEL)), 0)
+				var y1 := mini(int(ceil((maxf(a.y, e.y) + ROAD_DMAX - b.position.y) / ROAD_TEXEL)), h - 1)
+				for ty in range(y0, y1 + 1):
+					var py := b.position.y + (ty + 0.5) * ROAD_TEXEL
+					for tx in range(x0, x1 + 1):
+						var px := b.position.x + (tx + 0.5) * ROAD_TEXEL
+						var t := clampf(((px - a.x) * ab.x + (py - a.y) * ab.y) / l2, 0.0, 1.0)
+						var dx := a.x + ab.x * t - px
+						var dy := a.y + ab.y * t - py
+						var d := sqrt(dx * dx + dy * dy)
+						var ix := ty * w + tx
+						if d < dist[ix]:
+							dist[ix] = d
+							ids[ix * 2] = lo
+							ids[ix * 2 + 1] = hi
+				for q in [a, e]:
+					tiles[Vector2i(int(floor(q.x / ROAD_TILE)), int(floor(q.y / ROAD_TILE)))] = true
+			piece += 1
+		road_piece_of.append(row)
+	var bytes := PackedByteArray()
+	bytes.resize(w * h)
+	for i in w * h:
+		bytes[i] = int(clampf(dist[i] / ROAD_DMAX, 0.0, 1.0) * 255.0 + 0.5)
+	return [Image.create_from_data(w, h, false, Image.FORMAT_R8, bytes), Image.create_from_data(w, h, false, Image.FORMAT_RG8, ids), tiles, piece]
+
+
+## A estrada inteira do ato numa malha de ladrilhos de 16 m com o shader de campo.
+func _build_road_field() -> void:
+	var b := _road_bounds()
+	b = Rect2(b.position.snapped(Vector2.ONE * ROAD_TEXEL), b.size)
+	var res := _road_field_images(b)
+	var mask := ImageTexture.create_from_image(res[0])
+	var ids := ImageTexture.create_from_image(res[1])
+	road_state_img = Image.create(maxi(int(res[3]), 1), 1, false, Image.FORMAT_RGBA8)
+	road_state_tex = ImageTexture.create_from_image(road_state_img)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var cells := {}
+	# Cada ladrilho com estrada leva a vizinhança de 1 (a borda passa de 3,7 m e os trechos cruzam ladrilhos).
+	for k in res[2]:
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				cells[Vector2i(k.x + dx, k.y + dy)] = true
+	for k in cells:
+		var x0: float = k.x * ROAD_TILE
+		var z0: float = k.y * ROAD_TILE
+		var q := [Vector3(x0, 0, z0), Vector3(x0 + ROAD_TILE, 0, z0), Vector3(x0, 0, z0 + ROAD_TILE), Vector3(x0 + ROAD_TILE, 0, z0 + ROAD_TILE)]
+		for v in [q[0], q[1], q[2], q[2], q[1], q[3]]:
+			st.set_normal(Vector3.UP)
+			st.set_tangent(Plane(1, 0, 0, 1))
+			st.add_vertex(v)
+	var mesh := st.commit()
+	var mat := GroundLooks.road_field_material(mask, ids, road_state_tex, b, ROAD_DMAX)
+	road_field = _mi(mesh, Vector3(0, 0.02, 0), mat)
+	road_field.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	road_field.layers = GROUND_LAYER
+	add_child(road_field)
+	_update_road_state()
+
+
+## Estado por trecho na textura pequena: R = escurecido (ramo fechado), G = brilho (ramo planejado).
+func _update_road_state() -> void:
+	var buf := PackedByteArray()
+	buf.resize(road_state_img.get_width() * 4)
 	for li in sim.road.legs.size():
 		var leg: Dictionary = sim.road.legs[li]
-		for b in leg["pts"].size():
-			var r: MeshInstance3D
+		for br in leg["pts"].size():
+			var dim: bool = leg["closed"] == br
+			var glow: bool = not dim and leg["chosen"] < 0 and sim.road.plan.get(leg["a"], -1) == li
+			var o: int = int(road_piece_of[li][br]) * 4
+			buf[o] = 255 if dim else 0
+			buf[o + 1] = 255 if glow else 0
+			buf[o + 3] = 255
+	if buf == road_state_last:
+		return
+	road_state_last = buf
+	road_state_img.set_data(road_state_img.get_width(), 1, false, Image.FORMAT_RGBA8, buf)
+	road_state_tex.update(road_state_img)
+
+
+func _build_road() -> void:
+	var field: bool = GroundLooks.look() > 0
+	if field:
+		_build_road_field()
+	for li in sim.road.legs.size():
+		var leg: Dictionary = sim.road.legs[li]
+		# Sem look de chão: uma fita por trecho (com campo, a estrada já é uma malha só).
+		for b in 0 if field else leg["pts"].size():
 			# Cada trecho numa altura própria (até 1,8 cm): perto das bifurcações os irmãos se sobrepõem.
 			var lift := float(li % 4) * 0.006
-			if GroundLooks.look() > 0:
-				r = _mi(GroundLooks.road_mesh(leg["pts"][b], 4.2, lift), Vector3(0, 0, 0), GroundLooks.road_material())
-			else:
-				r = _mi(_ribbon(leg["pts"][b], 4.2, Color(0.56, 0.44, 0.31), Color(0.34, 0.29, 0.22)), Vector3(0, lift, 0), Models.glow_material(0.0))
+			var r := _mi(_ribbon(leg["pts"][b], 4.2, Color(0.56, 0.44, 0.31), Color(0.34, 0.29, 0.22)), Vector3(0, lift, 0), Models.glow_material(0.0))
 			r.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			r.layers = GROUND_LAYER
 			r.set_meta("leg", li)
@@ -622,6 +741,14 @@ func _build_locations() -> void:
 
 
 func _build_lair() -> void:
+	# Só o último ato termina no covil; nos outros o fim da estrada é um portão de passagem.
+	if sim.act + 1 < sim.acts():
+		var gp := sim.road.lair + sim.road.lair_dir * 8.0
+		var gyaw := atan2(-sim.road.lair_dir.x, -sim.road.lair_dir.y)
+		var gate := _mi(Models.prop("gate"), Vector3(gp.x, 0, gp.y), Models.glow_material(0.05), gyaw + PI)
+		add_child(gate)
+		add_child(_light(Vector3(gp.x, 5, gp.y), Color(1.0, 0.7, 0.35), 3.0, 22.0))
+		return
 	var lp := sim.road.lair + sim.road.lair_dir * 34.0
 	var yaw := atan2(-sim.road.lair_dir.x, -sim.road.lair_dir.y)
 	var castle := _mi(Models.prop("castle"), Vector3(lp.x, 0, lp.y), Models.glow_material(0.05), yaw + PI)
@@ -1299,6 +1426,8 @@ func _lanterns() -> void:
 func _draw_road_state() -> void:
 	if sim.phase != K.Phase.ROAD:
 		return
+	if road_field:
+		_update_road_state()
 	for r in road_meshes:
 		var leg: Dictionary = sim.road.legs[r.get_meta("leg")]
 		var b: int = r.get_meta("branch")
@@ -1309,10 +1438,7 @@ func _draw_road_state() -> void:
 			em = 0.35
 		var m: ShaderMaterial = r.material_override
 		m.set_shader_parameter("emission_boost", em)
-		if GroundLooks.look() > 0:
-			m.set_shader_parameter("dim", 1.0 if dim else 0.0)
-		else:
-			r.transparency = 0.6 if dim else 0.0
+		r.transparency = 0.6 if dim else 0.0
 	for bk in barricades:
 		var g: Dictionary = sim.road.legs[bk[1]]
 		bk[0].visible = g["closed"] == 0 and sim.road.path.has(g["a"])

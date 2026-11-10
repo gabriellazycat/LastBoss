@@ -235,7 +235,10 @@ func _draw() -> void:
 		# O nome embaixo do local (só dos que ainda importam).
 		if not gone or n == hover:
 			_name(p + Vector2(0, 32), tr("LOC_" + str(loc["type"])), Color(INK, 0.9 if not gone else 0.5))
-	_draw_lair(node_point(road.nodes.size() - 1))
+	if sim.act + 1 >= sim.acts():
+		_draw_lair(node_point(road.nodes.size() - 1))
+	else:
+		_draw_gate(node_point(road.nodes.size() - 1))
 	_draw_hero(hero_point())
 	_draw_frame()
 	_draw_compass(Vector2(size.x - 118.0, size.y - 128.0), 56.0)
@@ -366,6 +369,20 @@ func _name(at: Vector2, s: String, col: Color) -> void:
 	for o in [Vector2(-2, 0), Vector2(2, 0), Vector2(0, -2), Vector2(0, 2), Vector2(-1.5, -1.5), Vector2(1.5, 1.5)]:
 		draw_string(f, at + Vector2(-w * 0.5, 0) + o, s, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, halo)
 	draw_string(f, at + Vector2(-w * 0.5, 0), s, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, col)
+
+
+## Portão de passagem (fim de um ato que não é o último): arco de pedra a tinta, sem o castelo.
+func _draw_gate(p: Vector2) -> void:
+	var l := p + Vector2(-15, -14)
+	var r := p + Vector2(9, -14)
+	for x in [l, r]:
+		draw_rect(Rect2(x, Vector2(6, 32)), PAPER_LIGHT)
+		draw_rect(Rect2(x, Vector2(6, 32)), PLAN, false, 2.5)
+	draw_rect(Rect2(p + Vector2(-17, -22), Vector2(34, 9)), PAPER_LIGHT)
+	draw_rect(Rect2(p + Vector2(-17, -22), Vector2(34, 9)), PLAN, false, 2.5)
+	for k in 3:
+		draw_line(p + Vector2(-9 + k * 9, -22), p + Vector2(-9 + k * 9, -26), PLAN, 2.5)
+	_name(p + Vector2(0, 44), tr("UI_MAP_ACT_END").format({"n": sim.act + 1}), PLAN)
 
 
 ## O covil do Lorde: uma torre com ameias, em tinta vermelha, no fim da estrada.

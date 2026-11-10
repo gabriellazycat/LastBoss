@@ -318,6 +318,18 @@ static func road_material() -> ShaderMaterial:
 	return m
 
 
+## Material da estrada em campo único (uma máscara por ato, sem fitas): o mesmo da fita, com o campo ligado.
+static func road_field_material(mask: Texture2D, ids: Texture2D, state: Texture2D, rect: Rect2, dmax: float) -> ShaderMaterial:
+	var m := road_material()
+	m.set_shader_parameter("use_mask", true)
+	m.set_shader_parameter("road_mask", mask)
+	m.set_shader_parameter("road_ids", ids)
+	m.set_shader_parameter("road_state", state)
+	m.set_shader_parameter("mask_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
+	m.set_shader_parameter("mask_dmax", dmax)
+	return m
+
+
 ## Estrada com UV em metros (x através, 0 no centro; y ao longo) e alfa 0 na borda de fora.
 ## `lift` separa na altura os trechos que se sobrepõem perto das bifurcações (na mesma altura eles piscavam).
 static func road_mesh(pts: PackedVector2Array, width: float, lift := 0.0) -> ArrayMesh:
