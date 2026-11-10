@@ -6,16 +6,16 @@ Branch de trabalho: `campanha-combos` (checkout principal). A arte está numa se
 
 ## Progresso (atualizado a cada etapa; a retomada automática lê daqui)
 
-Status: EM ANDAMENTO
-Última atualização: 2026-11-10 03:33
+Status: CONCLUÍDO
+Última atualização: 2026-11-10 04:10
 
 - [x] 1. Mapear cartas, decks, heróis e menu no código
 - [x] 2. Famílias de cartas, combos e pactos novos
 - [x] 3. Classes Arqueira, Clériga e Mago (KayKit)
 - [x] 4. Campanha: fases 0 (tutorial) a 4 (grupo que levanta o caído)
 - [x] 5. Integrar a arte da sessão "Refazer monstros e cenário no Blender" (branch dela)
-- [ ] 6. Super rodada de testes, balanceamento e bugs
-- [ ] 7. Merge na main e relatório final
+- [x] 6. Super rodada de testes, balanceamento e bugs
+- [x] 7. Merge na main e relatório final
 
 ## Decisões assumidas no lugar do usuário
 
@@ -63,3 +63,45 @@ Status: EM ANDAMENTO
 - **Arte emprestada:** as cartas novas usam modelos e desenhos de cartas parecidas.
 - **Planilha sem as cartas novas:** ela não recebeu as cartas nem a campanha. Os números estão nos JSON.
 - **Testes com janela:** o tutorial e a tela da campanha foram conferidos por captura, não com cliques reais.
+
+## Super rodada de testes e balanceamento (10/11/2026)
+
+**Testes**
+- **Automáticos:** `tests/tests.gd` passa com 0 falhas, incluindo os novos de combos, classes, fase de grupo e salvar e continuar na fase de grupo.
+- **Fuzz:** `headless/fuzz.tscn`, 160 runs com decks malucos nos 5 pactos e nas 5 fases, 0 falhas. Ele achou um bug antigo: a mão ficava menor que o tamanho quando uma oferta removia uma carta dela. Corrigido.
+- **Capturas olhadas uma a uma** (`docs/visual/campanha/`): menu de pactos e fases, tutorial, fase de grupo, Arqueira e Clériga, arena e resultado na direção G.
+
+**Bugs achados e corrigidos na rodada**
+- Morte contada duas vezes na Explosão de Cadáver.
+- Eco Sombrio repetia o Pedágio sem ouro.
+- O número de dano aparecia no líder quando o golpe acertava um seguidor.
+- Seguidores se afastavam 30 a 80 m do grupo.
+- Arte das cartas novas em branco no Diário.
+- A regra "monstros custam +0" aparecia na tela.
+- A Explosão de Cadáver travava a mão quando não havia monstro perto (achado olhando uma captura). Agora ela levanta 3 esqueletos.
+- A mão não completava quando a Biblioteca Proibida pedia carta com o baralho vazio.
+
+**Balanceamento** (bot heurístico; `tools/tune_campaign.py` mexe na vida dos heróis por pacto e por fase)
+
+| Fase | Horda | Ruína | Tesouro | Cripta | Culto |
+|---|---|---|---|---|---|
+| 0 tutorial | 100% | – | – | – | – |
+| 1 | 56% | 57% | 53% | 54-58% | 56% |
+| 2 | 47-55% | 60-68% | 48-60% | 40-65% | 40-48% |
+| 3 | 52-67% | 30-36% | 50-53% | 55-65% | 23-35% |
+| 4 | 20-22% | 50-57% | 28-33% | 38-47% | 50-60% |
+
+As faixas são de lotes com 30 a 72 runs (margem de uns ±8%). Lote final: `reports/20261110-035609/report.md`.
+
+**Mudanças de número**
+- **Vida dos heróis por pacto:** Horda 0,62; Ruína 0,79; Tesouro 0,74; Cripta 0,64; Culto 1,03.
+- **Vida por fase:** 2 → 1,1; 3 → 0,99; 4 → 0,77.
+- **Morte:** Carniçal 330 de vida e 16 de DPS, +20% por morte; Legião com 6 esqueletos de 75 de vida; Explosão 3,5× a vida (mínimo 130); Colheita com 0,5 de elixir por morte.
+- **Fogo:** Tocha com 95 de dano e queima de 35/s; Diabretes com 85 de vida e 15 de DPS; Balde de Óleo encharca por 10 s.
+- **Classes:** Clériga com 0,6%/s de cura e escudo de 120; Mago com 50% de dano na explosão.
+- **Fase de grupo:** formação a 3,6 m. Feitiço de área no grupo dá o dano inteiro no herói mais perto e metade nos outros. A fase 4 tem 1 Mago só.
+
+**Riscos que ficaram**
+- **O bot aleatório vence 27 a 46% na fase 1.** A meta antiga era 10%: baixar a vida dos heróis para equilibrar os pactos fracos facilitou para todos.
+- **Contras fortes por fase:** Horda vai mal na fase 4 (enxame contra grupo; o texto da fase avisa). Ruína e Culto vão mal na fase 3 (Clérigas).
+- **Tesouro na fase 3 ainda estoura o tempo** (40 min) em parte das runs do bot aleatório.

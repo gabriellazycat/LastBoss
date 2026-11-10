@@ -1496,6 +1496,12 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 				hit_hero = null
 				emit(K.Ev.EXPLOSION, bx_, by_, float(fx["radius"]), 0)
 				hero.add_curse(curse)
+			else:
+				# Nenhum monstro seu perto: levanta esqueletos no ponto (sempre há o que fazer com a carta).
+				var sk: CardDef = data.card("skeleton")
+				for k in int(fx.get("raise", 3)):
+					var a2 := k * TAU / maxf(1.0, float(fx.get("raise", 3)))
+					units.spawn(sk, x + cos(a2) * 0.8, y + sin(a2) * 0.8, 0.0, 0.0, 0, c.uid, _forge())
 		"soul_harvest":
 			harvest_until = t + d.fxv("duration", lv) * vet
 			harvest_elixir = d.fxv("elixir", lv)

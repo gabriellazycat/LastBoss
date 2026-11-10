@@ -1092,7 +1092,8 @@
     "pick_radius": 4.0,
     "radius": 3.0,
     "hp_mult": 3.5,
-    "min_damage": 130
+    "min_damage": 130,
+    "raise": 3
    },
    "lvl": [
     "hp_mult"

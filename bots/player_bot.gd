@@ -176,7 +176,7 @@ func _family_value(sim: Sim, d: CardDef, combo: float) -> float:
 		"rabid_rats":
 			return combo * minf(1.5, sim.units.n_pack / 12.0)
 		"corpse_blast":
-			return combo if _own_near_hero(sim, 3.0) >= 0 else -9.0
+			return combo if _own_near_hero(sim, 3.0) >= 0 else -0.5
 		"soul_harvest":
 			var n := 0
 			for i in sim.units.hi:
