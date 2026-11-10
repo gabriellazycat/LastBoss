@@ -602,7 +602,7 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 		v.add_child(kc)
 	p.add_child(v)
 	UiKit.ignore_mouse(p)
-	CardFx.attach(p, level, mids, w / 116.0)
+	CardFx.attach(p, level, mids, w / 116.0, true)
 	return p
 
 
