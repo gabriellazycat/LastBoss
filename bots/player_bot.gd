@@ -182,7 +182,7 @@ func _family_value(sim: Sim, d: CardDef, combo: float) -> float:
 			for i in sim.units.hi:
 				if sim.units.alive[i] == 1 and sim.units.arch[i] != K.Arch.STRUCTURE:
 					n += 1
-			return -9.0 if n < 6 else combo * minf(2.0, n / 10.0)
+			return -9.0 if n < 4 else combo * minf(2.0, n / 8.0)
 		"arcane_spark":
 			return combo * sim.recent_spells(float(d.fx["window"])) * 0.6
 		"shadow_mark":

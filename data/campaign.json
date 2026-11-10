@@ -1,10 +1,78 @@
 {
  "_doc": "Campanha (rodada autônoma de 09/11/2026). Cada fase é uma run com o seu grupo de heróis; vencer libera a próxima e um pacto. group = o herói que chega levanta o caído (50% da vida, uma vez por herói).",
  "phases": [
-  {"id": 0, "key": "PHASE_0", "tutorial": true, "party": ["escudeiro", "escudeiro", "escudeiro"], "hp_mult": 0.4, "damage_mult": 0.55, "acts": 1, "deck": "horde", "unlock_pact": ""},
-  {"id": 1, "key": "PHASE_1", "party": ["escudeiro", "escudeiro", "escudeiro", "escudeiro", "escudeiro", "escudeiro", "escudeiro"], "unlock_pact": "ruin"},
-  {"id": 2, "key": "PHASE_2", "party": ["escudeiro", "arqueira", "escudeiro", "arqueira", "escudeiro", "arqueira", "escudeiro"], "unlock_pact": "treasure"},
-  {"id": 3, "key": "PHASE_3", "party": ["cleriga", "escudeiro", "cleriga", "arqueira", "escudeiro", "cleriga", "escudeiro"], "unlock_pact": "crypt"},
-  {"id": 4, "key": "PHASE_4", "party": ["escudeiro", "arqueira", "cleriga", "mago", "escudeiro", "mago"], "group": true, "revive_hp": 0.5, "hp_mult": 0.8, "unlock_pact": "cult"}
+  {
+   "id": 0,
+   "key": "PHASE_0",
+   "tutorial": true,
+   "party": [
+    "escudeiro",
+    "escudeiro",
+    "escudeiro"
+   ],
+   "hp_mult": 0.4,
+   "damage_mult": 0.55,
+   "acts": 1,
+   "deck": "horde",
+   "unlock_pact": ""
+  },
+  {
+   "id": 1,
+   "key": "PHASE_1",
+   "party": [
+    "escudeiro",
+    "escudeiro",
+    "escudeiro",
+    "escudeiro",
+    "escudeiro",
+    "escudeiro",
+    "escudeiro"
+   ],
+   "unlock_pact": "ruin"
+  },
+  {
+   "id": 2,
+   "key": "PHASE_2",
+   "party": [
+    "escudeiro",
+    "arqueira",
+    "escudeiro",
+    "arqueira",
+    "escudeiro",
+    "arqueira",
+    "escudeiro"
+   ],
+   "unlock_pact": "treasure"
+  },
+  {
+   "id": 3,
+   "key": "PHASE_3",
+   "party": [
+    "cleriga",
+    "escudeiro",
+    "cleriga",
+    "arqueira",
+    "escudeiro",
+    "cleriga",
+    "escudeiro"
+   ],
+   "unlock_pact": "crypt"
+  },
+  {
+   "id": 4,
+   "key": "PHASE_4",
+   "party": [
+    "escudeiro",
+    "arqueira",
+    "cleriga",
+    "mago",
+    "escudeiro",
+    "mago"
+   ],
+   "group": true,
+   "revive_hp": 0.5,
+   "hp_mult": 0.8,
+   "unlock_pact": "cult"
+  }
  ]
 }
