@@ -3,7 +3,7 @@ extends Node
 
 
 func _ready() -> void:
-	var args := {"bot": "greedy", "deck": "horde", "seeds": "1-10", "out": "user://batch.json", "data": "res://data"}
+	var args := {"bot": "greedy", "deck": "horde", "seeds": "1-10", "out": "user://batch.json", "data": "res://data", "phase": "1"}
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
@@ -19,7 +19,7 @@ func _ready() -> void:
 			seeds.append(int(part))
 	var runs: Array = []
 	for s in seeds:
-		runs.append(run_one(data, int(s), args["deck"], args["bot"]))
+		runs.append(run_one(data, int(s), args["deck"], args["bot"], int(args["phase"])))
 	var f := FileAccess.open(args["out"], FileAccess.WRITE)
 	if f == null:
 		push_error("batch: não gravou " + str(args["out"]))
@@ -31,15 +31,18 @@ func _ready() -> void:
 	get_tree().quit(0)
 
 
-static func run_one(data: GameData, s: int, deck: String, bot_id: String) -> Dictionary:
+static func run_one(data: GameData, s: int, deck: String, bot_id: String, phase := 1) -> Dictionary:
 	var t0 := Time.get_ticks_usec()
 	var sim := Sim.new()
-	sim.setup(data, s, deck)
+	sim.setup(data, s, deck, [], [], phase)
 	var bot := PlayerBot.load_bot(bot_id, s)
 	while sim.phase != K.Phase.OVER:
 		bot.think(sim)
 		sim.step()
 	var st: Dictionary = sim.stats.duplicate(true)
 	st["bot"] = bot_id
+	st["phase"] = phase
+	if phase != 1:
+		st["deck"] = "%s@%d" % [deck, phase]
 	st["wall_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 	return st

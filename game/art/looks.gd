@@ -82,6 +82,7 @@ static func set_param(m: ShaderMaterial, k: String, val: Variant) -> void:
 # ---------------------------------------------------------------- atalhos usados pelo jogo
 
 static func unit_mesh(id: String) -> Mesh:
+	id = CardModel.of(id)
 	var lk := enemies()
 	var m := mesh(lk, id) if lk > 0 else null
 	_last_unit = id if m else ""
@@ -89,6 +90,7 @@ static func unit_mesh(id: String) -> Mesh:
 
 
 static func unit_material(emit: float, multimesh: bool, id := "") -> ShaderMaterial:
+	id = CardModel.of(id)
 	if id == "":
 		id = _last_unit
 	var own := enemies()

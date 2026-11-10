@@ -131,6 +131,7 @@ static func geyes(k: Kit, y: float, z: float, dx: float, r: float, col: Color) -
 # ---------------------------------------------------------------- unidades
 
 static func unit(id: String) -> ArrayMesh:
+	id = CardModel.of(id)
 	if _cache.has(id):
 		return _cache[id]
 	var m: ArrayMesh
@@ -704,6 +705,7 @@ static func tor(inner: float, outer: float, rings := 24, sides := 6) -> TorusMes
 ## Modelo do retrato das cartas sem unidade (feitiços, rota, covil, finalizações). Só a arte das cartas usa.
 ## G(cor) = parte que brilha.
 static func icon(id: String) -> ArrayMesh:
+	id = CardModel.of(id)
 	var k := Kit.new()
 	match id:
 		"shadow_bolt":

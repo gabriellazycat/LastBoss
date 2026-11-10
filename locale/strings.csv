@@ -40,7 +40,7 @@ DESC_bone_totem,"Por {duration} s, monstros que morrem perto voltam como esquele
 DESC_cultists,"{count} cultistas; enquanto vivos, [[spell|Feitiços]] custam -1.","{count} cultists; while alive, [[spell|Spells]] cost 1 less."
 DESC_ogre,Tanque; o golpe empurra o herói {knockback} m.,Tank; its blow pushes the hero {knockback} m.
 DESC_web,[[slow|Lentidão]] em área por {duration} s.,[[slow|Slows]] an area for {duration} s.
-DESC_mimic,Baú falso que atrai o herói; morde e aplica {curses} [[curse|Maldições]].,Fake chest that lures the hero; bites and applies {curses} [[curse|Curses]].
+DESC_mimic,Baú falso que atrai o herói; morde e aplica {curses} [[curse|Maldições]]. Cobiça: morde em dobro perto de uma Isca de Ouro.,Fake chest that lures the hero; bites and applies {curses} [[curse|Curses]]. Greed: bites twice as hard near a Gold Bait.
 DESC_boiling_oil,Poça que queima com [[fire|Fogo]] e deixa o herói [[soaked|Encharcado]].,Pool that burns with [[fire|Fire]] and leaves the hero [[soaked|Soaked]].
 DESC_ghost,O toque aplica [[fear|Medo]] por {fear} s.,Its touch causes [[fear|Fear]] for {fear} s.
 DESC_gargoyle_tower,Atira de longe; vira pedra com o herói perto.,Shoots from afar; turns to stone when the hero is close.
@@ -117,9 +117,9 @@ RARITY_legendary,Lendária,Legendary
 DECK_horde,Horda,Horde
 DECK_ruin,Ruína,Ruin
 DECK_treasure,Tesouro,Treasure
-DECKDESC_horde,"Muitas unidades baratas. Mão de 6, mas os heróis têm +10% de vida.","Many cheap units. Hand of 6, but the heroes have +10% health."
-DECKDESC_ruin,Feitiços e estruturas. Feitiços +15% de dano; monstros custam +1.,Spells and structures. Spells +15% damage; monsters cost +1.
-DECKDESC_treasure,"Economia e enganação. Começa com 7 de elixir e a recompensa de queda tem 4 opções, mas os heróis têm +25% de vida.","Economy and trickery. Starts with 7 elixir and the fall reward has 4 choices, but the heroes have +25% health."
+DECKDESC_horde,"Família Bando: quanto mais ratos, mais forte. Mão de 6, mas os heróis têm +10% de vida.","Pack family: the more rats, the stronger. Hand of 6, but the heroes have +10% health."
+DECKDESC_ruin,Família Fogo: encharque e queime. Feitiços +15% de dano; heróis com +10% de vida.,Fire family: soak and burn. Spells +15% damage; heroes with +10% health.
+DECKDESC_treasure,"Família Cobiça: ouro vira poder. Começa com 7 de elixir e a recompensa de queda tem 4 opções, mas os heróis têm +25% de vida.","Greed family: gold becomes power. Starts with 7 elixir and the fall reward has 4 choices, but the heroes have +25% health."
 UI_CHOOSE_DECK,Escolha o Pacto do Lorde das Trevas,Choose the Dark Lord's Pact
 UI_HERO_LEVEL,Herói nv {n},Hero lv {n}
 UI_HERO_OF,Herói {k} de {n},Hero {k} of {n}
@@ -180,9 +180,9 @@ SAY_BOSS_TP_1,Me pega se puder!,Catch me if you can!
 SAY_BOSS_TP_2,Plim! Errou!,Poof! Missed!
 SAY_BOSS_FIN_1,CONTEMPLE O MEU PODER!,BEHOLD MY POWER!
 SAY_BOSS_FIN_2,Hora do grande final!,Time for the grand finale!
-DECKSTYLE_horde,Muitas unidades baratas.,Many cheap units.
-DECKSTYLE_ruin,[[spell|Feitiços]] e [[structure|estruturas]].,[[spell|Spells]] and [[structure|structures]].
-DECKSTYLE_treasure,Economia e enganação.,Economy and trickery.
+DECKSTYLE_horde,[[pack|Bando]]: muitos bichos juntos.,[[pack|Pack]]: many creatures together.
+DECKSTYLE_ruin,[[fire|Fogo]]: prepare e detone.,[[fire|Fire]]: set up and detonate.
+DECKSTYLE_treasure,Cobiça: ouro vira poder.,Greed: gold becomes power.
 RULE_hand_size,Mão de {n} cartas,Hand of {n} cards
 RULE_spell_damage_mult,[[spell|Feitiços]] causam {p}% de dano,[[spell|Spells]] deal {p}% damage
 RULE_monster_cost_add,[[monster|Monstros]] custam +{n} de [[elixir|Elixir]],[[monster|Monsters]] cost +{n} [[elixir|Elixir]]
@@ -195,7 +195,7 @@ UI_NEW_RUN,Nova run,New run
 UI_SETTINGS,Configurações,Settings
 UI_BACK,Voltar,Back
 UI_DEFAULTS,Restaurar padrões,Restore defaults
-UI_CHOOSE_DECK_SUB,"Passe o mouse num Pacto para ver as cartas do deck. Cada Pacto traz o seu deck pronto e muda as regras da run.","Hover a Pact to see its deck. Each Pact comes with a ready-made deck and changes the rules of the run."
+UI_CHOOSE_DECK_SUB,Passe o mouse num Pacto para ver as cartas do deck. Cada Pacto traz o seu deck pronto e muda as regras da run.,Hover a Pact to see its deck. Each Pact comes with a ready-made deck and changes the rules of the run.
 UI_PLAY_DECK,Jogar com este Pacto,Play this Pact
 UI_MENU_KEYS,Enter confirma · Esc volta,Enter confirms · Esc goes back
 UI_TAB_audio,Áudio,Audio
@@ -615,7 +615,7 @@ HCTR_soul_absorb,Cura a cada abate: evite muitos monstros frágeis perto dele.,H
 HCTR_second_wind,Cura 30% uma vez abaixo de 25%: guarde a rajada final para depois dela.,Heals 30% once below 25%: save your final burst for after it.
 HCTR_heroic_strike,Golpe triplo a cada 5 s contra alvos grandes: deixe um monstro barato levar o golpe antes do Ogro.,Triple hit every 5 s against big targets: let a cheap monster take the hit before the Ogre.
 UI_PICK_DECK,Escolher este deck,Pick this deck
-UI_DECK_CONTENTS,"Deck {name} · {n} cartas","{name} deck · {n} cards"
+UI_DECK_CONTENTS,Deck {name} · {n} cartas,{name} deck · {n} cards
 UI_CHOOSE_GROUP,Escolha o grupo que vai enfrentar,Choose the group you will face
 UI_CHOOSE_GROUP_SUB,Os heróis entram em fila: vence quem derrubar todos; você perde se um deles vencer o chefe.,Heroes come in a queue: you win by felling them all; you lose if one of them beats the boss.
 UI_GROUP_DECK,Deck escolhido: {name},Chosen deck: {name}
@@ -647,3 +647,107 @@ UI_GOAL_fountain,Interrompa o herói!,Interrupt the hero!
 UI_GOALSUB_fountain,"Medo, raiz, empurrão ou {g} de dano · {s} s","Fear, root, knockback or {g} damage · {s} s"
 UI_BANNER_WON,Vitória!,Victory!
 UI_BANNER_LOST,Falhou!,Failed!
+CARD_rabid_rats,Ratos Raivosos,Rabid Rats
+CARD_pack_call,Chamado do Bando,Pack Call
+CARD_rat_burrow,Toca de Ratos,Rat Burrow
+CARD_oil_splash,Balde de Óleo,Oil Bucket
+CARD_torch,Tocha,Torch
+CARD_fire_imp,Diabretes de Fogo,Fire Imps
+CARD_tar_net,Rede de Piche,Tar Net
+CARD_gold_merc,Mercenário Goblin,Goblin Mercenary
+CARD_toll,Pedágio,Toll
+CARD_cursed_coins,Moedas Amaldiçoadas,Cursed Coins
+CARD_bone_legion,Legião de Ossos,Bone Legion
+CARD_ghoul,Carniçal,Ghoul
+CARD_corpse_blast,Explosão de Cadáver,Corpse Blast
+CARD_soul_harvest,Colheita de Almas,Soul Harvest
+CARD_arcane_spark,Faísca Arcana,Arcane Spark
+CARD_shadow_echo,Eco Sombrio,Shadow Echo
+CARD_acolyte,Acólitos,Acolytes
+CARD_shadow_mark,Marca Sombria,Shadow Mark
+DESC_rabid_rats,{count} ratos. [[pack|Bando]]: +4% de dano para cada bicho de Bando seu em campo (até +100%).,{count} rats. [[pack|Pack]]: +4% damage for each of your Pack creatures on the field (up to +100%).
+DESC_pack_call,"Por {duration} s, seu [[pack|Bando]] corre +50% e causa +{damage_pct}% de dano.","For {duration} s, your [[pack|Pack]] runs 50% faster and deals +{damage_pct}% damage."
+DESC_rat_burrow,Toca que solta um rato a cada {spawn_interval} s por {spawn_duration} s. Combina com o Rei dos Ratos e o Chamado do Bando.,Burrow that releases a rat every {spawn_interval} s for {spawn_duration} s. Pairs with the Rat King and Pack Call.
+DESC_oil_splash,Deixa o herói [[soaked|Encharcado]] por {soaked} s. Prepara: o [[fire|Fogo]] dói mais.,Leaves the hero [[soaked|Soaked]] for {soaked} s. Setup: [[fire|Fire]] hurts more.
+DESC_torch,"{damage} de dano de [[fire|Fogo]]. Detona: no herói [[soaked|Encharcado]], ele pega fogo ({burn_dps}/s por {burn_s} s).","{damage} [[fire|Fire]] damage. Payoff: on a [[soaked|Soaked]] hero, he catches fire ({burn_dps}/s for {burn_s} s)."
+DESC_fire_imp,{count} diabretes voadores de [[fire|Fogo]]: rápidos e fortes contra o herói [[soaked|Encharcado]].,{count} flying [[fire|Fire]] imps: fast and strong against a [[soaked|Soaked]] hero.
+DESC_tar_net,Teia de piche: deixa o herói [[root|Preso]] por {root} s e [[soaked|Encharcado]]. Prepara o Goblin e a Tocha.,Tar web: leaves the hero [[root|Rooted]] for {root} s and [[soaked|Soaked]]. Sets up the Goblin and the Torch.
+DESC_gold_merc,Goblin de aluguel. Cobiça: +15% de vida e dano para cada {gold_step} de ouro que você tem (até +150%).,Goblin for hire. Greed: +15% health and damage for every {gold_step} gold you have (up to +150%).
+DESC_toll,Paga {gold_cost} de ouro: ganha {elixir} de [[elixir|Elixir]].,Pay {gold_cost} gold: gain {elixir} [[elixir|Elixir]].
+DESC_cursed_coins,"Moedas no chão: o herói que passa por cima para {stop} s para catar, leva {curses} [[curse|Maldições]] e você ganha {gold} de ouro.","Coins on the ground: a hero who walks over them stops {stop} s to pick them up, takes {curses} [[curse|Curses]] and you gain {gold} gold."
+DESC_bone_legion,"{count} esqueletos baratos. Bons para morrer: alimentam o Carniçal, a Colheita e a Explosão de Cadáver.","{count} cheap skeletons. Good at dying: they feed the Ghoul, the Harvest and Corpse Blast."
+DESC_ghoul,Morte: +15% de dano cada vez que um monstro seu morre a até 6 m (até 10 vezes).,Death: +15% damage each time one of your monsters dies within 6 m (up to 10 times).
+DESC_corpse_blast,Explode o seu monstro mais perto do ponto: dano de {hp_mult}× a vida dele (mínimo {min_damage}) em {radius} m.,Blows up your monster closest to the point: damage equal to {hp_mult}× its health (at least {min_damage}) within {radius} m.
+DESC_soul_harvest,"Por {duration} s, cada monstro seu que morre devolve {elixir} de [[elixir|Elixir]].","For {duration} s, each of your monsters that dies refunds {elixir} [[elixir|Elixir]]."
+DESC_arcane_spark,{damage} de dano de [[shadow|Sombra]]. Sequência: +{per_spell} para cada [[spell|Feitiço]] jogado nos últimos {window} s.,{damage} [[shadow|Shadow]] damage. Chain: +{per_spell} for each [[spell|Spell]] played in the last {window} s.
+DESC_shadow_echo,"Repete o último [[spell|Feitiço]] que você jogou, no ponto escolhido.","Repeats the last [[spell|Spell]] you played, at the chosen point."
+DESC_acolyte,"{count} acólitos. Sequência: sempre que você joga um [[spell|Feitiço]], cada acólito perto do herói dispara na hora.","{count} acolytes. Chain: whenever you play a [[spell|Spell]], each acolyte near the hero fires at once."
+DESC_shadow_mark,Marca o herói por {duration} s: [[spell|Feitiços]] causam +{bonus_pct}% de dano nele.,Marks the hero for {duration} s: [[spell|Spells]] deal +{bonus_pct}% damage to him.
+N3_rabid_rats,N3: os ratos [[pierce|atravessam o escudo]].,L3: the rats [[pierce|pierce the shield]].
+N3_pack_call,N3: +100% de dano.,L3: +100% damage.
+N3_tar_net,"N3: preso por 2,5 s.",L3: rooted for 2.5 s.
+N3_soul_harvest,"N3: 0,5 de elixir por morte.",L3: 0.5 elixir per death.
+N3_shadow_mark,N3: +60% de dano de feitiço.,L3: +60% spell damage.
+FAM_pack,Bando,Pack
+FAM_fire,Fogo,Fire
+FAM_greed,Cobiça,Greed
+FAM_death,Morte,Death
+FAM_chain,Sequência,Chain
+FAMD_pack,"Muitos bichos juntos: quanto maior o bando, mais forte.","Many creatures together: the bigger the pack, the stronger."
+FAMD_fire,"Prepare (óleo, piche) e detone com fogo.","Set up (oil, tar) and detonate with fire."
+FAMD_greed,"Ouro vira poder: guarde, gaste e engane o herói.","Gold becomes power: hoard, spend and trick the hero."
+FAMD_death,Seus monstros morrendo alimentam os outros.,Your monsters dying feed the others.
+FAMD_chain,Feitiço atrás de feitiço: cada um fortalece o próximo.,Spell after spell: each one powers up the next.
+DECK_crypt,Cripta,Crypt
+DECK_cult,Culto,Cult
+UI_PACT_OF_crypt,Pacto da,Pact of the
+UI_PACT_OF_cult,Pacto do,Pact of the
+DECKDESC_crypt,Família Morte: monstros que morrem alimentam os outros. Heróis com +15% de vida.,Death family: monsters that die feed the others. Heroes with +15% health.
+DECKDESC_cult,Família Sequência: feitiço atrás de feitiço. Feitiços +10% de dano; heróis com +15% de vida.,Chain family: spell after spell. Spells +10% damage; heroes with +15% health.
+DECKSTYLE_crypt,Morte: as mortes alimentam o resto.,Death: deaths feed the rest.
+DECKSTYLE_cult,Sequência: um [[spell|Feitiço]] fortalece o próximo.,Chain: one [[spell|Spell]] powers up the next.
+HERO_escudeiro,Escudeiro,Squire
+HERO_arqueira,Arqueira,Archer
+HERO_cleriga,Clériga,Cleric
+HERO_mago,Mago,Mage
+HEROD_escudeiro,Escudo na frente: ataque pelos lados e por trás.,Shield in front: attack from the sides and behind.
+HEROD_arqueira,Atira de longe e não tem escudo: frágil quando cercada.,Shoots from afar and has no shield: fragile when surrounded.
+HEROD_cleriga,"Cura a si mesma com o tempo e, ao cair, abençoa o próximo herói (+25% de vida).","Heals herself over time and, when she falls, blesses the next hero (+25% health)."
+HEROD_mago,"Golpe que explode em área: destrói bandos, mas é lento e frágil.","Attack that explodes in an area: wrecks packs, but slow and fragile."
+UI_CAMPAIGN,Campanha,Campaign
+UI_PHASE,Fase {n},Stage {n}
+UI_PHASE_LOCKED,Vença a fase anterior para liberar.,Beat the previous stage to unlock.
+UI_PHASE_WON,Vencida,Won
+UI_PHASE_UNLOCKS,Libera o pacto: {p},Unlocks the pact: {p}
+UI_PACT_LOCKED,Pacto bloqueado: vença a fase {n}.,Locked pact: beat stage {n}.
+UI_PHASE_PARTY,Grupo: {list},Party: {list}
+UI_NEW_PACT,Novo pacto liberado: {p}!,New pact unlocked: {p}!
+PHASE_0,Tutorial: O Primeiro Invasor,Tutorial: The First Intruder
+PHASE_1,Os Escudeiros,The Squires
+PHASE_2,A Patrulha,The Patrol
+PHASE_3,A Cruzada,The Crusade
+PHASE_4,A Companhia,The Company
+PHASED_0,"Três escudeiros fracos e um ato só. Aprenda a jogar cartas, combinar o Bando e defender o covil.","Three weak squires and a single act. Learn to play cards, combine the Pack and defend the lair."
+PHASED_1,"Sete escudeiros em fila, cada um mais forte que o anterior.","Seven squires in a row, each stronger than the last."
+PHASED_2,Escudeiros e arqueiras se alternam: a arqueira atira de longe e não tem escudo.,Squires and archers take turns: the archer shoots from afar and has no shield.
+PHASED_3,Clérigas se curam e abençoam quem vem depois. Derrube-as rápido.,Clerics heal themselves and bless whoever comes next. Bring them down fast.
+PHASED_4,"Eles andam juntos: quando um cai, quem chega levanta o caído (uma vez cada). O grupo cresce a cada queda.","They travel together: when one falls, whoever arrives raises the fallen (once each). The party grows with every fall."
+UI_HEROES_STANDING,{n} de pé,{n} standing
+TUT_welcome,Você é o Lorde das Trevas. Os heróis vêm pela estrada até o seu covil: derrube os 3 antes que cheguem a você.,You are the Dark Lord. Heroes come down the road to your lair: bring down all 3 before they reach you.
+TUT_play,"Arraste uma carta da mão para o chão perto do herói (ou aperte 1 a 6 e clique). Cartas custam [[elixir|Elixir]], que enche sozinho.","Drag a card from your hand onto the ground near the hero (or press 1 to 6 and click). Cards cost [[elixir|Elixir]], which refills on its own."
+TUT_pack,Combo do [[pack|Bando]]: os Ratos Raivosos ficam mais fortes com mais ratos em campo. Jogue a Horda e depois os Raivosos.,"[[pack|Pack]] combo: Rabid Rats get stronger with more rats on the field. Play the Horde, then the Rabid Rats."
+TUT_call,O Chamado do Bando deixa todos os seus ratos mais rápidos e fortes por alguns segundos. Use quando o bando estiver grande.,Pack Call makes all your rats faster and stronger for a few seconds. Use it when the pack is big.
+TUT_shield,O herói tem escudo na frente. Monstros que chegam por trás e pelos lados acertam em cheio.,The hero has a shield in front. Monsters coming from behind and the sides land full hits.
+TUT_sacrifice,Carta ruim agora? Clique com o botão direito para sacrificar: ela volta ao fim do deck e você ganha 1 de elixir.,Bad card right now? Right-click to sacrifice it: it goes to the bottom of the deck and you gain 1 elixir.
+TUT_location,Os locais na estrada (círculos) dão recompensas se você vencer a disputa enquanto o herói está lá.,Places on the road (circles) give rewards if you win the contest while the hero is there.
+TUT_fall,"Um herói caiu! O próximo vem mais forte, com uma habilidade nova. Escolha a sua recompensa.","A hero fell! The next one comes stronger, with a new ability. Pick your reward."
+TUT_arena,"O herói chegou ao covil. Na arena, ele ataca as partes do seu corpo: defenda com monstros e use as Finalizações.",The hero reached the lair. In the arena he attacks your body parts: defend with monsters and use Finishers.
+TUT_done,Tutorial concluído! A Fase 1 está liberada.,Tutorial complete! Stage 1 is unlocked.
+UI_TUT_OK,Entendi,Got it
+UI_SKIP_TUTORIAL,Pular tutorial,Skip tutorial
+LVLK_soaked,Encharcado (s),Soaked (s)
+LVLK_burn_dps,Queima/s,Burn/s
+LVLK_elixir,Elixir,Elixir
+LVLK_stop,Parada (s),Stop (s)
+LVLK_gold,Ouro,Gold
+LVLK_hp_mult,Explosão (× vida),Blast (× health)

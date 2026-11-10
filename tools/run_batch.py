@@ -18,8 +18,9 @@ GODOT = os.environ.get("GODOT", r"C:\Users\gabri\AppData\Local\Microsoft\WinGet\
 
 
 def run_chunk(bot, deck, seeds, out, data):
+    dk, _, ph = deck.partition("@")
     cmd = [GODOT, "--headless", "--path", ROOT, "res://headless/batch.tscn", "--",
-           f"--bot={bot}", f"--deck={deck}", f"--seeds={seeds}", f"--out={out}", f"--data={data}"]
+           f"--bot={bot}", f"--deck={dk}", f"--seeds={seeds}", f"--out={out}", f"--data={data}", f"--phase={ph or 1}"]
     p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     errs = [l for l in (p.stdout + p.stderr).splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l]
     if p.returncode != 0 or not os.path.exists(out):
@@ -100,7 +101,7 @@ def summarize(runs, goals):
     # deck inicial punha o Goblin em 94% das vitórias só por estar em 2 dos 3 decks prontos (rodada 09/11/2026).
     starters = _starters()
     for r in wins:
-        start = starters.get(r["deck"], [])
+        start = starters.get(r["deck"].partition("@")[0], [])
         for k in set(r["deck_final"]):
             if r["deck_final"].count(k) > start.count(k):
                 cards.setdefault(k, {"offered": 0, "picked": 0, "runs_picked": 0, "wins_picked": 0, "in_wins": 0})["in_wins"] += 1

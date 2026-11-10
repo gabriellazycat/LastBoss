@@ -140,6 +140,9 @@ func _smart_value(sim: Sim, c: Sim.CardInst) -> float:
 				v += combo * 0.7
 	if d.id == "shadow_bolt" and h.shield_hp > 0.0:
 		v += 1.0
+	v += _family_value(sim, d, combo)
+	if v < -0.5:
+		return -1.0
 	if d.id == "soul_feast" and not _feast_ok(sim):
 		return -1.0
 	if d.id == "gold_bait":
@@ -151,6 +154,61 @@ func _smart_value(sim: Sim, c: Sim.CardInst) -> float:
 			return -1.0
 		v += combo
 	return v
+
+
+## Combos das famílias (rodada autônoma de 09/11/2026): o bot prepara e detona como um jogador faria.
+func _family_value(sim: Sim, d: CardDef, combo: float) -> float:
+	var h := sim.hero
+	var hand_has := func(ids: Array) -> bool:
+		for o in sim.hand:
+			if o and ids.has(o.def.id):
+				return true
+		return false
+	match d.id:
+		"oil_splash", "tar_net":
+			if h.soaked_t > 2.0:
+				return -2.0
+			return combo * 0.8 if hand_has.call(["torch", "goblin_dynamiter", "fire_imp", "boiling_oil"]) else 0.0
+		"torch", "fire_imp":
+			return combo if h.soaked_t > 0.5 else 0.0
+		"pack_call":
+			return -9.0 if sim.units.n_pack < 6 else combo * minf(2.0, sim.units.n_pack / 10.0)
+		"rabid_rats":
+			return combo * minf(1.5, sim.units.n_pack / 12.0)
+		"corpse_blast":
+			return combo if _own_near_hero(sim, 3.0) >= 0 else -9.0
+		"soul_harvest":
+			var n := 0
+			for i in sim.units.hi:
+				if sim.units.alive[i] == 1 and sim.units.arch[i] != K.Arch.STRUCTURE:
+					n += 1
+			return -9.0 if n < 6 else combo * minf(2.0, n / 10.0)
+		"arcane_spark":
+			return combo * sim.recent_spells(float(d.fx["window"])) * 0.6
+		"shadow_mark":
+			return combo * 0.8 if hand_has.call(["arcane_spark", "shadow_bolt", "torch", "shadow_echo"]) else -1.0
+		"shadow_echo":
+			return combo if sim.last_spell_id in ["arcane_spark", "shadow_bolt", "torch", "pack_call", "soul_harvest"] else 0.0
+		"toll":
+			return 1.0 if sim.elixir < 4.0 else -9.0
+		"cursed_coins":
+			return 0.5
+	return 0.0
+
+
+## Seu monstro mais perto do herói (até r m), ou -1.
+func _own_near_hero(sim: Sim, r: float) -> int:
+	var U := sim.units
+	var best := -1
+	var bd := r * r
+	for i in U.hi:
+		if U.alive[i] == 0 or U.arch[i] == K.Arch.STRUCTURE:
+			continue
+		var dd := Vector2(U.px[i] - sim.hero.x, U.py[i] - sim.hero.y).length_squared()
+		if dd <= bd:
+			bd = dd
+			best = i
+	return best
 
 
 func _smart(sim: Sim) -> void:
@@ -290,6 +348,12 @@ func _target(sim: Sim, c: Sim.CardInst, randomize: bool) -> Vector2:
 		if d.is_spell:
 			if d.id == "shadow_bolt":
 				return h - _forward(sim) * 3.0
+			if d.id == "corpse_blast":
+				var j := _own_near_hero(sim, 4.0)
+				if j >= 0:
+					return Vector2(sim.units.px[j], sim.units.py[j])
+			if d.id == "cursed_coins":
+				return h + _forward(sim) * 4.0
 			return h
 		if randomize:
 			var a := rng.randf() * TAU
