@@ -560,6 +560,9 @@ func _process_desk(delta: float) -> void:
 		var cur: bool = s == screen
 		var leaving: bool = s == prev_screen and prev_fade < 1.0
 		c.visible = cur or leaving
+		# A tela que está saindo (descendo de volta para a mesa) não pega o mouse: ela cobria os papéis e um
+		# clique logo depois do Esc caía nela (achado do --menutest, 10/11/2026).
+		c.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED if cur else Control.MOUSE_BEHAVIOR_DISABLED
 		if not c.visible:
 			continue
 		var e := ease(fade, -2.2) if cur else 1.0 - ease(prev_fade, 2.0)

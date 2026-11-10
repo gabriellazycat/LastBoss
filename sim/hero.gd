@@ -158,7 +158,12 @@ func max_hp() -> float:
 
 
 func damage() -> float:
-	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * (1.0 + sim.overtime() * float(sim.data.rules["arena"].get("overtime_hero_dmg", 0.0)))
+	var m := 1.0 + sim.overtime() * float(sim.data.rules["arena"].get("overtime_hero_dmg", 0.0))
+	# Fila cheia na arena (protótipo 10/11/2026, desligado com 0): cada herói que ainda falta na fila deixa o
+	# golpe na arena mais forte. Chegar à arena sem ter derrubado heróis na estrada passa a custar caro.
+	if sim.phase == K.Phase.ARENA:
+		m *= 1.0 + float(sim.data.rules["arena"].get("queue_dmg", 0.0)) * maxi(0, sim.party_size() - 1 - sim.party_idx)
+	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * m
 
 
 ## Herói seguinte da fila: um nível acima, vida e dano ×step, tudo cheio. Habilidades e dano recebido ficam (são do grupo).
@@ -676,6 +681,9 @@ func _choose_target() -> void:
 	var unit_r := 3.0 if arena else engage
 	if push_t > 0.0 and not arena:
 		unit_r = minf(unit_r, 2.5)   # impaciência: só o que está colado nele
+	# Prorrogação longa (10/11/2026): depois de 2 min dela, o herói vai no chefe e só briga com o que está
+	# colado nele. Com o elixir da prorrogação o covil enchia a arena e ele nunca chegava ao chefe.
+	var charge := arena and sim.overtime() > 2.0
 	# Na arena ele caça atiradores e estruturas mais longe (rodada 09/11/2026); o resto, só de perto.
 	var hunt_r := float(sim.data.rules["arena"].get("hunt_radius", 3.0)) if arena else engage
 	var houses: Array = sim.live_houses()
@@ -701,8 +709,8 @@ func _choose_target() -> void:
 				lure_y = U.py[i]
 				lure_unit = i
 			continue
-		var far_ok := arena and (U.arch[i] == K.Arch.SHOOTER or U.arch[i] == K.Arch.STRUCTURE)
-		if d > (hunt_r if far_ok else unit_r) or (U.flags[i] & K.F_STONE) or (di == U.d_tower and not arena):
+		var far_ok := arena and (U.arch[i] == K.Arch.SHOOTER or U.arch[i] == K.Arch.STRUCTURE) and not charge
+		if d > (hunt_r if far_ok else (1.2 if charge else unit_r)) or (U.flags[i] & K.F_STONE) or (di == U.d_tower and not arena):
 			continue
 		var th := U.dmg[i] / maxf(U.atk_int[i], 0.1)
 		var sc := th * 0.05 + (1.0 - U.hp[i] / U.max_hp[i]) + float(strat.get(sim.data.cards[di].id, 0.0)) - d * (0.12 if far_ok else 0.35)

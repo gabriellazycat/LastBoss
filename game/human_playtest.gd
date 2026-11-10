@@ -48,6 +48,16 @@ func run(main: Node, bot_id: String) -> void:
 		push_error("humantest: o bot precisa ser do tipo human")
 		m.get_tree().quit(2)
 		return
+	# --skip=<s>: o bot joga direto no Sim (sem mouse) até o instante s, para chegar rápido num trecho.
+	if m.auto_args.has("skip"):
+		var sk := float(m.auto_args["skip"])
+		var s0: Sim = m.sim
+		bot.hands = s0
+		s0.record_events = false
+		while s0.t < sk and s0.phase != K.Phase.OVER:
+			bot.think(s0)
+			s0.step()
+		s0.record_events = true
 	bot.hands = self
 	# O cursor físico parado sobre a janela abre a prévia de uma carta: o teste pina o mouse do leque.
 	m.hud.fan.mouse_override = Vector2(-10000, -10000)
@@ -286,7 +296,11 @@ func _do_play(j: Dictionary) -> void:
 		await _frames(2)
 		_unpin()
 		if m.hud.selected != i and s.hand_card(i) != null and s.hand_card(i).def.id == cid:
-			_find("selecao", "clique na carta %d (%s) não a selecionou" % [i + 1, cid], "selecionada=%d" % m.hud.selected)
+			var fan: Control = m.hud.fan
+			var hv: Control = m.get_viewport().gui_get_hovered_control()
+			_find("selecao", "clique na carta %d (%s) não a selecionou" % [i + 1, cid], "selecionada=%d, mão=%d, slot sob o clique=%d, leque pega mouse=%s, segura=%s, cena=%s, sob o mouse=%s" % [
+				m.hud.selected, s.hand.size(), fan._slot_at(cp - fan.global_position), fan.mouse_filter != Control.MOUSE_FILTER_IGNORE,
+				m.hud.hold_offers, m.world.cine_active(), str(hv.get_path()).get_slice("/", 4) + "/…/" + hv.name if hv else "nenhum"])
 		# Incêndio abre o mapa grande: o clique vai no mapa (o mundo fica atrás).
 		if m.hud.minimap.visible:
 			_unpin()

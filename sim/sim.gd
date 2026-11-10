@@ -1500,10 +1500,10 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			rally_dmg = d.fxv("damage", lv)
 			rally_spd = d.fxv("speed", lv)
 		"oil_splash":
-			# Sozinho: encharca o herói. Em grupo (10/11/2026): todo herói a até 3 m do ponto (nenhum perto = o da vez).
-			var wet: Array = heroes_near(x, y, float(fx.get("radius", 3.0))) if group_mode() else []
-			if wet.is_empty():
-				wet = [hero]
+			# Sozinho: encharca o herói. Em grupo (10/11/2026): só o herói mais perto do ponto (a até 3 m; nenhum
+			# perto = o da vez). Encharcar o grupo todo e incendiar com a Tocha dava 96% de vitória na fase 4.
+			var near_w: Array = heroes_near(x, y, float(fx.get("radius", 3.0))) if group_mode() else []
+			var wet: Array = [near_w[0]] if near_w.size() > 0 else [hero]
 			for hh in wet:
 				hh.soaked_t = maxf(hh.soaked_t, d.fxv("soaked", lv) * vet)
 				hh.add_curse(curse)
@@ -1513,6 +1513,10 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			for k in near_t.size():
 				var hh: SimHero = near_t[k]
 				var was_soaked: bool = hh.soaked_t > 0.0
+				# Em grupo, só o mais perto leva o golpe seco; os outros só pegam fogo se estiverem encharcados
+				# (10/11/2026: a Tocha fazia 65% do dano da Ruína na fase 4 como dano de área grátis).
+				if k > 0 and not was_soaked:
+					continue
 				hit_hero = hh if hh != hero else null
 				damage_hero(dmg * splash_mult(k), x, y, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
 				if was_soaked and hh == hero:
@@ -1553,7 +1557,8 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 				var near_b := heroes_near(bx_, by_, float(fx["radius"]))
 				for k in near_b.size():
 					hit_hero = near_b[k] if near_b[k] != hero else null
-					damage_hero(boom * splash_mult(k), bx_, by_, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
+					# Respingo menor que o dos outros feitiços (10/11/2026: era 65% do dano da Cripta na fase 4).
+					damage_hero(boom * (1.0 if k == 0 else float(R.get("corpse_blast_splash", 0.15))), bx_, by_, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
 				hit_hero = null
 				emit(K.Ev.EXPLOSION, bx_, by_, float(fx["radius"]), 0)
 				hero.add_curse(curse)

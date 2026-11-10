@@ -39,6 +39,11 @@ func _ready() -> void:
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
 			auto_args[kv[0]] = kv[1]
+	# --liberar: jogo de teste com todas as fases e pactos liberados e 9999 Almas, em saves próprios
+	# (user://liberar_*.save); o seu save e o seu meta ficam intactos. Não é modo de teste: rota, Almas e
+	# coleção funcionam como no jogo normal (10/11/2026).
+	var liberar := OS.get_cmdline_user_args().has("--liberar") or auto_args.has("liberar")
+	auto_args.erase("liberar")
 	# --estilo=D (A a F): direção de arte só nesta execução, para os atalhos de teste do visual.
 	# Não é modo de teste: a run, a coleção e as Almas são as normais (o --set liga o modo de teste).
 	if auto_args.has("estilo"):
@@ -76,6 +81,13 @@ func _ready() -> void:
 	meta = MetaSave.load_or_new(data)
 	if not auto_args.is_empty():
 		meta.file = "user://test_meta.save"
+	if liberar:
+		SaveGame.current = "user://liberar_run.save"
+		meta = MetaSave.load_or_new(data, "user://liberar_meta.save")
+		for ph in data.phases:
+			meta.win_phase(int(ph["id"]))
+		meta.souls = maxi(meta.souls, 9999)
+		meta.save()
 	Tips.data = data
 	add_child(Tips.new())
 	audio = GameAudio.new()
@@ -695,6 +707,10 @@ func _process(delta: float) -> void:
 		world.hitstop -= delta
 		stopped = true
 	# Com o mapa em tela cheia aberto, a run fica parada (nas bifurcações o herói já espera).
+	# A caixa do tutorial fica acima da pausa: com o jogo pausado ela some e não pega o mouse, senão cobria as
+	# configurações e segurava os cliques (achado do --menutest, 10/11/2026).
+	tutorial.modulate.a = 0.0 if paused else 1.0
+	tutorial.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED if paused else Control.MOUSE_BEHAVIOR_INHERITED
 	tutorial.tick()
 	if not paused and not stopped and not hud.minimap.visible and not tutorial.holding:
 		acc = minf(acc + delta * speed, sim.dt * 12.0)

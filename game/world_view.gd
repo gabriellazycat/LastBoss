@@ -104,6 +104,7 @@ var pillar_nodes: Array = []
 var boss_face: MeshInstance3D
 var cam_pos := Vector3.ZERO
 var zoom := 0.0
+const CAM_LOOK_Z := 0.0     # para onde a câmera mira em relação ao herói (+ = para trás, sobe o herói na tela)
 var arrive_pull := 0.0   # recuo da câmera por ~3 s quando chega um herói novo
 var trauma := 0.0
 var hitstop := 0.0
@@ -1576,7 +1577,9 @@ func _camera(alpha: float, delta: float) -> void:
 	var t := Time.get_ticks_msec() / 1000.0
 	var shake := Vector3(sin(t * 47.0) + sin(t * 23.0) * 0.5, sin(t * 39.0 + 1.0) + sin(t * 17.0) * 0.5, 0) * sh * 0.9
 	cam.position = target + off + shake
-	cam.look_at(target + Vector3(0, 0, -2) + shake * 0.3, UP)
+	# A câmera mira um pouco atrás do herói (10/11/2026; antes, 2 m à frente): o herói sobe na tela e o chão
+	# atrás dele sai de baixo do leque de cartas (era 8 a 12% das jogadas pensadas no --humantest).
+	cam.look_at(target + Vector3(0, 0, CAM_LOOK_Z) + shake * 0.3, UP)
 	cam.rotation.z += sin(t * 31.0) * sh * 0.03
 
 

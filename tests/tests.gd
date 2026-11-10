@@ -1124,10 +1124,16 @@ func t_group_spells() -> void:
 	check(f.hp < b0 and f.soaked_t > 0.0, "óleo fervente queima e encharca o seguidor (%.0f -> %.0f)" % [b0, f.hp])
 	s = _two_heroes()
 	f = s.followers[0]
-	_cast(s, "oil_splash", s.hero.x + 0.5, s.hero.y)
-	check(s.hero.soaked_t > 0.0 and f.soaked_t > 0.0, "Balde de Óleo encharca os dois heróis perto do ponto")
+	_cast(s, "oil_splash", s.hero.x + 0.9, s.hero.y)
+	check(f.soaked_t > 0.0 and s.hero.soaked_t <= 0.0, "Balde de Óleo em grupo encharca só o herói mais perto do ponto")
+	s.hero.soaked_t = 1.0
 	_cast(s, "torch", s.hero.x + 0.5, s.hero.y)
 	check(f.burn_t > 0.0, "Tocha incendeia o seguidor encharcado")
+	var dry := _two_heroes()
+	var df: SimHero = dry.followers[0]
+	var d0 := df.hp
+	_cast(dry, "torch", dry.hero.x, dry.hero.y)
+	check(is_equal_approx(df.hp, d0), "Tocha não respinga no seguidor seco")
 	var fb := f.hp
 	for _k in 10:
 		s._burn()

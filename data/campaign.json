@@ -91,10 +91,10 @@
    "unlock_pact": "cult",
    "pact_hp": {
     "horde": 0.558,
-    "ruin": 1.963,
+    "ruin": 1.888,
     "treasure": 0.998,
-    "crypt": 1.621,
-    "cult": 1.354
+    "crypt": 1.568,
+    "cult": 1.38
    }
   }
  ]
