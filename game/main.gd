@@ -634,9 +634,23 @@ func _process(delta: float) -> void:
 		if auto_args.has("offer"):
 			var ow := str(auto_args["offer"]).split(":")
 			if ow[0] == "shop":
-				# --offer=shop: loja com 200 de ouro.
+				# --offer=shop: loja com 200 de ouro. Extras (separados por :): purse = Bolsa do Mercador (carta a mais),
+				# big = deck com 24 cartas a mais, upgrade/remove = já compra a escolha de carta do deck.
 				sim.gold = 200.0
+				if ow.has("purse"):
+					sim.relics.append("merchant_purse")
+					sim.rebuild_rfx()
+				if ow.has("big"):
+					for i in 24:
+						sim._new_inst(sim.data.cards[i % sim.data.cards.size()])
 				sim._open_shop()
+				for pk in ["upgrade", "remove"]:
+					if ow.has(pk):
+						for bi in sim.offers[0]["options"].size():
+							var bo: Dictionary = sim.offers[0]["options"][bi]
+							if bo["item"]["kind"] == "pick" and bo["item"]["what"] == pk:
+								sim._buy(bi)
+								break
 			elif ow[0] == "relic":
 				# --offer=relic: escolha de relíquia do fim do ato.
 				sim._offer_relics()
@@ -1126,6 +1140,47 @@ func _tip_test() -> void:
 	await get_tree().create_timer(0.2).timeout
 	step.call("Mapa fechado: a carta volta a reagir", hud.fan.hover == 0)
 	hud.fan.mouse_override = null
+	# Duas cartas lado a lado com attach: a caixa da esquerda não cobre nem segura a da direita.
+	Tips.close_all()
+	var pair: Array = []
+	for k in 2:
+		var pc := PanelContainer.new()
+		pc.custom_minimum_size = Vector2(130, 180)
+		pc.size = Vector2(130, 180)
+		pc.position = Vector2(500 + k * 150, 520)
+		pc.mouse_filter = Control.MOUSE_FILTER_STOP
+		var tag := "Carta %d" % k
+		Tips.attach(pc, func(): return Tips.text_entries(tag, "Texto com [[fire]] e [[slow]] para a caixa."))
+		hud.add_child(pc)
+		pair.append(pc)
+	await _hover(Vector2(300, 100), 3)
+	var pl := (pair[0] as Control).get_global_rect().get_center()
+	var pr := (pair[1] as Control).get_global_rect().get_center()
+	await _hover(pl, 3)
+	await get_tree().create_timer(0.3).timeout
+	var left_id := "obj:%d" % (pair[0] as Control).get_instance_id()
+	step.call("Par de cartas: mouse na esquerda abre a caixa", Tips.reading() and Tips.inst.levels[0]["owner"] == left_id)
+	var covers := false
+	if Tips.reading():
+		for b in Tips.inst.levels[0]["boxes"]:
+			covers = covers or (b as Control).get_global_rect().intersects((pair[1] as Control).get_global_rect())
+	step.call("Par de cartas: a caixa não cobre a carta vizinha", Tips.reading() and not covers)
+	# Mouse vai para a direita passando por cima da caixa: a caixa passa a ser a da carta da direita em < 1 s.
+	if Tips.reading():
+		await _hover((Tips.inst.levels[0]["col"] as Control).get_global_rect().position + Vector2(12, 8), 2)
+	await _hover(pr, 3)
+	await get_tree().create_timer(0.15).timeout
+	var right_id := "obj:%d" % (pair[1] as Control).get_instance_id()
+	step.call("Par de cartas: passa a caixa da carta da direita", Tips.reading() and Tips.inst.levels[0]["owner"] == right_id)
+	# Mouse fora das cartas e sobre a caixa (fora de palavra): fecha mesmo assim.
+	await _hover(pl, 3)
+	await get_tree().create_timer(0.2).timeout
+	if Tips.reading():
+		await _hover((Tips.inst.levels[0]["col"] as Control).get_global_rect().position + Vector2(12, 8), 2)
+	await get_tree().create_timer(0.8).timeout
+	step.call("Caixa fecha com o mouse sobre ela fora da âncora", not Tips.reading())
+	for pc in pair:
+		pc.queue_free()
 	Tips.mouse_override = null
 	print("tiptest resultado: ", "OK" if fails.is_empty() else "FALHOU " + str(fails))
 	get_tree().quit(0 if fails.is_empty() else 1)

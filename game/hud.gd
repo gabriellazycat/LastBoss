@@ -80,7 +80,8 @@ var hints_seen: Dictionary = {}
 # Sobreposições.
 var offer_layer: Control
 var offer_title: Label
-var offer_box: GridContainer
+var offer_box: VBoxContainer   # linhas (HBox) de cartas, dentro de offer_scroll
+var offer_scroll: ScrollContainer
 var offer_sub: Label
 var offer_skip: Button
 var offer_keys: Label
@@ -393,13 +394,20 @@ func _build_offer() -> void:
 	sub.text = "UI_OFFER_KEYS"
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	offer_keys = sub
-	offer_box = GridContainer.new()
-	offer_box.add_theme_constant_override("h_separation", 22)
-	offer_box.add_theme_constant_override("v_separation", 14)
-	offer_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	offer_box.sort_children.connect(func():
-		for c in offer_box.get_children():
-			c.set_meta("base_y", c.position.y))
+	offer_box = VBoxContainer.new()
+	offer_box.add_theme_constant_override("separation", 14)
+	# Rolagem para listas longas (deck inteiro) e para qualquer oferta que não caiba na tela; a folga em volta
+	# deixa a carta subir (hover) e a entrada com sobra sem ser cortada. Altura e largura: _fit_offer.
+	var pad := MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 24)
+	pad.add_theme_constant_override("margin_right", 24)
+	pad.add_theme_constant_override("margin_top", 20)
+	pad.add_theme_constant_override("margin_bottom", 6)
+	pad.add_child(offer_box)
+	offer_scroll = ScrollContainer.new()
+	offer_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	offer_scroll.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	offer_scroll.add_child(pad)
 	# Toda recompensa pode ser recusada (deck enxuto também é estratégia).
 	offer_skip = Button.new()
 	offer_skip.text = "UI_OFFER_SKIP"
@@ -415,7 +423,7 @@ func _build_offer() -> void:
 		v.add_child(offer_title)
 		v.add_child(offer_sub)
 		v.add_child(sub)
-	v.add_child(offer_box)
+	v.add_child(offer_scroll)
 	v.add_child(offer_skip)
 	offer_layer.add_child(v)
 	offer_layer.visible = false
@@ -1057,7 +1065,8 @@ func _inst_level(uid: int) -> int:
 func _build_offer_options(o: Dictionary) -> void:
 	offer_title.text = _offer_heading(o)
 	var shop: bool = o["source"] == "shop"
-	offer_sub.visible = o["source"] == "location" or shop or o.has("event")
+	# A loja não tem subtítulo: ela não depende mais da disputa (sem desconto por vitória).
+	offer_sub.visible = o["source"] == "location" or o.has("event")
 	if UiSkins.diario():
 		offer_sub.get_parent().visible = offer_sub.visible
 	if o.has("event"):
@@ -1065,7 +1074,7 @@ func _build_offer_options(o: Dictionary) -> void:
 		offer_sub.add_theme_color_override("font_color", UiKit.TEXT)
 	elif offer_sub.visible:
 		var won: bool = o["won"]
-		offer_sub.text = tr(("UI_SHOP_WON" if won else "UI_SHOP_LOST") if shop else ("UI_OFFER_WON" if won else "UI_OFFER_LOST"))
+		offer_sub.text = tr("UI_OFFER_WON" if won else "UI_OFFER_LOST")
 		offer_sub.add_theme_color_override("font_color", UiKit.GOOD if won else UiKit.BAD)
 	offer_skip.text = tr("UI_SHOP_LEAVE") if shop else tr("UI_OFFER_SKIP")
 	offer_keys.text = tr("UI_SHOP_KEYS") if shop else tr("UI_OFFER_KEYS")
@@ -1074,9 +1083,21 @@ func _build_offer_options(o: Dictionary) -> void:
 	var opts: Array = o["options"]
 	# Remover "qualquer carta" mostra o deck inteiro: cartas menores, em linhas. A loja fica numa linha só.
 	var w := (240.0 if UiSkins.covil() else 220.0) if opts.size() <= 4 else 150.0
+	var cols := mini(opts.size(), 4 if w > 200.0 else 7)
+	var vs := get_viewport_rect().size
 	if shop:
-		w = 180.0
-	offer_box.columns = opts.size() if shop else mini(opts.size(), 4 if w > 200.0 else 7)
+		# Duas linhas: cartas em cima, serviços (subir nível, modificador, remover) embaixo. A largura da carta
+		# sai da altura e da largura úteis da tela; o que sobrar de altura vira rolagem (_fit_offer).
+		var n_cards := 0
+		for it in opts:
+			if str(it["item"]["kind"]) == "card":
+				n_cards += 1
+		var n_serv := opts.size() - n_cards
+		cols = maxi(maxi(n_cards, n_serv), 1)
+		var per_row := (vs.y - 280.0) / (2.0 if n_cards > 0 and n_serv > 0 else 1.0)
+		w = minf(clampf((per_row - 120.0) * 168.0 / 246.0, 96.0, 180.0), (vs.x - 120.0 - 22.0 * (cols - 1)) / cols)
+	var shop_scale := minf(1.0, w / 180.0) if shop else 1.0
+	var rows: Array = []
 	for k in opts.size():
 		var op: Dictionary = opts[k]
 		# Item da loja: desenha o que ele dá, com o preço em cima.
@@ -1138,11 +1159,13 @@ func _build_offer_options(o: Dictionary) -> void:
 				var pv := VBoxContainer.new()
 				pv.alignment = BoxContainer.ALIGNMENT_CENTER
 				pv.add_theme_constant_override("separation", 12)
-				var pt := UiKit.title(30, UiKit.GOLD)
+				var pt := UiKit.title(maxi(roundi(30.0 * shop_scale), 16), UiKit.GOLD)
 				pt.text = tr("UI_PICK_" + str(op["what"]))
+				pt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				pt.custom_minimum_size = Vector2(w - 20.0, 0)
 				pt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				pv.add_child(pt)
-				pv.add_child(Tips.label(tr("UI_OPT_BUY_UPGRADE_D") if price >= 0 else tr("UI_PICKD_" + str(op["what"])), 16, UiKit.TEXT, w - 30.0, true))
+				pv.add_child(Tips.label(tr("UI_OPT_BUY_" + str(op["what"]).to_upper() + "_D") if price >= 0 else tr("UI_PICKD_" + str(op["what"])), maxi(roundi(16.0 * shop_scale), 11), UiKit.TEXT, w - 30.0, true))
 				UiKit.ignore_mouse(pv)
 				cp.add_child(pv)
 			"relic":
@@ -1166,7 +1189,11 @@ func _build_offer_options(o: Dictionary) -> void:
 				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
 		if price >= 0:
 			var ok := sim.can_afford(opts[k])
-			head.text = tr("UI_SHOP_PRICE").format({"p": price}) + " · " + head.text
+			# Preço numa linha, descrição noutra (com quebra): o rótulo não alarga a coluna.
+			# Carta, escolha de carta e modificador já se descrevem sozinhos (ou têm nota embaixo): só o preço no rótulo.
+			var desc := "" if str(op["kind"]) in ["card", "pick", "mod"] else "
+" + head.text
+			head.text = tr("UI_SHOP_PRICE").format({"p": price}) + desc
 			head.add_theme_color_override("font_color", UiKit.GOLD if ok else UiKit.BAD)
 			if not ok:
 				cp.modulate = cp.modulate * Color(0.55, 0.55, 0.55)
@@ -1185,12 +1212,16 @@ func _build_offer_options(o: Dictionary) -> void:
 		if UiSkins.diario():
 			head.custom_minimum_size = Vector2(0, 0)
 			head.autowrap_mode = TextServer.AUTOWRAP_OFF
+			if shop:
+				head.add_theme_font_size_override("font_size", 14 if w >= 130.0 else 12)
+				head.custom_minimum_size = Vector2(maxf(w - 12.0, 40.0), 0)
+				head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			head.add_theme_font_override("font", UiDiario.font("type"))
 			slot.add_child(UiDiario.tape_wrap(head, UiDiario.MASK, -2.0 + k * 1.3))
 			slot.add_child(cp)
 			var note := UiDiario.note_wrap(foot)
 			note.custom_minimum_size = Vector2(w * 0.9, 0)
-			note.visible = foot.text.strip_edges() != ""
+			note.visible = foot.get_parsed_text().strip_edges() != ""
 			slot.add_child(note)
 		else:
 			slot.add_child(head)
@@ -1200,10 +1231,40 @@ func _build_offer_options(o: Dictionary) -> void:
 		slot.set_meta("card", cp)
 		slot.set_meta("special", lv > 1 or mids.size() > 0 or str(op["kind"]) in ["upgrade", "mod"])
 		slot.set_meta("fx_col", Color(0.55, 1.0, 0.55) if str(op["kind"]) == "upgrade" else (CardFx.MOD_COLOR.get(mids[0], UiKit.GOLD).lightened(0.3) if mids.size() > 0 else UiKit.GOLD))
-		offer_box.add_child(slot)
+		var row_i := (0 if str(op["kind"]) == "card" else 1) if shop else k / cols
+		while rows.size() <= row_i:
+			var row := HBoxContainer.new()
+			row.alignment = BoxContainer.ALIGNMENT_CENTER
+			row.add_theme_constant_override("separation", 22)
+			# Cada linha guarda a altura de seus itens em base_y; a carta só sobe a partir dela.
+			row.sort_children.connect(func():
+				for c in row.get_children():
+					c.set_meta("base_y", c.position.y))
+			rows.append(row)
+			offer_box.add_child(row)
+		(rows[row_i] as Control).add_child(slot)
 		offer_slots.append(slot)
-	# O quadro encolhe quando a oferta seguinte é menor.
-	(offer_layer.get_node("Box") as Control).size = Vector2.ZERO
+	offer_scroll.custom_minimum_size = Vector2.ZERO
+	_fit_offer()
+
+
+## A oferta nunca passa da tela: depois de dois quadros (os rótulos já quebraram linha), a rolagem recebe a largura
+## e a altura do conteúdo, limitadas ao que sobra na tela; o resto rola.
+func _fit_offer() -> void:
+	var box := offer_layer.get_node("Box") as Control
+	box.size = Vector2.ZERO
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_instance_valid(offer_scroll) or offer_slots.is_empty():
+		return
+	var vs := get_viewport_rect().size
+	var content := (offer_box.get_parent() as Control).get_combined_minimum_size()
+	# Altura de tudo que não é a rolagem (título, dicas, botão e espaços), com folga.
+	var others := box.get_combined_minimum_size().y - offer_scroll.get_combined_minimum_size().y
+	var max_h := maxf(vs.y - others - 36.0, 160.0)
+	var scrolls := content.y > max_h
+	offer_scroll.custom_minimum_size = Vector2(minf(content.x + (14.0 if scrolls else 0.0), vs.x - 24.0), minf(content.y, max_h))
+	box.size = Vector2.ZERO
 
 
 ## Entrada da oferta: raios acendem, o título bate e as cartas chegam uma a uma, cada uma com faíscas e um
