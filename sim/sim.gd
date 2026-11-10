@@ -958,6 +958,9 @@ func kill_unit(i: int, cause: int) -> void:
 		if c.arch != K.Arch.STRUCTURE and not (f & K.F_REVIVED):
 			if not _golem_absorb(i, x, y):
 				_totem_revive(i, x, y)
+	# Gatilho "ao morrer" declarado em dados (data/cards.json "on_death"; docs/CARD_FX.md).
+	if not c.on_death.is_empty() and (cause == K.Death.HERO or cause == K.Death.SELF):
+		CardFxLib.run(self, CardFxLib.unit_ctx(c, int(units.lvl[i]), units.uid[i]), c.on_death, x, y)
 	emit(K.Ev.DEATH, x, y, di, i)
 	units.release(i)
 
@@ -1217,7 +1220,7 @@ func _zones() -> void:
 					var hh: SimHero = ins[k]
 					hh.soaked_t = z["soaked"]
 					hit_hero = hh if hh != hero else null
-					damage_hero(float(z["dps"]) * dt, z["x"], z["y"], K.TAG_FIRE, SimHero.DMG_AREA, "boiling_oil")
+					damage_hero(float(z["dps"]) * dt, z["x"], z["y"], K.TAG_FIRE, SimHero.DMG_AREA, str(z.get("src", "boiling_oil")))
 					if z.get("curse", 0) > 0:
 						hh.add_curse(int(z["curse"]))
 						z["curse"] = 0
@@ -1428,276 +1431,43 @@ func sacrifice_free(hi_: int) -> bool:
 	return can_play(hi_) in [K.Block.WRONG_PHASE, K.Block.CONDITION, K.Block.STACK_LIMIT]
 
 
+## Aplica o efeito de uma carta jogada. Unidades: CardFxLib.spawn_card_units. Depois as "ops" declaradas em
+## data/cards.json (CardFxLib) e, por fim, o código por id no arquivo do dono (sim/cards/<owner>.gd).
 func _apply(c: CardInst, x: float, y: float) -> void:
 	var d := c.def
-	var fx := d.fx
-	var lv := c.level
-	var smult := float(deck_rules.get("spell_damage_mult", 1.0))
-	# Veterano em feitiço: efeito maior (dano ou duração), já que não há unidade a mais.
-	var vet := 1.0
-	if d.is_spell and c.has_mod(K.M_VETERAN):
-		vet += float(data.modifiers["veteran"]["p"].get("spell_effect", 0.0))
-	var curse := 1 if d.is_spell and c.has_mod(K.M_CURSED) else 0
+	var k := CardFxLib.ctx(self, c)
 	emit(K.Ev.SPELL, x, y, d.idx, 0)
 	if d.is_unit:
-		var n := d.count_at(lv) + (1 if c.has_mod(K.M_VETERAN) else 0)
-		var hpm := d.mult(lv) if d.scales("hp") else 1.0
-		if d.type == "structure":
-			hpm *= 1.0 + rv("structure")
-		var dpm := d.mult(lv) if d.scales("dps") else 1.0
-		if d.fx.has("gold_step"):
-			# Cobiça: cada `gold_step` de ouro guardado dá +gold_bonus de vida e dano (até gold_cap).
-			var gm := 1.0 + minf(float(d.fx.get("gold_cap", 1.0)), floorf(gold / float(d.fx["gold_step"])) * float(d.fx["gold_bonus"]))
-			hpm *= gm
-			dpm *= gm
-		# XP cresce menos que o custo (cost_exp < 1): monstro caro não pode alimentar o herói mais do que machuca.
-		var xpv := 0.0   # sem XP (09/11/2026)
-		var f := 0
-		if c.has_mod(K.M_SHADOWY):
-			f |= K.F_NO_XP
-		if c.has_mod(K.M_EXPLOSIVE):
-			f |= K.F_EXPLOSIVE
-		if c.has_mod(K.M_CURSED):
-			f |= K.F_CURSED
-		if phase == K.Phase.ARENA and Vector2(x - arena.bx, y - arena.by).length() <= 6.0:
-			f |= K.F_DEFEND
-		for k in n:
-			var r := 0.55 * sqrt(float(k))
-			var a := k * 2.399963
-			var j := units.spawn(d, x + cos(a) * r, y + sin(a) * r, xpv, float(d.cost) / n, f, c.uid, _forge() * hpm)
-			if j >= 0:
-				units.lvl[j] = lv
-				units.dmg[j] *= dpm
+		CardFxLib.spawn_card_units(self, k, x, y)
+		if not d.ops.is_empty():
+			CardFxLib.run(self, k, d.ops, x, y)
 		return
-	match d.id:
-		"shadow_bolt":
-			var dir := Vector2(hero.x - x, hero.y - y)
-			if dir.length() < 0.1:
-				dir = Vector2(hero.face_x, hero.face_y)
-			dir = dir.normalized()
-			# Fase de grupo (10/11/2026): o raio atravessa a linha e pega todo herói nela (cheio no primeiro,
-			# metade nos outros, como os feitiços de área).
-			var hit_line: Array = []
-			for hh in all_heroes():
-				var rel := Vector2(hh.x - x, hh.y - y)
-				var along := rel.dot(dir)
-				var side := absf(rel.dot(Vector2(-dir.y, dir.x)))
-				if along >= -0.5 and along <= float(fx["length"]) and side <= float(fx["width"]) * 0.5 + hh.radius:
-					hit_line.append([along, hh])
-			hit_line.sort_custom(func(a, b): return a[0] < b[0])
-			for k2 in hit_line.size():
-				var hh: SimHero = hit_line[k2][1]
-				hit_hero = hh if hh != hero else null
-				# N3: o raio volta pelo mesmo caminho e acerta de novo.
-				for k in int(d.fxv("hits", lv, 1.0)):
-					damage_hero(d.fxv("damage", lv) * smult * vet * splash_mult(k2), x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
-				hh.add_curse(curse)
-			hit_hero = null
-		"web":
-			zones.append({"kind": "web", "x": x, "y": y, "r": fx["radius"], "t": d.fxv("duration", lv) * vet, "applied": false,
-				"root": d.fxv("root", lv), "curse": curse})
-		"boiling_oil":
-			zones.append({"kind": "oil", "x": x, "y": y, "r": fx["radius"], "t": fx["duration"],
-				"dps": d.fxv("dps", lv) * smult * vet, "soaked": fx["soaked"], "curse": curse})
-		"soul_feast":
-			units.within(x, y, d.fxv("radius", lv), tmp)
-			var refund := 0.0
-			var seen := {}
-			for j in tmp.duplicate():
-				if units.alive[j] == 0 or units.arch[j] == K.Arch.STRUCTURE:
-					continue
-				refund += units.cost_share[j]
-				seen[units.uid[j]] = true
-				kill_unit(j, K.Death.SACRIFICE)
-			refund += seen.size() * d.fxv("bonus_per_card", lv)
-			elixir = minf(elixir_max, elixir + refund)
-		"gold_bait":
-			zones.append({"kind": "bait", "x": x, "y": y, "r": 1.0, "t": 40.0, "xp": 0.0})
-		"pack_call":
-			rally_until = t + d.fxv("duration", lv) * vet
-			rally_dmg = d.fxv("damage", lv)
-			rally_spd = d.fxv("speed", lv)
-		"oil_splash":
-			# Sozinho: encharca o herói. Em grupo (10/11/2026): só o herói mais perto do ponto (a até 3 m; nenhum
-			# perto = o da vez). Encharcar o grupo todo e incendiar com a Tocha dava 96% de vitória na fase 4.
-			var near_w: Array = heroes_near(x, y, float(fx.get("radius", 3.0))) if group_mode() else []
-			var wet: Array = [near_w[0]] if near_w.size() > 0 else [hero]
-			for hh in wet:
-				hh.soaked_t = maxf(hh.soaked_t, d.fxv("soaked", lv) * vet)
-				hh.add_curse(curse)
-		"torch":
-			var dmg := d.fxv("damage", lv) * smult * vet
-			var near_t := heroes_near(x, y, float(fx["radius"]))
-			for k in near_t.size():
-				var hh: SimHero = near_t[k]
-				var was_soaked: bool = hh.soaked_t > 0.0
-				# Em grupo, só o mais perto leva o golpe seco; os outros só pegam fogo se estiverem encharcados
-				# (10/11/2026: a Tocha fazia 65% do dano da Ruína na fase 4 como dano de área grátis).
-				if k > 0 and not was_soaked:
-					continue
-				hit_hero = hh if hh != hero else null
-				damage_hero(dmg * splash_mult(k), x, y, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
-				if was_soaked and hh == hero:
-					burn_t = maxf(burn_t, float(fx["burn_s"]))
-					burn_dps = d.fxv("burn_dps", lv) * smult
-					burn_src = d.id
-				elif was_soaked:
-					# Seguidor encharcado também pega fogo (10/11/2026).
-					hh.burn_t = maxf(hh.burn_t, float(fx["burn_s"]))
-					hh.burn_dps = d.fxv("burn_dps", lv) * smult * splash_mult(1)
-				hh.add_curse(curse)
-			hit_hero = null
-		"tar_net":
-			zones.append({"kind": "web", "x": x, "y": y, "r": fx["radius"], "t": d.fxv("duration", lv) * vet, "applied": false,
-				"root": d.fxv("root", lv), "curse": curse, "soak": fx["soaked"]})
-		"cursed_coins":
-			zones.append({"kind": "coins", "x": x, "y": y, "r": fx["radius"], "t": 30.0, "applied": false,
-				"stop": d.fxv("stop", lv) * vet, "curses": int(fx["curses"]) + curse, "gold": d.fxv("gold", lv)})
-		"toll":
-			gold -= float(fx["gold_cost"])
-			stats["gold_spent"] += int(fx["gold_cost"])
-			elixir = minf(elixir_max, elixir + d.fxv("elixir", lv))
-		"corpse_blast":
-			var best := -1
-			var bd := pow(float(fx["pick_radius"]), 2)
-			for j in units.hi:
-				if units.alive[j] == 0 or units.arch[j] == K.Arch.STRUCTURE:
-					continue
-				var dd := Vector2(units.px[j] - x, units.py[j] - y).length_squared()
-				if dd <= bd:
-					bd = dd
-					best = j
-			if best >= 0:
-				var bx_ := units.px[best]
-				var by_ := units.py[best]
-				var boom := maxf(float(fx["min_damage"]), units.max_hp[best] * d.fxv("hp_mult", lv)) * smult * vet
-				kill_unit(best, K.Death.SACRIFICE)
-				var near_b := heroes_near(bx_, by_, float(fx["radius"]))
-				for k in near_b.size():
-					hit_hero = near_b[k] if near_b[k] != hero else null
-					# Respingo menor que o dos outros feitiços (10/11/2026: era 65% do dano da Cripta na fase 4).
-					damage_hero(boom * (1.0 if k == 0 else float(R.get("corpse_blast_splash", 0.15))), bx_, by_, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
-				hit_hero = null
-				emit(K.Ev.EXPLOSION, bx_, by_, float(fx["radius"]), 0)
-				hero.add_curse(curse)
-			else:
-				# Nenhum monstro seu perto: levanta esqueletos no ponto (sempre há o que fazer com a carta).
-				var sk: CardDef = data.card("skeleton")
-				for k in int(fx.get("raise", 3)):
-					var a2 := k * TAU / maxf(1.0, float(fx.get("raise", 3)))
-					units.spawn(sk, x + cos(a2) * 0.8, y + sin(a2) * 0.8, 0.0, 0.0, 0, c.uid, _forge())
-		"soul_harvest":
-			harvest_until = t + d.fxv("duration", lv) * vet
-			harvest_elixir = d.fxv("elixir", lv)
-		"arcane_spark":
-			var n_prev := recent_spells(float(fx["window"]))
-			var sp := (d.fxv("damage", lv) + n_prev * d.fxv("per_spell", lv)) * smult * vet
-			var near_s := heroes_near(x, y, float(fx["radius"]))
-			for k in near_s.size():
-				var hh: SimHero = near_s[k]
-				hit_hero = hh if hh != hero else null
-				damage_hero(sp * splash_mult(k), x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
-				hh.add_curse(curse)
-			hit_hero = null
-		"shadow_mark":
-			mark_until = t + d.fxv("duration", lv) * vet
-			mark_bonus = d.fxv("bonus", lv)
-			hero.add_curse(curse)
-		"shadow_echo":
-			var ld: CardDef = data.card(last_spell_id)
-			if ld:
-				var echo := CardInst.new()
-				echo.def = ld
-				echo.uid = c.uid
-				echo.level = maxi(last_spell_lv, lv)
-				_apply(echo, x, y)
-		"burn_village":
-			# Incêndio: marca um local da rota; quando o herói chega, o local pega fogo.
-			var bi := _burn_near(x, y)
-			if bi >= 0:
-				var bl: Dictionary = road.locations[bi]
-				bl["burn"] = true
-				bl["burn_dps"] = d.fxv("dps", lv) * smult * vet
-				bl["burn_s"] = float(fx["duration"])
-		"soul_collector", "dark_forge", "lair_walls":
-			lair[d.id] = int(lair.get(d.id, 0)) + 1
-			var key: String = {"soul_collector": "elixir_regen", "dark_forge": "monster_hp", "lair_walls": "hero_hp_loss"}[d.id]
-			lair_val[d.id] = float(lair_val.get(d.id, 0.0)) + d.fxv(key, lv)
-		"forbidden_library":
-			lair[d.id] = int(lair.get(d.id, 0)) + 1
-			hand_size = mini(HAND_MAX, hand_size + int(fx["hand"]))
-			if queue.size() > 0 and hand.size() < HAND_MAX:
-				hand.append(queue.pop_front())
-		"cosmic_ray":
-			if arena.hero_in_front(d.fxv("cone", lv), float(fx["range"]) + 2.0):
-				damage_hero(fx["damage"], arena.bx, arena.by, 0, SimHero.DMG_PIERCE, d.id)
-		"bone_prison":
-			# Prende o grupo todo (10/11/2026); sozinho, all_heroes() é só o herói.
-			for hh in all_heroes():
-				hh.root_t = d.fxv("root", lv) * cc_mult()
-		"petrifying_gaze":
-			hero.petrify_t = d.fxv("petrify", lv)
-			hero.shield_hp = 0.0
-			hero.shield_t = hero.H["shield"]["regen_seconds"]
-			hero.tavern_t = 0.0
-		"damned_army":
-			_army(fx, d.fxv("hp", lv), d.fxv("dps", lv))
-		"dark_fury":
-			arena.fury(fx["heal"], fx["duration"], d.fxv("damage", lv))
-		"dark_pact":
-			# Paga com vida de uma parte do corpo (a mais cheia), sem destruí-la de saída.
-			if arena.drain_part(float(fx["drain"])):
-				elixir = elixir_max
-				for k in int(d.fxv("draw", lv)):
-					if queue.size() > 0 and hand.size() < HAND_MAX:
-						hand.append(queue.pop_front())
+	if not d.ops.is_empty():
+		CardFxLib.run(self, k, d.ops, x, y)
+	match d.owner:
+		"plague":
+			if CardsPlague.apply(self, k, x, y):
+				return
+		"dragon":
+			if CardsDragon.apply(self, k, x, y):
+				return
+		"lich":
+			if CardsLich.apply(self, k, x, y):
+				return
+		_:
+			if CardsCommon.apply(self, k, x, y):
+				return
+	if d.ops.is_empty():
+		push_error("carta sem efeito: %s (owner %s)" % [d.id, d.owner])
 
 
-func _army(fx: Dictionary, hp_: float, dps_: float) -> void:
-	var order: Array = []
-	for di in dead_by_def.size():
-		if dead_by_def[di] > 0:
-			order.append(di)
-	order.sort_custom(func(a, b): return data.cards[a].cost > data.cards[b].cost or (data.cards[a].cost == data.cards[b].cost and a < b))
-	var sp: CardDef = data.card("spectre")
-	var n := 0
-	var ids: Array = []
-	var mx := int(fx["max"])
-	for di in order:
-		for k in dead_by_def[di]:
-			if n >= mx:
-				break
-			var a := n * 2.399963
-			var r := 4.0 + fmod(n * 0.7, 2.0)
-			var j := units.spawn(sp, hero.x + cos(a) * r, hero.y + sin(a) * r, 0.0, 0.0, K.F_NO_XP, 0)
-			if j >= 0:
-				units.hp[j] = hp_
-				units.max_hp[j] = hp_
-				units.dmg[j] = dps_ * units.atk_int[j] * units.dmg_mult
-				ids.append(j)
-			n += 1
-	zones.append({"kind": "army", "x": hero.x, "y": hero.y, "r": 0.0, "t": fx["duration"], "ids": ids})
-
-
-## Locais que o Incêndio pode marcar: ativos, ainda à frente no caminho do herói e sem fogo marcado.
+## Locais que o Incêndio pode marcar (sim/cards/dragon.gd).
 func _burn_targets() -> Array:
-	var out: Array = []
-	for li in road.locations.size():
-		var loc: Dictionary = road.locations[li]
-		if loc["state"] == SimRoad.LocState.ACTIVE and not loc["entered"] and not loc.get("burn", false) and road.is_on_route(loc):
-			out.append(li)
-	return out
+	return CardsDragon.burn_targets(self)
 
 
 func _burn_near(x: float, y: float) -> int:
-	var best := -1
-	var bd := 1600.0
-	for li in _burn_targets():
-		var dd := Vector2(x, y).distance_squared_to(road.locations[li]["pos"])
-		if dd < bd:
-			bd = dd
-			best = li
-	return best
+	return CardsDragon.burn_near(self, x, y)
 
 
 func teleport(k: int) -> bool:

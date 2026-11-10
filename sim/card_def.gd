@@ -28,6 +28,11 @@ var radius := 0.4
 var lvl: Array = []        # números que crescem com o nível: chaves de fx ou count, hp, dps, cost
 var n3: Dictionary = {}    # efeito especial do nível 3
 var growth := 0.25         # +25% por nível (rules.card_levels.growth)
+var owner := "common"      # vilão dono da carta: plague, dragon, lich ou common (sim/cards/<dono>.gd)
+var ops: Array = []        # efeito declarado em dados, rodado por CardFxLib ao jogar (docs/CARD_FX.md)
+var on_death: Array = []   # ops rodadas por CardFxLib quando uma unidade desta carta morre
+var ai: Dictionary = {}    # como os bots jogam a carta (docs/CARD_FX.md, "Vocabulário de ai")
+var ai_keys: Array = []    # ai.keys: rótulos que outras cartas procuram (combos)
 
 
 static func from_dict(d: Dictionary, i: int, cat_override := "") -> CardDef:
@@ -52,6 +57,11 @@ static func from_dict(d: Dictionary, i: int, cat_override := "") -> CardDef:
 	c.fx = d.get("fx", {})
 	c.lvl = d.get("lvl", [])
 	c.n3 = d.get("n3", {})
+	c.owner = str(d.get("owner", "common"))
+	c.ops = d.get("ops", [])
+	c.on_death = d.get("on_death", [])
+	c.ai = d.get("ai", {})
+	c.ai_keys = c.ai.get("keys", [])
 	c.fly = bool(d.get("fly", false))
 	c.projectile = bool(c.fx.get("projectile", false))
 	c.is_spell = c.type == "spell"

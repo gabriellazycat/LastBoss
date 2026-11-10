@@ -207,10 +207,10 @@ func _human_value(sim: Sim, c: Sim.CardInst) -> float:
 	var h := sim.hero
 	if d.is_spell and d.category == "field":
 		var n := _spell_hits(sim, c)
-		if n == 0 and d.id in ["torch", "arcane_spark", "shadow_bolt", "corpse_blast", "boiling_oil", "web", "tar_net"]:
+		if n == 0 and needs_hit(d):
 			return -1.0
 		v += float(P.get("group_spell", 1.5)) * maxf(0.0, n - 1.0)
-		if d.id in ["web", "tar_net", "boiling_oil"] and (h.root_t > 0.0 or h.petrify_t > 0.0):
+		if d.ai.get("lingers", false) and (h.root_t > 0.0 or h.petrify_t > 0.0):
 			v += 1.0   # alvo parado: a zona pega com certeza
 	elif d.is_unit:
 		if h.shield_max > 0.0 and h.shield_hp <= 0.0:
@@ -224,16 +224,17 @@ func _human_value(sim: Sim, c: Sim.CardInst) -> float:
 func _spell_hits(sim: Sim, c: Sim.CardInst) -> int:
 	var d := c.def
 	var r := float(d.fx.get("radius", 2.5))
-	if d.id == "shadow_bolt":
-		return _bolt_line(sim)[1]
-	if d.id == "torch":
-		var n := 0
-		for hh in sim.all_heroes():
-			if hh.soaked_t > 0.3:
-				n += 1
-		return n
-	if d.id == "corpse_blast":
-		return 1 if _own_near_hero(sim, 4.0) >= 0 else 0
+	match aim_of(d):
+		"line":
+			return _bolt_line(sim, d.fx)[1]
+		"soaked":
+			var n := 0
+			for hh in sim.all_heroes():
+				if hh.soaked_t > 0.3:
+					n += 1
+			return n
+		"own_unit":
+			return 1 if _own_near_hero(sim, 4.0) >= 0 else 0
 	return _cluster(sim, r)[1]
 
 
@@ -265,14 +266,11 @@ func _lead(_sim: Sim, hh: SimHero) -> Vector2:
 	return Vector2(hh.x, hh.y) + v.limit_length(6.0) * float(P.get("lead_s", 0.4))
 
 
-## Raio Sombrio: de que ponto atirar para a linha passar por mais heróis. [origem, quantos]
-func _bolt_line(sim: Sim) -> Array:
+## Feitiço em linha (Raio Sombrio): de que ponto atirar para a linha passar por mais heróis. [origem, quantos]
+func _bolt_line(sim: Sim, fx: Dictionary) -> Array:
 	var hs: Array = sim.all_heroes()
-	var L := 10.0
-	var W := 1.5
-	var fx: Dictionary = sim.data.card("shadow_bolt").fx
-	L = float(fx.get("length", L))
-	W = float(fx.get("width", W))
+	var L := float(fx.get("length", 10.0))
+	var W := float(fx.get("width", 1.5))
 	var best := [Vector2(sim.hero.x, sim.hero.y) - Vector2(sim.hero.face_x, sim.hero.face_y) * 3.0, 1]
 	for a in hs:
 		for b in hs:
@@ -306,16 +304,16 @@ func _human_target(sim: Sim, c: Sim.CardInst, spot: Dictionary) -> Vector2:
 	if d.category != "field":
 		return _target(sim, c, false)
 	if d.is_spell:
-		match d.id:
-			"shadow_bolt":
-				return _bolt_line(sim)[0]
-			"torch":
+		match aim_of(d):
+			"line":
+				return _bolt_line(sim, d.fx)[0]
+			"soaked":
 				for hh in sim.all_heroes():
 					if hh.soaked_t > 0.3:
 						return _lead(sim, hh)
-			"corpse_blast", "cursed_coins":
+			"own_unit", "ahead":
 				return _target(sim, c, false)
-			"oil_splash", "web", "tar_net", "boiling_oil", "arcane_spark":
+			"cluster":
 				return _cluster(sim, float(d.fx.get("radius", 3.0)))[0]
 		return _lead(sim, sim.hero)
 	if sim.phase == K.Phase.ARENA:

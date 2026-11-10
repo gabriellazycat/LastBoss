@@ -49,6 +49,7 @@ func _ready() -> void:
 	t_human_bot()
 	t_translations()
 	t_keywords()
+	t_card_fx()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -989,6 +990,73 @@ func _spawn(s: Sim, id: String, dx := 0.5) -> Array:
 		if s.units.alive[j] == 1 and not before.has(j):
 			out.append(j)
 	return out
+
+
+## Passo C0: dono de toda carta, vocabulário de "ai" e primitivas de CardFxLib (docs/CARD_FX.md).
+func t_card_fx() -> void:
+	var owners := ["plague", "dragon", "lich", "common"]
+	var bad: Array = []
+	for c in data.pool:
+		if not owners.has(c.owner):
+			bad.append(c.id)
+	check(bad.is_empty(), "toda carta tem owner válido %s" % [bad])
+	var aims := ["hero", "cluster", "line", "soaked", "own_unit", "ahead", "unit_key", "location"]
+	var conds := ["hero_hindered", "hero_soaked", "hero_shielded", "elixir_spare", "elixir_below", "hand_has", "pack_below",
+		"own_near_hero", "own_units_below", "last_spell_has", "unit_alive", "wounded_near_hero"]
+	var ai_bad: Array = []
+	for c in data.pool:
+		if not aims.has(PlayerBot.aim_of(c)):
+			ai_bad.append(c.id + ":aim")
+		var cs: Array = []
+		for r in c.ai.get("value", []):
+			cs.append(r.get("if", {}))
+		cs.append(c.ai.get("needs", {}))
+		cs.append(c.ai.get("wait_for", {}).get("if", {}))
+		for cd in cs:
+			for key in cd:
+				if not conds.has(key):
+					ai_bad.append(c.id + ":" + key)
+	check(ai_bad.is_empty(), "ai das cartas só usa o vocabulário conhecido %s" % [ai_bad])
+	# Carta montada só com ops: dano, estado, zona, invocação, elixir e ouro.
+	var s := _sim(5)
+	_tough(s)
+	var fake := CardDef.from_dict({"id": "fx_test", "type": "spell", "cost": 1, "owner": "common",
+		"fx": {"damage": 100, "radius": 3.0, "soak": 4.0},
+		"ops": [{"op": "damage", "damage": "damage", "radius": "radius"},
+			{"op": "status", "status": "soaked", "duration": "soak", "target": "area", "radius": 3.0},
+			{"op": "zone", "kind": "fire", "radius": 2.0, "duration": 3.0, "dps": 10},
+			{"op": "summon", "unit": "skeleton", "n": 2},
+			{"op": "elixir", "amount": 2}, {"op": "gold", "amount": 10}]}, 999)
+	var ci := Sim.CardInst.new()
+	ci.def = fake
+	s.elixir = 0.0
+	var h0 := s.hero.hp
+	var u0 := s.units.count
+	var z0 := s.zones.size()
+	var g0 := s.gold
+	s._apply(ci, s.hero.x, s.hero.y)
+	check(h0 - s.hero.hp > 50.0, "op damage machuca o herói (%.0f)" % (h0 - s.hero.hp))
+	check(s.hero.soaked_t > 3.0, "op status encharca")
+	check(s.zones.size() == z0 + 1 and s.zones[-1]["kind"] == "fire", "op zone cria a zona de fogo")
+	var alive := 0
+	for j in s.units.hi:
+		alive += s.units.alive[j]
+	check(alive >= 2, "op summon invoca 2 esqueletos (%d unidades, antes %d)" % [alive, u0])
+	check(is_equal_approx(s.elixir, 2.0) and s.gold > g0, "ops elixir e gold")
+	# Gatilho ao morrer (no Ogro, só durante o teste).
+	var s2 := _sim(5)
+	var dd := data.card("ogre")
+	dd.on_death = [{"op": "elixir", "amount": 3}]
+	s2._apply(_inst("ogre"), s2.hero.x + 5.0, s2.hero.y)
+	var jj := -1
+	for j in s2.units.hi:
+		if s2.units.alive[j] == 1 and s2.units.def[j] == dd.idx:
+			jj = j
+	s2.elixir = 0.0
+	if jj >= 0:
+		s2.kill_unit(jj, K.Death.HERO)
+	dd.on_death = []
+	check(jj >= 0 and is_equal_approx(s2.elixir, 3.0), "on_death roda as ops quando a unidade morre")
 
 
 func _tough(s: Sim) -> void:
