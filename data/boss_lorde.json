@@ -57,7 +57,7 @@
    "rules": {
     "hand_size": 6,
     "elixir_mult": 1.0,
-    "hero_hp_mult": 0.618
+    "hero_hp_mult": 0.616
    }
   },
   {
@@ -77,7 +77,7 @@
    "rules": {
     "spell_damage_mult": 1.15,
     "elixir_mult": 1.0,
-    "hero_hp_mult": 0.786
+    "hero_hp_mult": 0.946
    }
   },
   {
@@ -98,7 +98,7 @@
     "elixir_start": 7,
     "offer_options": 4,
     "elixir_mult": 1.0,
-    "hero_hp_mult": 0.739
+    "hero_hp_mult": 0.693
    }
   },
   {
@@ -117,7 +117,7 @@
    ],
    "rules": {
     "elixir_mult": 1.0,
-    "hero_hp_mult": 0.637
+    "hero_hp_mult": 0.782
    }
   },
   {
@@ -137,7 +137,7 @@
    "rules": {
     "spell_damage_mult": 1.1,
     "elixir_mult": 1.0,
-    "hero_hp_mult": 1.029
+    "hero_hp_mult": 1.163
    }
   }
  ]

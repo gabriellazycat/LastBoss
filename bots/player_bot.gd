@@ -12,8 +12,9 @@ var next_t := 0.0
 
 
 static func load_bot(id: String, seed_: int, dir := "res://data/bots") -> PlayerBot:
-	var b := PlayerBot.new()
-	b.P = GameData._read(dir + "/" + id + ".json")
+	var p := GameData._read(dir + "/" + id + ".json")
+	var b: PlayerBot = HumanBot.new() if str(p.get("kind", "")) == "human" else PlayerBot.new()
+	b.P = p
 	b.kind = str(b.P.get("kind", "random"))
 	b.rng.seed = seed_ * 7919 + 13
 	return b
@@ -51,6 +52,11 @@ func _random(sim: Sim) -> void:
 		return
 	var c: Sim.CardInst = sim.hand[i]
 	var pos := _target(sim, c, true)
+	# Feitiço do aleatório (10/11/2026): mira solta, num ponto qualquer a até `spell_spread` m do herói. Antes
+	# ele acertava todo feitiço em cheio no herói: um "aleatório" com mira perfeita.
+	if c.def.is_spell and c.def.category == "field" and not c.def.id in ["corpse_blast", "shadow_bolt"]:
+		var a := rng.randf() * TAU
+		pos += Vector2(cos(a), sin(a)) * sqrt(rng.randf()) * float(P.get("spell_spread", 6.0))
 	sim.play(i, pos.x, pos.y)
 	if sim.phase == K.Phase.ARENA and rng.randf() < 0.1:
 		sim.teleport(rng.randi_range(0, sim.arena.altar_pos.size() - 1))
@@ -392,7 +398,7 @@ func _pick_route(sim: Sim) -> int:
 	var outs: Array = road.nodes[road.head]["out"]
 	if outs.is_empty():
 		return -1
-	if kind != "smart":
+	if kind != "smart" and kind != "human":
 		return road.legs[outs[rng.randi_range(0, outs.size() - 1)]]["b"]
 	var memo := {}
 	var best := -1

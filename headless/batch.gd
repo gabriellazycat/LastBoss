@@ -19,7 +19,7 @@ func _ready() -> void:
 			seeds.append(int(part))
 	var runs: Array = []
 	for s in seeds:
-		runs.append(run_one(data, int(s), args["deck"], args["bot"], int(args["phase"])))
+		runs.append(run_one(data, int(s), args["deck"], args["bot"], int(args["phase"]), str(args["data"]) + "/bots"))
 	var f := FileAccess.open(args["out"], FileAccess.WRITE)
 	if f == null:
 		push_error("batch: não gravou " + str(args["out"]))
@@ -31,16 +31,18 @@ func _ready() -> void:
 	get_tree().quit(0)
 
 
-static func run_one(data: GameData, s: int, deck: String, bot_id: String, phase := 1) -> Dictionary:
+static func run_one(data: GameData, s: int, deck: String, bot_id: String, phase := 1, bot_dir := "res://data/bots") -> Dictionary:
 	var t0 := Time.get_ticks_usec()
 	var sim := Sim.new()
 	sim.setup(data, s, deck, [], [], phase)
-	var bot := PlayerBot.load_bot(bot_id, s)
+	var bot := PlayerBot.load_bot(bot_id, s, bot_dir)
 	while sim.phase != K.Phase.OVER:
 		bot.think(sim)
 		sim.step()
 	var st: Dictionary = sim.stats.duplicate(true)
 	st["bot"] = bot_id
+	if bot is HumanBot:
+		st["bot_stats"] = bot.stats.duplicate()
 	st["phase"] = phase
 	if phase != 1:
 		st["deck"] = "%s@%d" % [deck, phase]

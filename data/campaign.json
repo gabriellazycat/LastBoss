@@ -43,7 +43,14 @@
     "escudeiro"
    ],
    "unlock_pact": "treasure",
-   "hp_mult": 1.105
+   "hp_mult": 1.105,
+   "pact_hp": {
+    "horde": 1.0,
+    "ruin": 1.131,
+    "treasure": 1.238,
+    "crypt": 0.972,
+    "cult": 0.796
+   }
   },
   {
    "id": 3,
@@ -58,7 +65,14 @@
     "escudeiro"
    ],
    "unlock_pact": "crypt",
-   "hp_mult": 0.994
+   "hp_mult": 0.994,
+   "pact_hp": {
+    "horde": 1.111,
+    "ruin": 0.855,
+    "treasure": 0.993,
+    "crypt": 0.974,
+    "cult": 0.697
+   }
   },
   {
    "id": 4,
@@ -74,7 +88,14 @@
    "group": true,
    "revive_hp": 0.5,
    "hp_mult": 0.874,
-   "unlock_pact": "cult"
+   "unlock_pact": "cult",
+   "pact_hp": {
+    "horde": 0.558,
+    "ruin": 1.963,
+    "treasure": 0.998,
+    "crypt": 1.621,
+    "cult": 1.354
+   }
   }
  ]
 }
