@@ -951,7 +951,7 @@
    "fx": {
     "gold_step": 25,
     "gold_bonus": 0.15,
-    "gold_cap": 1.5
+    "gold_cap": 0.9
    },
    "lvl": [
     "hp",

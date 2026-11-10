@@ -18,6 +18,7 @@
   "spells_ignore_min": true
  },
  "sacrifice_elixir": 1,
+ "group_spell_splash": 0.3,
  "hero_xp": {
   "upgrade_every": 4,
   "upgrade_max": 4
@@ -157,7 +158,7 @@
   "altar_hp": 1500,
   "teleport_cooldown": 12.0,
   "teleport_cost": 2,
-  "elixir_mult_head": 2.0,
+  "elixir_mult_head": 1.0,
   "spell_extra_cost_no_left_arm": 2,
   "arm_aura_radius": 3.0,
   "entry_distance": 14.0,
@@ -165,7 +166,10 @@
   "pillar_ring": 6.0,
   "pillar_radius": 0.9,
   "pillar_hp": 350,
-  "hunt_radius": 10.0
+  "hunt_radius": 10.0,
+  "overtime_s": 240,
+  "overtime_hero_dmg": 0.15,
+  "overtime_elixir": 0.25
  },
  "curse": {
   "hp_per_stack": 0.03,

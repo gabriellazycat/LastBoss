@@ -26,6 +26,7 @@ const F_STONE := 64       # Gárgula petrificada: imune
 const F_BITTEN := 128     # Mímico já mordeu
 const F_DEFEND := 256     # invocada perto do chefe: defende
 const F_ABSORBED := 512
+const F_SNUBBED := 1024    # Mímico que o herói desistiu de alcançar (isca fora do alcance): não atrai mais
 
 # Modificadores de carta (bitmask na instância).
 const M_VETERAN := 1

@@ -137,6 +137,7 @@ UI_RESTART,Nova run,New run
 UI_QUIT,Sair,Quit
 UI_SACRIFICE,Sacrificar (+1),Sacrifice (+1)
 UI_ARENA,A LUTA FINAL COMEÇOU,THE FINAL BATTLE BEGINS
+UI_OVERTIME,"PRORROGAÇÃO: os altares apagaram e o herói não se cura mais","OVERTIME: the altars went dark and the hero no longer heals"
 UI_PART_left_arm,Braço esquerdo,Left arm
 UI_PART_right_arm,Braço direito,Right arm
 UI_PART_head,Cabeça,Head

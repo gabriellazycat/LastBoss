@@ -115,6 +115,8 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 		for k in int(R["party"]["size"]):
 			party.append("escudeiro")
 	phase_hp_mult = float(phase_cfg.get("hp_mult", 1.0))
+	# Ajuste fino por pacto dentro da fase (10/11/2026): cada pacto tem contras diferentes em cada fase.
+	phase_hp_mult *= float(phase_cfg.get("pact_hp", {}).get(deck, 1.0))
 	phase_dmg_mult = float(phase_cfg.get("damage_mult", 1.0))
 	run_seed = seed_
 	rng.seed = seed_
@@ -229,6 +231,7 @@ func _elixir() -> void:
 	rate *= float(deck_rules.get("elixir_mult", 1.0))
 	if phase == K.Phase.ARENA and arena.part_alive("head"):
 		rate *= float(R["arena"]["elixir_mult_head"])
+	rate *= 1.0 + overtime() * float(R["arena"].get("overtime_elixir", 0.0))
 	elixir += rate * dt
 	if elixir >= elixir_max:
 		elixir = elixir_max
@@ -393,6 +396,12 @@ func _resolve_contest(won: bool) -> void:
 
 
 func _burn() -> void:
+	for f in followers:
+		if f.burn_t > 0.0:
+			f.burn_t -= dt
+			hit_hero = f
+			damage_hero(f.burn_dps * dt, f.x, f.y, K.TAG_FIRE, SimHero.DMG_AREA, "torch")
+			hit_hero = null
 	if burn_t <= 0.0:
 		return
 	burn_t -= dt
@@ -621,6 +630,14 @@ func enter_arena() -> void:
 	emit(K.Ev.ARENA, center.x, center.y, 0, 0)
 
 
+## Prorrogação da arena (10/11/2026): minutos passados de overtime_s na arena (0 antes). Na prorrogação a
+## cura do herói para, o golpe dele cresce e o elixir do covil vem mais rápido: um empate na arena acaba.
+func overtime() -> float:
+	if phase != K.Phase.ARENA or float(stats.get("arena_t", -1.0)) < 0.0:
+		return 0.0
+	return maxf(0.0, (t - float(stats["arena_t"]) - float(R["arena"].get("overtime_s", 1e9))) / 60.0)
+
+
 func core_destroyed() -> void:
 	_finish(K.Result.LOSS)
 
@@ -709,8 +726,10 @@ func _follow(f: SimHero) -> void:
 	var p := Vector2(f.x, f.y)
 	var d := p.distance_to(goal)
 	var free_r := 7.0 if f.target_kind == SimHero.TGT_UNIT else 2.5
-	if d > free_r:
-		var step_ := minf(d - free_r * 0.5, float(f.H["speed"]) * 1.6 * dt)
+	# Preso (teia, piche, prisão, petrificado) não anda; na teia anda devagar (10/11/2026).
+	var stuck := f.root_t > 0.0 or f.petrify_t > 0.0
+	if d > free_r and (not stuck or d > 25.0):
+		var step_ := minf(d - free_r * 0.5, float(f.H["speed"]) * 1.6 * dt * (0.5 if f.slow_t > 0.0 else 1.0))
 		if d > 25.0:
 			step_ = d - 2.0   # muito longe (troca de ato, portão da arena): reaparece junto do grupo
 		var v := (goal - p).normalized() * step_
@@ -1142,6 +1161,15 @@ func _forge() -> float:
 
 # ================================================================ zonas
 
+## Heróis de pé dentro da zona z (o da vez primeiro). Fase de grupo (10/11/2026): zonas pegam o grupo todo.
+func _in_zone(z: Dictionary) -> Array:
+	var out: Array = []
+	for hh in all_heroes():
+		if Vector2(hh.x - float(z["x"]), hh.y - float(z["y"])).length() <= float(z["r"]) + hh.radius:
+			out.append(hh)
+	return out
+
+
 func _zones() -> void:
 	var h := Vector2(hero.x, hero.y)
 	var i := zones.size() - 1
@@ -1151,26 +1179,36 @@ func _zones() -> void:
 		var inside: bool = h.distance_to(Vector2(z["x"], z["y"])) <= float(z["r"]) + hero.radius
 		match str(z["kind"]):
 			"web":
-				if inside:
-					hero.slow_t = maxf(hero.slow_t, 0.15)
-					hero.note("slow", 2.0)
-					if not z["applied"]:
-						z["applied"] = true
-						_cc()
-						hero.root_t = maxf(hero.root_t, float(z.get("root", 0.0)) * cc_mult())
-						hero.add_curse(int(z.get("curse", 0)))
+				# "applied" guarda os heróis (pidx) já presos por esta teia: cada um prende uma vez.
+				if not (z["applied"] is Array):
+					z["applied"] = [hero.pidx] if z["applied"] else []
+				for hh in _in_zone(z):
+					hh.slow_t = maxf(hh.slow_t, 0.15)
+					hh.note("slow", 2.0)
+					if not z["applied"].has(hh.pidx):
+						z["applied"].append(hh.pidx)
+						if hh == hero:
+							_cc()
+						hh.root_t = maxf(hh.root_t, float(z.get("root", 0.0)) * cc_mult())
+						hh.add_curse(int(z.get("curse", 0)))
 						if float(z.get("soak", 0.0)) > 0.0:
-							hero.soaked_t = maxf(hero.soaked_t, float(z["soak"]))
+							hh.soaked_t = maxf(hh.soaked_t, float(z["soak"]))
 			"oil":
-				if inside:
-					hero.soaked_t = z["soaked"]
+				var ins: Array = _in_zone(z)
+				for k in ins.size():
+					var hh: SimHero = ins[k]
+					hh.soaked_t = z["soaked"]
+					hit_hero = hh if hh != hero else null
 					damage_hero(float(z["dps"]) * dt, z["x"], z["y"], K.TAG_FIRE, SimHero.DMG_AREA, "boiling_oil")
 					if z.get("curse", 0) > 0:
-						hero.add_curse(int(z["curse"]))
+						hh.add_curse(int(z["curse"]))
 						z["curse"] = 0
+				hit_hero = null
 			"fire":
-				if inside:
+				for hh in _in_zone(z):
+					hit_hero = hh if hh != hero else null
 					damage_hero(float(z["dps"]) * dt, z["x"], z["y"], K.TAG_FIRE, SimHero.DMG_AREA, z["src"])
+				hit_hero = null
 			"spring":
 				# Fonte: cura as suas unidades no raio (estruturas também).
 				if tick % 4 == 0:
@@ -1185,12 +1223,16 @@ func _zones() -> void:
 					hero.note("bait", 60.0)
 					z["t"] = 0.0
 			"coins":
-				if inside and not z["applied"]:
+				# Quem pisar primeiro (o da vez ou um seguidor) para para catar as moedas.
+				var ins_c: Array = _in_zone(z)
+				if ins_c.size() > 0 and not z["applied"]:
+					var hc: SimHero = ins_c[0]
 					z["applied"] = true
-					hero.root_t = maxf(hero.root_t, float(z["stop"]))
-					hero.add_curse(int(z["curses"]))
+					hc.root_t = maxf(hc.root_t, float(z["stop"]))
+					hc.add_curse(int(z["curses"]))
 					_earn_gold(float(z["gold"]))
-					_cc()
+					if hc == hero:
+						_cc()
 					z["t"] = 0.0
 			"army":
 				if z["t"] <= 0.0:
@@ -1415,14 +1457,24 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			if dir.length() < 0.1:
 				dir = Vector2(hero.face_x, hero.face_y)
 			dir = dir.normalized()
-			var rel := Vector2(hero.x - x, hero.y - y)
-			var along := rel.dot(dir)
-			var side := absf(rel.dot(Vector2(-dir.y, dir.x)))
-			if along >= -0.5 and along <= float(fx["length"]) and side <= float(fx["width"]) * 0.5 + hero.radius:
+			# Fase de grupo (10/11/2026): o raio atravessa a linha e pega todo herói nela (cheio no primeiro,
+			# metade nos outros, como os feitiços de área).
+			var hit_line: Array = []
+			for hh in all_heroes():
+				var rel := Vector2(hh.x - x, hh.y - y)
+				var along := rel.dot(dir)
+				var side := absf(rel.dot(Vector2(-dir.y, dir.x)))
+				if along >= -0.5 and along <= float(fx["length"]) and side <= float(fx["width"]) * 0.5 + hh.radius:
+					hit_line.append([along, hh])
+			hit_line.sort_custom(func(a, b): return a[0] < b[0])
+			for k2 in hit_line.size():
+				var hh: SimHero = hit_line[k2][1]
+				hit_hero = hh if hh != hero else null
 				# N3: o raio volta pelo mesmo caminho e acerta de novo.
 				for k in int(d.fxv("hits", lv, 1.0)):
-					damage_hero(d.fxv("damage", lv) * smult * vet, x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
-				hero.add_curse(curse)
+					damage_hero(d.fxv("damage", lv) * smult * vet * splash_mult(k2), x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
+				hh.add_curse(curse)
+			hit_hero = null
 		"web":
 			zones.append({"kind": "web", "x": x, "y": y, "r": fx["radius"], "t": d.fxv("duration", lv) * vet, "applied": false,
 				"root": d.fxv("root", lv), "curse": curse})
@@ -1448,8 +1500,13 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			rally_dmg = d.fxv("damage", lv)
 			rally_spd = d.fxv("speed", lv)
 		"oil_splash":
-			hero.soaked_t = maxf(hero.soaked_t, d.fxv("soaked", lv) * vet)
-			hero.add_curse(curse)
+			# Sozinho: encharca o herói. Em grupo (10/11/2026): todo herói a até 3 m do ponto (nenhum perto = o da vez).
+			var wet: Array = heroes_near(x, y, float(fx.get("radius", 3.0))) if group_mode() else []
+			if wet.is_empty():
+				wet = [hero]
+			for hh in wet:
+				hh.soaked_t = maxf(hh.soaked_t, d.fxv("soaked", lv) * vet)
+				hh.add_curse(curse)
 		"torch":
 			var dmg := d.fxv("damage", lv) * smult * vet
 			var near_t := heroes_near(x, y, float(fx["radius"]))
@@ -1462,6 +1519,10 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 					burn_t = maxf(burn_t, float(fx["burn_s"]))
 					burn_dps = d.fxv("burn_dps", lv) * smult
 					burn_src = d.id
+				elif was_soaked:
+					# Seguidor encharcado também pega fogo (10/11/2026).
+					hh.burn_t = maxf(hh.burn_t, float(fx["burn_s"]))
+					hh.burn_dps = d.fxv("burn_dps", lv) * smult * splash_mult(1)
 				hh.add_curse(curse)
 			hit_hero = null
 		"tar_net":
@@ -1548,7 +1609,9 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			if arena.hero_in_front(d.fxv("cone", lv), float(fx["range"]) + 2.0):
 				damage_hero(fx["damage"], arena.bx, arena.by, 0, SimHero.DMG_PIERCE, d.id)
 		"bone_prison":
-			hero.root_t = d.fxv("root", lv) * cc_mult()
+			# Prende o grupo todo (10/11/2026); sozinho, all_heroes() é só o herói.
+			for hh in all_heroes():
+				hh.root_t = d.fxv("root", lv) * cc_mult()
 		"petrifying_gaze":
 			hero.petrify_t = d.fxv("petrify", lv)
 			hero.shield_hp = 0.0

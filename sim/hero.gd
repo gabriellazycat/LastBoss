@@ -45,6 +45,8 @@ var fear_y := 0.0
 var root_t := 0.0
 var petrify_t := 0.0
 var soaked_t := 0.0
+var burn_t := 0.0               # seguidor em chamas (Tocha no seguidor encharcado); o da vez usa Sim.burn_t
+var burn_dps := 0.0
 var tavern_t := 0.0
 var drink_t := 0.0              # Fonte: ajoelhado bebendo (não anda nem ataca)
 var hold := false               # disputa de local em andamento: fica perto de (hold_x, hold_y)
@@ -66,6 +68,11 @@ var fury_count := 0                # inimigos no raio da Fúria do Herói
 var lure_on := false
 var lure_x := 0.0
 var lure_y := 0.0
+var lure_unit := -1             # Mímico que está puxando o herói agora (-1 = isca de ouro ou nada)
+var lure_time := 0.0            # segundos seguidos puxado pelo mesmo Mímico
+var stall_t := 0.0              # segundos da janela de avanço atual (fora de disputa)
+var prog_mark := 0.0            # ponto da estrada no começo da janela de avanço
+var push_t := 0.0               # impaciência: segundos forçando a passagem (sem iscas, só briga de perto)
 var spin_t := 0.0
 var dash_t := 0.0
 var dash_left := 0.0
@@ -151,7 +158,7 @@ func max_hp() -> float:
 
 
 func damage() -> float:
-	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1)
+	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * (1.0 + sim.overtime() * float(sim.data.rules["arena"].get("overtime_hero_dmg", 0.0)))
 
 
 ## Herói seguinte da fila: um nível acima, vida e dano ×step, tudo cheio. Habilidades e dano recebido ficam (são do grupo).
@@ -220,7 +227,7 @@ func update(dt: float) -> void:
 		if shield_t <= 0.0:
 			shield_hp = shield_max
 	var regen: float = H.get("regen", 0.0)
-	if regen > 0.0 and petrify_t <= 0.0 and hp > 0.0:
+	if regen > 0.0 and petrify_t <= 0.0 and hp > 0.0 and sim.overtime() <= 0.0:
 		hp = minf(max_hp(), hp + max_hp() * regen * dt)
 	if sim.tick % sim.ai_period == 0:
 		_choose_target()
@@ -231,6 +238,28 @@ func update(dt: float) -> void:
 		# O progresso só recua um pouco: senão a projeção escorrega para trás e a coleira o arrasta.
 		var pr := sim.road.project(Vector2(x, y), seg, s_max - float(sim.data.rules["road"]["max_backtrack"]))
 		s = pr.x
+		# Impaciência (10/11/2026): sem avançar na estrada por stall_s s (fora de disputa), ele força a
+		# passagem por push_s s: ignora iscas e só briga com o que está colado nele. Sem isso, Isca de Ouro e
+		# Mímico fora do alcance seguravam o herói até o tempo da run acabar.
+		if s < prog_mark - 30.0:
+			prog_mark = s   # estrada nova (ato seguinte) ou herói novo
+		if hold or follower:
+			prog_mark = s
+			stall_t = 0.0
+		else:
+			# A cada stall_s s, conta quanto andou; menos que stall_min m é travado.
+			stall_t += dt
+			if stall_t > float(AI.get("stall_s", 20.0)):
+				if s - prog_mark < float(AI.get("stall_min", 10.0)):
+					push_t = float(AI.get("push_s", 15.0))
+				stall_t = 0.0
+				prog_mark = s
+		# Ato longo demais (act_soft s): impaciente até o fim do ato, para nenhuma run parar na estrada.
+		var acts_done: Array = sim.stats.get("act_t", [])
+		var act_t0: float = acts_done[-1] if acts_done.size() > 0 else 0.0
+		if sim.t - act_t0 > float(AI.get("act_soft", 600.0)):
+			push_t = maxf(push_t, 1.0)
+		push_t = maxf(0.0, push_t - dt)
 		s_max = maxf(s_max, s)
 		seg = int(pr.y)
 		road_dist = pr.z
@@ -645,12 +674,16 @@ func _choose_target() -> void:
 	var best_score := -INF
 	var arena := sim.phase == K.Phase.ARENA
 	var unit_r := 3.0 if arena else engage
+	if push_t > 0.0 and not arena:
+		unit_r = minf(unit_r, 2.5)   # impaciência: só o que está colado nele
 	# Na arena ele caça atiradores e estruturas mais longe (rodada 09/11/2026); o resto, só de perto.
 	var hunt_r := float(sim.data.rules["arena"].get("hunt_radius", 3.0)) if arena else engage
 	var houses: Array = sim.live_houses()
 	var defend := float(sim.data.rules["locations"]["tavern"].get("defend", 0.0))
+	var was_lured := lure_unit
 	lure_on = false
-	var nose := has("treasure_nose")
+	lure_unit = -1
+	var nose := has("treasure_nose") or push_t > 0.0
 	var lure_d := INF
 	for i in U.hi:
 		if U.alive[i] == 0:
@@ -659,13 +692,14 @@ func _choose_target() -> void:
 		var dy := U.py[i] - y
 		var d := sqrt(dx * dx + dy * dy)
 		var di := U.def[i]
-		if di == U.d_mimic and not nose and not (U.flags[i] & K.F_BITTEN):
+		if di == U.d_mimic and not nose and not (U.flags[i] & (K.F_BITTEN | K.F_SNUBBED)):
 			var lr: float = sim.data.cards[di].fx.get("lure_radius", 10.0)
 			if d < lr and d < lure_d:
 				lure_d = d
 				lure_on = true
 				lure_x = U.px[i]
 				lure_y = U.py[i]
+				lure_unit = i
 			continue
 		var far_ok := arena and (U.arch[i] == K.Arch.SHOOTER or U.arch[i] == K.Arch.STRUCTURE)
 		if d > (hunt_r if far_ok else unit_r) or (U.flags[i] & K.F_STONE) or (di == U.d_tower and not arena):
@@ -732,6 +766,17 @@ func _choose_target() -> void:
 						best_score = sc
 						best = k
 						best_kind = TGT_ALTAR
+	# Isca que não se alcança (Mímico longe da estrada, no meio de monstros): depois de lure_giveup s puxado
+	# pelo mesmo Mímico sem chegar, o herói desiste dele. Sem isso a run travava até o tempo acabar (10/11/2026).
+	if lure_unit >= 0 and lure_unit == was_lured:
+		lure_time += sim.dt * float(sim.ai_period)
+		if lure_time > float(AI.get("lure_giveup", 8.0)):
+			U.flags[lure_unit] |= K.F_SNUBBED
+			lure_on = false
+			lure_unit = -1
+			lure_time = 0.0
+	elif lure_unit != was_lured:
+		lure_time = 0.0
 	target = best
 	target_kind = best_kind
 

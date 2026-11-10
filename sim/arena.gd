@@ -41,8 +41,10 @@ func setup(s: Sim, center: Vector2, dir: Vector2) -> void:
 	face = -dir
 	for p in sim.data.boss["parts"]:
 		part_ids.append(p["id"])
-		part_hp.append(float(p["hp"]))
-		part_max.append(float(p["hp"]))
+		# part_hp_mult (10/11/2026): botão de balanceamento da arena (menor = o herói derruba o chefe mais rápido).
+		var php := float(p["hp"]) * float(A.get("part_hp_mult", 1.0))
+		part_hp.append(php)
+		part_max.append(php)
 		part_off.append(Vector2(p["offset"][0], p["offset"][1]))
 		part_value.append(PART_VALUE.get(p["id"], 1.0))
 	var n: int = A["altars"]
@@ -151,7 +153,7 @@ func _collide() -> void:
 
 func can_teleport(k: int) -> bool:
 	return active and tp_cd <= 0.0 and k >= 0 and k < altar_pos.size() and altar_alive[k] and k != altar \
-		and sim.elixir >= sim.teleport_cost()
+		and sim.elixir >= sim.teleport_cost() and sim.overtime() <= 0.0   # prorrogação (10/11/2026): altares apagam
 
 
 func teleport(k: int) -> bool:

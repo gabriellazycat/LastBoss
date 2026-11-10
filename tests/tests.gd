@@ -43,6 +43,9 @@ func _ready() -> void:
 	t_combos()
 	t_classes()
 	t_group()
+	t_group_spells()
+	t_stall_and_overtime()
+	t_human_bot()
 	t_translations()
 	t_keywords()
 	print("falhas: ", fails)
@@ -1081,6 +1084,119 @@ func _phase_sim(n: int, seed_ := 7) -> Sim:
 	s.setup(data, seed_, "horde", [], [], n)
 	s.auto_route = true
 	return s
+
+
+## Fase de grupo com dois heróis colados: o da vez e um seguidor a 1 m.
+func _two_heroes() -> Sim:
+	var s := _phase_sim(4)
+	s.offers.clear()
+	s.hero.hp = 0.0
+	s._check_end()
+	s.offers.clear()
+	var f: SimHero = s.followers[0]
+	f.x = s.hero.x + 1.0
+	f.y = s.hero.y
+	f.hp = f.max_hp()
+	s.hero.hp = s.hero.max_hp()
+	return s
+
+
+func _cast(s: Sim, id: String, x: float, y: float) -> void:
+	var ci := Sim.CardInst.new()
+	ci.def = data.card(id)
+	ci.uid = 999
+	s._apply(ci, x, y)
+
+
+func t_group_spells() -> void:
+	# Zonas, Raio Sombrio, Óleo e Prisão pegam o grupo (10/11/2026); antes só o herói da vez.
+	var s := _two_heroes()
+	var f: SimHero = s.followers[0]
+	_cast(s, "web", s.hero.x + 0.5, s.hero.y)
+	s._zones()
+	check(s.hero.slow_t > 0.0 and f.slow_t > 0.0, "teia prende o herói e o seguidor")
+	s = _two_heroes()
+	f = s.followers[0]
+	var b0 := f.hp
+	_cast(s, "boiling_oil", s.hero.x + 0.5, s.hero.y)
+	for _k in 20:
+		s._zones()
+	check(f.hp < b0 and f.soaked_t > 0.0, "óleo fervente queima e encharca o seguidor (%.0f -> %.0f)" % [b0, f.hp])
+	s = _two_heroes()
+	f = s.followers[0]
+	_cast(s, "oil_splash", s.hero.x + 0.5, s.hero.y)
+	check(s.hero.soaked_t > 0.0 and f.soaked_t > 0.0, "Balde de Óleo encharca os dois heróis perto do ponto")
+	_cast(s, "torch", s.hero.x + 0.5, s.hero.y)
+	check(f.burn_t > 0.0, "Tocha incendeia o seguidor encharcado")
+	var fb := f.hp
+	for _k in 10:
+		s._burn()
+	check(f.hp < fb, "seguidor em chamas perde vida")
+	s = _two_heroes()
+	f = s.followers[0]
+	s.hero.shield_hp = 0.0
+	var h0 := s.hero.hp
+	b0 = f.hp
+	# Raio de trás do herói passando pelos dois (linha no eixo x).
+	_cast(s, "shadow_bolt", s.hero.x - 3.0, s.hero.y)
+	check(s.hero.hp < h0 and f.hp < b0, "Raio Sombrio atravessa a linha e pega os dois")
+	check(h0 - s.hero.hp > (b0 - f.hp) * 1.5, "o primeiro da linha leva o golpe cheio, o segundo metade")
+	s = _two_heroes()
+	f = s.followers[0]
+	_cast(s, "bone_prison", s.hero.x, s.hero.y)
+	check(s.hero.root_t > 0.0 and f.root_t > 0.0, "Prisão de Ossos prende o grupo")
+	var fx0 := f.x
+	f.x += 10.0
+	var fx1 := f.x
+	for _k in 10:
+		s._follow(f)
+	check(is_equal_approx(f.x, fx1) and fx1 != fx0, "seguidor preso não anda atrás do grupo")
+	# Sozinho, nada muda: o Balde encharca o herói mesmo longe do ponto.
+	var solo := _sim(5)
+	_cast(solo, "oil_splash", solo.hero.x + 30.0, solo.hero.y)
+	check(solo.hero.soaked_t > 0.0, "fora da fase de grupo o Balde de Óleo encharca o herói em qualquer ponto")
+
+
+func t_stall_and_overtime() -> void:
+	# Isca fora do alcance não segura o herói para sempre (a run do Tesouro travava até o tempo acabar).
+	var s := _sim(15, "treasure")
+	s.auto_route = true
+	s.hero.prog_mark = s.hero.s
+	for _k in int(25.0 / s.dt):
+		s.hero.hold = false
+		s.hero.x = s.hero.ox
+		s.hero.y = s.hero.oy
+		s.hero.update(s.dt)
+		s.tick += 1
+		s.t += s.dt
+	check(s.hero.push_t > 0.0, "herói parado 20 s fica impaciente (push %.1f s)" % s.hero.push_t)
+	s.zones.append({"kind": "bait", "x": s.hero.x + 6.0, "y": s.hero.y, "r": 1.0, "t": 40.0, "xp": 0.0})
+	s.hero._choose_target()
+	check(not s.hero.lure_on, "impaciente, ele ignora a Isca de Ouro")
+	# Prorrogação da arena: depois de overtime_s, sem cura e golpe maior.
+	var a := _sim(3)
+	a.enter_arena()
+	var d0 := a.hero.damage()
+	check(a.overtime() == 0.0, "arena começa sem prorrogação")
+	a.t += float(data.rules["arena"]["overtime_s"]) + 120.0
+	check(absf(a.overtime() - 2.0) < 0.01 and a.hero.damage() > d0 * 1.2, "2 min de prorrogação: golpe do herói %.0f -> %.0f" % [d0, a.hero.damage()])
+
+
+func t_human_bot() -> void:
+	# O bot humano termina runs nas fases 1 e 4 sem travar e sem jogada recusada em excesso.
+	for ph in [1, 4]:
+		var s := Sim.new()
+		s.setup(data, 21, "ruin", [], [], ph)
+		s.auto_route = false
+		var b := PlayerBot.load_bot("human", 21)
+		var k := 0
+		while s.phase != K.Phase.OVER and k < 70000:
+			b.think(s)
+			s.step()
+			k += 1
+		var st: Dictionary = (b as HumanBot).stats
+		check(s.phase == K.Phase.OVER and s.stats["result"] != "timeout", "bot humano termina a fase %d (%s em %.0f s, %d jogadas)" % [ph, s.stats["result"], s.t, st["plays"]])
+		check(st["refused"] <= st["plays"] * 0.05 + 2, "bot humano quase nunca tem jogada recusada (%d de %d)" % [st["refused"], st["plays"]])
 
 
 func t_classes() -> void:
