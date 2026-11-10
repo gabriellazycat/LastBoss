@@ -731,7 +731,7 @@ PHASED_0,"Três escudeiros fracos e um ato só. Aprenda a jogar cartas, combinar
 PHASED_1,"Sete escudeiros em fila, cada um mais forte que o anterior.","Seven squires in a row, each stronger than the last."
 PHASED_2,Escudeiros e arqueiras se alternam: a arqueira atira de longe e não tem escudo.,Squires and archers take turns: the archer shoots from afar and has no shield.
 PHASED_3,Clérigas se curam e abençoam quem vem depois. Derrube-as rápido.,Clerics heal themselves and bless whoever comes next. Bring them down fast.
-PHASED_4,"Eles andam juntos: quando um cai, quem chega levanta o caído (uma vez cada). O grupo cresce a cada queda.","They travel together: when one falls, whoever arrives raises the fallen (once each). The party grows with every fall."
+PHASED_4,"Eles andam juntos: quando um cai, quem chega levanta o caído (uma vez cada). O grupo cresce a cada queda. Enxames sofrem contra o grupo: fogo e mortes funcionam melhor.","They travel together: when one falls, whoever arrives raises the fallen (once each). The party grows with every fall. Swarms struggle against the group: fire and deaths work better."
 UI_HEROES_STANDING,{n} de pé,{n} standing
 TUT_welcome,Você é o Lorde das Trevas. Os heróis vêm pela estrada até o seu covil: derrube os 3 antes que cheguem a você.,You are the Dark Lord. Heroes come down the road to your lair: bring down all 3 before they reach you.
 TUT_play,"Arraste uma carta da mão para o chão perto do herói (ou aperte 1 a 6 e clique). Cartas custam [[elixir|Elixir]], que enche sozinho.","Drag a card from your hand onto the ground near the hero (or press 1 to 6 and click). Cards cost [[elixir|Elixir]], which refills on its own."

@@ -42,7 +42,8 @@
     "arqueira",
     "escudeiro"
    ],
-   "unlock_pact": "treasure"
+   "unlock_pact": "treasure",
+   "hp_mult": 1.105
   },
   {
    "id": 3,
@@ -56,7 +57,8 @@
     "cleriga",
     "escudeiro"
    ],
-   "unlock_pact": "crypt"
+   "unlock_pact": "crypt",
+   "hp_mult": 0.994
   },
   {
    "id": 4,
@@ -67,11 +69,11 @@
     "cleriga",
     "mago",
     "escudeiro",
-    "mago"
+    "arqueira"
    ],
    "group": true,
    "revive_hp": 0.5,
-   "hp_mult": 0.8,
+   "hp_mult": 0.874,
    "unlock_pact": "cult"
   }
  ]

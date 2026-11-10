@@ -7,7 +7,7 @@ Branch de trabalho: `campanha-combos` (checkout principal). A arte está numa se
 ## Progresso (atualizado a cada etapa; a retomada automática lê daqui)
 
 Status: EM ANDAMENTO
-Última atualização: 2026-11-10 03:12
+Última atualização: 2026-11-10 03:33
 
 - [x] 1. Mapear cartas, decks, heróis e menu no código
 - [x] 2. Famílias de cartas, combos e pactos novos

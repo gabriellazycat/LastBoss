@@ -704,7 +704,7 @@ func _revive(fallen: SimHero) -> void:
 ## Seguidor fica perto do herói da vez: pode sair para bater num monstro, mas volta para o lugar dele no grupo.
 func _follow(f: SimHero) -> void:
 	var a := float(f.pidx) * 2.4
-	var goal := Vector2(hero.x + cos(a) * 2.2, hero.y + sin(a) * 2.2)
+	var goal := Vector2(hero.x + cos(a) * 3.6, hero.y + sin(a) * 3.6)
 	var p := Vector2(f.x, f.y)
 	var d := p.distance_to(goal)
 	var free_r := 7.0 if f.target_kind == SimHero.TGT_UNIT else 2.5
@@ -726,19 +726,25 @@ func _follow(f: SimHero) -> void:
 func regroup() -> void:
 	for f in followers:
 		var a := float(f.pidx) * 2.4
-		f.x = hero.x + cos(a) * 2.2
-		f.y = hero.y + sin(a) * 2.2
+		f.x = hero.x + cos(a) * 3.6
+		f.y = hero.y + sin(a) * 3.6
 		f.ox = f.x
 		f.oy = f.y
 
 
-## Heróis de pé a até r m de (x, y), contando o raio do corpo.
+## Heróis de pé a até r m de (x, y), contando o raio do corpo, do mais perto ao mais longe.
 func heroes_near(x: float, y: float, r: float) -> Array:
 	var out: Array = []
 	for hh in all_heroes():
 		if Vector2(hh.x - x, hh.y - y).length() <= r + hh.radius:
 			out.append(hh)
+	out.sort_custom(func(a, b): return Vector2(a.x - x, a.y - y).length_squared() < Vector2(b.x - x, b.y - y).length_squared())
 	return out
+
+
+## Feitiço de área no grupo: dano inteiro no herói mais perto, metade nos outros.
+func splash_mult(k: int) -> float:
+	return 1.0 if k == 0 else float(R.get("group_spell_splash", 0.5))
 
 
 ## Todos os heróis de pé (o da vez primeiro).
@@ -996,10 +1002,10 @@ func kamikaze(i: int) -> void:
 	var x := units.px[i]
 	var y := units.py[i]
 	var src := str(card_of_uid.get(units.uid[i], c.id))
-	for hh in all_heroes():
-		if Vector2(hh.x - x, hh.y - y).length() <= r + hh.radius:
-			hit_hero = hh
-			damage_hero(c.fxv("explode_damage", lv), x, y, units.tags[i], 0, src)
+	var near_k := heroes_near(x, y, r)
+	for k in near_k.size():
+		hit_hero = near_k[k]
+		damage_hero(c.fxv("explode_damage", lv) * splash_mult(k), x, y, units.tags[i], 0, src)
 	hit_hero = null
 	# Goblin N3: a explosão deixa fogo no chão.
 	if c.has_n3(lv, "fire_dps"):
@@ -1437,10 +1443,12 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			hero.add_curse(curse)
 		"torch":
 			var dmg := d.fxv("damage", lv) * smult * vet
-			for hh in heroes_near(x, y, float(fx["radius"])):
+			var near_t := heroes_near(x, y, float(fx["radius"]))
+			for k in near_t.size():
+				var hh: SimHero = near_t[k]
 				var was_soaked: bool = hh.soaked_t > 0.0
 				hit_hero = hh if hh != hero else null
-				damage_hero(dmg, x, y, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
+				damage_hero(dmg * splash_mult(k), x, y, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
 				if was_soaked and hh == hero:
 					burn_t = maxf(burn_t, float(fx["burn_s"]))
 					burn_dps = d.fxv("burn_dps", lv) * smult
@@ -1472,9 +1480,10 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 				var by_ := units.py[best]
 				var boom := maxf(float(fx["min_damage"]), units.max_hp[best] * d.fxv("hp_mult", lv)) * smult * vet
 				kill_unit(best, K.Death.SACRIFICE)
-				for hh in heroes_near(bx_, by_, float(fx["radius"])):
-					hit_hero = hh if hh != hero else null
-					damage_hero(boom, bx_, by_, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
+				var near_b := heroes_near(bx_, by_, float(fx["radius"]))
+				for k in near_b.size():
+					hit_hero = near_b[k] if near_b[k] != hero else null
+					damage_hero(boom * splash_mult(k), bx_, by_, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
 				hit_hero = null
 				emit(K.Ev.EXPLOSION, bx_, by_, float(fx["radius"]), 0)
 				hero.add_curse(curse)
@@ -1484,9 +1493,11 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 		"arcane_spark":
 			var n_prev := recent_spells(float(fx["window"]))
 			var sp := (d.fxv("damage", lv) + n_prev * d.fxv("per_spell", lv)) * smult * vet
-			for hh in heroes_near(x, y, float(fx["radius"])):
+			var near_s := heroes_near(x, y, float(fx["radius"]))
+			for k in near_s.size():
+				var hh: SimHero = near_s[k]
 				hit_hero = hh if hh != hero else null
-				damage_hero(sp, x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
+				damage_hero(sp * splash_mult(k), x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
 				hh.add_curse(curse)
 			hit_hero = null
 		"shadow_mark":

@@ -25,7 +25,7 @@
    "regen": 0.006,
    "bless_next": 0.25,
    "shield": {
-    "hp": 170,
+    "hp": 120,
     "cone": 70.0,
     "regen_seconds": 6
    }
@@ -37,7 +37,7 @@
    "attack_range": 5.0,
    "attack_interval": 1.5,
    "splash": 2.6,
-   "splash_mult": 0.75,
+   "splash_mult": 0.5,
    "shield": {
     "hp": 50,
     "cone": 60.0,
