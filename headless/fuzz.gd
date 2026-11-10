@@ -30,13 +30,14 @@ func _ready() -> void:
 func run_one(data: GameData, s: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = s * 31 + 7
-	var pacts := ["horde", "ruin", "treasure"]
-	var pact: String = pacts[rng.randi_range(0, 2)]
+	var pacts := ["horde", "ruin", "treasure", "crypt", "cult"]
+	var pact: String = pacts[rng.randi_range(0, pacts.size() - 1)]
+	var phase_n := rng.randi_range(0, 4)
 	var list: Array = []
 	for k in rng.randi_range(6, 16):
 		list.append(data.pool[rng.randi_range(0, data.pool.size() - 1)].id)
 	var sim := Sim.new()
-	sim.setup(data, s, pact, list)
+	sim.setup(data, s, pact, list, [], phase_n)
 	for c in sim.cards:
 		c.level = rng.randi_range(1, 3)
 		c.mods = rng.randi_range(0, 31)

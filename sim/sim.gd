@@ -732,6 +732,15 @@ func regroup() -> void:
 		f.oy = f.y
 
 
+## Heróis de pé a até r m de (x, y), contando o raio do corpo.
+func heroes_near(x: float, y: float, r: float) -> Array:
+	var out: Array = []
+	for hh in all_heroes():
+		if Vector2(hh.x - x, hh.y - y).length() <= r + hh.radius:
+			out.append(hh)
+	return out
+
+
 ## Todos os heróis de pé (o da vez primeiro).
 func all_heroes() -> Array:
 	return [hero] + followers
@@ -770,7 +779,7 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 	if gain <= 0.0:
 		return 0.0
 	if real > 0.0:
-		emit(K.Ev.DAMAGE_HERO, hero.x, hero.y, real, tags)
+		emit(K.Ev.DAMAGE_HERO, hh.x, hh.y, real, tags)
 	if contest.size() > 0 and contest["type"] in ["bridge", "fountain"]:
 		contest["progress"] += real
 	_earn_gold(gain / float(R["gold"]["damage_per_gold"]) * (1.0 + rv("gold")))
@@ -1291,7 +1300,7 @@ func play(hi_: int, x: float, y: float) -> int:
 ## Família Sequência: guarda o feitiço (Eco Sombrio, Faísca Arcana) e faz os Acólitos atirarem junto.
 func _after_spell(c: CardInst) -> void:
 	spell_times.append(t)
-	if c.def.id != "shadow_echo":
+	if c.def.id != "shadow_echo" and not c.def.fx.has("gold_cost"):
 		last_spell_id = c.def.id
 		last_spell_lv = c.level
 	for j in units.hi:
@@ -1428,14 +1437,16 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			hero.add_curse(curse)
 		"torch":
 			var dmg := d.fxv("damage", lv) * smult * vet
-			if Vector2(hero.x - x, hero.y - y).length() <= float(fx["radius"]) + hero.radius:
-				var was_soaked := hero.soaked_t > 0.0
+			for hh in heroes_near(x, y, float(fx["radius"])):
+				var was_soaked: bool = hh.soaked_t > 0.0
+				hit_hero = hh if hh != hero else null
 				damage_hero(dmg, x, y, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
-				if was_soaked:
+				if was_soaked and hh == hero:
 					burn_t = maxf(burn_t, float(fx["burn_s"]))
 					burn_dps = d.fxv("burn_dps", lv) * smult
 					burn_src = d.id
-				hero.add_curse(curse)
+				hh.add_curse(curse)
+			hit_hero = null
 		"tar_net":
 			zones.append({"kind": "web", "x": x, "y": y, "r": fx["radius"], "t": d.fxv("duration", lv) * vet, "applied": false,
 				"root": d.fxv("root", lv), "curse": curse, "soak": fx["soaked"]})
@@ -1461,9 +1472,10 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 				var by_ := units.py[best]
 				var boom := maxf(float(fx["min_damage"]), units.max_hp[best] * d.fxv("hp_mult", lv)) * smult * vet
 				kill_unit(best, K.Death.SACRIFICE)
-				_death_payoffs(best, bx_, by_)
-				if Vector2(hero.x - bx_, hero.y - by_).length() <= float(fx["radius"]) + hero.radius:
+				for hh in heroes_near(bx_, by_, float(fx["radius"])):
+					hit_hero = hh if hh != hero else null
 					damage_hero(boom, bx_, by_, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
+				hit_hero = null
 				emit(K.Ev.EXPLOSION, bx_, by_, float(fx["radius"]), 0)
 				hero.add_curse(curse)
 		"soul_harvest":
@@ -1471,10 +1483,12 @@ func _apply(c: CardInst, x: float, y: float) -> void:
 			harvest_elixir = d.fxv("elixir", lv)
 		"arcane_spark":
 			var n_prev := recent_spells(float(fx["window"]))
-			if Vector2(hero.x - x, hero.y - y).length() <= float(fx["radius"]) + hero.radius:
-				var sp := (d.fxv("damage", lv) + n_prev * d.fxv("per_spell", lv)) * smult * vet
+			var sp := (d.fxv("damage", lv) + n_prev * d.fxv("per_spell", lv)) * smult * vet
+			for hh in heroes_near(x, y, float(fx["radius"])):
+				hit_hero = hh if hh != hero else null
 				damage_hero(sp, x, y, d.tags, SimHero.DMG_PIERCE | SimHero.DMG_SPELL, d.id)
-				hero.add_curse(curse)
+				hh.add_curse(curse)
+			hit_hero = null
 		"shadow_mark":
 			mark_until = t + d.fxv("duration", lv) * vet
 			mark_bonus = d.fxv("bonus", lv)

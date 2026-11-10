@@ -828,6 +828,11 @@ func _refresh_top() -> void:
 	hero_of_label.text = tr("UI_HERO_OF").format({"k": sim.party_idx + 1, "n": sim.party_size()}) + " · " + tr("HERO_" + sim.hero.cls())
 	if sim.group_mode():
 		hero_of_label.text += " · " + tr("UI_HEROES_STANDING").format({"n": 1 + sim.followers.size()})
+		var fl: Array = []
+		for f in sim.followers:
+			fl.append("%s %d%%" % [tr("HERO_" + f.cls()), int(round(100.0 * f.hp / maxf(f.max_hp(), 1.0)))])
+		if fl.size() > 0:
+			hero_of_label.text += " (" + ", ".join(fl) + ")"
 	_refresh_upgrades()
 	curse_label.text = tr("UI_CURSES").format({"n": h.curses}) if h.curses > 0 else ""
 

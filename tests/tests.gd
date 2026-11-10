@@ -1143,6 +1143,14 @@ func t_group() -> void:
 		for i in 40:
 			s.units.update(s.dt)
 		check(f.hp < before, "monstro perto do seguidor ataca o seguidor")
+	var path := "user://test_group.save"
+	check(SaveGame.save(s, path), "salva a run da fase de grupo")
+	var ld := SaveGame.load_run(data, path)
+	check(ld != null and ld.campaign_phase == 4 and ld.followers.size() == s.followers.size() and ld.hero.cls() == s.hero.cls(),
+		"continuar a fase de grupo mantém a fase, a classe e os seguidores (%d)" % (ld.followers.size() if ld else -1))
+	if ld and ld.followers.size() > 0:
+		check(ld.followers[0].cls() == s.followers[0].cls() and absf(ld.followers[0].hp - s.followers[0].hp) < 0.01, "seguidor volta com a classe e a vida")
+	SaveGame.erase(path)
 	var n := 0
 	while s.phase != K.Phase.OVER and n < 40:
 		s.offers.clear()
