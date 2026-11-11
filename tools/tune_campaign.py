@@ -39,6 +39,7 @@ def step(win, target, k=0.5, cap=0.15):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--bot", default="heuristic", help="bot de referência (o plano da Etapa E usa o humano)")
     ap.add_argument("--cycles", type=int, default=2)
     ap.add_argument("--runs", type=int, default=32)
     ap.add_argument("--phases", default="1")
@@ -53,7 +54,7 @@ def main():
             for p in VILLAINS:
                 decks.append(p if ph == 1 else f"{p}@{ph}")
         out = os.path.join(ROOT, "reports", "tune_tmp")
-        runs, errs = run_batch.run_all(["heuristic"], decks, args.runs, out=out, pool=args.pool)
+        runs, errs = run_batch.run_all([args.bot], decks, args.runs, out=out, pool=args.pool)
         if errs:
             print("ERROS:", errs[:5])
         win = {}

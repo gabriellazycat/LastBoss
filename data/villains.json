@@ -38,7 +38,7 @@
     "devour"
    ],
    "rules": {
-    "hero_hp_mult": 0.65,
+    "hero_hp_mult": 0.812,
     "infestation": 0.2
    }
   },
@@ -80,7 +80,7 @@
     "ember_rain"
    ],
    "rules": {
-    "hero_hp_mult": 0.82,
+    "hero_hp_mult": 1.746,
     "start_gold": 30,
     "hoard_step": 50,
     "hoard_fire": 0.05,
@@ -125,7 +125,7 @@
     "shadow_echo"
    ],
    "rules": {
-    "hero_hp_mult": 0.97,
+    "hero_hp_mult": 1.806,
     "harvest_every": 8
    }
   }

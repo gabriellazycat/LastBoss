@@ -28,7 +28,8 @@
     "escudeiro",
     "escudeiro"
    ],
-   "unlock_villain": "dragon"
+   "unlock_villain": "dragon",
+   "hp_mult": 1.15
   },
   {
    "id": 2,
@@ -42,7 +43,7 @@
     "arqueira",
     "escudeiro"
    ],
-   "hp_mult": 1.105,
+   "hp_mult": 1.606,
    "unlock_villain": "lich",
    "villain_hp": {
     "plague": 1.0,
@@ -62,12 +63,12 @@
     "cleriga",
     "escudeiro"
    ],
-   "hp_mult": 0.994,
+   "hp_mult": 1.492,
    "unlock_villain": "",
    "villain_hp": {
     "plague": 1.111,
     "dragon": 0.924,
-    "lich": 0.835
+    "lich": 0.96
    },
    "reward_souls": 60,
    "rare_choice": true
@@ -85,10 +86,10 @@
    ],
    "group": true,
    "revive_hp": 0.5,
-   "hp_mult": 0.874,
+   "hp_mult": 1.329,
    "unlock_villain": "",
    "villain_hp": {
-    "plague": 0.558,
+    "plague": 0.427,
     "dragon": 1.443,
     "lich": 1.474
    },
