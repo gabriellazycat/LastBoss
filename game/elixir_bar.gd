@@ -14,10 +14,19 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var n := maxi(int(max_value), 1)
-	var gap := 4.0
-	var w := (size.x - gap * (n - 1)) / n
+	var n := maxi(int(round(max_value)), 1)
+	# Mais gomos, vão menor; a direita fica reservada ao número "atual/máximo".
+	var gap := 4.0 if n <= 10 else (3.0 if n <= 14 else 2.0)
+	var label_w := minf(78.0, size.x * 0.16)
+	var w := (size.x - label_w - gap * (n - 1)) / n
 	var h := size.y
+	var font := ThemeDB.fallback_font
+	var txt := "%d / %d" % [int(value), n]
+	var fs := clampi(int(h * 0.85), 12, 22)
+	var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var tp := Vector2(size.x - label_w + (label_w - tw) * 0.5 + 4.0, h * 0.5 + fs * 0.35)
+	draw_string_outline(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0.05, 0.03, 0.08, 0.9))
+	draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.97, 0.9, 1.0))
 	for i in n:
 		var r := Rect2(i * (w + gap), 0, w, h)
 		var f := clampf(value - i, 0.0, 1.0)

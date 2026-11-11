@@ -451,7 +451,8 @@ static func type_spec(d: CardDef) -> Array:
 ## Mancha de custo com o número (nomes "Gem" e "Cost": a mão troca o número quando o custo muda).
 static func _cost_blot(cost: int, s: float, cheaper := false) -> PanelContainer:
 	# Custo abaixo do original (Barato, nível que barateia): a gema fica azul-água.
-	var gem := badge(Color(0.08, 0.55, 0.6) if cheaper else BLOOD, int(s * 0.52), s, "crystal")
+	# Dois dígitos (10 a 12) encolhem a fonte para caber no selo.
+	var gem := badge(Color(0.08, 0.55, 0.6) if cheaper else BLOOD, int(s * (0.52 if cost < 10 else 0.4)), s, "crystal")
 	gem.name = "Gem"
 	(gem.get_node("N") as Label).name = "Cost"
 	(gem.get_node("Cost") as Label).text = str(cost)

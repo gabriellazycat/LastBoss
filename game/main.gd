@@ -656,6 +656,29 @@ func _process(delta: float) -> void:
 		print("captura: ", path)
 	if not running or sim == null:
 		return
+	# Capturas da mão (rodada C-UI): --elixirmax=20 (barra), --cost=12 (custo da mão), --discardfill=6, --pile=draw|discard,
+	# --stages=1 (disputa em 3 etapas simulada no painel, se a simulação ainda não a tem).
+	if life >= 2.0 and not auto_args.has("_capdone") and (auto_args.has("elixirmax") or auto_args.has("cost") or auto_args.has("discardfill") or auto_args.has("pile") or auto_args.has("stages")):
+		auto_args["_capdone"] = true
+		if auto_args.has("elixirmax"):
+			sim.elixir_max = float(auto_args["elixirmax"])
+			sim.elixir = sim.elixir_max * 0.65
+		if auto_args.has("cost"):
+			for ci in sim.hand:
+				if ci != null:
+					ci.def.cost = int(auto_args["cost"])
+		for i in int(auto_args.get("discardfill", "0")):
+			if sim.queue.size() > 0:
+				sim.discard.append(sim.queue.pop_back())
+		if auto_args.has("stages"):
+			_debug_contest("tavern")
+			sim.contest["stages"] = 3
+			sim.contest["stage"] = 1
+			sim.contest["won"] = 1
+	if auto_args.has("pile") and life >= 3.0:
+		var pw := str(auto_args["pile"])
+		auto_args.erase("pile")
+		hud.fan._open_pile(pw)
 	if auto_args.has("pauseat") and life >= float(auto_args["pauseat"]):
 		auto_args.erase("pauseat")
 		_toggle_pause()
