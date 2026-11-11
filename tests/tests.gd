@@ -51,6 +51,7 @@ func _ready() -> void:
 	t_translations()
 	t_keywords()
 	t_card_fx()
+	t_rarity_pool()
 	t_dragon_c6()
 	t_cards_lich_common()
 	t_plague_cards()
@@ -2065,3 +2066,27 @@ func t_unique_art() -> void:
 		if CardModel.of(id) != id or Looks.mesh(7, Looks.VARIANTS[id]["base"]) == null:
 			miss.append(id)
 	check(miss.is_empty(), "9 modelos próprios e %d variantes registrados, sem model emprestado %s" % [Looks.VARIANTS.size(), miss])
+
+## Etapa E: em cada vilão e ato, toda oferta de raridade única fecha com 3 opções de uma raridade só (ou cai inteira
+## para a vizinha), e nunca traz carta acima do custo liberado no ato.
+func t_rarity_pool() -> void:
+	var ok := true
+	var info := ""
+	for vid in data.villain_ids:
+		for a in 3:
+			var s := _sim(9 + a, vid)
+			s.act = a
+			for k in 40:
+				var opts := s._card_options(3, func(cd: CardDef): return true)
+				var rs := {}
+				for o in opts:
+					var c: CardDef = data.card(o["id"])
+					rs[c.rarity] = true
+					if c.cost > s.max_offer_cost() or not data.in_pool(c, vid):
+						ok = false
+						info = "%s ato %d: %s" % [vid, a + 1, c.id]
+				if opts.size() != 3 or rs.size() != 1:
+					ok = false
+					info = "%s ato %d: %d opções, %d raridades" % [vid, a + 1, opts.size(), rs.size()]
+	check(ok, "ofertas de raridade única fecham com 3 opções em todo vilão e ato, dentro do custo liberado %s" % info)
+
