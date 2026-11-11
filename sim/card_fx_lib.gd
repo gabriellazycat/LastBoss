@@ -172,6 +172,9 @@ static func run_op(sim: Sim, k: Ctx, o: Dictionary, x: float, y: float) -> void:
 					push_error("CardFxLib: buff sem slot conhecido: " + str(o["slot"]))
 		"elixir":
 			sim.elixir = minf(sim.elixir_max, sim.elixir + val(k, o.get("amount")))
+		"temp":
+			# Temporário (C4): efeito com duração que soma entre cópias (Sim.add_temp).
+			sim.add_temp(str(o["kind"]), val(k, o.get("value")), val(k, o.get("duration")) * k.vet, d.id)
 		"gold":
 			sim._earn_gold(val(k, o.get("amount")))
 		"pay_gold":

@@ -42,9 +42,9 @@ DESC_scrap_golem,Absorve aliados mortos por perto e ganha vida.,Absorbs nearby f
 DESC_soul_feast,Sacrifica seus monstros a até {radius} m e devolve o [[elixir|Elixir]] deles +{bonus_per_card} por carta.,Sacrifices your monsters within {radius} m and refunds their [[elixir|Elixir]] +{bonus_per_card} per card.
 DESC_gold_bait,Atrai o herói até um ponto.,Lures the hero to a spot.
 DESC_burn_village,"Marque um local à frente na rota: quando o herói chegar, o local pega [[fire|Fogo]] ({dps} de dano por segundo, por {duration} s).","Mark a place ahead on the route: when the hero arrives, it bursts into [[fire|Fire]] ({dps} damage per second for {duration} s)."
-DESC_soul_collector,+{elixir_regen_pct}% de regeneração de [[elixir|Elixir]].,+{elixir_regen_pct}% [[elixir|Elixir]] regeneration.
-DESC_forbidden_library,+1 carta na mão.,+1 card in hand.
-DESC_dark_forge,Monstros entram com +{monster_hp_pct}% de vida.,Monsters enter with +{monster_hp_pct}% health.
+DESC_soul_collector,"[[temp|Temporário]]: +{elixir_regen_pct}% de ganho de [[elixir|Elixir]] por {duration} s.","[[temp|Temporary]]: +{elixir_regen_pct}% [[elixir|Elixir]] gain for {duration} s."
+DESC_forbidden_library,"[[temp|Temporário]]: +1 carta na mão por {duration} s.","[[temp|Temporary]]: +1 card in hand for {duration} s."
+DESC_dark_forge,"[[temp|Temporário]]: por {duration} s, monstros entram com +{monster_hp_pct}% de vida.","[[temp|Temporary]]: for {duration} s, monsters enter with +{monster_hp_pct}% health."
 UPG_sword_spin,Giro de Espada,Sword Spin
 UPG_tower_shield,Escudo Torre,Tower Shield
 UPG_dash,Investida,Dash
@@ -146,7 +146,7 @@ TYPE_monster,Monstro,Monster
 TYPE_spell,Feitiço,Spell
 TYPE_structure,Estrutura,Structure
 TYPE_route,Rota,Route
-TYPE_lair,Covil,Lair
+TYPE_lair,Temporário,Temporary
 TYPE_finisher,Finalização,Finisher
 UI_SUBTITLE,O herói está a caminho. Molde quem vai bater à sua porta.,The hero is coming. Shape who will knock on your door.
 HINT_start,"Jogue cartas em qualquer ponto da tela, a pelo menos 3 m do herói. Derrube os 5 heróis em fila: cada queda dá uma recompensa. Passe o mouse nas palavras coloridas para ler o que significam.","Play cards anywhere on screen, at least 3 m from the hero. Bring down the 5 queued heroes: each fall gives a reward. Hover the colored words to read what they mean."
@@ -305,7 +305,9 @@ KW_monster,Monstro,Monster
 KW_spell,Feitiço,Spell
 KW_structure,Estrutura,Structure
 KW_route,Rota,Route
-KW_lair,Covil,Lair
+KW_lair,Temporário,Temporary
+KW_temp,Temporário,Temporary
+KWD_temp,"Efeito com duração; cópias somam, cada uma com o seu tempo.","An effect with a duration; copies stack, each with its own timer."
 KW_finisher,Finalização,Finisher
 KW_veteran,Veterano,Veteran
 KW_cheap,Barato,Cheap
@@ -339,7 +341,7 @@ KWD_monster,Tipo de carta: uma criatura que luta pelo Lorde.,Card type: a creatu
 KWD_spell,Tipo de carta: efeito imediato onde você joga.,Card type: an instant effect where you play it.
 KWD_structure,Tipo de carta: fica parada no lugar e age enquanto existir.,Card type: stays in place and acts while it stands.
 KWD_route,Tipo de carta: age sobre a estrada e os locais do herói. Jogue na faixa de rota ou no mapa (M).,Card type: acts on the hero's road and its places. Play it on the route strip or the map (M).
-KWD_lair,Tipo de carta: melhora o seu covil até o fim da run.,Card type: improves your lair until the end of the run.
+KWD_lair,"Tipo de carta: efeito com duração. Depois vai ao descarte e volta no ciclo, sem limite de usos; funciona também na arena.","Card type: an effect with a duration. Then it goes to the discard and comes back in the cycle, with no use limit; also works in the arena."
 KWD_finisher,"Tipo de carta: só funciona na arena. Na estrada, dá para [[sacrifice|sacrificar]].",Card type: only works in the arena. On the road you can [[sacrifice|sacrifice]] it.
 KWD_veteran,Modificador: a carta cria +{veteran_extra_units} unidade ao ser jogada.,Modifier: the card creates +{veteran_extra_units} unit when played.
 KWD_cheap,Modificador: {cheap_cost} de custo de [[elixir|Elixir]] (mínimo {cheap_min_cost}).,Modifier: {cheap_cost} [[elixir|Elixir]] cost (minimum {cheap_min_cost}).

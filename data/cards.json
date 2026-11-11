@@ -667,16 +667,24 @@
    "type": "lair",
    "tags": [],
    "rarity": "uncommon",
-   "cost": 5,
+   "cost": 4,
    "fx": {
-    "elixir_regen": 0.1,
-    "stack": 3
+    "elixir_regen": 0.4,
+    "duration": 30.0
    },
    "lvl": [
     "elixir_regen"
    ],
    "family": "greed",
-   "owner": "common"
+   "owner": "common",
+   "ops": [
+    {
+     "op": "temp",
+     "kind": "elixir_regen",
+     "value": "elixir_regen",
+     "duration": "duration"
+    }
+   ]
   },
   {
    "id": "forbidden_library",
@@ -687,13 +695,21 @@
    "cost": 4,
    "fx": {
     "hand": 1,
-    "stack": 1
+    "duration": 40.0
    },
    "lvl": [
     "cost"
    ],
    "family": "chain",
-   "owner": "lich"
+   "owner": "lich",
+   "ops": [
+    {
+     "op": "temp",
+     "kind": "hand",
+     "value": "hand",
+     "duration": "duration"
+    }
+   ]
   },
   {
    "id": "dark_forge",
@@ -701,15 +717,23 @@
    "type": "lair",
    "tags": [],
    "rarity": "uncommon",
-   "cost": 4,
+   "cost": 3,
    "fx": {
-    "monster_hp": 0.1,
-    "stack": 3
+    "monster_hp": 0.25,
+    "duration": 30.0
    },
    "lvl": [
     "monster_hp"
    ],
-   "owner": "common"
+   "owner": "common",
+   "ops": [
+    {
+     "op": "temp",
+     "kind": "monster_hp",
+     "value": "monster_hp",
+     "duration": "duration"
+    }
+   ]
   },
   {
    "id": "rabid_rats",

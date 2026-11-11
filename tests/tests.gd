@@ -171,9 +171,44 @@ func t_hand_cap() -> void:
 	var lib := Sim.CardInst.new()
 	lib.def = data.card("forbidden_library")
 	for k in 6:
-		s.lair.erase("forbidden_library")
 		s._apply(lib, s.hero.x, s.hero.y)
-	check(s.hand.size() <= 9 and s.hand_size <= 9, "Biblioteca repetida não passa do teto da mão (%d, tamanho %d)" % [s.hand.size(), s.hand_size])
+	check(s.hand.size() <= Sim.HAND_MAX and Sim.HAND_MAX == 7, "Biblioteca repetida não passa do teto da mão de 7 (%d, tamanho %d)" % [s.hand.size(), s.hand_size])
+	var full := s.hand.size()
+	for k in int(45.0 / s.dt):
+		s.step()
+	check(s.hand_size == 5 and s.hand.size() <= full, "Biblioteca acaba: a mão volta a 5 sem expulsar carta (%d, tamanho %d)" % [s.hand.size(), s.hand_size])
+	# Escada de elixir por ato, teto 20 e custo liberado por ato (C4).
+	var e := _sim(2, "dragon")
+	check(is_equal_approx(e.elixir_max, 10.0) and e.max_offer_cost() == 7, "ato 1: elixir máximo 10, ofertas até custo 7")
+	e.act = 1
+	e.act_elixir_base = e._act_elixir("max", 0.0)
+	e.recalc_elixir_max()
+	check(is_equal_approx(e.elixir_max, 13.0) and e.max_offer_cost() == 9, "ato 2: elixir máximo 13, ofertas até custo 9")
+	e.act = 2
+	e.act_elixir_base = e._act_elixir("max", 0.0)
+	e.recalc_elixir_max()
+	check(is_equal_approx(e.elixir_max, 16.0) and e.max_offer_cost() == 12, "ato 3: elixir máximo 16, ofertas até custo 12")
+	e.add_temp("elixir_max", 4.0, 40.0, "t")
+	e.add_temp("elixir_max", 4.0, 40.0, "t")
+	check(is_equal_approx(e.elixir_max, 20.0), "elixir máximo nunca passa de 20 (%.0f)" % e.elixir_max)
+	e.elixir = 20.0
+	e.temps.clear()
+	e.recalc_elixir_max()
+	check(is_equal_approx(e.elixir, 16.0), "elixir acima do máximo que encolheu é cortado")
+	var cheap := _sim(3, "plague")
+	var okc := true
+	for k in 30:
+		for o in cheap._card_options(3, func(cd: CardDef): return true):
+			okc = okc and data.card(o["id"]).cost <= 7
+	check(okc, "ato 1 nunca oferece carta de custo acima de 7")
+	var sc := _sim(4, "plague")
+	sc.elixir = 0.0
+	sc.sacrifice(0)
+	check(is_equal_approx(sc.elixir, 1.0), "sacrifício rende 10%% do elixir máximo (%.2f)" % sc.elixir)
+	var col := _sim(5, "plague")
+	col._apply(_inst("soul_collector"), col.hero.x, col.hero.y)
+	col._apply(_inst("soul_collector"), col.hero.x, col.hero.y)
+	check(is_equal_approx(col.temp_sum("elixir_regen"), 0.8), "Coletor de Almas é Temporário e cópias somam")
 
 
 func _run(seed_: int, deck: String, bot: String, max_ticks := 100000) -> Sim:

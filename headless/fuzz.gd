@@ -109,7 +109,7 @@ func _inv(sim: Sim) -> String:
 				return "unidade %d com número inválido" % i
 			if U.hp[i] > U.max_hp[i] * 1.0001 + 0.01:
 				return "unidade %d com vida acima do máximo" % i
-	# A mão pode passar do tamanho (Pacto Sombrio compra a mais), mas nunca do teto das teclas.
-	if sim.hand.size() > Sim.HAND_MAX or (sim.hand.size() < sim.hand_size and sim.hand.size() < sim.cards.size()):
+	# A mão pode passar do tamanho (Temporário que acabou), mas nunca do teto (7, C4); abaixo dele, só se faltar carta.
+	if sim.hand.size() > Sim.HAND_MAX or (sim.hand.size() < mini(sim.hand_size, Sim.HAND_MAX) and sim.hand.size() < sim.cards.size()):
 		return "mão com %d (tamanho %d, teto %d; baralho %d, cartas %d, t %.1f, fase %d)" % [sim.hand.size(), sim.hand_size, Sim.HAND_MAX, sim.queue.size(), sim.cards.size(), sim.t, sim.phase]
 	return ""

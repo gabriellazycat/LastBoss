@@ -106,19 +106,19 @@ func _act(sim: Sim) -> bool:
 	var contest := _contest_ahead(sim)
 	var ctype := str(contest.get("type", ""))
 	var guard := {}
-	if ctype in ["bridge", "fountain"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)):
+	if ctype in ["bridge", "fountain"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)) * sim.elixir_max / 10.0:
 		return false
 	if ctype in ["ritual", "tavern"]:
 		if Vector2(h.x, h.y).distance_to(contest["pos"]) <= 18.0 or contest["entered"]:
 			guard = contest
 	var shrine := _shrine_ahead(sim)
-	if shrine.size() > 0 and not shrine["entered"] and sim.elixir < float(P.get("shrine_reserve", 0)):
+	if shrine.size() > 0 and not shrine["entered"] and sim.elixir < float(P.get("shrine_reserve", 0)) * sim.elixir_max / 10.0:
 		return false
 	var spot: Dictionary = shrine if shrine.size() > 0 and shrine["entered"] else guard
 	# Onda: espera juntar elixir, a menos que haja janela, disputa em andamento ou elixir quase cheio.
 	var urgent := _window(sim) or spot.size() > 0 or not sim.contest.is_empty() or sim.phase == K.Phase.ARENA
 	var full := sim.elixir >= sim.elixir_max - float(P.get("full_margin", 1.0))
-	if not urgent and not full and sim.elixir < float(P.get("wave", 6.0)) and _engaged(sim) == 0:
+	if not urgent and not full and sim.elixir < float(P.get("wave", 6.0)) * sim.elixir_max / 10.0 and _engaged(sim) == 0:
 		return false
 	var mistake := rng.randf() < float(P.get("mistake", 0.02))
 	var best := -1

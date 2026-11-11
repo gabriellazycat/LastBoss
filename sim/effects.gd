@@ -59,7 +59,7 @@ static func _one(sim: Sim, a: Dictionary) -> void:
 			sim.random_relic()
 		"elixir_max_act":
 			sim.act_elixir_bonus += float(a["amount"])
-			sim.elixir_max += float(a["amount"])
+			sim.recalc_elixir_max()
 		"card_tax":
 			sim.tax_cards = int(a["n"])
 			sim.tax_add = int(a.get("add", 1))

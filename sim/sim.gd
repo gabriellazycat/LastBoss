@@ -52,7 +52,10 @@ var cards: Array = []
 var card_of_uid: Dictionary = {}
 var hand_size := 5
 ## Teto da mão (as teclas vão de 1 a 9): compras extras (Pacto Sombrio, Biblioteca) param aqui (rodada 09/11/2026).
-const HAND_MAX := 9
+## Teto da mão (passo C4, 10/11/2026: 7). Mão base 5 para todos; cresce com relíquias e cartas Temporárias.
+const HAND_MAX := 7
+## Teto do elixir máximo (C4): a escada por ato e o que o jogador constrói nunca passam disto.
+const ELIXIR_CAP := 20.0
 var next_uid := 1
 var party_idx := 0                 # herói da fila (0 a size-1); o nível dele é party_idx + 1
 var campaign_phase := 1            # fase da campanha (data/campaign.json); 1 = a run clássica de 7 Escudeiros
@@ -103,6 +106,11 @@ var contract: Dictionary = {}
 var contract_next := 0.0
 var last_teleport_t := -100.0
 var ritual_mult := 1.0
+## Efeitos Temporários em andamento (C4: as antigas cartas de Covil): {"kind", "v", "until", "src"}.
+## kind: elixir_regen (+fração de ganho), monster_hp (+fração de vida ao entrar), hand (+cartas), elixir_max (+máximo),
+## gold_mult (+fração do ouro ganho). Cópias somam, cada uma com o seu tempo.
+var temps: Array = []
+var act_elixir_base := 10.0     # elixir máximo da escada do ato atual
 var harvest_deaths := 0         # Lich (Colheita): mortes de criaturas suas desde o último feitiço grátis
 var harvest_free := false       # Lich: o próximo feitiço custa 0
 var act_elixir_bonus := 0.0     # eventos: elixir máximo a mais até o fim do ato (Altar Profano)
@@ -141,7 +149,8 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	hero.setup(self)
 	hand_size = int(deck_rules.get("hand_size", R["hand_size"]))
 	elixir = float(deck_rules.get("elixir_start", R["elixir"]["start"]))
-	elixir_max = R["elixir"]["max"]
+	act_elixir_base = _act_elixir("max", float(R["elixir"]["max"]))
+	recalc_elixir_max()
 	dead_by_def.resize(d.cards.size())
 	stats = {"seed": run_seed, "deck": deck_id, "result": "none", "t_end": 0.0, "arena_t": -1.0,
 		"heroes_fallen": 0, "hero_level_arena": 0, "player_level_arena": 0, "hero_level": 1, "player_level": 1,
@@ -212,6 +221,7 @@ func step() -> void:
 		return
 	tick += 1
 	t += dt
+	_temps()
 	_elixir()
 	hero.update(dt)
 	for f in followers:
@@ -234,9 +244,65 @@ func step() -> void:
 	_check_end()
 
 
+## Escada de poder por ato (rules.acts[].elixir); a arena usa a do último ato.
+func _act_elixir(k: String, fallback: float) -> float:
+	var A: Array = R.get("acts", [])
+	if A.is_empty():
+		return fallback
+	return float(A[mini(act, A.size() - 1)].get("elixir", {}).get(k, fallback))
+
+
+## Custo máximo de carta que as ofertas deste ato podem trazer (loja inclusive).
+func max_offer_cost() -> int:
+	return int(_act_elixir("max_cost", 99.0))
+
+
+## Elixir máximo = escada do ato + relíquias + eventos do ato + Temporários, entre 3 e o teto.
+func recalc_elixir_max() -> void:
+	elixir_max = clampf(act_elixir_base + rv("elixir_max") + act_elixir_bonus + temp_sum("elixir_max"), 3.0, ELIXIR_CAP)
+	elixir = minf(elixir, elixir_max)
+
+
+func temp_sum(kind: String) -> float:
+	var s := 0.0
+	for e in temps:
+		if e["kind"] == kind:
+			s += float(e["v"])
+	return s
+
+
+## Começa um efeito Temporário (op "temp" de CardFxLib).
+func add_temp(kind: String, v: float, duration: float, src: String) -> void:
+	temps.append({"kind": kind, "v": v, "until": t + duration, "src": src})
+	match kind:
+		"hand":
+			hand_size += int(v)
+			_refill_hand()
+		"elixir_max":
+			recalc_elixir_max()
+
+
+## Temporários que acabaram: a mão extra só deixa de ser reposta (nenhuma carta é expulsa); o elixir acima do
+## novo máximo é cortado.
+func _temps() -> void:
+	var i := temps.size() - 1
+	var dirty := false
+	while i >= 0:
+		var e: Dictionary = temps[i]
+		if t >= float(e["until"]):
+			temps.remove_at(i)
+			if e["kind"] == "hand":
+				hand_size -= int(e["v"])
+			elif e["kind"] == "elixir_max":
+				dirty = true
+		i -= 1
+	if dirty:
+		recalc_elixir_max()
+
+
 func _elixir() -> void:
-	var rate := 1.0 / float(R["elixir"]["seconds_per_point"])
-	rate *= 1.0 + float(lair_val.get("soul_collector", 0.0))
+	var rate := 1.0 / _act_elixir("seconds_per_point", float(R["elixir"]["seconds_per_point"]))
+	rate *= 1.0 + temp_sum("elixir_regen")
 	rate *= ritual_mult
 	rate *= float(deck_rules.get("elixir_mult", 1.0))
 	if phase == K.Phase.ARENA and arena.part_alive("head"):
@@ -483,9 +549,9 @@ func _next_act() -> void:
 		enter_arena()
 		return
 	act += 1
-	elixir_max -= act_elixir_bonus
 	act_elixir_bonus = 0.0
-	elixir = minf(elixir, elixir_max)
+	act_elixir_base = _act_elixir("max", act_elixir_base)
+	recalc_elixir_max()
 	stats["route_len"] = float(stats.get("route_len", 0.0)) + road.length()
 	road = SimRoad.new()
 	road.generate(rng, R, _act_cfg(act))
@@ -526,10 +592,9 @@ func gain_relic(id: String) -> void:
 	stats["relics"].append(id)
 	var fx: Dictionary = data.relics[id].get("fx", {})
 	hand_size = clampi(hand_size + int(fx.get("hand", 0)), 1, HAND_MAX)
-	elixir_max = maxf(3.0, elixir_max + float(fx.get("elixir_max", 0)))
-	elixir = minf(elixir, elixir_max)
-	_refill_hand()
 	rebuild_rfx()
+	recalc_elixir_max()
+	_refill_hand()
 	emit(K.Ev.RELIC, hero.x, hero.y, data.relic_ids.find(id), 0)
 
 
@@ -1232,7 +1297,7 @@ func _upgrade_options(n: int) -> Array:
 
 
 func _forge() -> float:
-	return 1.0 + float(lair_val.get("dark_forge", 0.0))
+	return 1.0 + temp_sum("monster_hp")
 
 
 # ================================================================ zonas
@@ -1357,11 +1422,9 @@ func can_play(hi_: int) -> int:
 	var c: CardInst = hand[hi_]
 	var d := c.def
 	match d.category:
-		"route", "lair":
+		"route":
 			if phase != K.Phase.ROAD:
 				return K.Block.WRONG_PHASE
-			if d.category == "lair" and int(lair.get(d.id, 0)) >= int(d.fx.get("stack", 1)):
-				return K.Block.STACK_LIMIT
 			if d.id == "burn_village" and _burn_targets().is_empty():
 				return K.Block.CONDITION
 	if d.fx.has("gold_cost") and gold + 0.0001 < float(d.fx["gold_cost"]):
@@ -1498,7 +1561,7 @@ func sacrifice(hi_: int) -> bool:
 	if not sacrifice_ready() and not sacrifice_free(hi_):
 		return false
 	if sacrifice_ready():
-		elixir = minf(elixir_max, elixir + float(R["sacrifice_elixir"]))
+		elixir = minf(elixir_max, elixir + elixir_max * float(R["sacrifice_elixir_frac"]))
 		sac_elixir_t = t
 	_cycle(hi_)
 	stats["sacrifices"] += 1
@@ -1589,7 +1652,7 @@ func _card_ok(c: CardDef) -> bool:
 		return false
 	if unlocked.size() > 0 and not unlocked.has(c.id):
 		return false
-	if c.category == "lair" and int(lair.get(c.id, 0)) + _deck_count(c.id) >= int(c.fx.get("stack", 1)):
+	if c.cost > max_offer_cost():
 		return false
 	return true
 
@@ -1698,6 +1761,7 @@ func _offer_location(ty: String, won: bool) -> void:
 
 
 func _earn_gold(v: float) -> void:
+	v *= 1.0 + temp_sum("gold_mult")
 	gold += v
 	stats["gold_earned"] += v
 

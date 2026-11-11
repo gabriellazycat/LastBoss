@@ -295,7 +295,7 @@ func _own_near_hero(sim: Sim, r: float) -> int:
 func _smart(sim: Sim) -> void:
 	var shrine := _shrine_ahead(sim)
 	var counting: bool = shrine.size() > 0 and shrine["entered"]
-	if shrine.size() > 0 and not counting and sim.elixir < float(P.get("shrine_reserve", 0)):
+	if shrine.size() > 0 and not counting and sim.elixir < float(P.get("shrine_reserve", 0)) * sim.elixir_max / 10.0:
 		return
 	# Disputas de dano (Taverna, Ponte, Loja): guarda elixir até o herói entrar, depois gasta tudo ali.
 	# Fonte e Ritual: monstros de guarda perto do local.
@@ -303,7 +303,7 @@ func _smart(sim: Sim) -> void:
 	var ctype := str(contest.get("type", ""))
 	var guard := {}
 	# Ponte e Fonte (rodada 09/11/2026): dano ou controle numa janela curta; guarda elixir até ela abrir.
-	if ctype in ["bridge", "fountain"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)):
+	if ctype in ["bridge", "fountain"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)) * sim.elixir_max / 10.0:
 		return
 	# Ritual (mortes no círculo), Santuário (monstros no círculo) e Taverna (casas): monstros no local.
 	if ctype in ["ritual", "tavern"]:

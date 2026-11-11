@@ -93,10 +93,6 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 				echo.uid = k.c.uid
 				echo.level = maxi(sim.last_spell_lv, lv)
 				sim._apply(echo, x, y)
-		"forbidden_library":
-			sim.lair[d.id] = int(sim.lair.get(d.id, 0)) + 1
-			sim.hand_size = mini(Sim.HAND_MAX, sim.hand_size + int(fx["hand"]))
-			sim._refill_hand()
 		_:
 			return false
 	return true
