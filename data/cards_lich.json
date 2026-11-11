@@ -25,9 +25,7 @@
     "dps"
    ],
    "owner": "lich",
-   "model": "skeleton",
-   "family": "death",
-   "art": "raised_servant"
+   "family": "death"
   },
   {
    "id": "life_drain",
@@ -59,7 +57,6 @@
    "owner": "lich",
    "model": "shadow_bolt",
    "family": "chain",
-   "art": "life_drain",
    "ops": [
     {
      "op": "damage",
@@ -110,7 +107,6 @@
    "owner": "lich",
    "model": "soul_feast",
    "family": "death",
-   "art": "profane_ritual",
    "ai": {
     "aim": "own_unit",
     "value": [
@@ -161,9 +157,7 @@
     "dps"
    ],
    "owner": "lich",
-   "model": "ogre",
-   "family": "death",
-   "art": "death_knight"
+   "family": "death"
   },
   {
    "id": "open_grave",
@@ -194,7 +188,6 @@
    "owner": "lich",
    "model": "corpse_blast",
    "family": "death",
-   "art": "open_grave",
    "ai": {
     "aim": "hero"
    }
@@ -228,7 +221,6 @@
    "owner": "lich",
    "model": "shadow_bolt",
    "family": "death",
-   "art": "soul_storm",
    "ai": {
     "aim": "cluster",
     "needs_hit": true
@@ -263,9 +255,7 @@
     "hp_cap"
    ],
    "owner": "lich",
-   "model": "scrap_golem",
    "family": "death",
-   "art": "bone_colossus",
    "on_death": [
     {
      "op": "summon",
@@ -302,7 +292,6 @@
    "owner": "lich",
    "model": "dark_pact",
    "family": "chain",
-   "art": "arcane_apocalypse",
    "ai": {
     "aim": "cluster",
     "needs_hit": true

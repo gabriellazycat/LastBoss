@@ -54,6 +54,7 @@ func _ready() -> void:
 	t_dragon_c6()
 	t_cards_lich_common()
 	t_plague_cards()
+	t_unique_art()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -2030,3 +2031,36 @@ func t_plague_cards() -> void:
 			if TranslationServer.translate(pre + id) == pre + id:
 				no_text.append(pre + id)
 	check(no_text.is_empty(), "as 16 cartas têm nome e descrição %s" % [no_text])
+
+
+## Etapa D: arte única. Cada carta tem o próprio png; nenhum campo "art" aponta para a imagem de outra;
+## os modelos próprios e as variantes não usam "model" emprestado.
+func t_unique_art() -> void:
+	var no_png: Array = []
+	var borrowed: Array = []
+	var seen := {}
+	for c in data.cards:
+		if c.category == "aux":
+			continue  # unidades auxiliares (rato, morcego...) não são cartas
+		var p := "res://assets/cards/%s.png" % c.id
+		if not FileAccess.file_exists(p) and not ResourceLoader.exists(p):
+			no_png.append(c.id)
+		seen[CardModel.art_of(c.id)] = seen.get(CardModel.art_of(c.id), 0) + 1
+		if CardModel.art_of(c.id) != c.id:
+			borrowed.append(c.id)
+	check(no_png.is_empty(), "toda carta tem o próprio png %s" % [no_png])
+	check(borrowed.is_empty(), "nenhuma carta aponta para a imagem de outra %s" % [borrowed])
+	var dup: Array = []
+	for k in seen:
+		if seen[k] > 1:
+			dup.append(k)
+	check(dup.is_empty(), "nenhuma imagem é compartilhada %s" % [dup])
+	var own := ["wolf_pack", "war_boar", "alpha_beast", "treasure_guard", "elder_dragon", "cave_troll", "death_knight", "bone_colossus", "ruin_titan"]
+	var miss: Array = []
+	for id in own:
+		if CardModel.of(id) != id or Looks.mesh(7, id) == null:
+			miss.append(id)
+	for id in Looks.VARIANTS:
+		if CardModel.of(id) != id or Looks.mesh(7, Looks.VARIANTS[id]["base"]) == null:
+			miss.append(id)
+	check(miss.is_empty(), "9 modelos próprios e %d variantes registrados, sem model emprestado %s" % [Looks.VARIANTS.size(), miss])

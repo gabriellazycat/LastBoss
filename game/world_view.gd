@@ -792,7 +792,7 @@ func _build_units() -> void:
 		var acc: Color = ACCENT.get(c.id, Color(0.8, 0.6, 1.0))
 		acc.a = 0.35 if c.arch == K.Arch.SWARM else 0.55
 		mm_by_def[c.idx] = {"mm": mm, "buf": buf, "cap": cap, "hop": hop, "fly": c.fly, "struct": c.arch == K.Arch.STRUCTURE,
-			"rad": maxf(c.radius, 0.35) * 1.35, "acc": acc}
+			"rad": maxf(c.radius, 0.35) * 1.35, "acc": acc, "scl": Looks.scale_of(c.id)}
 	ring_mm = MultiMesh.new()
 	ring_mm.transform_format = MultiMesh.TRANSFORM_3D
 	ring_mm.use_colors = true
@@ -1244,9 +1244,9 @@ func _draw_units(alpha: float, delta: float) -> void:
 		var is_struct: bool = e["struct"]
 		for q in n:
 			var i: int = ids[q]
-			var s := 1.0
+			var s: float = e["scl"]
 			if U.gen[i] > 0:
-				s = 0.72 if U.gen[i] == 1 else 0.5
+				s *= 0.72 if U.gen[i] == 1 else 0.5
 			# Surgir com "pop": passa um pouco do tamanho e volta (back-out).
 			var age := U.timer[i]
 			if age < 0.3:

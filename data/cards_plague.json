@@ -27,8 +27,6 @@
     "hp",
     "dps"
    ],
-   "model": "rat_horde",
-   "art": "rat_brute",
    "owner": "plague",
    "family": "pack"
   },
@@ -58,7 +56,6 @@
     "duration"
    ],
    "model": "dark_fury",
-   "art": "infected_bite",
    "owner": "plague",
    "n3": {
     "extra": 2
@@ -93,8 +90,6 @@
    "lvl": [
     "count"
    ],
-   "model": "bat_nest",
-   "art": "bat_cloud",
    "owner": "plague",
    "fly": true,
    "n3": {
@@ -128,8 +123,6 @@
     "hp",
     "root"
    ],
-   "model": "bat_nest",
-   "art": "rat_trap",
    "owner": "plague"
   },
   {
@@ -154,8 +147,6 @@
    "lvl": [
     "count"
    ],
-   "model": "werewolf",
-   "art": "wolf_pack",
    "owner": "plague",
    "n3": {
     "peste_dmg": 0.15
@@ -192,8 +183,6 @@
     "hp",
     "dps"
    ],
-   "model": "slime",
-   "art": "brood_mother",
    "owner": "plague",
    "family": "pack"
   },
@@ -222,8 +211,6 @@
     "hp",
     "atk_speed"
    ],
-   "model": "rat_king",
-   "art": "corrupt_piper",
    "owner": "plague",
    "family": "pack"
   },
@@ -254,8 +241,6 @@
     "hp",
     "spawn_duration"
    ],
-   "model": "bat_nest",
-   "art": "sewer_flood",
    "owner": "plague",
    "family": "pack",
    "ai": {
@@ -289,8 +274,6 @@
     "hp",
     "dps"
    ],
-   "model": "werewolf",
-   "art": "war_boar",
    "owner": "plague",
    "n3": {
     "stun": 1.5
@@ -325,7 +308,6 @@
     "duration"
    ],
    "model": "dark_fury",
-   "art": "hunt_instinct",
    "owner": "plague",
    "n3": {
     "steal": 0.3
@@ -363,7 +345,6 @@
     "heal"
    ],
    "model": "dark_fury",
-   "art": "devour",
    "owner": "plague",
    "n3": {
     "dmg_bonus": 0.4
@@ -397,7 +378,6 @@
     "per_stack"
    ],
    "model": "dark_fury",
-   "art": "bubonic_plague",
    "owner": "plague",
    "n3": {
     "duration": 14.0
@@ -432,7 +412,6 @@
     "count"
    ],
    "model": "rat_horde",
-   "art": "rat_tide",
    "owner": "plague",
    "family": "pack"
   },
@@ -459,7 +438,6 @@
     "duration"
    ],
    "model": "dark_fury",
-   "art": "mother_nest",
    "owner": "plague",
    "n3": {
     "radius": 14.0
@@ -499,8 +477,6 @@
     "hp",
     "dps"
    ],
-   "model": "werewolf",
-   "art": "alpha_beast",
    "owner": "plague",
    "n3": {
     "peste_dmg": 0.1
@@ -545,7 +521,6 @@
     "duration"
    ],
    "model": "dark_fury",
-   "art": "endless_swarm",
    "owner": "plague",
    "n3": {
     "summon_n": 18
