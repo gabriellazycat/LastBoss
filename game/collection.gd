@@ -1,16 +1,20 @@
 class_name CollectionScreen
 extends VBoxContainer
-## Coleção do menu: ver as cartas e desbloquear as novas com Almas. Os decks das runs são os Pactos prontos.
+## Coleção do menu: ver as cartas por dono (Praga, Dragão, Lich, Comuns) e comprar raras e lendárias com Almas.
+## Não há deck montado: a run usa o baralho inicial do vilão e as ofertas saem da coleção dele.
 
 signal closed
 
 const COLS := 6
 const CELL_W := 132.0
+const TABS := ["plague", "dragon", "lich", "common"]
 
 var data: GameData
 var meta: MetaSave
 var souls_l: Label
 var grid: GridContainer
+var tab := "plague"
+var tab_row: HBoxContainer
 
 
 func setup(d: GameData, m: MetaSave) -> void:
@@ -32,13 +36,26 @@ func _ready() -> void:
 	head.add_child(souls_l)
 	add_child(head)
 	var sub := UiKit.label(17, UiKit.MUTED)
-	sub.text = "UI_COLLECTION_SUB"
+	sub.text = "UI_COLLECTION_SUB_V"
 	add_child(sub)
+	tab_row = HBoxContainer.new()
+	tab_row.add_theme_constant_override("separation", 8)
+	add_child(tab_row)
+	for id in TABS:
+		var tb := Button.new()
+		tb.text = "UI_TAB_V_" + id
+		tb.toggle_mode = true
+		tb.custom_minimum_size = Vector2(150, 44)
+		var tid: String = id
+		tb.pressed.connect(func():
+			tab = tid
+			refresh())
+		tab_row.add_child(tb)
 	var body := HBoxContainer.new()
 	body.add_theme_constant_override("separation", 24)
 	add_child(body)
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(COLS * (CELL_W + 8), 600)
+	scroll.custom_minimum_size = Vector2(COLS * (CELL_W + 8), 540)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	grid = GridContainer.new()
 	grid.columns = COLS
@@ -56,7 +73,7 @@ func _ready() -> void:
 
 func open() -> void:
 	refresh()
-	(grid.get_child(0) as Control).grab_focus.call_deferred()
+	(tab_row.get_child(TABS.find(tab)) as Control).grab_focus.call_deferred()
 
 
 func _close() -> void:
@@ -118,13 +135,16 @@ static func _lock() -> Control:
 
 func refresh() -> void:
 	souls_l.text = tr("UI_SOULS").format({"n": meta.souls})
+	for k in tab_row.get_child_count():
+		(tab_row.get_child(k) as Button).button_pressed = TABS[k] == tab
 	var had_focus := -1
 	for k in grid.get_child_count():
 		if grid.get_child(k).has_focus():
 			had_focus = k
 	UiKit.clear(grid)
 	for d in data.pool:
-		grid.add_child(_grid_button(d))
+		if d.owner == tab:
+			grid.add_child(_grid_button(d))
 	if had_focus >= 0 and had_focus < grid.get_child_count():
 		(grid.get_child(had_focus) as Control).grab_focus.call_deferred()
 
@@ -164,7 +184,7 @@ func _grid_button(d: CardDef) -> Button:
 	if meta.is_unlocked(d.id):
 		foot.text = tr("UI_UNLOCKED")
 		foot.add_theme_color_override("font_color", UiKit.MUTED)
-	else:
+	elif meta.can_buy(d.id):
 		var cost := meta.unlock_cost(d.id)
 		foot.text = tr("UI_UNLOCK").format({"n": cost})
 		# Preço que ainda não dá para pagar: cobre (o vermelho parecia erro).
@@ -175,6 +195,14 @@ func _grid_button(d: CardDef) -> Button:
 			if meta.unlock(d.id):
 				meta.save()
 				refresh())
+	else:
+		# Sem preço em Almas: a carta vem com o vilão (ou com a rara à escolha).
+		foot.text = tr("UI_UNLOCK_WITH").format({"v": tr("DECK_" + d.owner)})
+		foot.add_theme_color_override("font_color", UiKit.MUTED)
+		foot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		foot.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+		c.modulate = Color(0.62, 0.58, 0.64)
+		c.add_child(_lock())
 	v.add_child(foot)
 	b.add_child(v)
 	Tips.attach(b, func(): return Tips.card_entries(d, [], true))

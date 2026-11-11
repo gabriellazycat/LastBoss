@@ -87,11 +87,26 @@ func _rarity_col(r: String) -> Color:
 
 
 func _cards() -> Container:
-	var g := GridContainer.new()
-	g.columns = 6
-	g.add_theme_constant_override("h_separation", 14)
-	g.add_theme_constant_override("v_separation", 18)
+	var all := VBoxContainer.new()
+	all.add_theme_constant_override("separation", 14)
+	# Agrupadas por dono: um cabeçalho e uma grade para cada vilão e para as comuns.
+	for owner in data.villain_ids + ["common"]:
+		var head := UiKit.title(30, UiKit.GOLD)
+		head.text = tr("DECK_" + owner) if owner != "common" else tr("UI_COMP_OWNER_common")
+		all.add_child(head)
+		var g := GridContainer.new()
+		g.columns = 6
+		g.add_theme_constant_override("h_separation", 14)
+		g.add_theme_constant_override("v_separation", 18)
+		all.add_child(g)
+		_cards_of(g, owner)
+	return all
+
+
+func _cards_of(g: GridContainer, owner: String) -> void:
 	for d in data.pool:
+		if d.owner != owner:
+			continue
 		var v := VBoxContainer.new()
 		v.add_theme_constant_override("separation", 4)
 		var c := UiKit.card(d, d.cost, [], "", CARD_W, 1)
@@ -109,10 +124,12 @@ func _cards() -> Container:
 		if d.n3.size() > 0:
 			lines.append(tr("UI_OPT_UP_N3"))
 		if meta and not meta.is_unlocked(d.id):
-			lines.append("[color=#e0b070]" + tr("UI_COMP_LOCKED").format({"c": meta.unlock_cost(d.id)}) + "[/color]")
+			if meta.can_buy(d.id):
+				lines.append("[color=#e0b070]" + tr("UI_COMP_LOCKED").format({"c": meta.unlock_cost(d.id)}) + "[/color]")
+			else:
+				lines.append("[color=#e0b070]" + tr("UI_UNLOCK_WITH").format({"v": tr("DECK_" + d.owner)}) + "[/color]")
 		v.add_child(Tips.label("\n".join(lines), 13, UiKit.TEXT, CARD_W))
 		g.add_child(v)
-	return g
 
 
 ## Lista de [nome, texto, cor]: nome em destaque e o texto ao lado.

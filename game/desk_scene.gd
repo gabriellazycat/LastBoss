@@ -346,7 +346,7 @@ func _paper(id: String, at: Vector2, rot_deg: float, sz: Vector2) -> void:
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD
 	v.add_child(title)
 	var art := TextureRect.new()
-	art.texture = UiDiario.card_tex({"title": "lord_skull", "decks": "pact_horde", "collection": "skeleton_archers", "compendium": "ghost",
+	art.texture = UiDiario.card_tex({"title": "lord_skull", "decks": "villain_plague" if ResourceLoader.exists("res://assets/cards/villain_plague.png") else "pact_horde", "collection": "skeleton_archers", "compendium": "ghost",
 		"settings": "scrap_golem", "continue": "dark_pact"}[id])
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

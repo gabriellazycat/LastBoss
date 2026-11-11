@@ -746,3 +746,34 @@ LVLK_hp_mult,Explosão (× vida),Blast (× health)
 UI_OPT_BUY_REMOVE_D,A carta sai do deck para sempre. Você escolhe qual depois de comprar.,The card leaves your deck for good. You pick which one after buying.
 UI_MAP_ACT_END,Fim do ato {n},End of act {n}
 UI_STRIP_ACT_END,Fim do ato {n} · {m} m,End of act {n} · {m} m
+UI_CHOOSE_VILLAIN,Escolha o vilão da run,Choose the villain for this run
+UI_CHOOSE_VILLAIN_SUB,Passe o mouse num vilão para ver o baralho inicial. Cada vilão tem passiva e combos próprios; novos vilões se liberam vencendo fases.,Hover a villain to see its starting deck. Each villain has its own passive and combos; new villains unlock by beating stages.
+UI_PICK_VILLAIN,Escolher este vilão,Pick this villain
+UI_VILLAIN_LOCKED,Bloqueado: vença a fase {n}.,Locked: beat stage {n}.
+UI_VILLAIN_COMBOS,Ideias de combo,Combo ideas
+UI_VILLAIN_DECK,Baralho inicial de {name} · {n} cartas,{name} starting deck · {n} cards
+UI_VILLAIN_TAG,VILÃO,VILLAIN
+UI_GROUP_VILLAIN,Vilão escolhido: {name},Chosen villain: {name}
+UI_PHASE_UNLOCKS_V,Libera o vilão: {p},Unlocks the villain: {p}
+UI_PHASE_SOULS,Recompensa: {n} Almas (na primeira vitória),Reward: {n} Souls (first win)
+UI_PHASE_RARE,Recompensa: uma carta rara à escolha,Reward: one rare card of your choice
+UI_NEW_VILLAIN,Novo vilão liberado: {p}!,New villain unlocked: {p}!
+UI_RARE_CHOICE,Rara à escolha,Rare of your choice
+UI_RARE_CHOICE_SUB,Você venceu uma fase: escolha 1 carta rara para a sua coleção. Restam {n} escolha(s).,You beat a stage: pick 1 rare card for your collection. {n} pick(s) left.
+UI_RARE_PICK,Levar esta carta,Take this card
+UI_TAB_V_plague,Praga,Plague
+UI_TAB_V_dragon,Dragão,Dragon
+UI_TAB_V_lich,Lich,Lich
+UI_TAB_V_common,Comuns,Common
+UI_UNLOCK_WITH,Libera com o vilão {v},Unlocks with villain {v}
+UI_COLLECTION_SUB_V,Cada vilão libera as comuns e incomuns dele. Raras e lendárias de vilões liberados se compram com Almas.,Each villain unlocks its common and uncommon cards. Rares and legendaries of unlocked villains are bought with Souls.
+UI_COMP_OWNER_common,Cartas comuns (de todos os vilões),Common cards (all villains)
+VCOMBO_plague_1,Enxame + auras: encha o campo de bichos e multiplique o dano de todos.,Swarm + auras: fill the field with creatures and multiply everyone's damage.
+VCOMBO_plague_2,"Ninhos na disputa: com o herói parado num local, Tocas e Ninhos rendem do começo ao fim.",Nests in the standoff: while the hero is stuck at a place burrows and nests pay off all along.
+VCOMBO_plague_3,Peste + predadores: ratos empilham Peste e as feras batem mais forte em herói empesteado.,Plague + predators: rats stack Plague and the beasts hit harder on a plagued hero.
+VCOMBO_dragon_1,Encharcar + fogo: Balde e Óleo encharcam (fogo x2); Tocha e Dinamiteiro detonam.,Soak + fire: Bucket and Oil soak (fire x2); Torch and Dynamiter detonate.
+VCOMBO_dragon_2,"Motor de ouro: Kobolds, Moedas e Baú enchem o tesouro; Mercenário e a passiva crescem com ele.","Gold engine: Kobolds, Coins and Chest fill the hoard; Mercenary and the passive grow with it."
+VCOMBO_dragon_3,Ouro vira fogo: Ouro Derretido e Avalanche convertem o tesouro em dano; Pedágio vira elixir.,Gold becomes fire: Molten Gold and Avalanche turn the hoard into damage; Toll turns it into elixir.
+VCOMBO_lich_1,Sacrifício que paga: Servos e Legião morrem barato; Banquete e Colheita de Almas viram elixir e dano.,Sacrifice pays: Servants and Legion die cheap; Feast and Soul Harvest become elixir and damage.
+VCOMBO_lich_2,Corrente de feitiços: Faísca Arcana cresce a cada feitiço; Eco repete o último; Acólitos atiram.,Spell chain: Arcane Spark grows with each spell; Echo repeats the last; Acolytes shoot.
+VCOMBO_lich_3,Morte alimenta magia: Ritual Profano troca monstro por feitiços; Cavaleiro da Morte se cura a cada feitiço.,Death feeds magic: Profane Ritual trades a monster for spells; Death Knight heals on every spell.

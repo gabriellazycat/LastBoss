@@ -6,9 +6,9 @@ signal deck_chosen(id: String)
 signal continue_run
 signal settings_changed(key: String)
 
-const DECKS := ["horde", "ruin", "treasure", "crypt", "cult"]
 const VERSION := "v0.1 · MVP"
-const PACT_ART := {"horde": "rat_horde", "ruin": "goblin_dynamiter", "treasure": "mimic", "crypt": "ghoul", "cult": "acolyte"}
+## Retrato do vilão enquanto assets/cards/villain_<id>.png não chega: a arte antiga mais próxima.
+const VILLAIN_ART_FALLBACK := {"plague": "pact_horde", "dragon": "pact_treasure", "lich": "dark_pact"}
 
 var data: GameData
 var meta: MetaSave
@@ -25,10 +25,14 @@ var preview_row: HBoxContainer
 var group_screen: Control
 var group_row: HBoxContainer
 var group_deck: Label
-var pending_pact := ""
+var pending_villain := ""
 var pending_phase := -1     # fase da campanha escolhida (-1 = a próxima a vencer)
 var phase_row: HBoxContainer
 var phase_info: Label
+var rare_screen: Control
+var rare_row: HBoxContainer
+var rare_sub: Label
+var rare_skipped := false   # "Voltar": a escolha de rara não reabre até o jogo fechar
 var collection: CollectionScreen
 var compendium: CompendiumScreen
 var settings: SettingsPanel
@@ -71,6 +75,7 @@ func _ready() -> void:
 	_build_title()
 	_build_decks()
 	_build_group()
+	_build_rare()
 	collection = CollectionScreen.new()
 	collection.setup(data, meta)
 	collection.visible = false
@@ -197,16 +202,16 @@ func _build_decks() -> void:
 	deck_screen.add_theme_constant_override("separation", 18)
 	add_child(deck_screen)
 	var h := UiKit.title(44)
-	h.text = "UI_CHOOSE_DECK"
+	h.text = "UI_CHOOSE_VILLAIN"
 	deck_screen.add_child(UiDiario.tape_title(h) if UiSkins.diario() else h)
 	var hs := UiKit.label(18, UiKit.MUTED)
-	hs.text = "UI_CHOOSE_DECK_SUB"
+	hs.text = "UI_CHOOSE_VILLAIN_SUB"
 	deck_screen.add_child(hs)
 	deck_row = HBoxContainer.new()
 	deck_row.add_theme_constant_override("separation", 18)
 	deck_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	deck_screen.add_child(deck_row)
-	# Prévia: as cartas do deck do Pacto em foco, todas à vista de uma vez.
+	# Prévia: o baralho inicial do vilão em foco, todas as cartas à vista de uma vez.
 	var prev := UiKit.panel(UiKit.BG, UiKit.EDGE, 12)
 	var pv := VBoxContainer.new()
 	pv.add_theme_constant_override("separation", 8)
@@ -225,25 +230,50 @@ func _build_decks() -> void:
 	deck_screen.add_child(back)
 
 
+## Vilão que já vem em foco: o último escolhido, se estiver liberado.
+func _default_villain() -> String:
+	return meta.villain if meta.villains.has(meta.villain) else data.villain_ids[0]
+
+
+## Retrato do vilão (assets/cards/<portrait>.png); sem ele, a arte antiga mais próxima.
+static func villain_tex(d: GameData, id: String) -> Texture2D:
+	var t := UiDiario.card_tex(str(d.villain(id).get("portrait", "villain_" + id)))
+	if t == null:
+		t = UiDiario.card_tex(VILLAIN_ART_FALLBACK.get(d.villain_id(id), "lord_skull"))
+	return t
+
+
+## As 3 ideias de combo do vilão, uma linha curta cada.
+func _combo_lines(id: String, size: int, col: Color, w: float, font: Font = null) -> VBoxContainer:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 3)
+	for i in 3:
+		var l := Tips.label("%d · %s" % [i + 1, tr("VCOMBO_%s_%d" % [id, i + 1])], size, col, w)
+		if font:
+			l.add_theme_font_override("normal_font", font)
+			l.add_theme_font_size_override("normal_font_size", size)
+		v.add_child(l)
+	return v
+
+
 func _fill_decks() -> void:
 	UiKit.clear(deck_row)
 	if UiSkins.diario():
 		_fill_contracts()
-		_fill_preview(meta.pact if DECKS.has(meta.pact) else DECKS[0])
+		_fill_preview(_default_villain())
 		return
-	for id in DECKS:
-		var deck: Dictionary = data.deck(id)
+	for id in data.villain_ids:
 		var p := UiKit.panel(UiKit.BG, UiKit.EDGE, 16)
 		p.custom_minimum_size = Vector2(380, 300)
 		var v := VBoxContainer.new()
-		v.add_theme_constant_override("separation", 10)
+		v.add_theme_constant_override("separation", 8)
 		p.add_child(v)
-		# Brasão do Pacto: o retrato de uma carta que é a cara dele.
+		# Retrato do vilão.
 		var emblem := Control.new()
-		emblem.custom_minimum_size = Vector2(346, 150)
+		emblem.custom_minimum_size = Vector2(346, 130)
 		emblem.clip_contents = true
 		var ea := TextureRect.new()
-		ea.texture = CardArt.textures.get(PACT_ART[id])
+		ea.texture = villain_tex(data, id)
 		ea.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		ea.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		ea.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -258,22 +288,25 @@ func _fill_decks() -> void:
 		var name_ := UiKit.title(34)
 		name_.text = tr("DECK_" + id).to_upper()
 		v.add_child(name_)
-		v.add_child(Tips.label(tr("DECKSTYLE_" + id), 18, Color(0.9, 0.86, 1.0), 346.0))
-		var rules := Tips.label(UiKit.deck_rules_text(deck["rules"]), 16, Color(0.9, 0.86, 1.0), 346.0)
-		rules.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		v.add_child(rules)
+		v.add_child(Tips.label(UiKit.deck_rules_text(data, id), 16, Color(0.9, 0.86, 1.0), 346.0))
+		var ch := UiKit.label(15, UiKit.GOLD)
+		ch.text = "UI_VILLAIN_COMBOS"
+		v.add_child(ch)
+		var combos := _combo_lines(id, 15, Color(0.9, 0.86, 1.0), 346.0)
+		combos.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		v.add_child(combos)
 		var b := Button.new()
-		b.text = "UI_PICK_DECK"
-		if not meta.pacts.has(id):
-			b.text = tr("UI_PACT_LOCKED").format({"n": _phase_unlocking(id)})
+		b.text = "UI_PICK_VILLAIN"
+		if not meta.villains.has(id):
+			b.text = tr("UI_VILLAIN_LOCKED").format({"n": _phase_unlocking(id)})
 			b.disabled = true
 		b.custom_minimum_size = Vector2(0, 54)
 		b.add_theme_font_size_override("font_size", 22)
 		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		b.pressed.connect(func():
-			pending_pact = id
+			pending_villain = id
 			show_screen("group"))
-		# Material próprio: acender este Pacto não pode acender os painéis que dividem o mesmo material.
+		# Material próprio: acender este vilão não pode acender os painéis que dividem o mesmo material.
 		if p.material:
 			p.material = p.material.duplicate()
 		var lit := func(on: bool): UiKit.set_hot(p, on)
@@ -284,12 +317,12 @@ func _fill_decks() -> void:
 		p.mouse_entered.connect(func(): b.grab_focus())
 		v.add_child(b)
 		deck_row.add_child(p)
-	_fill_preview(meta.pact if DECKS.has(meta.pact) else DECKS[0])
+	_fill_preview(_default_villain())
 
 
-## Cartas do deck pronto do Pacto, da mais barata à mais cara.
+## Cartas do baralho inicial do vilão, da mais barata à mais cara.
 func _fill_preview(id: String) -> void:
-	preview_head.text = tr("UI_DECK_CONTENTS").format({"name": tr("DECK_" + id), "n": data.deck(id)["cards"].size()})
+	preview_head.text = tr("UI_VILLAIN_DECK").format({"name": tr("DECK_" + id), "n": data.deck(id)["cards"].size()})
 	UiKit.clear(preview_row)
 	var order: Array = data.deck(id)["cards"].duplicate()
 	order.sort_custom(func(a, c): return data.card(a).cost < data.card(c).cost or (data.card(a).cost == data.card(c).cost and a < c))
@@ -298,6 +331,67 @@ func _fill_preview(id: String) -> void:
 		var cell := CollectionScreen.cell(d, 92.0 if UiSkins.diario() else 112.0)
 		Tips.attach(cell, func(): return Tips.card_entries(d, [], true))
 		preview_row.add_child(cell)
+
+
+func _build_rare() -> void:
+	rare_screen = VBoxContainer.new()
+	rare_screen.add_theme_constant_override("separation", 16)
+	add_child(rare_screen)
+	if UiSkins.diario():
+		rare_screen.draw.connect(func(): UiDiario.draw_plate(rare_screen, "paper", Vector2(34, 28)))
+	var h := UiKit.title(44)
+	h.text = "UI_RARE_CHOICE"
+	rare_screen.add_child(h)
+	rare_sub = UiKit.label(18, UiKit.MUTED)
+	rare_screen.add_child(rare_sub)
+	rare_row = HBoxContainer.new()
+	rare_row.add_theme_constant_override("separation", 22)
+	rare_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	rare_screen.add_child(rare_row)
+	var back := Button.new()
+	back.text = "UI_BACK"
+	back.custom_minimum_size = Vector2(200, 48)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	back.pressed.connect(_skip_rare)
+	rare_screen.add_child(back)
+
+
+func _skip_rare() -> void:
+	rare_skipped = true
+	show_screen("title")
+
+
+## Há uma rara à escolha esperando (fases 3 e 4) e ainda há cartas para oferecer.
+func _rare_pending() -> bool:
+	return meta.rare_choices > 0 and not rare_skipped and not meta.rare_choice_options(3).is_empty()
+
+
+## Três raras ainda bloqueadas dos vilões liberados; escolher uma entra na coleção.
+func _fill_rare() -> void:
+	rare_sub.text = tr("UI_RARE_CHOICE_SUB").format({"n": meta.rare_choices})
+	UiKit.clear(rare_row)
+	for cid in meta.rare_choice_options(3):
+		var d: CardDef = data.card(cid)
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 8)
+		var cell := CollectionScreen.cell(d, 220.0)
+		Tips.attach(cell, func(): return Tips.card_entries(d, [], true))
+		col.add_child(cell)
+		var own := UiKit.label(16, UiKit.MUTED)
+		own.text = tr("DECK_" + d.owner) if d.owner != "common" else tr("UI_TAB_V_common")
+		own.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(own)
+		var b := Button.new()
+		b.text = "UI_RARE_PICK"
+		b.custom_minimum_size = Vector2(0, 52)
+		b.add_theme_font_size_override("font_size", 21)
+		b.pressed.connect(func():
+			if meta.choose_rare(d.id):
+				meta.save()
+			show_screen("title"))
+		b.mouse_entered.connect(func(): b.grab_focus())
+		col.add_child(b)
+		rare_row.add_child(col)
 
 
 func _build_group() -> void:
@@ -335,18 +429,18 @@ func _build_group() -> void:
 	go.custom_minimum_size = Vector2(320, 56)
 	go.add_theme_font_size_override("font_size", 24)
 	go.pressed.connect(func():
-		meta.pact = pending_pact
+		meta.villain = pending_villain
 		meta.save()
-		deck_chosen.emit(pending_pact))
+		deck_chosen.emit(pending_villain))
 	btns.add_child(go)
 	group_screen.add_child(btns)
 
 
 ## O grupo que o Pacto vai enfrentar: a fila de heróis, com nível, habilidades e força de cada um.
 func _fill_group() -> void:
-	if pending_pact == "":
-		pending_pact = meta.pact if DECKS.has(meta.pact) else DECKS[0]
-	group_deck.text = tr("UI_GROUP_DECK").format({"name": tr("DECK_" + pending_pact)})
+	if pending_villain == "" or not meta.villains.has(pending_villain):
+		pending_villain = _default_villain()
+	group_deck.text = tr("UI_GROUP_VILLAIN").format({"name": tr("DECK_" + pending_villain)})
 	if pending_phase < 0 or not meta.phase_open(pending_phase):
 		pending_phase = _next_phase()
 	_fill_phases()
@@ -355,7 +449,8 @@ func _fill_group() -> void:
 	var ph: Dictionary = data.phase(pending_phase)
 	var party: Array = ph.get("party", [])
 	var n := party.size()
-	var mult := float(data.deck(pending_pact)["rules"].get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0))
+	var mult := float(data.villain(pending_villain)["rules"].get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0)) \
+			* float(ph.get("villain_hp", {}).get(pending_villain, 1.0))
 	for i in n:
 		if UiSkins.diario():
 			group_row.add_child(_wanted_poster(i, n, P, mult, str(party[i])))
@@ -383,7 +478,7 @@ func _fill_group() -> void:
 		group_row.add_child(pnl)
 
 
-## Fase que libera o pacto (para o aviso do contrato bloqueado).
+## Fase que libera o vilão (para o aviso do vilão bloqueado).
 func _phase_unlocking(pid: String) -> int:
 	for ph in data.phases:
 		if data.villain_id(str(ph.get("unlock_villain", "-"))) == data.villain_id(pid):
@@ -405,7 +500,8 @@ func _fill_phases() -> void:
 	for ph in data.phases:
 		var k := int(ph["id"])
 		var b := Button.new()
-		b.text = "%s · %s%s" % [tr("UI_PHASE").format({"n": k}), tr(str(ph["key"])), "  ✓" if meta.phases_won.has(k) else ""]
+		var gift := "  ★" if str(ph.get("unlock_villain", "")) != "" or ph.get("rare_choice", false) else ""
+		b.text = "%s · %s%s%s" % [tr("UI_PHASE").format({"n": k}), tr(str(ph["key"])), gift, "  ✓" if meta.phases_won.has(k) else ""]
 		b.custom_minimum_size = Vector2(0, 44)
 		b.toggle_mode = true
 		b.button_pressed = k == pending_phase
@@ -419,11 +515,17 @@ func _fill_phases() -> void:
 	var ph: Dictionary = data.phase(pending_phase)
 	var txt := tr("PHASED_%d" % pending_phase)
 	if str(ph.get("unlock_villain", "")) != "":
-		txt += "  " + tr("UI_PHASE_UNLOCKS").format({"p": tr("DECK_" + str(ph["unlock_villain"]))})
+		txt += "\n" + tr("UI_PHASE_UNLOCKS_V").format({"p": tr("DECK_" + str(ph["unlock_villain"]))})
+	if int(ph.get("reward_souls", 0)) > 0:
+		txt += "\n" + tr("UI_PHASE_SOULS").format({"n": int(ph["reward_souls"])})
+	if ph.get("rare_choice", false):
+		txt += "\n" + tr("UI_PHASE_RARE")
 	phase_info.text = txt
 
 
 func show_screen(s: String) -> void:
+	if s == "title" and _rare_pending():
+		s = "rare"
 	if UiSkins.diario() and s != screen and is_node_ready():
 		prev_screen = screen
 		prev_fade = 0.0
@@ -435,6 +537,7 @@ func show_screen(s: String) -> void:
 	title_root.visible = s == "title" or (prev_screen == "title" and prev_fade < 1.0)
 	deck_screen.visible = s == "decks"
 	group_screen.visible = s == "group"
+	rare_screen.visible = s == "rare"
 	collection.visible = s == "collection"
 	compendium.visible = s == "compendium"
 	settings.visible = false
@@ -447,6 +550,11 @@ func show_screen(s: String) -> void:
 	elif s == "group":
 		_fill_group()
 		(group_screen.find_child("Go", true, false) as Button).grab_focus.call_deferred()
+	elif s == "rare":
+		_fill_rare()
+		for b in rare_screen.find_children("*", "Button", true, false):
+			b.grab_focus.call_deferred()
+			break
 	elif s == "collection":
 		collection.open()
 	elif s == "compendium":
@@ -468,6 +576,8 @@ func _notification(what: int) -> void:
 			_fill_decks.call_deferred()
 		elif screen == "group":
 			_fill_group.call_deferred()
+		elif screen == "rare":
+			_fill_rare.call_deferred()
 		elif screen == "collection":
 			collection.refresh.call_deferred()
 		elif screen == "compendium":
@@ -478,6 +588,10 @@ func _unhandled_input(e: InputEvent) -> void:
 	if visible and screen == "compendium" and e.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		show_screen("title")
+		return
+	if visible and screen == "rare" and e.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_skip_rare()
 		return
 	if visible and screen == "group" and e.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
@@ -508,6 +622,8 @@ func _process(delta: float) -> void:
 	deck_screen.modulate.a = fade
 	group_screen.position = Vector2((vs.x - group_screen.size.x) * 0.5, (vs.y - group_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
 	group_screen.modulate.a = fade
+	rare_screen.position = Vector2((vs.x - rare_screen.size.x) * 0.5, (vs.y - rare_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
+	rare_screen.modulate.a = fade
 	collection.position = Vector2((vs.x - collection.size.x) * 0.5, (vs.y - collection.size.y) * 0.5 + (1.0 - fade) * 24.0)
 	collection.modulate.a = fade
 	compendium.position = Vector2((vs.x - compendium.size.x) * 0.5, (vs.y - compendium.size.y) * 0.5 + (1.0 - fade) * 24.0)
@@ -519,9 +635,9 @@ func _process(delta: float) -> void:
 
 # ---------------------------------------------------------------- pele Diário
 
-## Papel da mesa que cada tela usa (o grupo sai do mesmo maço do Pacto).
+## Papel da mesa que cada tela usa (o grupo sai do mesmo maço do vilão; a rara é coisa da coleção).
 func _desk_id(s: String) -> String:
-	return {"group": "decks"}.get(s, s)
+	return {"group": "decks", "rare": "collection"}.get(s, s)
 
 
 func _screen_node(s: String) -> Control:
@@ -532,6 +648,8 @@ func _screen_node(s: String) -> Control:
 			return deck_screen
 		"group":
 			return group_screen
+		"rare":
+			return rare_screen
 		"collection":
 			return collection
 		"compendium":
@@ -553,7 +671,7 @@ func _process_desk(delta: float) -> void:
 	fade = minf(fade + delta * 2.6, 1.0)
 	prev_fade = minf(prev_fade + delta * 3.2, 1.0)
 	var vs := get_viewport_rect().size
-	for s in ["title", "decks", "group", "collection", "compendium"]:
+	for s in ["title", "decks", "group", "rare", "collection", "compendium"]:
 		var c := _screen_node(s)
 		if c == null:
 			continue
@@ -592,20 +710,19 @@ func _tapes(sheet: Control) -> void:
 		sheet.draw_colored_polygon(pts, Color(0.9, 0.84, 0.64, 0.88))
 
 
-## Contratos dos Pactos: "Pacto da", nome antigo, desenho a nanquim, cláusulas, assinatura em sangue e lacre.
+## Contratos dos vilões: nome, retrato a nanquim, passiva e combos como cláusulas, assinatura em sangue e lacre.
 func _fill_contracts() -> void:
-	for id in DECKS:
-		var deck: Dictionary = data.deck(id)
+	for id in data.villain_ids:
 		var p := PanelContainer.new()
 		UiDiario.dress(p, "contract", 34.0, {"grime": 0.7, "seed": UiDiario.seed_of(id), "shadow": 10.0, "rough": 2.6}, true)
-		p.custom_minimum_size = Vector2(300 if DECKS.size() > 3 else 360, 0)
-		if not meta.pacts.has(id):
+		p.custom_minimum_size = Vector2(380, 0)
+		if not meta.villains.has(id):
 			p.modulate = Color(0.75, 0.72, 0.7)
 		var v := VBoxContainer.new()
 		v.add_theme_constant_override("separation", 4)
 		p.add_child(v)
 		var k := Label.new()
-		k.text = tr("UI_PACT_OF_" + id).to_upper()
+		k.text = tr("UI_VILLAIN_TAG")
 		k.add_theme_font_override("font", UiDiario.font("type"))
 		k.add_theme_font_size_override("font_size", 15)
 		k.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -617,17 +734,13 @@ func _fill_contracts() -> void:
 		nm.add_theme_color_override("font_color", UiDiario.BLOOD)
 		nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(nm)
-		var ds := Tips.label(tr("DECKSTYLE_" + id), 19, UiDiario.INK, 300.0, true)
-		ds.add_theme_font_override("normal_font", UiDiario.font("fell_it"))
-		ds.add_theme_font_size_override("normal_font_size", 19)
-		v.add_child(ds)
 		var art := TextureRect.new()
-		art.texture = UiDiario.card_tex("pact_" + id) if id in ["horde", "ruin", "treasure"] else CardArt.textures.get(PACT_ART[id])
+		art.texture = villain_tex(data, id)
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		art.custom_minimum_size = Vector2(0, 112)
+		art.custom_minimum_size = Vector2(0, 100)
 		v.add_child(art)
-		var lines: PackedStringArray = UiKit.deck_rules_text(deck["rules"]).split("\n", false)
+		var lines: PackedStringArray = UiKit.deck_rules_text(data, id).split("\n", false)
 		for i in lines.size():
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 8)
@@ -637,11 +750,18 @@ func _fill_contracts() -> void:
 			sec.add_theme_font_size_override("font_size", 19)
 			sec.add_theme_color_override("font_color", UiDiario.BLOOD)
 			row.add_child(sec)
-			var rl := Tips.label(lines[i].trim_prefix("• "), 15, UiDiario.INK, 290.0)
+			var rl := Tips.label(lines[i].trim_prefix("• "), 15, UiDiario.INK, 340.0)
 			rl.add_theme_font_override("normal_font", UiDiario.font("type"))
 			rl.add_theme_font_size_override("normal_font_size", 15)
 			row.add_child(rl)
 			v.add_child(row)
+		var ch := Label.new()
+		ch.text = tr("UI_VILLAIN_COMBOS")
+		ch.add_theme_font_override("font", UiDiario.font("fell"))
+		ch.add_theme_font_size_override("font_size", 19)
+		ch.add_theme_color_override("font_color", UiDiario.BLOOD)
+		v.add_child(ch)
+		v.add_child(_combo_lines(id, 14, UiDiario.INK, 350.0, UiDiario.font("type")))
 		var gap := Control.new()
 		gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		gap.custom_minimum_size = Vector2(0, 6)
@@ -651,7 +771,7 @@ func _fill_contracts() -> void:
 		var line := Control.new()
 		line.custom_minimum_size = Vector2(0, 52)
 		line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var sd := float(DECKS.find(id)) * 1.7
+		var sd := float(data.villain_ids.find(id)) * 1.7
 		line.draw.connect(func():
 			var y := line.size.y - 14.0
 			line.draw_line(Vector2(0, y), Vector2(line.size.x, y), UiDiario.INK, 1.5, true)
@@ -669,15 +789,15 @@ func _fill_contracts() -> void:
 		sign.add_child(seal)
 		v.add_child(sign)
 		var b := Button.new()
-		b.text = "UI_PACT_SIGN"
-		if not meta.pacts.has(id):
-			b.text = tr("UI_PACT_LOCKED").format({"n": _phase_unlocking(id)})
+		b.text = "UI_PICK_VILLAIN"
+		if not meta.villains.has(id):
+			b.text = tr("UI_VILLAIN_LOCKED").format({"n": _phase_unlocking(id)})
 			b.disabled = true
 		b.custom_minimum_size = Vector2(0, 50)
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		b.add_theme_font_size_override("font_size", 21)
 		b.pressed.connect(func():
-			pending_pact = id
+			pending_villain = id
 			show_screen("group"))
 		var lit := func(on: bool): UiKit.set_hot(p, on)
 		b.focus_entered.connect(_fill_preview.bind(id))
@@ -686,7 +806,7 @@ func _fill_contracts() -> void:
 		b.mouse_entered.connect(func(): b.grab_focus())
 		p.mouse_entered.connect(func(): b.grab_focus())
 		v.add_child(b)
-		p.rotation_degrees = [-1.2, 0.6, 1.4, -0.7, 1.0][DECKS.find(id) % 5]
+		p.rotation_degrees = [-1.2, 0.6, 1.4][data.villain_ids.find(id) % 3]
 		deck_row.add_child(p)
 
 

@@ -413,18 +413,15 @@ static func type_line(d: CardDef) -> String:
 	return " · ".join(parts)
 
 
-## Regras próprias do deck, montadas dos dados (o ajustador muda os números).
-static func deck_rules_text(rules: Dictionary) -> String:
-	var lines: Array = []
-	for k in rules:
-		var x = rules[k]
-		if typeof(x) == TYPE_FLOAT and k.ends_with("_mult"):
-			if is_equal_approx(x, 1.0):
-				continue
-			lines.append("• " + TranslationServer.translate("RULE_" + k).format({"p": int(round(x * 100.0))}))
-		else:
-			lines.append("• " + TranslationServer.translate("RULE_" + k).format({"n": int(x)}))
-	return "\n".join(lines)
+## Regras do vilão: a passiva dele e, se houver, o ajuste de vida dos heróis (montados dos dados).
+static func deck_rules_text(data: GameData, vid: String) -> String:
+	var id := data.villain_id(vid)
+	var lines: Array = ["• " + TranslationServer.translate("VILLAIN_%s_PASSIVE" % id)]
+	var x = data.villain(id).get("rules", {}).get("hero_hp_mult", 1.0)
+	if not is_equal_approx(float(x), 1.0):
+		lines.append("• " + TranslationServer.translate("RULE_hero_hp_mult").format({"p": int(round(float(x) * 100.0))}))
+	return "
+".join(lines)
 
 
 ## Modificadores da carta; o primeiro ganho vem na frente (é o dono do papel da carta).
