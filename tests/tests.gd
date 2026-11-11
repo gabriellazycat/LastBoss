@@ -779,32 +779,60 @@ func _steps(s: Sim, sec: float) -> void:
 
 
 func t_contests() -> void:
-	# Ritual: 10 mortes de monstros seus dentro do círculo.
+	# Disputa em 3 etapas (C5): cada etapa tem meta e janela; recompensa por degraus.
+	var L: Dictionary = data.rules["locations"]
+	# Ritual: mortes de monstros seus dentro do círculo (6, 10, 14).
 	var s := _at_location("ritual")
 	var p: Vector2 = s.road.locations[int(s.contest["li"])]["pos"]
-	check(s.contest["type"] == "ritual" and s.hero.hold, "Ritual: o herói para no local e a disputa começa")
-	for k in 10:
+	check(s.contest["type"] == "ritual" and s.hero.hold and int(s.contest["stages"]) == 3 and int(s.contest["stage"]) == 0, "Ritual: o herói para no local e a etapa 1 começa")
+	for k in 6:
 		var j := s.units.spawn(data.card("ogre"), p.x + 1.0, p.y, 0.0, 0.0, 0, 999)
 		s.kill_unit(j, K.Death.HERO)
 	s.step()
-	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "upgrade", "Ritual: 10 mortes no círculo vencem (nível de 1 entre 3)")
+	check(int(s.contest["stage"]) == 1 and int(s.contest["won"]) == 1 and is_equal_approx(float(s.contest["goal"]), 10.0), "Ritual: 6 mortes vencem a etapa 1; a etapa 2 pede 10")
+	_win_stage(s)
+	_win_stage(s)
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "upgrade", "Ritual: as 3 etapas dão a recompensa cheia (nível de 1 entre 3)")
 	s = _at_location("ritual")
-	_steps(s, float(data.rules["locations"]["ritual"]["window"]) + 0.2)
-	check(s.contest.is_empty() and s.offers.is_empty() and not s.hero.hold, "Ritual: janela acaba sem mortes → nada, e o herói segue")
-	# Santuário: monstro que luta no círculo por 6 s; torre não conta.
+	_steps(s, 3.0 * float(L["ritual"]["stages"][0]["window"]) + 0.5)
+	check(s.contest.is_empty() and s.offers.is_empty() and not s.hero.hold, "Ritual: 3 janelas sem mortes → nada, e o herói segue")
+	# Degraus: 1 etapa vencida = 15 de ouro, sem oferta.
+	s = _at_location("ritual")
+	var g0 := s.gold
+	_win_stage(s)
+	_steps(s, 2.0 * float(L["ritual"]["stages"][0]["window"]) + 0.5)
+	check(s.contest.is_empty() and s.offers.is_empty() and is_equal_approx(s.gold - g0, 15.0), "1 etapa vencida: 15 de ouro, sem a recompensa do local (%.0f)" % (s.gold - g0))
+	# Ritual, ato 2, 3ª etapa: só mortes de custo 3 ou mais.
+	s = _at_location("ritual")
+	s.act = 1
+	_win_stage(s)
+	_win_stage(s)
+	check(str(s.contest["variant"]) == "cost3", "Ritual ato 2: a 3ª etapa pede monstros de custo 3+")
+	for k in 3:
+		var j := s.units.spawn(data.card("rat_horde"), p.x + 1.0, p.y, 0.0, 0.0, 0, 999)
+		s.kill_unit(j, K.Death.HERO)
+	check(is_equal_approx(float(s.contest["progress"]), 0.0), "Ritual ato 2: morte de rato (custo 2) não conta")
+	# Santuário: monstro que luta no círculo; torre não conta.
 	s = _at_location("shrine")
 	p = s.road.locations[int(s.contest["li"])]["pos"]
 	s.hero.petrify_t = 100.0
 	s.units.spawn(data.card("gargoyle_tower"), p.x + 2.0, p.y, 0.0, 0.0, 0, 999)
 	_steps(s, 7.0)
-	check(s.contest.size() > 0, "Santuário: só uma torre no círculo não conta")
+	check(int(s.contest["won"]) == 0, "Santuário: só uma torre no círculo não conta")
 	s.units.spawn(data.card("slime"), p.x - 2.0, p.y, 0.0, 0.0, 0, 999)
-	_steps(s, 6.5)
-	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "card", "Santuário: 6 s com monstro no círculo vencem")
-	# Taverna: destruir as casas; os monstros vão nelas.
+	_steps(s, 8.6)
+	check(int(s.contest["won"]) >= 1, "Santuário: 6 s com monstro no círculo vencem a etapa")
+	s = _at_location("shrine")
+	s.act = 2
+	_win_stage(s)
+	_win_stage(s)
+	check(s.contest.has("p2"), "Santuário ato 3: a 3ª etapa tem dois círculos")
+	_win_stage(s)
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "card", "Santuário: as 3 etapas dão a carta rara")
+	# Taverna: casas no chão, meta cumulativa 1, 2, 3.
 	s = _at_location("tavern")
 	var loc: Dictionary = s.road.locations[int(s.contest["li"])]
-	check(loc["houses"].size() == int(data.rules["locations"]["tavern"]["houses"]), "Taverna: as casas aparecem")
+	check(loc["houses"].size() == int(L["tavern"]["houses"]), "Taverna: as casas aparecem")
 	s.hero.petrify_t = 100.0
 	var hp0 := 0.0
 	for h in loc["houses"]:
@@ -819,15 +847,19 @@ func t_contests() -> void:
 	check(hp1 < hp0, "Taverna: monstros perto atacam as casas (%.0f → %.0f)" % [hp0, hp1])
 	for k in loc["houses"].size():
 		s.damage_house(k, 1.0e6)
-	s.step()
-	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "mod", "Taverna: todas as casas no chão vencem (modificador)")
-	# Ponte: dano na janela.
+	for k in 3:
+		s.step()
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "mod", "Taverna: todas as casas no chão vencem as 3 etapas (modificador)")
+	# Ponte: dano na janela (150, 250, 400).
 	s = _at_location("bridge")
 	check(s.hero.tavern_t > 0.0, "Ponte: o herói fica lento")
 	s.damage_hero(200.0, s.hero.x + 1.0, s.hero.y, 0, SimHero.DMG_PIERCE, "test")
 	s.step()
-	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "pick", "Ponte: 150 de dano vencem (escolhe o tipo)")
-	# Fonte: interromper o gole; se ele termina, cura 15% e você não ganha nada.
+	check(int(s.contest["won"]) == 1 and is_equal_approx(float(s.contest["goal"]), 250.0), "Ponte: 150 de dano vencem a etapa 1")
+	_win_stage(s)
+	_win_stage(s)
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "pick", "Ponte: as 3 etapas dão a escolha do tipo")
+	# Fonte: interromper 3 goles; gole completo não ajuda o jogador.
 	s = _at_location("fountain")
 	check(s.hero.drink_t > 0.0, "Fonte: o herói começa a beber")
 	var x0 := s.hero.x
@@ -835,17 +867,34 @@ func t_contests() -> void:
 	check(is_equal_approx(s.hero.x, x0), "Fonte: bebendo, ele não anda")
 	s.hero_fear(s.hero.x + 1.0, s.hero.y)
 	s.step()
-	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "remove", "Fonte: medo interrompe e você remove uma carta")
+	check(int(s.contest["won"]) == 1 and s.hero.drink_t > 0.0, "Fonte: medo interrompe o gole 1 e começa o gole 2")
+	_win_stage(s)
+	_win_stage(s)
+	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "remove", "Fonte: 3 goles interrompidos = remover uma carta")
 	s = _at_location("fountain")
 	s.hero.base_hp = 1000.0
 	s.hero.hp = 500.0
-	_steps(s, float(data.rules["locations"]["fountain"]["drink_s"]) + 0.2)
-	check(s.offers.is_empty() and s.hero.hp > 500.0, "Fonte: gole completo cura o herói e não dá nada (%.0f)" % s.hero.hp)
+	_steps(s, 3.0 * float(L["fountain"]["stages"][0]["window"]) + 0.5)
+	check(s.offers.is_empty() and s.hero.hp > 500.0, "Fonte: 3 goles completos curam o herói e não dão nada (%.0f)" % s.hero.hp)
 	# Loja e "?": sem disputa.
 	s = _at_location("shop")
 	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["source"] == "shop", "Loja abre na chegada, sem disputa")
 	s = _at_location("event")
 	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["source"] == "event", "Local ? abre um evento de texto")
+
+
+## Vence a etapa atual da disputa (meta cheia) e dá um passo.
+func _win_stage(s: Sim) -> void:
+	if s.contest.is_empty():
+		return
+	s.contest["progress"] = float(s.contest["goal"])
+	if s.contest["type"] == "tavern":
+		var loc: Dictionary = s.road.locations[int(s.contest["li"])]
+		var need := int(s.contest["goal"])
+		for k in loc["houses"].size():
+			if s._houses_down(loc) < need:
+				s.damage_house(k, 1.0e6)
+	s.step()
 
 
 ## A bifurcação é escolhida depois do local do nó, não antes.

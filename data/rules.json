@@ -119,30 +119,135 @@
    "house_hp": 250.0,
    "house_ring": 5.0,
    "aggro_r": 10.0,
-   "defend": 3.0
+   "defend": 3.0,
+   "stages": [
+    {
+     "goal": 1,
+     "window": 15.0
+    },
+    {
+     "goal": 2,
+     "window": 15.0
+    },
+    {
+     "goal": 3,
+     "window": 15.0
+    }
+   ],
+   "stage3": [
+    "",
+    "repair",
+    "guarded"
+   ],
+   "repair_per_s": 0.04,
+   "guarded_hp": 1.6
   },
   "fountain": {
    "radius": 5.0,
    "drink_s": 4.0,
    "interrupt_damage": 120.0,
-   "heal": 0.15
+   "heal": 0.15,
+   "stages": [
+    {
+     "goal": 120,
+     "window": 4.0
+    },
+    {
+     "goal": 180,
+     "window": 4.0
+    },
+    {
+     "goal": 260,
+     "window": 4.0
+    }
+   ],
+   "stage3": [
+    "",
+    "quick",
+    "hard"
+   ],
+   "quick_s": 3.0,
+   "hard_mult": 1.5
   },
   "ritual": {
    "radius": 6.0,
    "elixir_mult": 2.0,
    "kills": 10,
-   "window": 25.0
+   "window": 25.0,
+   "stages": [
+    {
+     "goal": 6,
+     "window": 15.0
+    },
+    {
+     "goal": 10,
+     "window": 15.0
+    },
+    {
+     "goal": 14,
+     "window": 15.0
+    }
+   ],
+   "stage3": [
+    "",
+    "cost3",
+    "expel"
+   ],
+   "expel_s": 3.0,
+   "cost3_min": 3
   },
   "shrine": {
    "radius": 7.0,
    "hold_s": 6.0,
-   "window": 20.0
+   "window": 20.0,
+   "stages": [
+    {
+     "goal": 6,
+     "window": 15.0
+    },
+    {
+     "goal": 8,
+     "window": 15.0
+    },
+    {
+     "goal": 10,
+     "window": 15.0
+    }
+   ],
+   "stage3": [
+    "",
+    "shrink",
+    "two"
+   ],
+   "shrink": 0.6,
+   "two_offset": 9.0
   },
   "bridge": {
    "radius": 10.0,
    "duration": 15.0,
    "attack_speed": -0.4,
-   "win_damage": 150.0
+   "win_damage": 150.0,
+   "stages": [
+    {
+     "goal": 150,
+     "window": 15.0
+    },
+    {
+     "goal": 250,
+     "window": 15.0
+    },
+    {
+     "goal": 400,
+     "window": 15.0
+    }
+   ],
+   "stage3": [
+    "",
+    "heal",
+    "shield"
+   ],
+   "heal_per_s": 0.015,
+   "shield_mult": 0.6
   },
   "shop": {
    "radius": 7.0
@@ -150,7 +255,8 @@
   "event": {
    "radius": 5.0
   },
-  "hold_radius": 2.5
+  "hold_radius": 2.5,
+  "_doc_stages": "Disputa em 3 etapas (C5, 10/11/2026): cada etapa tem meta e janela próprias; a 3ª muda por ato (stage3[ato]). Recompensa por degraus: contest_gold[etapas vencidas] e, com as 3, a recompensa cheia do local."
  },
  "arena": {
   "radius": 15.0,
@@ -256,7 +362,12 @@
  },
  "gold": {
   "damage_per_gold": 40.0,
-  "per_contest": 25
+  "per_contest": 25,
+  "contest_gold": [
+   0,
+   15,
+   30
+  ]
  },
  "shop": {
   "cards": 3,
@@ -278,7 +389,7 @@
   {
    "ground_look": 2,
    "road": {
-    "target_length": 600.0,
+    "target_length": 300.0,
     "route_locations": [
      7,
      8
@@ -299,7 +410,7 @@
   {
    "ground_look": 3,
    "road": {
-    "target_length": 600.0,
+    "target_length": 300.0,
     "route_locations": [
      7,
      8
@@ -320,7 +431,7 @@
   {
    "ground_look": 4,
    "road": {
-    "target_length": 600.0,
+    "target_length": 300.0,
     "route_locations": [
      7,
      8

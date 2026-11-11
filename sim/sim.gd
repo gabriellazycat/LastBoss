@@ -381,35 +381,76 @@ func _arrive(li: int) -> void:
 			_offer_event()
 			return
 	var P: Dictionary = L[ty]
-	var wmult := 1.0 + rv("contest_window")
-	contest = {"li": li, "type": ty, "t": 0.0, "progress": 0.0, "goal": 1.0, "window": float(P.get("window", 15.0)) * wmult}
-	match ty:
-		"ritual":
-			contest["goal"] = float(P["kills"])
-		"shrine":
-			contest["goal"] = float(P["hold_s"])
-		"tavern":
-			var n := int(P["houses"])
-			var houses: Array = []
-			var a0 := rng.randf() * TAU
-			for k in n:
-				var a := a0 + TAU * k / n
-				var hp0 := float(P["house_hp"])
-				houses.append({"x": p.x + cos(a) * float(P["house_ring"]), "y": p.y + sin(a) * float(P["house_ring"]), "hp": hp0, "max_hp": hp0})
-			loc["houses"] = houses
-			contest["goal"] = float(n)
-		"bridge":
-			contest["window"] = float(P["duration"]) * wmult
-			contest["goal"] = float(P["win_damage"])
-			hero.tavern_t = contest["window"]
-		"fountain":
-			contest["window"] = float(P["drink_s"]) * wmult
-			contest["goal"] = float(P["interrupt_damage"])
-			hero.drink_t = contest["window"]
+	contest = {"li": li, "type": ty, "stage": 0, "stages": 3, "won": 0, "t": 0.0, "progress": 0.0, "goal": 1.0,
+		"window": 15.0, "variant": "", "r": float(loc["r"])}
+	if ty == "tavern":
+		var n := int(P["houses"])
+		var houses: Array = []
+		var a0 := rng.randf() * TAU
+		for k in n:
+			var a := a0 + TAU * k / n
+			var hp0 := float(P["house_hp"])
+			houses.append({"x": p.x + cos(a) * float(P["house_ring"]), "y": p.y + sin(a) * float(P["house_ring"]), "hp": hp0, "max_hp": hp0})
+		loc["houses"] = houses
 	hero.hold = true
 	hero.hold_x = p.x
 	hero.hold_y = p.y
 	emit(K.Ev.CONTEST, p.x, p.y, li, 0)
+	_start_stage(0)
+
+
+## Começa a etapa k da disputa (C5): meta e janela da etapa; a 3ª etapa muda por ato (rules.locations.*.stage3).
+func _start_stage(k: int) -> void:
+	var ty: String = contest["type"]
+	var P: Dictionary = R["locations"][ty]
+	var sg: Dictionary = P["stages"][k]
+	var loc: Dictionary = road.locations[int(contest["li"])]
+	var p: Vector2 = loc["pos"]
+	var var_: String = ""
+	if k == 2:
+		var v3: Array = P.get("stage3", [])
+		var_ = str(v3[mini(act, v3.size() - 1)]) if v3.size() > 0 else ""
+	contest["stage"] = k
+	contest["variant"] = var_
+	contest["t"] = 0.0
+	contest["progress"] = 0.0
+	contest["goal"] = float(sg["goal"])
+	contest["window"] = float(sg["window"]) * (1.0 + rv("contest_window"))
+	contest["r"] = float(loc["r"])
+	contest.erase("p2")
+	contest["inside"] = {}
+	match ty:
+		"shrine":
+			if var_ == "shrink":
+				contest["r"] = float(loc["r"]) * float(P["shrink"])
+			elif var_ == "two":
+				var a := rng.randf() * TAU
+				contest["p2"] = p + Vector2(cos(a), sin(a)) * float(P["two_offset"])
+		"tavern":
+			# Meta cumulativa: 1, 2 e 3 casas no chão até o fim de cada etapa.
+			contest["progress"] = float(_houses_down(loc))
+			if var_ == "guarded":
+				for h in loc["houses"]:
+					if float(h["hp"]) > 0.0:
+						h["max_hp"] = float(h["max_hp"]) * float(P["guarded_hp"])
+						h["hp"] = float(h["hp"]) * float(P["guarded_hp"])
+		"bridge":
+			hero.tavern_t = contest["window"]
+		"fountain":
+			if var_ == "quick":
+				contest["window"] = float(P["quick_s"]) * (1.0 + rv("contest_window"))
+			elif var_ == "hard":
+				contest["goal"] = float(sg["goal"]) * float(P["hard_mult"])
+			hero.drink_t = contest["window"]
+	emit(K.Ev.CONTEST, p.x, p.y, int(contest["li"]), 2 + k)
+
+
+func _houses_down(loc: Dictionary) -> int:
+	var down := 0
+	for h in loc["houses"]:
+		if float(h["hp"]) <= 0.0:
+			down += 1
+	return down
 
 
 func _contest_tick() -> void:
@@ -417,35 +458,75 @@ func _contest_tick() -> void:
 		return
 	var loc: Dictionary = road.locations[int(contest["li"])]
 	var p: Vector2 = loc["pos"]
+	var P: Dictionary = R["locations"][str(contest["type"])]
+	var var_: String = contest["variant"]
 	contest["t"] += dt
 	match str(contest["type"]):
 		"ritual":
-			ritual_mult = float(R["locations"]["ritual"]["elixir_mult"])
+			ritual_mult = float(P["elixir_mult"])
 			if contract.size() > 0 and contract["goal"]["kind"] == "ritual_time":
 				contract["progress"] += dt
+			if var_ == "expel":
+				_expel(p, float(contest["r"]), float(P["expel_s"]))
 		"shrine":
-			if units.any_fighter_within(p.x, p.y, loc["r"]):
+			var ok := units.any_fighter_within(p.x, p.y, float(contest["r"]))
+			if contest.has("p2"):
+				var p2: Vector2 = contest["p2"]
+				ok = ok and units.any_fighter_within(p2.x, p2.y, float(contest["r"]))
+			if ok:
 				contest["progress"] += dt
 		"tavern":
-			var down := 0
-			for h in loc["houses"]:
-				if float(h["hp"]) <= 0.0:
-					down += 1
-			contest["progress"] = float(down)
+			if var_ == "repair":
+				for h in loc["houses"]:
+					if float(h["hp"]) > 0.0:
+						h["hp"] = minf(float(h["max_hp"]), float(h["hp"]) + float(h["max_hp"]) * float(P["repair_per_s"]) * dt)
+			contest["progress"] = float(_houses_down(loc))
+		"bridge":
+			if var_ == "heal":
+				hero.heal(hero.max_hp() * float(P["heal_per_s"]) * dt)
 		"fountain":
 			# Medo, raiz, empurrão ou petrificação durante o gole interrompem na hora.
 			if hero.fear_t > 0.0 or hero.root_t > 0.0 or hero.kb_t > 0.0 or hero.petrify_t > 0.0:
 				contest["progress"] = contest["goal"]
-	if float(contest["progress"]) >= float(contest["goal"]):
-		_resolve_contest(true)
-	elif float(contest["t"]) >= float(contest["window"]):
-		_resolve_contest(false)
+	var done := float(contest["progress"]) >= float(contest["goal"])
+	if done or float(contest["t"]) >= float(contest["window"]):
+		if done:
+			contest["won"] = int(contest["won"]) + 1
+		if int(contest["stage"]) + 1 < int(contest["stages"]):
+			hero.drink_t = 0.0
+			hero.tavern_t = 0.0
+			_start_stage(int(contest["stage"]) + 1)
+		else:
+			_resolve_contest(int(contest["won"]))
 
 
-## Fim da disputa: vencer dá a recompensa do local (1 entre 3); perder não dá nada.
-func _resolve_contest(won: bool) -> void:
+## Ritual, 3ª etapa do ato 3: quem fica mais de `secs` s no círculo é jogado para fora pelo herói.
+func _expel(p: Vector2, r: float, secs: float) -> void:
+	var inside: Dictionary = contest["inside"]
+	for i in units.hi:
+		if units.alive[i] == 0 or units.arch[i] == K.Arch.STRUCTURE:
+			continue
+		var v := Vector2(units.px[i] - p.x, units.py[i] - p.y)
+		var u := int(units.uid[i]) * 4096 + i
+		if v.length() > r:
+			inside.erase(u)
+			continue
+		inside[u] = float(inside.get(u, 0.0)) + dt
+		if float(inside[u]) > secs:
+			inside.erase(u)
+			var d := v.normalized() if v.length() > 0.01 else Vector2(1, 0)
+			var q := p + d * (r + 1.5)
+			units.px[i] = q.x
+			units.py[i] = q.y
+			units.ox[i] = q.x
+			units.oy[i] = q.y
+
+
+## Fim da disputa (C5): recompensa por degraus. 0 etapas = nada; 1 ou 2 = ouro; as 3 = a recompensa cheia do local.
+func _resolve_contest(won_n: int) -> void:
 	var c := contest
 	contest = {}
+	var won := won_n >= int(c.get("stages", 3))
 	var li := int(c["li"])
 	var loc: Dictionary = road.locations[li]
 	var ty: String = c["type"]
@@ -458,13 +539,20 @@ func _resolve_contest(won: bool) -> void:
 	var row: Array = cs.get(ty, [0, 0])
 	row[0 if won else 1] += 1
 	cs[ty] = row
+	var sw: Dictionary = stats.get("stages_won", {})
+	sw[str(won_n)] = int(sw.get(str(won_n), 0)) + 1
+	stats["stages_won"] = sw
 	if ty == "shrine":
 		stats["shrines_won" if won else "shrines_lost"] += 1
 		emit(K.Ev.SHRINE, p.x, p.y, 1 if won else 0, li)
 	emit(K.Ev.CONTEST, p.x, p.y, li, 1 if won else -1)
 	if not won:
 		stats["locs_lost"] += 1
-		if ty == "fountain":
+		var cg: Array = R["gold"].get("contest_gold", [0])
+		var g := float(cg[mini(won_n, cg.size() - 1)])
+		if g > 0.0:
+			_earn_gold(g)
+		elif ty == "fountain":
 			hero.heal(hero.max_hp() * float(R["locations"]["fountain"]["heal"]))
 		return
 	elixir = minf(elixir_max, elixir + rv("contest_elixir"))
@@ -931,7 +1019,8 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 	if real > 0.0:
 		emit(K.Ev.DAMAGE_HERO, hh.x, hh.y, real, tags)
 	if contest.size() > 0 and contest["type"] in ["bridge", "fountain"]:
-		contest["progress"] += real
+		var pm := float(R["locations"]["bridge"]["shield_mult"]) if contest.get("variant", "") == "shield" else 1.0
+		contest["progress"] += real * pm
 	_earn_gold(gain / float(R["gold"]["damage_per_gold"]) * (1.0 + rv("gold")))
 	var dbc: Dictionary = stats["dmg_by_card"]
 	dbc[card_id] = float(dbc.get(card_id, 0.0)) + gain
@@ -1110,10 +1199,11 @@ func _death_in_contest(x: float, y: float, c: CardDef, f: int) -> void:
 		return
 	var loc: Dictionary = road.locations[int(contest["li"])]
 	var p: Vector2 = loc["pos"]
-	if Vector2(x - p.x, y - p.y).length() > float(loc["r"]):
+	if Vector2(x - p.x, y - p.y).length() > float(contest.get("r", loc["r"])):
 		return
 	if contest["type"] == "ritual":
-		contest["progress"] += 1.0
+		if contest.get("variant", "") != "cost3" or c.cost >= int(R["locations"]["ritual"]["cost3_min"]):
+			contest["progress"] += 1.0
 	if rv("loc_raise") > 0.0 and not (f & K.F_REVIVED) and rng.randf() < rv("loc_raise"):
 		var sk: CardDef = data.card("skeleton_archers")
 		units.spawn(sk, x, y, 0.0, 0.0, K.F_NO_XP | K.F_REVIVED, 0, _forge())
