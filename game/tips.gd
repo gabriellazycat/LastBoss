@@ -16,7 +16,7 @@ const KEYWORDS := [
 	"pack", "undead", "fire", "shadow", "construct",
 	"slow", "fear", "curse", "soaked", "petrify", "root",
 	"shield", "pierce", "elixir", "sacrifice", "teleport", "altar",
-	"swarm", "monster", "spell", "structure", "route", "lair", "finisher",
+	"swarm", "monster", "spell", "structure", "route", "lair", "finisher", "plague", "beast",
 	"veteran", "cheap", "explosive", "cursed", "shadowy",
 	"shop", "tavern", "fountain", "ritual", "shrine", "bridge", "gold", "event",
 ]

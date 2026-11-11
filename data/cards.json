@@ -132,7 +132,8 @@
       "dps": 3,
       "n": 2
      }
-    ]
+    ],
+    "beast": true
    },
    "lvl": [
     "hp",
@@ -219,7 +220,12 @@
     "spawn_duration"
    ],
    "family": "pack",
-   "owner": "plague"
+   "owner": "plague",
+   "ai": {
+    "keys": [
+     "nest"
+    ]
+   }
   },
   {
    "id": "rat_king",
@@ -543,7 +549,8 @@
    "range": 1.2,
    "fx": {
     "speed_bonus": 1.0,
-    "hp_threshold": 0.5
+    "hp_threshold": 0.5,
+    "beast": true
    },
    "lvl": [
     "hp",
@@ -868,7 +875,12 @@
    "model": "bat_nest",
    "family": "pack",
    "art": "bat_nest",
-   "owner": "plague"
+   "owner": "plague",
+   "ai": {
+    "keys": [
+     "nest"
+    ]
+   }
   },
   {
    "id": "oil_splash",

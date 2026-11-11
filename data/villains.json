@@ -1,5 +1,5 @@
 {
- "_doc": "Vilões (passo C3, 10/11/2026): substituem os Pactos de boss_lorde.json. Pool da run = cartas do vilão + comuns. start_deck interino até o C6 criar as cartas novas (final em docs/decisoes_2026-11-10/CARTAS_VILOES.md). aliases: ids antigos de Pacto (saves e ferramentas).",
+ "_doc": "Vilões (passo C3, 10/11/2026): substituem os Pactos de boss_lorde.json. Pool da run = cartas do vilão + comuns. aliases: ids antigos de Pacto (saves e ferramentas).",
  "villains": [
   {
    "id": "plague",
@@ -13,11 +13,11 @@
     "rat_horde",
     "rabid_rats",
     "rabid_rats",
+    "rat_brute",
+    "rat_brute",
     "pack_call",
-    "pack_call",
+    "infected_bite",
     "rat_burrow",
-    "rat_burrow",
-    "bat_nest",
     "web"
    ],
    "start_deck_final": [
@@ -56,11 +56,11 @@
     "torch",
     "torch",
     "goblin_dynamiter",
-    "goblin_dynamiter",
+    "kobold_scavengers",
+    "kobold_scavengers",
     "gold_bait",
     "cursed_coins",
-    "gold_merc",
-    "web"
+    "barricade"
    ],
    "start_deck_final": [
     "oil_splash",

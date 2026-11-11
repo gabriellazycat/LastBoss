@@ -53,12 +53,13 @@ func _ready() -> void:
 	t_card_fx()
 	t_dragon_c6()
 	t_cards_lich_common()
+	t_plague_cards()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
 
 func t_data() -> void:
-	check(data.pool.size() == 41, "41 cartas na pool (%d)" % data.pool.size())
+	check(data.pool.size() == 84, "84 cartas na pool (%d)" % data.pool.size())
 	check(data.upgrades.size() == 15, "15 upgrades")
 	check(data.contracts.size() == 8, "8 contratos")
 	# Vilões (C3): dono válido em tudo; baralho inicial só com cartas do vilão ou comuns, liberadas com ele.
@@ -1825,3 +1826,207 @@ func t_cards_lich_common() -> void:
 	for i in 20:
 		s7.step()
 	check(s7.units.alive[tr[0]] == 0 or s7.units.hp[tr[0]] > th0, "Troll das Cavernas regenera")
+## Passo C6 (Praga): as 16 cartas novas, o estado Peste e os ganchos da Praga.
+func _pl(s: Sim, id: String, dx := 0.5) -> Array:
+	var out := _spawn(s, id, dx)
+	CardsPlague.on_card_played(s, _inst(id), s.hero.x, s.hero.y)
+	return out
+
+
+func _pl_still(s: Sim) -> void:
+	_tough(s)
+	s.hero.petrify_t = 1.0e6   # herói parado: não anda nem ataca
+
+
+func _count_def(s: Sim, id: String) -> int:
+	var n := 0
+	var di := data.card(id).idx
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == di:
+			n += 1
+	return n
+
+
+func t_plague_cards() -> void:
+	var ids := ["rat_brute", "infected_bite", "bat_cloud", "rat_trap", "wolf_pack", "brood_mother", "corrupt_piper", "sewer_flood",
+		"war_boar", "hunt_instinct", "devour", "bubonic_plague", "rat_tide", "mother_nest", "alpha_beast", "endless_swarm"]
+	var missing: Array = []
+	for id in ids:
+		var c := data.card(id)
+		if c == null or c.owner != "plague":
+			missing.append(id)
+	check(missing.is_empty(), "as 16 cartas novas da Praga existem com owner plague %s" % [missing])
+	# Peste: acumula por mordida, dá dano a mais, tem teto e expira.
+	var s := _sim(5, "plague")
+	_pl_still(s)
+	var br := _pl(s, "rat_brute")
+	var d0 := _hit(s, br[0])
+	check(CardsPlague.peste_of(s, s.hero) == 1, "Ratazana: 1 mordida = 1 acúmulo de Peste")
+	for k in 4:
+		_hit(s, br[0])
+	var d5 := _hit(s, br[0])
+	check(CardsPlague.peste_of(s, s.hero) == 6 and d5 > d0 * 1.15, "Peste: cada acúmulo aumenta o dano recebido (%.1f → %.1f)" % [d0, d5])
+	CardsPlague.add_peste(s, s.hero, 40)
+	check(CardsPlague.peste_of(s, s.hero) == 15, "Peste: teto de 15 acúmulos")
+	s.kill_unit(br[0], K.Death.EXPIRE)
+	for i in int(round(7.0 / s.dt)):
+		s.step()
+	check(CardsPlague.peste_of(s, s.hero) == 15, "Peste: ainda vale antes de 8 s sem mordida")
+	for i in int(round(2.0 / s.dt)):
+		s.step()
+	check(CardsPlague.peste_of(s, s.hero) == 0, "Peste: some 8 s depois da última mordida")
+	# Matilha de Lobos: +10% de dano por acúmulo de Peste.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	var wo := _pl(s, "wolf_pack")
+	var w0 := _hit(s, wo[0])
+	CardsPlague.add_peste(s, s.hero, 10)
+	var w10 := _hit(s, wo[0])
+	check(wo.size() == 3 and w10 > w0 * 2.0, "Matilha: dano sobe com a Peste no herói (%.1f → %.1f)" % [w0, w10])
+	# Mordida Infectada: a mordida do Bando perto do ponto aplica Peste a mais; longe, não.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	var rr := _pl(s, "rat_horde")
+	_hit(s, rr[0])
+	check(CardsPlague.peste_of(s, s.hero) == 0, "rato comum não aplica Peste sozinho")
+	s._apply(_inst("infected_bite"), s.hero.x, s.hero.y)
+	_hit(s, rr[0])
+	check(CardsPlague.peste_of(s, s.hero) == 1, "Mordida Infectada: mordida de Bando aplica +1 Peste")
+	# Praga Bubônica: toda mordida aplica Peste; no fim, dano por acúmulo.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	rr = _pl(s, "rat_horde")
+	s._apply(_inst("bubonic_plague"), s.hero.x, s.hero.y)
+	_hit(s, rr[0])
+	_hit(s, rr[0])
+	check(CardsPlague.peste_of(s, s.hero) == 2, "Praga Bubônica: toda mordida aplica Peste")
+	s.cstate["plague"]["bubo_t"] = s.t - 0.1
+	var hb := s.hero.hp
+	s.step()
+	check(hb - s.hero.hp >= 2.0 * float(data.card("bubonic_plague").fx["per_stack"]), "Praga Bubônica: no fim, 15 de dano por acúmulo (%.0f)" % (hb - s.hero.hp))
+	# Devorar: Retorna; sacrifica 3 ratos e fortalece a fera mais perto.
+	check(data.card("devour").fx.get("returns", false) == true and data.card("devour").cost == 0, "Devorar: custo 0 e Retorna")
+	s = _sim(5, "plague")
+	_pl_still(s)
+	var wb := _pl(s, "war_boar", 5.0)
+	var rats5 := _pl(s, "rat_horde", 4.0)
+	s.units.hp[wb[0]] = 100.0
+	var dm0: float = s.units.dmg[wb[0]]
+	var n0 := _count_def(s, "rat_horde")
+	s._apply(_inst("devour"), s.hero.x, s.hero.y)
+	check(n0 - _count_def(s, "rat_horde") == 3 and s.units.hp[wb[0]] >= 299.0 and s.units.dmg[wb[0]] > dm0 * 1.2,
+		"Devorar: sacrifica 3 ratos, cura a fera e ela bate mais (%d ratos, vida %.0f)" % [_count_def(s, "rat_horde"), s.units.hp[wb[0]]])
+	check(rats5.size() == 8, "Horda tem 8 ratos")
+	# Javali: empurra e atordoa uma vez por recarga.
+	s = _sim(5, "plague")
+	_tough(s)
+	wb = _pl(s, "war_boar")
+	s.units.timer2[wb[0]] = 0.0
+	s.hero.petrify_t = 0.0
+	s.unit_hits_hero(wb[0])
+	check(s.hero.petrify_t > 0.5 and s.hero.kb_t > 0.0, "Javali de Guerra: empurra e atordoa o herói")
+	s.hero.petrify_t = 0.0
+	s.unit_hits_hero(wb[0])
+	check(s.hero.petrify_t <= 0.0, "Javali de Guerra: segunda investida só depois da recarga")
+	# Instinto de Caça: Feras correm mais e roubam vida.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	var wf := _pl(s, "wolf_pack", 6.0)
+	var sp0: float = s.units.spd[wf[0]]
+	s._apply(_inst("hunt_instinct"), s.hero.x, s.hero.y)
+	s.step()
+	s.step()
+	check(s.units.spd[wf[0]] > sp0 * 1.5, "Instinto de Caça: Feras +60%% de velocidade (%.1f → %.1f)" % [sp0, s.units.spd[wf[0]]])
+	s.units.hp[wf[0]] = 10.0
+	_hit(s, wf[0])
+	check(s.units.hp[wf[0]] > 10.0, "Instinto de Caça: roubo de vida")
+	# Esgoto Transbordante: 1 rato por segundo; Ninho-Mãe dobra.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	_pl(s, "sewer_flood", 8.0)
+	for i in int(round(6.0 / s.dt)):
+		s.step()
+	var base_rats := _count_def(s, "rat")
+	check(base_rats >= 5, "Esgoto Transbordante: ~1 rato por segundo (%d em 6 s)" % base_rats)
+	var s2 := _sim(5, "plague")
+	_pl_still(s2)
+	_pl(s2, "sewer_flood", 8.0)
+	s2._apply(_inst("mother_nest"), s2.hero.x, s2.hero.y)
+	for i in int(round(6.0 / s2.dt)):
+		s2.step()
+	var dbl := _count_def(s2, "rat")
+	check(dbl >= base_rats * 1.7, "Ninho-Mãe: o ninho produz em dobro (%d contra %d)" % [dbl, base_rats])
+	# Mãe da Ninhada pare ratos; Ratoeira prende e solta ratos.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	_pl(s, "brood_mother", 8.0)
+	for i in int(round(9.0 / s.dt)):
+		s.step()
+	check(_count_def(s, "rat") >= 4, "Mãe da Ninhada: pare 2 ratos a cada 4 s (%d)" % _count_def(s, "rat"))
+	s = _sim(5, "plague")
+	_tough(s)
+	var tr := _pl(s, "rat_trap", 0.3)
+	s.step()
+	s.step()
+	check(s.hero.root_t > 0.5 and _count_def(s, "rat") == 4 and s.units.alive[tr[0]] == 0, "Ratoeira Viva: prende o herói, solta 4 ratos e some")
+	# Flautista: o Bando perto bate mais rápido.
+	var gain := 0.0
+	var dmg_a := 0.0
+	var dmg_b := 0.0
+	for pass_ in 2:
+		s = _sim(5, "plague")
+		_pl_still(s)
+		var fxp: Dictionary = data.card("corrupt_piper").fx
+		var keep: float = fxp["atk_speed"]
+		fxp["atk_speed"] = keep if pass_ == 0 else 0.0
+		_pl(s, "rat_horde", 1.0)
+		_pl(s, "corrupt_piper", 2.0)
+		var h0 := s.hero.hp
+		for i in int(round(8.0 / s.dt)):
+			s.step()
+		fxp["atk_speed"] = keep
+		if pass_ == 0:
+			dmg_a = h0 - s.hero.hp
+		else:
+			dmg_b = h0 - s.hero.hp
+	gain = dmg_a / maxf(dmg_b, 0.001)
+	check(gain > 1.15, "Flautista Corrompido: Bando por perto causa mais dano (%.0f contra %.0f)" % [dmg_a, dmg_b])
+	# Enxame Sem Fim: 12 ratos e o Bando que morre renasce uma vez.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	var r0 := _count_def(s, "rat")
+	s._apply(_inst("endless_swarm"), s.hero.x, s.hero.y)
+	check(_count_def(s, "rat") - r0 == 12, "Enxame Sem Fim: invoca 12 ratos")
+	var one := -1
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == data.card("rat").idx:
+			one = j
+			break
+	var before := _count_def(s, "rat")
+	s.kill_unit(one, K.Death.HERO)
+	check(_count_def(s, "rat") == before, "Enxame Sem Fim: o rato que morre renasce")
+	var again := -1
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == data.card("rat").idx and (s.units.flags[j] & K.F_REVIVED):
+			again = j
+			break
+	s.kill_unit(again, K.Death.HERO)
+	check(_count_def(s, "rat") == before - 1, "Enxame Sem Fim: só renasce uma vez")
+	# Besta Alfa solta um Chamado do Bando ao entrar; Maré de Ratos são 30 ratos.
+	s = _sim(5, "plague")
+	_tough(s)
+	_pl(s, "alpha_beast", 6.0)
+	check(s.rally_until > s.t, "Besta Alfa: solta um Chamado do Bando ao entrar")
+	s = _sim(5, "plague")
+	_tough(s)
+	check(_spawn(s, "rat_tide", 5.0).size() == 30, "Maré de Ratos: 30 ratos")
+	# Nuvem de Morcegos voa; Sewer/ninho e as 16 têm texto nos dois idiomas.
+	s = _sim(5, "plague")
+	var bc := _spawn(s, "bat_cloud", 5.0)
+	check(bc.size() == 5 and (s.units.flags[bc[0]] & K.F_FLY) != 0, "Nuvem de Morcegos: 5 morcegos voadores")
+	var no_text: Array = []
+	for id in ids:
+		for pre in ["CARD_", "DESC_"]:
+			if TranslationServer.translate(pre + id) == pre + id:
+				no_text.append(pre + id)
+	check(no_text.is_empty(), "as 16 cartas têm nome e descrição %s" % [no_text])
