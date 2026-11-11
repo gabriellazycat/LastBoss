@@ -6,19 +6,24 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "..", "blender_v2"))
 import bpy
+import importlib
 import mk, ink, scenes
+
+# CARD_SCENES="modulo:DICIONARIO" troca o conjunto de cenas (lotes: scenes_lich:SCENES_LICH); sem a variável usa scenes.SCENES
+_mod, _, _var = os.environ.get("CARD_SCENES", "scenes:SCENES").partition(":")
+SCENES = getattr(importlib.import_module(_mod), _var or "SCENES")
 
 
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:]
     out = os.path.abspath(argv[0])   # com --factory-startup um caminho relativo cairia na raiz do disco
-    ids = argv[1].split(",") if len(argv) > 1 else list(scenes.SCENES)
+    ids = argv[1].split(",") if len(argv) > 1 else list(SCENES)
     for i in ids:
         try:
             bpy.ops.wm.read_factory_settings(use_empty=True)
             mk._MATS.clear()
             ink.setup_scene()
-            cfg = scenes.SCENES[i]()
+            cfg = SCENES[i]()
             ink.frame_camera(cfg.get("dir", (0.5, -1.0, 0.38)), lens=cfg.get("lens", 85))
             ink.render_card(out, i, cfg.get("kind", "monster"), cfg.get("hatch", 26.0))
             print("OK", i)
