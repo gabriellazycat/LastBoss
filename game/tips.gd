@@ -144,7 +144,7 @@ static func _kw_params() -> Dictionary:
 		"shrine_s": _num(L["shrine"]["hold_s"]), "shrine_window": _num(L["shrine"]["window"]),
 		"bridge_atk": _pct(L["bridge"]["attack_speed"]), "bridge_s": _num(L["bridge"]["duration"]), "bridge_win": _num(L["bridge"]["win_damage"]),
 		"tp_cd": _num(A["teleport_cooldown"]), "tp_cost": _num(A["teleport_cost"]), "altar_hp": _num(A["altar_hp"]),
-		"sac_cd": _num(R["sacrifice_cooldown"]),
+		"sac_cd": _num(R["sacrifice_cooldown"]), "sac_pct": _num(roundf(float(R["sacrifice_elixir_frac"]) * 100.0)),
 	}
 	for mid in data.modifiers:
 		var mp: Dictionary = data.modifiers[mid].get("p", {})

@@ -38,6 +38,8 @@ const VARIANTS := {
 	"rat_burrow": {"base": "bat_nest", "scale": 0.75, "tint": Color(0.85, 0.65, 0.5)},
 	"ghoul": {"base": "werewolf", "scale": 0.8, "tint": Color(0.7, 0.95, 0.65)},
 	"fire_imp": {"base": "bat", "scale": 1.0, "tint": Color(1.0, 0.45, 0.25)},
+	# O modelo foi feito com 4,2 m (vitrine contra 2,3 m do Ogro): 0,71 o deixa com ~3 m, porte de criatura grande.
+	"elder_dragon": {"base": "elder_dragon", "scale": 0.71, "tint": Color(1, 1, 1)},
 }
 # Modelo antigo (look 0 e looks sem a malha própria): o que essas cartas usavam emprestado.
 const LEGACY := {

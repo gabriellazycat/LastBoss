@@ -431,6 +431,22 @@ func _do_choose(j: Dictionary) -> void:
 	if target == null:
 		_find("oferta", "opção %d da oferta sem controle na tela" % k, "%d opções no Sim" % s.offers[0]["options"].size())
 	else:
+		# Opção fora da área visível da rolagem (escolha de carta do deck com 3 linhas): a pessoa gira a roda do
+		# mouse sobre a lista até a carta aparecer (entrada real; achado de 11/11: o bot clicava fora da tela).
+		var sc: ScrollContainer = m.hud.offer_scroll
+		for _w in 12:
+			if not is_instance_valid(target) or not is_instance_valid(sc) or not sc.is_visible_in_tree():
+				break
+			var tc: Vector2 = target.get_global_transform() * (target.size * 0.5)
+			var vr := sc.get_global_rect()
+			if vr.grow(-8.0).has_point(tc):
+				break
+			var sp: Vector2 = sc.get_global_rect().get_center()
+			_move(_win(sp))
+			await _frames(1)
+			_mouse(_win(sp), MOUSE_BUTTON_WHEEL_DOWN if tc.y > vr.end.y else MOUSE_BUTTON_WHEEL_UP, true)
+			_mouse(_win(sp), MOUSE_BUTTON_WHEEL_DOWN if tc.y > vr.end.y else MOUSE_BUTTON_WHEEL_UP, false)
+			await _frames(3)
 		for attempt in 2:
 			if not is_instance_valid(target):
 				break

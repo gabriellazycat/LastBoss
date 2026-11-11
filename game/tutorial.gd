@@ -3,7 +3,7 @@ extends Control
 ## Fase 0 (tutorial guiado, rodada autônoma de 09/11/2026): caixas que param o jogo na hora certa e explicam
 ## uma coisa por vez. A run em si é normal (3 Escudeiros fracos, 1 ato); só as caixas são do tutorial.
 
-const STEPS := ["TUT_welcome", "TUT_play", "TUT_pack", "TUT_call", "TUT_shield", "TUT_sacrifice", "TUT_location",
+const STEPS := ["TUT_welcome", "TUT_play", "TUT_deck", "TUT_temp", "TUT_pack", "TUT_call", "TUT_shield", "TUT_sacrifice", "TUT_location",
 	"TUT_fall", "TUT_arena", "TUT_done"]
 
 var sim: Sim
@@ -94,9 +94,13 @@ func tick() -> void:
 		_show("TUT_welcome")
 	if shown.has("TUT_welcome") and sim.t > 1.5:
 		_show("TUT_play")
+	if shown.has("TUT_play") and sim.t > 20.0:
+		_show("TUT_deck")
 	var hand_ids: Array = sim.hand.filter(func(c): return c != null).map(func(c): return c.def.id)
 	if sim.t > 8.0 and hand_ids.has("rabid_rats"):
 		_show("TUT_pack")
+	if sim.t > 4.0 and sim.hand.any(func(c): return c != null and c.def.category == "lair"):
+		_show("TUT_temp")
 	if sim.units.n_pack >= 6 and hand_ids.has("pack_call"):
 		_show("TUT_call")
 	if int(st["shield_breaks"]) > 0 or sim.t > 70.0:

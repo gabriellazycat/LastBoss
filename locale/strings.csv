@@ -121,7 +121,7 @@ UI_RESULT_loss,Seu núcleo foi destruído.,Your core was destroyed.
 UI_RESULT_timeout,A run chegou ao limite de tempo.,The run reached its time limit.
 UI_RESTART,Nova run,New run
 UI_QUIT,Sair,Quit
-UI_SACRIFICE,Sacrificar (+1),Sacrifice (+1)
+UI_SACRIFICE,Sacrificar (+{n}),Sacrifice (+{n})
 UI_ARENA,A LUTA FINAL COMEÇOU,THE FINAL BATTLE BEGINS
 UI_OVERTIME,"PRORROGAÇÃO: os altares apagaram e o herói não se cura mais","OVERTIME: the altars went dark and the hero no longer heals"
 UI_PART_left_arm,Braço esquerdo,Left arm
@@ -248,7 +248,7 @@ UI_IN_ARENA,Luta final no covil,Final battle in the lair
 UI_TIP_PAUSE,Pausar (Espaço),Pause (Space)
 UI_TIP_SPEED,Velocidade (F),Speed (F)
 UI_TIP_MAP,Mapa da rota (M),Route map (M)
-UI_TIP_SACRIFICE,Arraste uma carta até aqui (ou selecione e clique): ela vai para o fim do deck e devolve 1 de elixir.,Drag a card here (or select it and click): it goes to the bottom of the deck and refunds 1 elixir.
+UI_TIP_SACRIFICE,Arraste uma carta até aqui (ou selecione e clique): ela vai para o descarte e devolve um pouco de elixir.,Drag a card here (or select it and click): it goes to the discard pile and refunds some elixir.
 UI_OFFER_KEYS,Clique numa opção ou aperte o número dela · 0 recusa,Click an option or press its number · 0 skips
 UI_RESUME,Continuar,Resume
 UI_SAVE_MENU,Salvar e voltar ao menu,Save and return to menu
@@ -331,7 +331,7 @@ KWD_root,"Preso no lugar: o herói não anda, mas ainda ataca quem estiver ao al
 KWD_shield,"O herói bloqueia o dano que vem da frente (cone de {shield_cone}°), até {shield_hp} de dano. Quebrado, volta inteiro em {shield_regen} s. Não bloqueia dano em área, de [[shadow|Sombra]] nem o que [[pierce|atravessa o escudo]].","The hero blocks damage coming from the front ({shield_cone}° cone), up to {shield_hp} damage. Once broken, it comes back whole after {shield_regen} s. It does not block area damage, [[shadow|Shadow]] or anything that [[pierce|pierces the shield]]."
 KWD_pierce,Esse dano ignora o [[shield|Escudo]] do herói.,This damage ignores the hero's [[shield|Shield]].
 KWD_elixir,O recurso para jogar cartas. Enche sozinho com o tempo; o custo fica no losango de cada carta.,The resource for playing cards. It refills over time; the cost is in each card's diamond.
-KWD_sacrifice,"Manda uma carta da mão para o fim do deck e devolve 1 de [[elixir|Elixir]]. Recarga de {sac_cd} s; durante ela, só giram as cartas que não dá para jogar agora (como uma [[finisher|Finalização]] na estrada). Clique direito na carta, X + número ou arraste até o botão Sacrificar.","Sends a card from your hand to the bottom of the deck and refunds 1 [[elixir|Elixir]]. {sac_cd} s cooldown; meanwhile only cards you cannot play right now cycle (like a [[finisher|Finisher]] on the road). Right-click the card, X + number or drag it to the Sacrifice button."
+KWD_sacrifice,"Manda uma carta da mão para o descarte e devolve {sac_pct}% do [[elixir|Elixir]] máximo. Recarga de {sac_cd} s; durante ela, só giram as cartas que não dá para jogar agora (fora de fase ou sem condição). Clique direito na carta, X + número ou arraste até o botão Sacrificar.","Sends a card from your hand to the discard pile and refunds {sac_pct}% of your max [[elixir|Elixir]]. {sac_cd} s cooldown; meanwhile only cards you cannot play right now cycle (wrong phase or unmet condition). Right-click the card, X + number or drag it to the Sacrifice button."
 KWD_teleport,"Na arena, você (o chefe) salta para um [[altar|Altar]]. Custa {tp_cost} de [[elixir|Elixir]] e recarrega em {tp_cd} s. Use Q/E ou clique num altar.","In the arena, you (the boss) jump to an [[altar|Altar]]. Costs {tp_cost} [[elixir|Elixir]] and recharges in {tp_cd} s. Use Q/E or click an altar."
 KWD_altar,Pontos da arena para onde o chefe se [[teleport|teleporta]]. O herói pode quebrá-los ({altar_hp} de vida).,Arena spots the boss can [[teleport|teleport]] to. The hero can break them ({altar_hp} health).
 KWD_swarm,Tipo de carta: várias unidades pequenas de uma vez.,Card type: several small units at once.
@@ -723,15 +723,17 @@ PHASED_2,Escudeiros e arqueiras se alternam: a arqueira atira de longe e não te
 PHASED_3,Clérigas se curam e abençoam quem vem depois. Derrube-as rápido.,Clerics heal themselves and bless whoever comes next. Bring them down fast.
 PHASED_4,"Eles andam juntos: quando um cai, quem chega levanta o caído (uma vez cada). O grupo cresce a cada queda. Enxames sofrem contra o grupo: fogo e mortes funcionam melhor.","They travel together: when one falls, whoever arrives raises the fallen (once each). The party grows with every fall. Swarms struggle against the group: fire and deaths work better."
 UI_HEROES_STANDING,{n} de pé,{n} standing
-TUT_welcome,Você é o Lorde das Trevas. Os heróis vêm pela estrada até o seu covil: derrube os 3 antes que cheguem a você.,You are the Dark Lord. Heroes come down the road to your lair: bring down all 3 before they reach you.
-TUT_play,"Arraste uma carta da mão para o chão perto do herói (ou aperte 1 a 6 e clique). Cartas custam [[elixir|Elixir]], que enche sozinho.","Drag a card from your hand onto the ground near the hero (or press 1 to 6 and click). Cards cost [[elixir|Elixir]], which refills on its own."
+TUT_welcome,"Você é o Lorde das Trevas, hoje com a Rainha da Praga como vilão. Os heróis vêm pela estrada até o seu covil: derrube os 3 antes que cheguem a você.","You are the Dark Lord, today playing the Plague Queen as your villain. Heroes come down the road to your lair: bring down all 3 before they reach you."
+TUT_play,"Arraste uma carta da mão para o chão perto do herói (ou aperte 1 a 5 e clique). Cartas custam [[elixir|Elixir]], que enche sozinho; o máximo sobe a cada ato.","Drag a card from your hand onto the ground near the hero (or press 1 to 5 and click). Cards cost [[elixir|Elixir]], which refills on its own; the maximum goes up every act."
+TUT_deck,"A carta jogada vai para o descarte e outra vem da pilha de compra (os montes ficam ao lado da mão; clique para ver a lista). Quando a compra acaba, o descarte é embaralhado e volta.","A played card goes to the discard pile and another comes from the draw pile (the piles sit beside your hand; click one to see its list). When the draw pile runs out, the discard is shuffled and comes back."
+TUT_temp,"Esta carta é [[lair|Temporária]]: dá um efeito por alguns segundos, vai ao descarte e volta no ciclo como qualquer outra.","This card is [[lair|Temporary]]: it gives an effect for a few seconds, goes to the discard and returns in the cycle like any other."
 TUT_pack,Combo do [[pack|Bando]]: os Ratos Raivosos ficam mais fortes com mais ratos em campo. Jogue a Horda e depois os Raivosos.,"[[pack|Pack]] combo: Rabid Rats get stronger with more rats on the field. Play the Horde, then the Rabid Rats."
 TUT_call,O Chamado do Bando deixa todos os seus ratos mais rápidos e fortes por alguns segundos. Use quando o bando estiver grande.,Pack Call makes all your rats faster and stronger for a few seconds. Use it when the pack is big.
 TUT_shield,O herói tem escudo na frente. Monstros que chegam por trás e pelos lados acertam em cheio.,The hero has a shield in front. Monsters coming from behind and the sides land full hits.
-TUT_sacrifice,Carta ruim agora? Clique com o botão direito para sacrificar: ela volta ao fim do deck e você ganha 1 de elixir.,Bad card right now? Right-click to sacrifice it: it goes to the bottom of the deck and you gain 1 elixir.
-TUT_location,Os locais na estrada (círculos) dão recompensas se você vencer a disputa enquanto o herói está lá.,Places on the road (circles) give rewards if you win the contest while the hero is there.
+TUT_sacrifice,Carta ruim agora? Clique com o botão direito para [[sacrifice|sacrificar]]: ela vai para o descarte e você recupera uma parte do elixir máximo.,Bad card right now? Right-click to [[sacrifice|sacrifice]] it: it goes to the discard pile and you recover part of your max elixir.
+TUT_location,"Os locais na estrada (círculos) são disputas em 3 etapas enquanto o herói está lá. Quanto mais etapas você vencer, maior a recompensa: com 1 ou 2 vem ouro; com as 3, o prêmio inteiro.","Places on the road (circles) are contests in 3 stages while the hero is there. The more stages you win, the bigger the reward: 1 or 2 give gold; all 3 give the full prize."
 TUT_fall,"Um herói caiu! O próximo vem mais forte, com uma habilidade nova. Escolha a sua recompensa.","A hero fell! The next one comes stronger, with a new ability. Pick your reward."
-TUT_arena,"O herói chegou ao covil. Na arena, ele ataca as partes do seu corpo: defenda com monstros e use as Finalizações.",The hero reached the lair. In the arena he attacks your body parts: defend with monsters and use Finishers.
+TUT_arena,"O herói chegou ao covil. Na arena, ele ataca as partes do seu corpo: defenda com monstros e feitiços. As cartas de Rota ficam fora do baralho até a arena acabar.",The hero reached the lair. In the arena he attacks your body parts: defend with monsters and spells. Route cards stay out of your deck until the arena ends.
 TUT_done,Tutorial concluído! A Fase 1 está liberada.,Tutorial complete! Stage 1 is unlocked.
 UI_TUT_OK,Entendi,Got it
 UI_SKIP_TUTORIAL,Pular tutorial,Skip tutorial

@@ -724,6 +724,18 @@ func _process(delta: float) -> void:
 			sim.damage_hero(1.0, sim.hero.x, sim.hero.y + 5.0, 0, SimHero.DMG_PIERCE, "test")
 	# Cena da morte do herói: a recompensa só abre quando a câmera chega no herói novo; cartas travadas.
 	hud.hold_offers = world.cine_active()
+	# --spawn=<id>,<id>: coloca essas criaturas em campo, em arco diante do herói, 2 s depois do início (fotos do mapa).
+	if auto_args.has("spawn") and life >= 2.0:
+		var sp_ids: PackedStringArray = str(auto_args["spawn"]).split(",", false)
+		auto_args.erase("spawn")
+		for si in sp_ids.size():
+			var sa := -0.9 + 1.8 * float(si) / maxf(sp_ids.size() - 1.0, 1.0)
+			var sc_: CardDef = data.card(sp_ids[si])
+			sim.units.spawn(sc_, sim.hero.x + sin(sa) * 9.0, sim.hero.y - cos(sa) * 9.0 - 2.0, 0.0, 0.0, K.F_NO_XP, 0)
+	# --hand=<n>: mão com n cartas (captura da interface com mão cheia, até HAND_MAX).
+	if auto_args.has("hand") and sim.hand_size != int(auto_args["hand"]):
+		sim.hand_size = int(auto_args["hand"])
+		sim._refill_hand()
 	# --killat=<s>: derruba o herói nesse instante (captura da cena da queda).
 	if auto_args.has("killat") and life >= float(auto_args["killat"]):
 		auto_args.erase("killat")
@@ -1190,12 +1202,28 @@ func _tip_test() -> void:
 	var icons := hud.upg_row.find_children("*", "UpgradeIcon", false, false)
 	step.call("Habilidade nova aparece na HUD com aviso", icons.size() == 1 and hud.learn_panel.visible)
 	_ui_shot("tip_learn")
-	# Mouse no ícone: abre a caixa e o jogo continua.
-	await _hover((icons[0] as Control).get_global_rect().get_center())
-	await get_tree().create_timer(0.2).timeout
+	if icons.is_empty():
+		print("tiptest resultado: FALHOU ", fails, " (sem ícone de habilidade; passos seguintes pulados)")
+		get_tree().quit(1)
+		return
+	# Mouse no ícone: abre a caixa e o jogo continua. Se o cursor físico segurar outro controle, tenta de novo.
 	var t0 := sim.t
-	await get_tree().create_timer(0.3).timeout
-	step.call("Mouse no ícone abre a caixa", Tips.reading() and Tips.inst.levels[0]["owner"].begins_with("obj:"))
+	for attempt in 3:
+		await _hover((icons[0] as Control).get_global_rect().get_center())
+		await get_tree().create_timer(0.2).timeout
+		t0 = sim.t
+		await get_tree().create_timer(0.3).timeout
+		if Tips.reading() and str(Tips.inst.levels[0]["owner"]).begins_with("obj:"):
+			break
+		await _hover(get_viewport().get_visible_rect().size * Vector2(0.5, 0.35), 2)
+		await get_tree().create_timer(0.5).timeout
+	var icon_open: bool = Tips.reading() and str(Tips.inst.levels[0]["owner"]).begins_with("obj:")
+	step.call("Mouse no ícone abre a caixa", icon_open)
+	if not icon_open:
+		# Sem a caixa aberta não há o que varrer: os passos seguintes dependem dela e travavam com índice fora do array.
+		print("tiptest resultado: FALHOU ", fails, " (caixa do ícone não abriu; passos seguintes pulados)")
+		get_tree().quit(1)
+		return
 	step.call("Caixa aberta não pausa o jogo", sim.t > t0)
 	_ui_shot("tip_icon")
 	# Entra na caixa do Fogo e varre o texto até achar uma palavra-chave: abre a caixa aninhada.

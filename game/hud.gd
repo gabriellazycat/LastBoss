@@ -594,7 +594,7 @@ func _layout() -> void:
 	toast.position = Vector2((vs.x - toast.size.x) * 0.5, vs.y * 0.28)
 	contest_panel.size = contest_panel.get_combined_minimum_size()
 	contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, duel.position.y + duel.size.y + 8)
-	learn_panel.position = Vector2((vs.x - learn_panel.size.x) * 0.5, duel.position.y + duel.size.y + (70 if contest_panel.visible else 26))
+	learn_panel.position = Vector2((vs.x - learn_panel.size.x) * 0.5, duel.position.y + duel.size.y + (contest_panel.size.y + 16.0 if contest_panel.visible else 26))
 	relic_row.position = Vector2(vs.x - relic_row.size.x - m, tool_row.position.y + tool_row.size.y + 8)
 	hint_panel.position = Vector2((vs.x - hint_panel.size.x) * 0.5, below + 6)
 	for layer in [offer_layer, pause_layer, result_layer]:
@@ -805,7 +805,8 @@ func refresh(delta: float, fps: float) -> void:
 	elixir_bar.cost = sim.card_cost(sel) if sel and sim.offers.is_empty() else 0
 	(elixir_badge.get_node("N") as Label).text = str(int(sim.elixir))
 	sac_zone.disabled = selected < 0 or sim.offers.size() > 0
-	sac_zone.text = tr("UI_SACRIFICE" if sim.sacrifice_ready() else "UI_SACRIFICE_CD")
+	var sac_v := snappedf(sim.elixir_max * float(sim.R["sacrifice_elixir_frac"]), 0.1)
+	sac_zone.text = tr("UI_SACRIFICE").format({"n": int(sac_v) if is_equal_approx(sac_v, roundf(sac_v)) else sac_v}) if sim.sacrifice_ready() else tr("UI_SACRIFICE_CD")
 	_refresh_top()
 	_refresh_left()
 	info_label.visible = Settings.v["show_fps"]
@@ -1160,7 +1161,7 @@ func _build_offer_options(o: Dictionary) -> void:
 			any_up = true
 	if any_up:
 		cols = mini(cols, 3)
-		w = minf(w, floorf(((vs.x - 140.0 - 22.0 * (cols - 1)) / cols - 14.0) / 1.78))
+		w = minf(w, floorf(((vs.x - 140.0 - 22.0 * (cols - 1)) / cols - 14.0) / 1.94))
 		w = maxf(w, 96.0)
 	var shop_scale := minf(1.0, w / 180.0) if shop else 1.0
 	var rows: Array = []
@@ -1206,7 +1207,7 @@ func _build_offer_options(o: Dictionary) -> void:
 				head.add_theme_color_override("font_color", UiKit.GOOD)
 				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
 				# Antes -> depois: a carta no nível atual (menor) ao lado da do próximo nível, com uma seta.
-				var bw := floorf(w * 0.62)
+				var bw := floorf(w * 0.78)
 				var before := UiKit.card(cd, cd.cost_at(lv - 1), [], "", bw, lv - 1)
 				UiKit.ignore_mouse(before)
 				before.mouse_filter = Control.MOUSE_FILTER_IGNORE
