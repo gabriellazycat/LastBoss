@@ -760,11 +760,11 @@ func _process(delta: float) -> void:
 		SaveGame.erase()
 		hud.souls_gained = meta.add_run(sim.stats) if auto_args.is_empty() else MetaSave.souls_for(data, sim.stats)
 		if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] and auto_args.is_empty():
-			# Campanha: vencer a fase libera a próxima e, às vezes, um pacto novo.
+			# Campanha: vencer a fase libera a próxima e, às vezes, um vilão novo.
 			var np := meta.win_phase(sim.campaign_phase)
 			meta.save()
 			if np != "":
-				hud.say(tr("UI_NEW_PACT").format({"p": tr("DECK_" + np)}))
+				hud.say(tr("UI_NEW_VILLAIN").format({"p": tr("DECK_" + np)}))
 		audio.music("")
 		audio.play("victory" if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] else "defeat", 0.0)
 	var alpha := clampf(acc / sim.dt, 0.0, 1.0)
@@ -1029,8 +1029,19 @@ func _menu_test() -> void:
 		if not cond:
 			fails.append(name)
 	await _click(_button(menu, "UI_NEW_RUN"))
-	step.call("Nova run abre os decks", menu.screen == "decks")
+	step.call("Nova run abre a escolha de vilão", menu.screen == "decks")
+	# Capturas esperam a folha subir da mesa; depois, com os 3 vilões liberados (o teste não grava o meta do jogo).
+	await get_tree().create_timer(1.2).timeout
 	_ui_shot("menu_decks")
+	var villains_before: Array = meta.villains.duplicate()
+	for vid in data.villain_ids:
+		meta.unlock_villain(vid)
+	menu.show_screen("decks")
+	await get_tree().create_timer(1.2).timeout
+	_ui_shot("menu_decks3")
+	meta.villains = villains_before
+	menu.show_screen("decks")
+	await get_tree().create_timer(0.3).timeout
 	await _key(KEY_ESCAPE)
 	step.call("Esc volta ao título", menu.screen == "title")
 	if menu_root is DeskScene:
@@ -1057,15 +1068,56 @@ func _menu_test() -> void:
 		step.call("Papel da mesa abre a tela", menu.screen == "compendium")
 		await _key(KEY_ESCAPE)
 		await _click(null)
-	await _click(_button(menu, "UI_NEW_RUN"))
-	await _click(_button(menu, "UI_PACT_SIGN" if UiSkins.diario() else "UI_PICK_DECK"))
-	step.call("Escolher o deck abre o grupo de heróis", menu.screen == "group")
-	_ui_shot("menu_group")
+	# Coleção por vilão: cada aba só mostra as cartas do dono.
+	await _click(_button(menu, "UI_COLLECTION"))
+	step.call("Coleção abre", menu.screen == "collection")
+	_ui_shot("menu_collection_plague")
+	await _click(_button(menu.collection, "UI_TAB_V_dragon"))
+	var only_dragon := menu.collection.grid.get_child_count() > 0 and menu.collection.tab == "dragon"
+	step.call("Aba do Dragão mostra só cartas dele", only_dragon)
+	_ui_shot("menu_collection_dragon")
+	await _click(_button(menu.collection, "UI_TAB_V_lich"))
+	_ui_shot("menu_collection_lich")
+	await _click(_button(menu.collection, "UI_TAB_V_common"))
+	_ui_shot("menu_collection_common")
 	await _key(KEY_ESCAPE)
-	step.call("Esc volta aos decks", menu.screen == "decks")
-	await _click(_button(menu, "UI_PACT_SIGN" if UiSkins.diario() else "UI_PICK_DECK"))
+	step.call("Esc volta ao título da coleção", menu.screen == "title")
+	# Rara à escolha: com uma escolha pendente, voltar ao menu abre as 3 raras.
+	meta.unlock_villain("dragon")
+	meta.rare_choices = 1
+	# Hoje as raras iniciais já cobrem todas as raras dos vilões: o teste devolve 3 para a oferta ter o que sortear.
+	var lent := 0
+	for c in data.pool:
+		if lent < 3 and c.rarity == 2 and meta.villains.has(c.owner) and meta.unlocked.has(c.id):
+			meta.unlocked.erase(c.id)
+			lent += 1
+	var had_unlocked := meta.unlocked.size()
+	menu.show_screen("title")
+	await get_tree().create_timer(1.2).timeout
+	step.call("Rara à escolha abre ao voltar ao menu", menu.screen == "rare" and menu.rare_row.get_child_count() >= 1)
+	_ui_shot("menu_rare")
+	await _click(_button(menu, "UI_RARE_PICK"))
+	step.call("Escolher a rara grava na coleção", meta.rare_choices == 0 and meta.unlocked.size() == had_unlocked + 1 and menu.screen == "title")
+	await _click(_button(menu, "UI_NEW_RUN"))
+	await _click(_button(menu, "UI_PICK_VILLAIN"))
+	step.call("Escolher o vilão abre o grupo de heróis", menu.screen == "group")
+	await get_tree().create_timer(1.2).timeout
+	_ui_shot("menu_group")
+	# A fase 3 aberta mostra o que ela libera (vilão, Almas, rara à escolha).
+	var won_before: Array = meta.phases_won.duplicate()
+	meta.phases_won = [0, 1, 2]
+	menu.pending_phase = 3
+	menu._fill_group()
+	await get_tree().create_timer(0.3).timeout
+	_ui_shot("menu_phases")
+	menu.pending_phase = -1
+	meta.phases_won = won_before
+	menu._fill_group()
+	await _key(KEY_ESCAPE)
+	step.call("Esc volta à escolha de vilão", menu.screen == "decks")
+	await _click(_button(menu, "UI_PICK_VILLAIN"))
 	await _click(_button(menu, "UI_START_RUN"))
-	step.call("Começar a run com o deck e o grupo", running and sim != null and sim.deck_id == "plague" and not menu.visible)
+	step.call("Começar a run com o vilão e o grupo", running and sim != null and sim.deck_id == "plague" and not menu.visible)
 	await get_tree().create_timer(0.3).timeout
 	await _key(KEY_ESCAPE)
 	step.call("Esc pausa", paused and hud.pause_layer.visible)
