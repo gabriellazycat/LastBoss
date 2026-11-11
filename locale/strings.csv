@@ -782,3 +782,39 @@ UI_PILE_PANEL_DISCARD,Descarte: {n} cartas,Discard pile: {n} cards
 UI_PILE_EMPTY,Nenhuma carta aqui.,No cards here.
 UI_PILE_BENCHED,Fora, na arena: {n} cartas (voltam depois),Out in the arena: {n} cards (they return later)
 UI_CONTEST_STAGE,Etapa {a} de {b},Stage {a} of {b}
+CARD_spark,Faísca,Spark
+CARD_kobold_scavengers,Kobolds Catadores,Kobold Scavengers
+CARD_molten_gold,Ouro Derretido,Molten Gold
+CARD_trap_chest,Baú Armadilha,Trap Chest
+CARD_treasure_guard,Guarda do Tesouro,Treasure Guard
+CARD_furnace,Fornalha,Furnace
+CARD_dragon_vault,Cofre do Dragão,Dragon Vault
+CARD_blood_tax,Imposto de Sangue,Blood Tax
+CARD_ember_rain,Chuva de Brasas,Ember Rain
+CARD_gold_avalanche,Avalanche de Ouro,Gold Avalanche
+CARD_eruption,Erupção,Eruption
+CARD_elder_dragon,Dragão Ancião,Elder Dragon
+DESC_spark,"{damage} de dano de [[fire|Fogo]]. Detona: no herói [[soaked|Encharcado]], ele pega fogo ({burn_dps}/s por {burn_s} s) e o fogo salta para quem estiver a até {radius} m.","{damage} [[fire|Fire]] damage. Payoff: on a [[soaked|Soaked]] hero, he catches fire ({burn_dps}/s for {burn_s} s) and the fire jumps to anyone within {radius} m."
+DESC_kobold_scavengers,"Enxame de kobolds fracos. Cada golpe no herói rende {gold_per_hit} de [[gold|Ouro]].","A swarm of weak kobolds. Each hit on the hero earns you {gold_per_hit} [[gold|Gold]]."
+DESC_molten_gold,"Precisa de {gold_cost} de [[gold|Ouro]]. Gasta até {gold_max}: cada um vira {fire_per_gold} de dano de [[fire|Fogo]] num raio de {radius} m e deixa o herói com [[slow|Lentidão]] por {slow} s.","Needs {gold_cost} [[gold|Gold]]. Spends up to {gold_max}: each becomes {fire_per_gold} [[fire|Fire]] damage in a {radius} m radius and leaves the hero [[slow|Slowed]] for {slow} s."
+DESC_trap_chest,"Baú que parece um tesouro. Quando o herói o destrói, explode em {boom} de dano de [[fire|Fogo]] e você ganha {gold} de [[gold|Ouro]].","A chest that looks like treasure. When the hero destroys it, it explodes for {boom} [[fire|Fire]] damage and you gain {gold} [[gold|Gold]]."
+DESC_treasure_guard,"Guardião de ouro e osso. Ganha {hp_per_gold} de vida por [[gold|Ouro]] que você tem (até +{hp_cap}) quando entra.","A guardian of gold and bone. When it enters, it gains {hp_per_gold} health per [[gold|Gold]] you hold (up to +{hp_cap})."
+DESC_furnace,"Dura {duration} s. A até {radius} m, o herói não seca ([[soaked|Encharcado]] não acaba) e o [[fire|Fogo]] causa +{fire_bonus_pct}% de dano.","Lasts {duration} s. Within {radius} m, the hero does not dry off ([[soaked|Soaked]] never ends) and [[fire|Fire]] deals +{fire_bonus_pct}% damage."
+DESC_dragon_vault,"[[lair|Temporário]]: por {duration} s, todo [[gold|Ouro]] que você ganha vem com +{gold_mult_pct}%.","[[lair|Temporary]]: for {duration} s, all [[gold|Gold]] you earn is increased by {gold_mult_pct}%."
+DESC_blood_tax,"Paga {gold_cost} de [[gold|Ouro]]: a próxima carta custa {discount} a menos. Retorna ao baralho uma vez por embaralhada.","Pay {gold_cost} [[gold|Gold]]: the next card costs {discount} less. Returns to the draw pile once per shuffle."
+DESC_ember_rain,"Por {duration} s, num raio de {radius} m: {dps} de dano de [[fire|Fogo]] por segundo. Óleo no chão pega fogo.","For {duration} s, in a {radius} m radius: {dps} [[fire|Fire]] damage per second. Oil on the ground catches fire."
+DESC_gold_avalanche,"Precisa de {gold_cost} de [[gold|Ouro]]. Dano igual a {gold_mult}× o seu ouro (até {cap}) num raio de {radius} m e deixa o herói [[root|Preso]] por {stun} s. O ouro não é gasto.","Needs {gold_cost} [[gold|Gold]]. Damage equal to {gold_mult}× your gold (up to {cap}) in a {radius} m radius, and the hero is [[root|Rooted]] for {stun} s. The gold is not spent."
+DESC_eruption,"Tudo que está [[soaked|Encharcado]] ou coberto de óleo explode: {damage} de dano de [[fire|Fogo]]. O chão queima por {fire_s} s ({fire_dps}/s).","Everything [[soaked|Soaked]] or covered in oil explodes: {damage} [[fire|Fire]] damage. The ground burns for {fire_s} s ({fire_dps}/s)."
+DESC_elder_dragon,"Dragão voador com sopro de [[fire|Fogo]] ({breath_dps} por segundo). Ao entrar, solta uma Chuva de Brasas ({rain_dps}/s por {rain_s} s num raio de {rain_radius} m).","A flying dragon with a [[fire|Fire]] breath ({breath_dps} per second). When it enters, it unleashes an Ember Rain ({rain_dps}/s for {rain_s} s in a {rain_radius} m radius)."
+N3_spark,"N3: queima mais forte ({burn_dps}/s por {burn_s} s).","L3: burns harder ({burn_dps}/s for {burn_s} s)."
+N3_kobold_scavengers,"N3: cada golpe rende {gold_per_hit} de ouro.","L3: each hit earns {gold_per_hit} gold."
+N3_molten_gold,"N3: {fire_per_gold} de fogo por ouro.","L3: {fire_per_gold} fire per gold."
+N3_trap_chest,"N3: explode em {boom} e rende {gold} de ouro.","L3: explodes for {boom} and earns {gold} gold."
+N3_treasure_guard,"N3: {hp_per_gold} de vida por ouro (até +{hp_cap}).","L3: {hp_per_gold} health per gold (up to +{hp_cap})."
+N3_furnace,"N3: o fogo causa +{fire_bonus_pct}%.","L3: fire deals +{fire_bonus_pct}%."
+N3_dragon_vault,"N3: +{gold_mult_pct}% de ouro.","L3: +{gold_mult_pct}% gold."
+N3_blood_tax,"N3: a próxima carta custa {discount} a menos.","L3: the next card costs {discount} less."
+N3_ember_rain,"N3: {dps} de fogo por segundo.","L3: {dps} fire per second."
+N3_gold_avalanche,"N3: deixa o herói preso por {stun} s.","L3: roots the hero for {stun} s."
+N3_eruption,"N3: o chão queima a {fire_dps}/s.","L3: the ground burns at {fire_dps}/s."
+N3_elder_dragon,"N3: a Chuva de Brasas causa {rain_dps}/s.","L3: the Ember Rain deals {rain_dps}/s."
