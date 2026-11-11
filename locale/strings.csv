@@ -42,9 +42,9 @@ DESC_scrap_golem,Absorve aliados mortos por perto e ganha vida.,Absorbs nearby f
 DESC_soul_feast,Sacrifica seus monstros a até {radius} m e devolve o [[elixir|Elixir]] deles +{bonus_per_card} por carta.,Sacrifices your monsters within {radius} m and refunds their [[elixir|Elixir]] +{bonus_per_card} per card.
 DESC_gold_bait,Atrai o herói até um ponto.,Lures the hero to a spot.
 DESC_burn_village,"Marque um local à frente na rota: quando o herói chegar, o local pega [[fire|Fogo]] ({dps} de dano por segundo, por {duration} s).","Mark a place ahead on the route: when the hero arrives, it bursts into [[fire|Fire]] ({dps} damage per second for {duration} s)."
-DESC_soul_collector,"[[temp|Temporário]]: +{elixir_regen_pct}% de ganho de [[elixir|Elixir]] por {duration} s.","[[temp|Temporary]]: +{elixir_regen_pct}% [[elixir|Elixir]] gain for {duration} s."
-DESC_forbidden_library,"[[temp|Temporário]]: +1 carta na mão por {duration} s.","[[temp|Temporary]]: +1 card in hand for {duration} s."
-DESC_dark_forge,"[[temp|Temporário]]: por {duration} s, monstros entram com +{monster_hp_pct}% de vida.","[[temp|Temporary]]: for {duration} s, monsters enter with +{monster_hp_pct}% health."
+DESC_soul_collector,"[[lair|Temporário]]: +{elixir_regen_pct}% de ganho de [[elixir|Elixir]] por {duration} s.","[[lair|Temporary]]: +{elixir_regen_pct}% [[elixir|Elixir]] gain for {duration} s."
+DESC_forbidden_library,"[[lair|Temporário]]: +1 carta na mão por {duration} s.","[[lair|Temporary]]: +1 card in hand for {duration} s."
+DESC_dark_forge,"[[lair|Temporário]]: por {duration} s, monstros entram com +{monster_hp_pct}% de vida.","[[lair|Temporary]]: for {duration} s, monsters enter with +{monster_hp_pct}% health."
 UPG_sword_spin,Giro de Espada,Sword Spin
 UPG_tower_shield,Escudo Torre,Tower Shield
 UPG_dash,Investida,Dash
@@ -306,8 +306,6 @@ KW_spell,Feitiço,Spell
 KW_structure,Estrutura,Structure
 KW_route,Rota,Route
 KW_lair,Temporário,Temporary
-KW_temp,Temporário,Temporary
-KWD_temp,"Efeito com duração; cópias somam, cada uma com o seu tempo.","An effect with a duration; copies stack, each with its own timer."
 KW_finisher,Finalização,Finisher
 KW_veteran,Veterano,Veteran
 KW_cheap,Barato,Cheap
