@@ -738,3 +738,10 @@ LVLK_hp_mult,Explosão (× vida),Blast (× health)
 UI_OPT_BUY_REMOVE_D,A carta sai do deck para sempre. Você escolhe qual depois de comprar.,The card leaves your deck for good. You pick which one after buying.
 UI_MAP_ACT_END,Fim do ato {n},End of act {n}
 UI_STRIP_ACT_END,Fim do ato {n} · {m} m,End of act {n} · {m} m
+UI_PILE_DRAW,Compra,Draw
+UI_PILE_DISCARD,Descarte,Discard
+UI_PILE_PANEL_DRAW,Pilha de compra: {n} cartas (a ordem é secreta),Draw pile: {n} cards (the order is secret)
+UI_PILE_PANEL_DISCARD,Descarte: {n} cartas,Discard pile: {n} cards
+UI_PILE_EMPTY,Nenhuma carta aqui.,No cards here.
+UI_PILE_BENCHED,Fora, na arena: {n} cartas (voltam depois),Out in the arena: {n} cards (they return later)
+UI_CONTEST_STAGE,Etapa {a} de {b},Stage {a} of {b}

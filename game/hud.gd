@@ -35,6 +35,7 @@ var upg_icons: Dictionary = {}       # habilidade -> ícone na HUD (recarga dese
 var contest_panel: PanelContainer     # disputa do local em andamento (rodada 09/11/2026)
 var contest_label: RichTextLabel
 var contest_text := ""
+var contest_stages: Control           # marcadores e barra das etapas da disputa
 var hold_offers := false             # cena da morte do herói: a recompensa e as cartas esperam
 var banner: BigBanner                  # letreiro grande: objetivo do local, resultado, ato (rodada 09/11/2026)
 var relic_row: HBoxContainer          # relíquias do covil ganhas na run
@@ -357,7 +358,18 @@ func _build_messages() -> void:
 	contest_panel = UiKit.panel(Color(0.08, 0.04, 0.06, 0.92), UiKit.GOLD, 10)
 	contest_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	contest_label = Tips.label("", 17, Color(1, 0.93, 0.8), 560.0, true)
-	contest_panel.add_child(contest_label)
+	var cv := VBoxContainer.new()
+	cv.add_theme_constant_override("separation", 6)
+	cv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cv.add_child(contest_label)
+	# Disputa em 3 etapas: marcadores (vencida / atual / por vir), barra da etapa atual e o tempo.
+	contest_stages = Control.new()
+	contest_stages.custom_minimum_size = Vector2(560, 30)
+	contest_stages.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	contest_stages.draw.connect(_draw_contest_stages)
+	contest_stages.visible = false
+	cv.add_child(contest_stages)
+	contest_panel.add_child(cv)
 	contest_panel.visible = false
 	add_child(contest_panel)
 	banner = BigBanner.new()
@@ -961,9 +973,55 @@ func _refresh_contest() -> void:
 	var txt := tr("UI_CONTEST_" + str(c["type"])).format({
 		"p": int(p) if c["type"] != "bridge" and c["type"] != "fountain" else int(p),
 		"g": int(g), "s": int(ceil(float(c["window"]) - float(c["t"])))})
+	var staged := c.has("stages")
+	if staged:
+		txt = tr("UI_CONTEST_STAGE").format({"a": int(c.get("stage", 0)) + 1, "b": int(c["stages"])}) + " · " + txt
+	contest_stages.visible = staged
+	if staged:
+		contest_stages.queue_redraw()
 	if txt != contest_text:
 		contest_text = txt
 		Tips.set_text(contest_label, txt)
+
+
+func _draw_contest_stages() -> void:
+	var c := sim.contest
+	if not c.has("stages"):
+		return
+	var n := int(c["stages"])
+	var stage := int(c.get("stage", 0))
+	var won := int(c.get("won", 0))
+	var font := ThemeDB.fallback_font
+	var ci := contest_stages
+	var h := ci.size.y
+	var x := 0.0
+	# Marcadores: círculo cheio = vencida; anel dourado = atual; vazio = por vir.
+	for i in n:
+		var ctr := Vector2(x + h * 0.5, h * 0.5)
+		var r := h * 0.46
+		if i < won:
+			ci.draw_circle(ctr, r, UiKit.GOOD)
+			ci.draw_string(font, ctr + Vector2(-5, 6), "✓", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.05, 0.1, 0.05))
+		elif i == stage:
+			ci.draw_circle(ctr, r, Color(0.2, 0.15, 0.05))
+			ci.draw_arc(ctr, r, 0, TAU, 28, UiKit.GOLD, 3.0, true)
+			ci.draw_string(font, ctr + Vector2(-4, 6), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UiKit.GOLD)
+		else:
+			ci.draw_arc(ctr, r, 0, TAU, 28, Color(0.6, 0.55, 0.5, 0.7), 2.0, true)
+			ci.draw_string(font, ctr + Vector2(-4, 6), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.6, 0.55, 0.5, 0.8))
+		x += h + 8.0
+	# Barra da etapa atual e o tempo que resta nela.
+	var left := maxf(float(c.get("window", 0.0)) - float(c.get("t", 0.0)), 0.0)
+	var ttxt := "%d s" % int(ceil(left))
+	var tw := font.get_string_size(ttxt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+	var bx := x + 6.0
+	var bw := ci.size.x - bx - tw - 12.0
+	var br := Rect2(bx, h * 0.5 - 7.0, maxf(bw, 40.0), 14.0)
+	var f := clampf(float(c.get("progress", 0.0)) / maxf(float(c.get("goal", 1.0)), 0.001), 0.0, 1.0)
+	ci.draw_rect(br, Color(0, 0, 0, 0.6))
+	ci.draw_rect(Rect2(br.position, Vector2(br.size.x * f, br.size.y)), UiKit.GOLD)
+	ci.draw_rect(br, Color(1, 0.9, 0.6, 0.5), false, 1.0)
+	ci.draw_string(font, Vector2(br.end.x + 8.0, h * 0.5 + 6.0), ttxt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, UiKit.BAD if left <= 5.0 else UiKit.TEXT)
 
 
 func _refresh_relics() -> void:
@@ -1094,6 +1152,16 @@ func _build_offer_options(o: Dictionary) -> void:
 		cols = maxi(maxi(n_cards, n_serv), 1)
 		var per_row := (vs.y - 280.0) / (2.0 if n_cards > 0 and n_serv > 0 else 1.0)
 		w = minf(clampf((per_row - 120.0) * 168.0 / 246.0, 96.0, 180.0), (vs.x - 120.0 - 22.0 * (cols - 1)) / cols)
+	# Subir de nível mostra a carta antes e depois (duas cartas por opção): no máximo 3 por linha e cartas menores.
+	var any_up := false
+	for it in opts:
+		var ik: Dictionary = it["item"] if it.has("item") else it
+		if str(ik.get("kind", "")) == "upgrade":
+			any_up = true
+	if any_up:
+		cols = mini(cols, 3)
+		w = minf(w, floorf(((vs.x - 140.0 - 22.0 * (cols - 1)) / cols - 14.0) / 1.78))
+		w = maxf(w, 96.0)
 	var shop_scale := minf(1.0, w / 180.0) if shop else 1.0
 	var rows: Array = []
 	for k in opts.size():
@@ -1112,6 +1180,7 @@ func _build_offer_options(o: Dictionary) -> void:
 		var foot := Tips.label("", 14, Color(0.92, 0.88, 1.0), w, true)
 		var key := str(k + 1) if k < 9 else ""
 		var cp: PanelContainer
+		var pair_node: Control = null   # upgrade: antes -> depois no lugar da carta sozinha
 		var cd: CardDef
 		var lv := 1
 		var mids: Array = []
@@ -1136,6 +1205,23 @@ func _build_offer_options(o: Dictionary) -> void:
 				head.text = tr("UI_OPT_UP_HEAD").format({"a": lv - 1, "b": lv})
 				head.add_theme_color_override("font_color", UiKit.GOOD)
 				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
+				# Antes -> depois: a carta no nível atual (menor) ao lado da do próximo nível, com uma seta.
+				var bw := floorf(w * 0.62)
+				var before := UiKit.card(cd, cd.cost_at(lv - 1), [], "", bw, lv - 1)
+				UiKit.ignore_mouse(before)
+				before.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				before.modulate = Color(1, 1, 1, 0.85)
+				var arrow := UiKit.label(int(clampf(w * 0.18, 20.0, 34.0)), UiKit.GOOD, 4)
+				arrow.text = "→"
+				arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				var pair := HBoxContainer.new()
+				pair.alignment = BoxContainer.ALIGNMENT_CENTER
+				pair.add_theme_constant_override("separation", 6)
+				pair.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				pair.add_child(before)
+				pair.add_child(arrow)
+				pair.add_child(cp)
+				pair_node = pair
 				var ch := UiKit.level_changes(cd, lv - 1, lv)
 				if lv >= 3 and cd.n3.size() > 0:
 					ch += ("
@@ -1216,17 +1302,17 @@ func _build_offer_options(o: Dictionary) -> void:
 				head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			head.add_theme_font_override("font", UiDiario.font("type"))
 			slot.add_child(UiDiario.tape_wrap(head, UiDiario.MASK, -2.0 + k * 1.3))
-			slot.add_child(cp)
+			slot.add_child(pair_node if pair_node else cp)
 			var note := UiDiario.note_wrap(foot)
 			note.custom_minimum_size = Vector2(w * 0.9, 0)
 			note.visible = foot.get_parsed_text().strip_edges() != ""
 			slot.add_child(note)
 		else:
 			slot.add_child(head)
-			slot.add_child(cp)
+			slot.add_child(pair_node if pair_node else cp)
 			slot.add_child(foot)
 		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slot.set_meta("card", cp)
+		slot.set_meta("card", pair_node if pair_node else cp)
 		slot.set_meta("special", lv > 1 or mids.size() > 0 or str(op["kind"]) in ["upgrade", "mod"])
 		slot.set_meta("fx_col", Color(0.55, 1.0, 0.55) if str(op["kind"]) == "upgrade" else (CardFx.MOD_COLOR.get(mids[0], UiKit.GOLD).lightened(0.3) if mids.size() > 0 else UiKit.GOLD))
 		var row_i := (0 if str(op["kind"]) == "card" else 1) if shop else k / cols

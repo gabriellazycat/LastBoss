@@ -1,7 +1,8 @@
 class_name HandFan
 extends Control
-## Mão em leque (cartas compactas num arco; a carta sob o mouse sobe ampliada, com o texto) e, à esquerda,
-## a esteira do ciclo: as próximas cartas da fila, da que entra na próxima jogada às mais distantes.
+## Mão em leque (cartas compactas num arco; a carta sob o mouse sobe ampliada, com o texto) e, dos lados, os dois
+## montes: compra (à esquerda) e descarte (à direita). A ordem da compra é secreta: clicar num monte abre a lista
+## das cartas dele ordenada por custo e nome.
 ## O controle recebe a entrada do leque inteiro: a carta sob o mouse é a fatia do arco onde ele está.
 
 signal card_pressed(i: int)
@@ -14,7 +15,6 @@ const ANGLE := 3.5                 # inclinação por carta, em graus
 const DROOP := 5.0                 # quanto as pontas do arco descem
 const LIFT := 30.0                 # carta selecionada
 const QUEUE_W := 214.0             # largura reservada à esteira (dos dois lados, para o leque ficar no centro)
-const QUEUE_SIZES := [Vector2(66, 86)]   # só a carta do topo do baralho, virada para cima
 const DECK_BACK := Vector2(66, 86)       # cartas de costas empilhadas embaixo dela
 const DECK_LAYERS := 7                   # quantas costas a pilha desenha no máximo
 const DRAW_TIME := 0.42                  # a carta comprada voa do baralho até a mão
@@ -33,12 +33,19 @@ var preview: PanelContainer
 var preview_key := ""
 var balloon: PanelContainer
 var balloon_key := ""
-var queue_panels: Array = []
-var queue_sig := ""
-var queue_more: Label
-var queue_head: Label
-var deck_pile: Control                   # pilha de costas do baralho (desenhada)
-var deck_pos := Vector2()                # canto da carta do topo (local)
+var deck_pile: Control                   # monte de compra (costas empilhadas, desenhado)
+var disc_pile: Control                   # monte de descarte
+var deck_count: Label
+var disc_count: Label
+var deck_head: Label
+var disc_head: Label
+var deck_pos := Vector2()                # canto da carta do topo da compra (local)
+var disc_pos := Vector2()                # idem, descarte
+var pile_open := ""                      # "", "draw" ou "discard": painel da lista aberto
+var pile_panel: PanelContainer
+var pile_sig := ""
+var last_shuffles := 0
+var last_discard := 0
 var press_i := -1
 var t := 0.0
 var mouse_override = null          # posição local fixa do mouse (só no teste da entrada real)
@@ -49,15 +56,12 @@ var tip_t := 0.0
 func _init() -> void:
 	custom_minimum_size = Vector2(QUEUE_W * 2.0 + STEP * 5 + CARD.x + 24, CARD.y + 30 + DROOP * 6.25)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	queue_head = UiKit.label(13, UiKit.MUTED, 3)
-	queue_head.text = "UI_NEXT"
-	add_child(queue_head)
-	queue_more = UiKit.label(15, UiKit.MUTED, 3)
-	add_child(queue_more)
-	deck_pile = Control.new()
-	deck_pile.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	deck_pile.draw.connect(_draw_pile)
-	add_child(deck_pile)
+	deck_pile = _make_pile("draw", Color(0.42, 0.18, 0.14))
+	disc_pile = _make_pile("discard", Color(0.2, 0.22, 0.34))
+	deck_head = _pile_head("UI_PILE_DRAW")
+	disc_head = _pile_head("UI_PILE_DISCARD")
+	deck_count = _pile_count(deck_pile)
+	disc_count = _pile_count(disc_pile)
 
 
 func bind(s: Sim) -> void:
@@ -70,10 +74,10 @@ func _clear_all() -> void:
 		panels[uid].queue_free()
 	panels.clear()
 	panel_sig.clear()
-	for q in queue_panels:
-		q.queue_free()
-	queue_panels.clear()
-	queue_sig = ""
+	_close_pile()
+	if sim:
+		last_shuffles = int(sim.stats.get("shuffles", 0))
+		last_discard = sim.discard.size()
 	_drop_preview()
 	_drop_balloon()
 	hover = -1
@@ -185,7 +189,7 @@ func refresh(delta: float) -> void:
 	hover = _slot_at(m) if press_i < 0 and not pad and _mouse_reaches_me() else -1
 	if hover >= 0 and sim.hand[hover] == null:
 		hover = -1
-	_refresh_queue(delta)
+	_refresh_piles(delta)
 	# Cartas da mão: cria as novas (saindo da esteira), descarta as jogadas.
 	var seen := {}
 	for k in n:
@@ -203,7 +207,7 @@ func refresh(delta: float) -> void:
 			panels[ci.uid] = p2
 		elif not panels.has(ci.uid):
 			var p := _make_card(ci, k)
-			var from: Vector2 = deck_pos + DECK_BACK * 0.5 if sim.queue.size() > 0 or queue_panels.size() > 0 else Vector2(_fan_left(), size.y)
+			var from: Vector2 = deck_pos + DECK_BACK * 0.5
 			p.position = from - CARD * 0.5
 			p.scale = Vector2(0.5, 0.5)
 			p.rotation = -0.5
@@ -211,9 +215,11 @@ func refresh(delta: float) -> void:
 			p.set_meta("fly_from", from)
 			panels[ci.uid] = p
 		panel_sig[ci.uid] = sig
+	var to_discard := sim.discard.size() > last_discard
+	last_discard = sim.discard.size()
 	for uid in panels.keys():
 		if not seen.has(uid):
-			_discard(panels[uid])
+			_discard(panels[uid], to_discard)
 			panels.erase(uid)
 			panel_sig.erase(uid)
 	var a := clampf(delta * 14.0, 0.0, 1.0)
@@ -287,9 +293,18 @@ func _make_card(ci: Sim.CardInst, k: int) -> PanelContainer:
 	return p
 
 
-## A carta jogada sobe e some.
-func _discard(p: Control) -> void:
+## A carta jogada voa ao monte de descarte (ou, se não foi para lá, sobe e some).
+func _discard(p: Control, to_pile := false) -> void:
 	var tw := create_tween().set_parallel(true)
+	if to_pile:
+		p.z_index = 3
+		var to := disc_pos + DECK_BACK * 0.5 - CARD * 0.5
+		tw.tween_property(p, "position", to, 0.34).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		tw.tween_property(p, "scale", Vector2(0.5, 0.5), 0.34)
+		tw.tween_property(p, "rotation", p.rotation + 0.6, 0.34)
+		tw.tween_property(p, "modulate:a", 0.0, 0.12).set_delay(0.24)
+		tw.chain().tween_callback(p.queue_free)
+		return
 	tw.tween_property(p, "position:y", p.position.y - 110.0, 0.28).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	tw.tween_property(p, "scale", Vector2(1.15, 1.15), 0.28)
 	tw.tween_property(p, "modulate:a", 0.0, 0.28)
@@ -386,71 +401,226 @@ func _drop_balloon() -> void:
 	balloon_key = ""
 
 
-# ---------------------------------------------------------------- esteira do ciclo
+# ---------------------------------------------------------------- montes de compra e descarte
 
-func _refresh_queue(delta: float) -> void:
-	var sig := locale
-	for i in mini(sim.queue.size(), QUEUE_SIZES.size()):
-		var ci: Sim.CardInst = sim.queue[i]
-		sig += ":%d/%d/%d" % [ci.uid, ci.mods, ci.level]
-	sig += "+%d" % sim.queue.size()
-	if sig != queue_sig:
-		queue_sig = sig
-		var old := {}
-		for q in queue_panels:
-			old[q.get_meta("uid")] = q
-		queue_panels.clear()
-		for i in mini(sim.queue.size(), QUEUE_SIZES.size()):
-			var ci: Sim.CardInst = sim.queue[i]
-			var sz: Vector2 = QUEUE_SIZES[i]
-			var q := UiKit.mini_card(ci.def, sim.card_cost(ci), UiKit.mod_names(ci), "", sz.x, sz.y, false, ci.level)
-			q.set_meta("uid", ci.uid)
+func _make_pile(which: String, tint: Color) -> Control:
+	var c := Control.new()
+	c.mouse_filter = Control.MOUSE_FILTER_STOP
+	c.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	c.set_meta("tint", tint)
+	c.set_meta("n", 0)
+	c.draw.connect(func(): _draw_pile(c))
+	c.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			if pile_open == which:
+				_close_pile()
+			else:
+				_open_pile(which)
+			c.accept_event())
+	add_child(c)
+	return c
+
+
+func _pile_head(key: String) -> Label:
+	var l := UiKit.label(13, UiKit.MUTED, 3)
+	l.text = key
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(l)
+	return l
+
+
+func _pile_count(pile: Control) -> Label:
+	var l := UiKit.label(24, Color(1, 0.95, 0.85), 4)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pile.add_child(l)
+	return l
+
+
+func _pile_cards(which: String) -> Array:
+	return sim.queue if which == "draw" else sim.discard
+
+
+func _refresh_piles(_delta: float) -> void:
+	var nd := sim.queue.size()
+	var nx := sim.discard.size()
+	var half := _fan_width(maxi(sim.hand.size(), 5)) * 0.5 + 34.0
+	var cx := size.x * 0.5
+	var by := size.y - DECK_BACK.y - 12.0
+	var ld := mini(maxi(nd - 1, 0), DECK_LAYERS)
+	var lx := mini(maxi(nx - 1, 0), DECK_LAYERS)
+	deck_pos = Vector2(cx - half - DECK_BACK.x, by) - Vector2(ld, ld) * 2.4
+	disc_pos = Vector2(cx + half, by) - Vector2(lx, lx) * 2.4
+	for pr in [[deck_pile, nd, deck_pos, ld, deck_count], [disc_pile, nx, disc_pos, lx, disc_count]]:
+		var pile: Control = pr[0]
+		pile.position = pr[2]
+		pile.size = DECK_BACK + Vector2(pr[3], pr[3]) * 2.4
+		if int(pile.get_meta("n")) != int(pr[1]):
+			pile.set_meta("n", pr[1])
+			pile.queue_redraw()
+		var cl: Label = pr[4]
+		cl.text = str(pr[1])
+		cl.position = Vector2(0, DECK_BACK.y - 30.0)
+		cl.size = Vector2(DECK_BACK.x, 26.0)
+	deck_head.position = Vector2(deck_pos.x, deck_pos.y - 22.0)
+	disc_head.position = Vector2(disc_pos.x, disc_pos.y - 22.0)
+	# Embaralhou: as cartas do descarte voltam voando para a compra.
+	var sh := int(sim.stats.get("shuffles", 0))
+	if sh > last_shuffles:
+		_fly_shuffle()
+	last_shuffles = sh
+	if pile_open != "" and _pile_sig(pile_open) != pile_sig:
+		_open_pile(pile_open)
+
+
+func _fly_shuffle() -> void:
+	var from := disc_pos
+	var to := deck_pos
+	for i in 6:
+		var b := Control.new()
+		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.size = DECK_BACK
+		b.draw.connect(func(): _draw_back(b, Rect2(Vector2.ZERO, DECK_BACK), Color(0.42, 0.18, 0.14)))
+		b.position = from
+		b.z_index = 3
+		b.modulate.a = 0.0
+		add_child(b)
+		var tw := create_tween()
+		tw.tween_interval(0.05 * i)
+		tw.tween_property(b, "modulate:a", 1.0, 0.04)
+		var mid := (from + to) * 0.5 + Vector2(0, -90.0 - 8.0 * i)
+		tw.tween_method(func(f: float): b.position = from.lerp(mid, f).lerp(mid.lerp(to, f), f), 0.0, 1.0, 0.45)
+		tw.tween_property(b, "modulate:a", 0.0, 0.08)
+		tw.tween_callback(b.queue_free)
+
+
+## Costas das cartas do monte, da de baixo para a de cima (subindo para a esquerda e para cima).
+func _draw_pile(pile: Control) -> void:
+	var n: int = pile.get_meta("n", 0)
+	var tint: Color = pile.get_meta("tint")
+	var layers := mini(maxi(n - 1, 0), DECK_LAYERS)
+	var base := Vector2(layers, layers) * 2.4
+	if n == 0:
+		var r := Rect2(base, DECK_BACK)
+		pile.draw_rect(r, Color(0, 0, 0, 0.18))
+		pile.draw_rect(r.grow(-2.0), Color(0.85, 0.7, 0.45, 0.35), false, 1.5)
+		return
+	for i in layers + 1:
+		_draw_back(pile, Rect2(base - Vector2(i, i) * 2.4, DECK_BACK), tint)
+
+
+func _draw_back(ci: CanvasItem, r: Rect2, tint: Color) -> void:
+	ci.draw_rect(Rect2(r.position + Vector2(2, 3), r.size), Color(0, 0, 0, 0.25))
+	ci.draw_rect(r, tint.darkened(0.3))
+	ci.draw_rect(r.grow(-4.0), tint)
+	ci.draw_rect(r.grow(-4.0), Color(0.85, 0.7, 0.45, 0.8), false, 1.2)
+	var c := r.get_center()
+	var s := 11.0
+	ci.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -s), c + Vector2(s * 0.7, 0), c + Vector2(0, s), c + Vector2(-s * 0.7, 0)]), Color(0.85, 0.7, 0.45, 0.85))
+	ci.draw_rect(r, Color(0.1, 0.05, 0.04), false, 1.0)
+
+
+func _sorted_cards(which: String) -> Array:
+	var a: Array = _pile_cards(which).duplicate()
+	a.sort_custom(func(x: Sim.CardInst, y: Sim.CardInst):
+		var cx := sim.card_cost(x)
+		var cy := sim.card_cost(y)
+		if cx != cy:
+			return cx < cy
+		var nx := UiKit.card_name(x.def, x.level)
+		var ny := UiKit.card_name(y.def, y.level)
+		if nx != ny:
+			return nx < ny
+		return x.level > y.level)
+	return a
+
+
+func _pile_sig(which: String) -> String:
+	var ids: Array = []
+	for ci: Sim.CardInst in _pile_cards(which):
+		ids.append("%d/%d/%d" % [ci.uid, ci.mods, ci.level])
+	# A ordem da compra não conta: o painel não se refaz (nem revela nada) quando só ela muda.
+	ids.sort()
+	return locale + which + ":".join(ids)
+
+
+func _open_pile(which: String) -> void:
+	_drop_pile_panel()
+	pile_open = which
+	pile_sig = _pile_sig(which)
+	var cards := _sorted_cards(which)
+	var pw := 84.0
+	var ph := 110.0
+	var cols := clampi(int(ceil(sqrt(maxf(cards.size(), 1) * 2.4))), 4, 9)
+	var rows := int(ceil(float(cards.size()) / cols))
+	pile_panel = UiKit.panel(Color(0.06, 0.04, 0.1, 0.97), UiKit.GOLD, 10)
+	pile_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	pile_panel.z_index = 20
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	var title := UiKit.label(16, UiKit.GOLD, 3)
+	title.text = tr("UI_PILE_PANEL_DRAW" if which == "draw" else "UI_PILE_PANEL_DISCARD").format({"n": cards.size()})
+	v.add_child(title)
+	if cards.is_empty():
+		var e := UiKit.label(14, UiKit.MUTED, 3)
+		e.text = tr("UI_PILE_EMPTY")
+		v.add_child(e)
+	else:
+		var grid := GridContainer.new()
+		grid.columns = cols
+		grid.add_theme_constant_override("h_separation", 6)
+		grid.add_theme_constant_override("v_separation", 6)
+		for ci: Sim.CardInst in cards:
+			var q := UiKit.mini_card(ci.def, sim.card_cost(ci), UiKit.mod_names(ci), "", pw, ph, true, ci.level)
 			var qd := ci.def
 			var qm := UiKit.mod_ids(ci)
 			var ql := ci.level
-			Tips.attach(q, func(): return Tips.card_entries(qd, qm, true, ql))
-			# A carta nova do topo vira da pilha (de costas para frente).
-			if old.has(ci.uid):
-				q.position = old[ci.uid].position
-				old.erase(ci.uid)
-			else:
-				q.position = deck_pos
-				q.pivot_offset = sz * 0.5
-				q.scale = Vector2(0.0, 1.0)
-			add_child(q)
-			queue_panels.append(q)
-		for q in old.values():
-			q.queue_free()
-		queue_more.text = str(sim.queue.size()) if sim.queue.size() > 0 else ""
-		deck_pile.queue_redraw()
-	# Baralho à esquerda do leque: pilha de costas e a carta do topo virada por cima.
-	var layers := mini(maxi(sim.queue.size() - 1, 0), DECK_LAYERS)
-	var base := Vector2(_fan_left() - 40.0 - DECK_BACK.x, size.y - DECK_BACK.y - 12.0)
-	deck_pos = base - Vector2(layers, layers) * 2.4
-	var a := clampf(delta * 10.0, 0.0, 1.0)
-	for q in queue_panels:
-		q.position = q.position.lerp(deck_pos, a)
-		q.pivot_offset = q.size * 0.5
-		q.scale = q.scale.lerp(Vector2.ONE, clampf(delta * 9.0, 0.0, 1.0))
-	deck_pile.position = base
-	deck_pile.size = DECK_BACK
-	deck_pile.set_meta("layers", layers)
-	queue_head.position = Vector2(deck_pos.x, deck_pos.y - 22.0)
-	queue_head.visible = queue_panels.size() > 0
-	queue_more.position = Vector2(base.x - 24.0, base.y + DECK_BACK.y - 20.0)
+			Tips.attach(q, func(): return Tips.card_entries(qd, qm, false, ql))
+			grid.add_child(q)
+		var sc := ScrollContainer.new()
+		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		var avail := maxf(global_position.y - 90.0, 160.0)
+		sc.custom_minimum_size = Vector2(cols * (pw + 6.0) + 12.0, minf(rows * (ph + 6.0) + 4.0, minf(avail, 360.0)))
+		sc.add_child(grid)
+		v.add_child(sc)
+	if which == "draw" and sim.benched.size() > 0:
+		var b := UiKit.label(13, UiKit.MUTED, 3)
+		b.text = tr("UI_PILE_BENCHED").format({"n": sim.benched.size()})
+		v.add_child(b)
+	pile_panel.add_child(v)
+	add_child(pile_panel)
+	# Acima da mão, perto do monte clicado, sem sair da tela.
+	var ps := pile_panel.get_combined_minimum_size()
+	pile_panel.size = ps
+	var vs := get_viewport_rect().size
+	var anchor: Control = deck_pile if which == "draw" else disc_pile
+	var gx := clampf(anchor.global_position.x + (0.0 if which == "draw" else anchor.size.x - ps.x), 8.0, vs.x - ps.x - 8.0)
+	var gy := maxf(8.0, global_position.y - ps.y - 10.0)
+	pile_panel.position = Vector2(gx, gy) - global_position
 
 
-## Costas das cartas do baralho, da de baixo para a de cima (subindo para a esquerda e para cima).
-func _draw_pile() -> void:
-	var layers: int = deck_pile.get_meta("layers", 0)
-	for i in layers + 1:
-		var o := -Vector2(i, i) * 2.4
-		var r := Rect2(o, DECK_BACK)
-		deck_pile.draw_rect(Rect2(r.position + Vector2(2, 3), r.size), Color(0, 0, 0, 0.25))
-		deck_pile.draw_rect(r, Color(0.3, 0.12, 0.1))
-		deck_pile.draw_rect(r.grow(-4.0), Color(0.42, 0.18, 0.14))
-		deck_pile.draw_rect(r.grow(-4.0), Color(0.85, 0.7, 0.45, 0.8), false, 1.2)
-		var c := r.get_center()
-		var s := 11.0
-		deck_pile.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -s), c + Vector2(s * 0.7, 0), c + Vector2(0, s), c + Vector2(-s * 0.7, 0)]), Color(0.85, 0.7, 0.45, 0.85))
-		deck_pile.draw_rect(r, Color(0.1, 0.05, 0.04), false, 1.0)
+func _drop_pile_panel() -> void:
+	if pile_panel:
+		pile_panel.queue_free()
+		pile_panel = null
+
+
+func _close_pile() -> void:
+	pile_open = ""
+	pile_sig = ""
+	_drop_pile_panel()
+
+
+## Fecha o painel com Esc ou com um clique fora dele (o clique nos montes alterna por conta própria).
+func _input(e: InputEvent) -> void:
+	if pile_panel == null:
+		return
+	if e is InputEventKey and e.pressed and e.keycode == KEY_ESCAPE:
+		_close_pile()
+		get_viewport().set_input_as_handled()
+	elif e is InputEventMouseButton and e.pressed:
+		var gp: Vector2 = e.global_position
+		if pile_panel.get_global_rect().has_point(gp) or deck_pile.get_global_rect().has_point(gp) or disc_pile.get_global_rect().has_point(gp):
+			return
+		_close_pile()
