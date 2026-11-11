@@ -98,14 +98,14 @@
    "start_deck": [
     "bone_legion",
     "bone_legion",
-    "acolyte",
-    "acolyte",
+    "raised_servant",
+    "raised_servant",
     "shadow_bolt",
     "shadow_bolt",
     "arcane_spark",
+    "acolyte",
     "corpse_blast",
-    "ghoul",
-    "web"
+    "weakness_curse"
    ],
    "start_deck_final": [
     "bone_legion",

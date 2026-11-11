@@ -51,6 +51,7 @@ func _ready() -> void:
 	t_translations()
 	t_keywords()
 	t_card_fx()
+	t_cards_lich_common()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -1567,3 +1568,105 @@ func t_deck_cycle() -> void:
 			if ci and ci.def.category == "route":
 				left += 1
 	check(routes > 0 and left == 0 and a.benched.size() == routes and _deck_total(a) == a.cards.size(), "cartas de Rota ficam fora do baralho na arena (%d)" % routes)
+
+
+## Cartas novas do Lich e comuns (C6): uma verificação por mecânica.
+func t_cards_lich_common() -> void:
+	# Servo Reanimado: a morte conta como 2 (log de mortes, Colheita, contagem por carta).
+	var s := _sim(5, "lich")
+	_tough(s)
+	var sv := _spawn(s, "raised_servant")
+	var skl := _spawn(s, "skeleton_archers")
+	var di: int = data.card("raised_servant").idx
+	s.kill_unit(sv[0], K.Death.HERO)
+	check(CardsLich.recent_deaths(s, 10.0) == 2 and s.dead_by_def[di] == 2, "Servo Reanimado: a morte conta como 2 (%d)" % CardsLich.recent_deaths(s, 10.0))
+	s.kill_unit(skl[0], K.Death.HERO)
+	check(CardsLich.recent_deaths(s, 10.0) == 3, "monstro comum conta 1 morte")
+	# Túmulo Aberto: sem mortes recentes nada acontece; com 2, levanta esqueletos; Retorna.
+	var s2 := _sim(6, "lich")
+	_tough(s2)
+	var n0 := s2.units.count
+	s2._apply(_inst("open_grave"), s2.hero.x + 4.0, s2.hero.y)
+	check(s2.units.count == n0, "Túmulo Aberto sem mortes recentes não levanta ninguém")
+	var two := _spawn(s2, "bone_legion")
+	s2.kill_unit(two[0], K.Death.HERO)
+	s2.kill_unit(two[1], K.Death.HERO)
+	var alive_before := 0
+	for j in s2.units.hi:
+		alive_before += s2.units.alive[j]
+	s2._apply(_inst("open_grave"), s2.hero.x + 4.0, s2.hero.y)
+	var alive_after := 0
+	for j in s2.units.hi:
+		alive_after += s2.units.alive[j]
+	check(alive_after == alive_before + 2, "Túmulo Aberto com 2 mortes levanta 2 esqueletos (%d → %d)" % [alive_before, alive_after])
+	var og := _inst("open_grave")
+	s2._to_discard(og)
+	check(s2.queue.has(og), "Túmulo Aberto Retorna ao baralho")
+	# Apocalipse Arcano: repete os feitiços recentes sem laço (não se registra nem repete o Eco).
+	var s3 := _sim(7, "lich")
+	_tough(s3)
+	s3.t = 100.0
+	for id in ["shadow_bolt", "arcane_spark", "life_drain"]:
+		CardsLich.on_card_played(s3, _inst(id), s3.hero.x, s3.hero.y)
+	var log_n: int = s3.cstate["lich"]["sp"].size()
+	var hp0 := s3.hero.hp
+	s3._apply(_inst("arcane_apocalypse"), s3.hero.x, s3.hero.y)
+	var loss := hp0 - s3.hero.hp
+	check(log_n == 3 and loss > 200.0, "Apocalipse Arcano repete 3 feitiços (%.0f de dano)" % loss)
+	CardsLich.on_card_played(s3, _inst("arcane_apocalypse"), s3.hero.x, s3.hero.y)
+	CardsLich.on_card_played(s3, _inst("shadow_echo"), s3.hero.x, s3.hero.y)
+	check(s3.cstate["lich"]["sp"].size() == log_n, "Apocalipse e Eco não entram no registro (sem laço)")
+	s3.t += 16.0
+	hp0 = s3.hero.hp
+	s3._apply(_inst("arcane_apocalypse"), s3.hero.x, s3.hero.y)
+	check(is_equal_approx(hp0, s3.hero.hp), "Apocalipse ignora feitiços de mais de 15 s")
+	# Maldição da Fraqueza: o golpe do herói nas unidades cai 30% e volta ao normal.
+	var s4 := _sim(8)
+	_tough(s4)
+	var og4 := _spawn(s4, "ogre")
+	var h0: float = s4.units.hp[og4[0]]
+	s4.hero_hits_unit(og4[0], 100.0)
+	var normal := h0 - s4.units.hp[og4[0]]
+	s4._apply(_inst("weakness_curse"), s4.hero.x, s4.hero.y)
+	h0 = s4.units.hp[og4[0]]
+	s4.hero_hits_unit(og4[0], 100.0)
+	var weak := h0 - s4.units.hp[og4[0]]
+	check(absf(weak - normal * 0.7) < 0.5, "Maldição da Fraqueza: golpe do herói %.0f → %.0f" % [normal, weak])
+	s4.t += 7.0
+	h0 = s4.units.hp[og4[0]]
+	s4.hero_hits_unit(og4[0], 100.0)
+	check(absf((h0 - s4.units.hp[og4[0]]) - normal) < 0.5, "Maldição da Fraqueza acaba em 6 s")
+	# Cálice Profundo: +4 de elixir máximo e 2 de elixir na hora; expira em 40 s.
+	var s5 := _sim(9)
+	var m0 := s5.elixir_max
+	s5.elixir = 3.0
+	s5._apply(_inst("deep_chalice"), s5.hero.x, s5.hero.y)
+	check(is_equal_approx(s5.elixir_max, m0 + 4.0) and is_equal_approx(s5.elixir, 5.0), "Cálice Profundo: máximo %.0f → %.0f, elixir %.1f" % [m0, s5.elixir_max, s5.elixir])
+	s5.t += 41.0
+	s5._temps()
+	check(is_equal_approx(s5.elixir_max, m0), "Cálice Profundo expira (máximo %.0f)" % s5.elixir_max)
+	# Ritual Profano: sacrifica 1 monstro; os próximos feitiços custam 1 a menos e depois voltam ao normal.
+	var s6 := _sim(10, "lich")
+	_tough(s6)
+	var rv_ := _spawn(s6, "ghoul")
+	var bolt := _inst("shadow_bolt")
+	var c0 := s6.card_cost(bolt)
+	s6._apply(_inst("profane_ritual"), s6.hero.x + 0.5, s6.hero.y)
+	check(s6.units.alive[rv_[0]] == 0 and s6.card_cost(bolt) == c0 - 1, "Ritual Profano sacrifica e baixa o custo (%d → %d)" % [c0, s6.card_cost(bolt)])
+	for i in 3:
+		CardsLich.on_card_played(s6, bolt, s6.hero.x, s6.hero.y)
+	check(s6.card_cost(bolt) == c0, "Ritual Profano acaba depois de 3 feitiços")
+	# Estandarte de Guerra e Troll: a vida do aliado perto do estandarte sobe; o Troll regenera.
+	var s7 := _sim(11)
+	_tough(s7)
+	var gl := _spawn(s7, "ghoul")
+	var hp_g: float = s7.units.max_hp[gl[0]]
+	_spawn(s7, "war_banner", 1.0)
+	s7.step()
+	check(s7.units.max_hp[gl[0]] > hp_g * 1.2, "Estandarte de Guerra: +vida (%.0f → %.0f)" % [hp_g, s7.units.max_hp[gl[0]]])
+	var tr := _spawn(s7, "cave_troll", 8.0)
+	s7.units.hp[tr[0]] = s7.units.max_hp[tr[0]] * 0.5
+	var th0: float = s7.units.hp[tr[0]]
+	for i in 20:
+		s7.step()
+	check(s7.units.alive[tr[0]] == 0 or s7.units.hp[tr[0]] > th0, "Troll das Cavernas regenera")

@@ -1,0 +1,312 @@
+{
+ "cards": [
+  {
+   "id": "raised_servant",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "undead"
+   ],
+   "archetype": "chaser",
+   "rarity": "common",
+   "cost": 1,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 90,
+   "dps": 9,
+   "attack_interval": 1.0,
+   "speed": 4.2,
+   "range": 1.0,
+   "fx": {
+    "death_count": 2
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "owner": "lich",
+   "model": "skeleton",
+   "family": "death",
+   "art": "raised_servant"
+  },
+  {
+   "id": "life_drain",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "",
+   "rarity": "common",
+   "cost": 2,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "damage": 90,
+    "radius": 2.0,
+    "heal": 60,
+    "heal_radius": 4.0
+   },
+   "lvl": [
+    "damage",
+    "heal"
+   ],
+   "owner": "lich",
+   "model": "shadow_bolt",
+   "family": "chain",
+   "art": "life_drain",
+   "ops": [
+    {
+     "op": "damage",
+     "damage": "damage",
+     "radius": "radius"
+    }
+   ],
+   "ai": {
+    "aim": "cluster",
+    "needs_hit": true,
+    "value": [
+     {
+      "if": {
+       "wounded_near_hero": 2
+      },
+      "combo": true,
+      "add": 0.8
+     }
+    ]
+   }
+  },
+  {
+   "id": "profane_ritual",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "discount": 1,
+    "bonus": 0.3,
+    "charges": 3,
+    "pick_radius": 5.0
+   },
+   "lvl": [
+    "bonus"
+   ],
+   "owner": "lich",
+   "model": "soul_feast",
+   "family": "death",
+   "art": "profane_ritual",
+   "ai": {
+    "aim": "own_unit",
+    "value": [
+     {
+      "if": {
+       "own_units_below": 1
+      },
+      "add": -9.0
+     },
+     {
+      "if": {
+       "hand_has": "mark_payoff"
+      },
+      "combo": true,
+      "add": 0.8
+     },
+     {
+      "add": -0.5
+     }
+    ]
+   }
+  },
+  {
+   "id": "death_knight",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "undead"
+   ],
+   "archetype": "tank",
+   "rarity": "uncommon",
+   "cost": 6,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 1100,
+   "dps": 28,
+   "attack_interval": 1.2,
+   "speed": 3.0,
+   "range": 1.5,
+   "fx": {
+    "spell_heal": 80,
+    "spell_dmg": 0.1,
+    "spell_dmg_s": 10.0,
+    "spell_dmg_max": 10
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "owner": "lich",
+   "model": "ogre",
+   "family": "death",
+   "art": "death_knight"
+  },
+  {
+   "id": "open_grave",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "undead"
+   ],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 0,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "returns": true,
+    "deaths": 2,
+    "window": 10.0,
+    "raise": 2
+   },
+   "lvl": [
+    "raise"
+   ],
+   "owner": "lich",
+   "model": "corpse_blast",
+   "family": "death",
+   "art": "open_grave",
+   "ai": {
+    "aim": "hero"
+   }
+  },
+  {
+   "id": "soul_storm",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 8,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "damage": 60,
+    "radius": 5.0,
+    "window": 30.0,
+    "cap": 20
+   },
+   "lvl": [
+    "damage"
+   ],
+   "owner": "lich",
+   "model": "shadow_bolt",
+   "family": "death",
+   "art": "soul_storm",
+   "ai": {
+    "aim": "cluster",
+    "needs_hit": true
+   }
+  },
+  {
+   "id": "bone_colossus",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "undead"
+   ],
+   "archetype": "tank",
+   "rarity": "legendary",
+   "cost": 10,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 3500,
+   "dps": 55,
+   "attack_interval": 2.0,
+   "speed": 2.0,
+   "range": 2.0,
+   "fx": {
+    "absorb_radius": 6.0,
+    "absorb_hp": 40,
+    "hp_cap": 6000,
+    "death_skeletons": 10
+   },
+   "lvl": [
+    "hp",
+    "dps",
+    "hp_cap"
+   ],
+   "owner": "lich",
+   "model": "scrap_golem",
+   "family": "death",
+   "art": "bone_colossus",
+   "on_death": [
+    {
+     "op": "summon",
+     "unit": "skeleton",
+     "n": "death_skeletons",
+     "ring": 1.5
+    }
+   ]
+  },
+  {
+   "id": "arcane_apocalypse",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "",
+   "rarity": "legendary",
+   "cost": 12,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "window": 15.0,
+    "max_spells": 6
+   },
+   "lvl": [
+    "max_spells"
+   ],
+   "owner": "lich",
+   "model": "dark_pact",
+   "family": "chain",
+   "art": "arcane_apocalypse",
+   "ai": {
+    "aim": "cluster",
+    "needs_hit": true
+   }
+  }
+ ]
+}
