@@ -32,7 +32,6 @@
    },
    "model": "burn_village",
    "family": "fire",
-   "art": "spark",
    "owner": "dragon",
    "ai": {
     "keys": [
@@ -77,9 +76,7 @@
    "n3": {
     "gold_per_hit": 2
    },
-   "model": "rat_horde",
    "family": "greed",
-   "art": "kobold_scavengers",
    "owner": "dragon"
   },
   {
@@ -114,7 +111,6 @@
    },
    "model": "gold_bait",
    "family": "greed",
-   "art": "molten_gold",
    "owner": "dragon",
    "ai": {
     "aim": "cluster",
@@ -160,9 +156,7 @@
     "boom": 250,
     "gold": 25
    },
-   "model": "mimic",
    "family": "greed",
-   "art": "trap_chest",
    "owner": "dragon",
    "ai": {
     "keys": [
@@ -210,9 +204,7 @@
     "hp_per_gold": 8,
     "hp_cap": 900
    },
-   "model": "ogre",
    "family": "greed",
-   "art": "treasure_guard",
    "owner": "dragon",
    "ai": {
     "keys": [
@@ -250,9 +242,7 @@
    "n3": {
     "fire_bonus": 0.5
    },
-   "model": "bone_totem",
    "family": "fire",
-   "art": "furnace",
    "owner": "dragon",
    "ai": {
     "value": [
@@ -293,7 +283,6 @@
    },
    "model": "gold_bait",
    "family": "greed",
-   "art": "dragon_vault",
    "owner": "dragon",
    "ai": {
     "value": [
@@ -337,7 +326,6 @@
    },
    "model": "gold_bait",
    "family": "greed",
-   "art": "blood_tax",
    "owner": "dragon",
    "ai": {
     "wait_for": {
@@ -386,7 +374,6 @@
    },
    "model": "boiling_oil",
    "family": "fire",
-   "art": "ember_rain",
    "owner": "dragon",
    "ai": {
     "keys": [
@@ -445,7 +432,6 @@
    },
    "model": "gold_bait",
    "family": "greed",
-   "art": "gold_avalanche",
    "owner": "dragon",
    "ai": {
     "keys": [
@@ -486,7 +472,6 @@
    },
    "model": "boiling_oil",
    "family": "fire",
-   "art": "eruption",
    "owner": "dragon",
    "ai": {
     "keys": [
@@ -530,9 +515,7 @@
    "n3": {
     "rain_dps": 50
    },
-   "model": "bat",
    "family": "fire",
-   "art": "elder_dragon",
    "owner": "dragon",
    "ai": {
     "keys": [

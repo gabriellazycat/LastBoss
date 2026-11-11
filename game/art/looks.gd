@@ -18,6 +18,36 @@ static var _empty: ArrayMesh
 # Última malha de unidade pedida: unit_material() usa a animação (VAT) e a textura dela, porque quem chama
 # (WorldView._build_units, CardArt) pede a malha e o material em seguida, sem repetir o id.
 static var _last_unit := ""
+static var _last_card := ""
+
+## Variantes (etapa D): carta -> modelo base do look 7 + escala + tinta (multiplica a cor do modelo).
+## Só mudam o mapa; o desenho da carta é o png próprio (assets/cards/<id>.png).
+const VARIANTS := {
+	"rat_brute": {"base": "rat", "scale": 1.55, "tint": Color(0.82, 0.7, 0.6)},
+	"bat_cloud": {"base": "bat", "scale": 0.8, "tint": Color(0.7, 0.85, 0.55)},
+	"rat_trap": {"base": "bone_totem", "scale": 0.7, "tint": Color(1.0, 0.8, 0.55)},
+	"brood_mother": {"base": "slime", "scale": 1.5, "tint": Color(1.0, 0.65, 0.8)},
+	"corrupt_piper": {"base": "cultists", "scale": 0.95, "tint": Color(0.75, 1.0, 0.5)},
+	"sewer_flood": {"base": "bat_nest", "scale": 0.6, "tint": Color(0.5, 0.95, 0.9)},
+	"kobold_scavengers": {"base": "goblin_dynamiter", "scale": 0.7, "tint": Color(1.0, 0.65, 0.45)},
+	"trap_chest": {"base": "mimic", "scale": 0.85, "tint": Color(1.0, 0.88, 0.45)},
+	"furnace": {"base": "bone_totem", "scale": 1.25, "tint": Color(1.0, 0.5, 0.3)},
+	"raised_servant": {"base": "skeleton", "scale": 1.15, "tint": Color(0.7, 0.9, 1.0)},
+	"barricade": {"base": "gargoyle_tower", "scale": 0.5, "tint": Color(0.85, 0.65, 0.45)},
+	"war_banner": {"base": "gargoyle_tower", "scale": 0.9, "tint": Color(1.0, 0.45, 0.4)},
+	"rat_burrow": {"base": "bat_nest", "scale": 0.75, "tint": Color(0.85, 0.65, 0.5)},
+	"ghoul": {"base": "werewolf", "scale": 0.8, "tint": Color(0.7, 0.95, 0.65)},
+	"fire_imp": {"base": "bat", "scale": 1.0, "tint": Color(1.0, 0.45, 0.25)},
+}
+# Modelo antigo (look 0 e looks sem a malha própria): o que essas cartas usavam emprestado.
+const LEGACY := {
+	"wolf_pack": "werewolf", "war_boar": "werewolf", "alpha_beast": "werewolf", "treasure_guard": "ogre",
+	"elder_dragon": "bat", "cave_troll": "ogre", "death_knight": "ogre", "bone_colossus": "scrap_golem",
+	"ruin_titan": "ogre", "rat_brute": "rat_horde", "bat_cloud": "bat_nest", "rat_trap": "bat_nest",
+	"brood_mother": "slime", "corrupt_piper": "rat_king", "sewer_flood": "bat_nest", "kobold_scavengers": "rat_horde",
+	"trap_chest": "mimic", "furnace": "bone_totem", "raised_servant": "skeleton", "barricade": "gargoyle_tower",
+	"war_banner": "gargoyle_tower", "rat_burrow": "bat_nest", "ghoul": "skeleton", "fire_imp": "bat",
+}
 
 
 static func enemies() -> int:
@@ -82,16 +112,25 @@ static func set_param(m: ShaderMaterial, k: String, val: Variant) -> void:
 
 # ---------------------------------------------------------------- atalhos usados pelo jogo
 
+static func scale_of(id: String) -> float:
+	return float(VARIANTS[id]["scale"]) if VARIANTS.has(id) and enemies() > 0 else 1.0
+
+
 static func unit_mesh(id: String) -> Mesh:
+	_last_card = id
+	var legacy: String = LEGACY.get(id, id)
 	id = CardModel.of(id)
 	var lk := enemies()
-	var m := mesh(lk, id) if lk > 0 else null
-	_last_unit = id if m else ""
-	return m if m else Models.unit(id)
+	var base: String = VARIANTS[id]["base"] if VARIANTS.has(id) else id
+	var m := mesh(lk, base) if lk > 0 else null
+	_last_unit = base if m else ""
+	return m if m else Models.unit(CardModel.of(legacy) if legacy != id else id)
 
 
 static func unit_material(emit: float, multimesh: bool, id := "") -> ShaderMaterial:
-	id = CardModel.of(id)
+	var card := id if id != "" else _last_card
+	if id != "":
+		id = VARIANTS[id]["base"] if VARIANTS.has(id) else CardModel.of(id)
 	if id == "":
 		id = _last_unit
 	var own := enemies()
@@ -100,7 +139,12 @@ static func unit_material(emit: float, multimesh: bool, id := "") -> ShaderMater
 	if lk == 0 or (src and src.has_meta("vat")):
 		# A malha animada por textura só anda com o shader que lê a textura: o do próprio look.
 		lk = own
-	return material(lk, emit, multimesh, src) if lk > 0 else Models.glow_material(emit)
+	if lk <= 0:
+		return Models.glow_material(emit)
+	var mat := material(lk, emit, multimesh, src)
+	if VARIANTS.has(card) and src:
+		mat.set_shader_parameter("tint", VARIANTS[card]["tint"])
+	return mat
 
 
 static func hero_mesh(part: String) -> Mesh:

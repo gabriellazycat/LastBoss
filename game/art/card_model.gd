@@ -29,4 +29,4 @@ static func of(id: String) -> String:
 ## Desenho 2D (interface Diário) de uma carta sem desenho próprio.
 static func art_of(id: String) -> String:
 	of(id)
-	return str(_art.get(id, _alias.get(id, id)))
+	return str(_art.get(id, id))

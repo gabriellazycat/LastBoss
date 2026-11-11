@@ -771,7 +771,6 @@
     "pierce": true
    },
    "family": "pack",
-   "art": "rat_horde",
    "owner": "plague",
    "ai": {
     "value": [
@@ -814,7 +813,6 @@
    },
    "model": "dark_fury",
    "family": "pack",
-   "art": "rat_king",
    "owner": "plague",
    "ai": {
     "keys": [
@@ -872,9 +870,7 @@
     "hp",
     "spawn_duration"
    ],
-   "model": "bat_nest",
    "family": "pack",
-   "art": "bat_nest",
    "owner": "plague",
    "ai": {
     "keys": [
@@ -907,7 +903,6 @@
    ],
    "model": "boiling_oil",
    "family": "fire",
-   "art": "boiling_oil",
    "owner": "dragon",
    "ai": {
     "aim": "cluster",
@@ -957,7 +952,6 @@
    ],
    "model": "burn_village",
    "family": "fire",
-   "art": "burn_village",
    "owner": "dragon",
    "ai": {
     "keys": [
@@ -999,10 +993,8 @@
     "hp",
     "dps"
    ],
-   "model": "bat",
    "fly": true,
    "family": "fire",
-   "art": "goblin_dynamiter",
    "owner": "dragon",
    "ai": {
     "keys": [
@@ -1047,7 +1039,6 @@
    },
    "model": "web",
    "family": "fire",
-   "art": "web",
    "owner": "dragon",
    "ai": {
     "aim": "cluster",
@@ -1096,7 +1087,6 @@
    ],
    "model": "goblin_dynamiter",
    "family": "greed",
-   "art": "goblin_dynamiter",
    "owner": "dragon"
   },
   {
@@ -1123,7 +1113,6 @@
    ],
    "model": "gold_bait",
    "family": "greed",
-   "art": "gold_bait",
    "owner": "dragon",
    "ai": {
     "value": [
@@ -1176,7 +1165,6 @@
    ],
    "model": "gold_bait",
    "family": "greed",
-   "art": "gold_bait",
    "owner": "dragon",
    "ai": {
     "aim": "ahead",
@@ -1210,7 +1198,6 @@
    ],
    "model": "skeleton",
    "family": "death",
-   "art": "skeleton_archers",
    "owner": "lich"
   },
   {
@@ -1239,9 +1226,7 @@
     "hp",
     "dps"
    ],
-   "model": "skeleton",
    "family": "death",
-   "art": "werewolf",
    "owner": "lich"
   },
   {
@@ -1273,7 +1258,6 @@
    ],
    "model": "damned_army",
    "family": "death",
-   "art": "damned_army",
    "owner": "lich",
    "ai": {
     "aim": "own_unit",
@@ -1318,7 +1302,6 @@
    },
    "model": "soul_feast",
    "family": "death",
-   "art": "soul_feast",
    "owner": "lich",
    "ai": {
     "keys": [
@@ -1376,7 +1359,6 @@
    ],
    "model": "shadow_bolt",
    "family": "chain",
-   "art": "shadow_bolt",
    "owner": "lich",
    "ai": {
     "keys": [
@@ -1417,7 +1399,6 @@
    ],
    "model": "dark_pact",
    "family": "chain",
-   "art": "dark_pact",
    "owner": "lich",
    "ai": {
     "keys": [
@@ -1460,7 +1441,6 @@
    ],
    "model": "cultists",
    "family": "chain",
-   "art": "cultists",
    "owner": "lich"
   },
   {
@@ -1492,7 +1472,6 @@
    },
    "model": "petrifying_gaze",
    "family": "chain",
-   "art": "petrifying_gaze",
    "owner": "lich",
    "ai": {
     "value": [

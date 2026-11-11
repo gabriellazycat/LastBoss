@@ -22,8 +22,6 @@
     "hp"
    ],
    "owner": "common",
-   "model": "gargoyle_tower",
-   "art": "barricade",
    "ai": {
     "aim": "ahead"
    }
@@ -54,7 +52,6 @@
    ],
    "owner": "common",
    "model": "petrifying_gaze",
-   "art": "weakness_curse",
    "ai": {
     "aim": "hero",
     "value": [
@@ -95,7 +92,6 @@
    ],
    "owner": "common",
    "model": "forbidden_library",
-   "art": "deep_chalice",
    "ops": [
     {
      "op": "temp",
@@ -136,7 +132,6 @@
    ],
    "owner": "common",
    "model": "soul_feast",
-   "art": "dark_sacrifice",
    "ai": {
     "aim": "own_unit",
     "value": [
@@ -186,8 +181,6 @@
     "duration"
    ],
    "owner": "common",
-   "model": "gargoyle_tower",
-   "art": "war_banner",
    "ai": {
     "aim": "own_unit",
     "value": [
@@ -223,9 +216,7 @@
     "hp",
     "dps"
    ],
-   "owner": "common",
-   "model": "ogre",
-   "art": "cave_troll"
+   "owner": "common"
   },
   {
    "id": "ruin_titan",
@@ -254,9 +245,7 @@
     "dps",
     "stomp_stun"
    ],
-   "owner": "common",
-   "model": "ogre",
-   "art": "ruin_titan"
+   "owner": "common"
   }
  ]
 }
