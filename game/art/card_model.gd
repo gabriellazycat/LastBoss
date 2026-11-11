@@ -10,8 +10,14 @@ static var _art: Dictionary = {}
 static func of(id: String) -> String:
 	if _alias.is_empty():
 		_alias["_"] = "_"
-		var j = JSON.parse_string(FileAccess.get_file_as_string("res://data/cards.json"))
-		if typeof(j) == TYPE_DICTIONARY:
+		# cards.json e as cartas novas por dono (C6): data/cards_<dono>.json.
+		for path in ["res://data/cards.json", "res://data/cards_common.json", "res://data/cards_plague.json",
+				"res://data/cards_dragon.json", "res://data/cards_lich.json"]:
+			if not FileAccess.file_exists(path):
+				continue
+			var j = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if typeof(j) != TYPE_DICTIONARY:
+				continue
 			for c in j.get("cards", []):
 				if c.has("model"):
 					_alias[str(c["id"])] = str(c["model"])
