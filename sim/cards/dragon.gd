@@ -120,3 +120,13 @@ static func on_unit_death(sim: Sim, i: int, cause: int) -> void:
 ## Depois de uma carta jogada (já aplicada).
 static func on_card_played(sim: Sim, c: Sim.CardInst, x: float, y: float) -> void:
 	pass
+
+
+## Multiplicador do golpe do herói nas suas unidades (1.0 = nada; 0.7 = herói causa 30% menos).
+static func hero_out_mult(sim: Sim) -> float:
+	return 1.0
+
+
+## Soma ao custo da carta c agora (negativo = desconto). O custo final nunca fica abaixo de 0.
+static func card_cost_add(sim: Sim, c: Sim.CardInst) -> int:
+	return 0

@@ -1102,6 +1102,7 @@ func unit_hits_hero(i: int) -> void:
 func hero_hits_unit(i: int, dmg: float) -> void:
 	if units.alive[i] == 0:
 		return
+	dmg *= CardsCommon.hero_out_mult(self) * CardsPlague.hero_out_mult(self) * CardsDragon.hero_out_mult(self) * CardsLich.hero_out_mult(self)
 	if units.flags[i] & K.F_STONE:
 		# Gárgula N3: em pedra, devolve parte do golpe.
 		var gc: CardDef = data.cards[units.def[i]]
@@ -1515,6 +1516,8 @@ func card_cost(c: CardInst) -> int:
 			cost += int(R["arena"]["spell_extra_cost_no_left_arm"])
 	if tax_cards > 0:
 		cost += tax_add
+	cost += CardsCommon.card_cost_add(self, c) + CardsPlague.card_cost_add(self, c) + CardsDragon.card_cost_add(self, c) + CardsLich.card_cost_add(self, c)
+	cost = maxi(0, cost)
 	# Pedra do Atalho: a primeira carta de cada disputa sai mais barata.
 	if contest.size() > 0 and not contest.get("first", false):
 		cost = maxi(0, cost - int(rv("contest_first_discount")))
