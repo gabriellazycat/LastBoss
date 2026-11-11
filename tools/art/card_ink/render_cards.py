@@ -9,13 +9,13 @@ import bpy
 import importlib
 import mk, ink, scenes
 
-# Conjunto de cenas: CARD_SCENES="modulo:DICIONARIO" (ex.: scenes_lich:SCENES_LICH) ou CARD_SCENES_MODULE=modulo
+# Conjunto de cenas: CARD_SCENES="modulo:DICIONARIO" (ex.: scenes_lich:SCENES_LICH; ou CARD_SCENES=modulo + CARD_SCENES_VAR=DICIONARIO) ou CARD_SCENES_MODULE=modulo
 # (lê todo dicionário SCENES* do módulo, ex.: scenes_dragon); sem nenhuma, usa scenes.SCENES.
 import importlib
 SCENES = scenes.SCENES
 if os.environ.get("CARD_SCENES"):
     _mod, _, _var = os.environ["CARD_SCENES"].partition(":")
-    SCENES = getattr(importlib.import_module(_mod), _var or "SCENES")
+    SCENES = getattr(importlib.import_module(_mod), _var or os.environ.get("CARD_SCENES_VAR", "SCENES"))
 elif os.environ.get("CARD_SCENES_MODULE"):
     _m = importlib.import_module(os.environ["CARD_SCENES_MODULE"])
     SCENES = {}
