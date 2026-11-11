@@ -44,14 +44,13 @@ a tabela de estado do CONTINUAR.md.
 | C-UI | Montes de compra/descarte, barra de elixir até 20, HUD da disputa, upgrade antes → depois | **feito** (capturas `docs/visual/c_ui/`, `docs/visual/c_menu/`); menu de vilões, fases com recompensa, rara à escolha, coleção por dono. Falta conferir o HUD da disputa com o C5 de verdade (foi validado com chaves simuladas) |
 | Upg. | Variante 4: carimbo + material do fundo | **feito** (padrão em `settings.gd`; capturas `upgrades/v4_*.png`). Assumido: filete de borda no N2/N3 e carimbo mais opaco, para ler em carta pequena |
 | D | Arte v2 de ~91 imagens, 9 modelos animados, 11 variantes, 3 chefes finais | **feito** (91 imagens; 9 modelos próprios no look 7; 15 variantes em `Looks.VARIANTS`; 3 chefes na arena; arte única com teste `t_unique_art`; vitrine `docs/visual/d_modelos/vitrine.png`). Para o passe visual da E: Dragão Ancião grande demais no mapa (4,2 m); modelos da Praga/Dragão/Troll com 4 a 6 mil triângulos; mapa real com as criaturas novas ainda não fotografado |
+| E | Testes novos, fuzz, calibração, carga, relatório, planilha | **feito** (relatório `docs/RODADA_VILOES.md`; aba "Vilões - cartas (JSON)"; metas não atingidas listadas no relatório) |
 
-Etapa C concluída (C0 a C6 na `viloes`, testes 0 falhas, fuzz 30 seeds ok). Em 11/11 ficaram dois agentes em worktree, cada um com o seu ramo:
-- **Fim da Etapa D**: registrar os 9 modelos próprios no jogo, as ~11 variantes, tirar `art`/`model` emprestados dos JSON e o teste de arte única (`docs/visual/d_modelos/`).
-- **Pré-requisitos da Etapa E**: métricas novas em `stats`/`run_batch.py` (gasto e cartas por minuto por ato, maior custo, mão travada, etapas vencidas, tempo em disputa, embaralhadas), `--pool=full|start`, condições de `ai` (`recent_deaths`, `gold_above`, `contest_active`) e ferramentas de calibração passadas a vilões.
+## Próximo passo
 
-Ao retomar: conferir se esses ramos (`worktree-agent-*` mais recentes) têm commit; fazer o merge na `viloes`, `--import`, testes; depois seguir a Etapa E do plano na ordem (testes automáticos, fuzz 200 × 3, calibração uma variável por vez, carga, mouse, passe visual, relatório `docs/RODADA_VILOES.md`). Problemas já vistos para a calibração: na Taverna os bots não derrubam casas; Cofre do Dragão, Maré de Ratos e Ninho-Mãe dominam os lotes curtos; o tutorial (`game/tutorial.gd`) ainda não foi revisto para as regras novas.
+A rodada está completa (Etapas A a E). Falta o Gabriel jogar e decidir: o relatório `docs/RODADA_VILOES.md` lista o que não atingiu a meta (fase 1 fácil, aleatório alto com Praga/Lich, tempo em disputa < 60%, chegada do Dragão à arena) e as decisões assumidas. Próximas rodadas possíveis: nova calibração depois que ele jogar; causa dos cliques sem efeito no `--humantest` (Praga e Lich); refino das artes fracas e dos modelos acima do orçamento; merge na main só quando ele pedir.
 
-Atenção: `--import` é obrigatório depois de mexer em `locale/strings.csv` (os testes leem as traduções compiladas). Não passe a saída do Godot direto por `grep`: grave em arquivo com `timeout`.
+Atenção: `--import` é obrigatório depois de mexer em `locale/strings.csv` (os testes leem as traduções compiladas). Não passe a saída do Godot direto por `grep`: grave em arquivo com `timeout`. Argumentos de teste sem `=` são ignorados em silêncio.
 
 ## Como fazer (comandos)
 
