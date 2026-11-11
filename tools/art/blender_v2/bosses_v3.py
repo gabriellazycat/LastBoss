@@ -429,4 +429,5 @@ def main():
         shoot_sheet(out)
 
 
-main()
+if __name__ == "__main__":   # bosses_final.py importa os ajudantes sem rodar as fotos
+    main()
