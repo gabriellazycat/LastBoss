@@ -40,7 +40,16 @@ static func load_dir(dir := "res://data") -> GameData:
 		g.event_ids.append(e["id"])
 	var growth := float(g.rules["card_levels"]["growth"])
 	var cj := _read(dir + "/cards.json")
-	for d in cj["cards"]:
+	var defs: Array = cj["cards"].duplicate()
+	# Cartas novas do C6: um arquivo por dono (data/cards_<dono>.json), cada agente dono do seu.
+	for own in ["common", "plague", "dragon", "lich"]:
+		var extra: String = dir + "/cards_" + own + ".json"
+		if FileAccess.file_exists(extra):
+			for d in _read(extra).get("cards", []):
+				if not d.has("owner"):
+					d["owner"] = own
+				defs.append(d)
+	for d in defs:
 		var c := CardDef.from_dict(d, g.cards.size())
 		c.growth = growth
 		g.cards.append(c)

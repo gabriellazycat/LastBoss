@@ -111,6 +111,9 @@ var ritual_mult := 1.0
 ## gold_mult (+fração do ouro ganho). Cópias somam, cada uma com o seu tempo.
 var temps: Array = []
 var act_elixir_base := 10.0     # elixir máximo da escada do ato atual
+## Estado livre das cartas por dono (C6): cada arquivo de sim/cards/ guarda o que precisar aqui, numa chave
+## própria (ex.: cstate["plague"]). Vai no salvamento (só tipos simples: números, textos, Array, Dictionary).
+var cstate: Dictionary = {}
 var harvest_deaths := 0         # Lich (Colheita): mortes de criaturas suas desde o último feitiço grátis
 var harvest_free := false       # Lich: o próximo feitiço custa 0
 var act_elixir_bonus := 0.0     # eventos: elixir máximo a mais até o fim do ato (Altar Profano)
@@ -230,6 +233,10 @@ func step() -> void:
 	if tick % 4 == 0:
 		units.apply_auras()
 	units.update(dt)
+	CardsCommon.on_tick(self)
+	CardsPlague.on_tick(self)
+	CardsDragon.on_tick(self)
+	CardsLich.on_tick(self)
 	if tick % 2 == 0:
 		units.separate()
 	if units.count > stats["units_peak"]:
@@ -1008,6 +1015,9 @@ func _finish(r: int) -> void:
 func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card_id: String) -> float:
 	if tags & K.TAG_FIRE:
 		amount *= 1.0 + hoard_fire()
+	var hh0: SimHero = hit_hero if hit_hero else hero
+	amount *= 1.0 + CardsCommon.hero_damage_bonus(self, hh0, tags, kind) + CardsPlague.hero_damage_bonus(self, hh0, tags, kind) \
+		+ CardsDragon.hero_damage_bonus(self, hh0, tags, kind) + CardsLich.hero_damage_bonus(self, hh0, tags, kind)
 	if (kind & SimHero.DMG_SPELL) and t < mark_until:
 		amount *= 1.0 + mark_bonus
 	var hh: SimHero = hit_hero if hit_hero else hero
@@ -1068,7 +1078,12 @@ func unit_hits_hero(i: int) -> void:
 		burn_dps = float(c.n3["burn_dps"])
 		burn_src = "skeleton_archers"
 	var src := str(card_of_uid.get(units.uid[i], c.id))
+	amount *= CardsCommon.unit_hit_mult(self, i) * CardsPlague.unit_hit_mult(self, i) * CardsDragon.unit_hit_mult(self, i) * CardsLich.unit_hit_mult(self, i)
 	var real := damage_hero(amount, units.px[i], units.py[i], tg, kind, src)
+	CardsCommon.on_unit_hit(self, i, real)
+	CardsPlague.on_unit_hit(self, i, real)
+	CardsDragon.on_unit_hit(self, i, real)
+	CardsLich.on_unit_hit(self, i, real)
 	# Contadores das habilidades do herói: Enxame (unidade de uma carta de enxame) e alvos grandes.
 	var oc: CardDef = data.card(src)
 	if (oc if oc else c).type == "swarm":
@@ -1107,6 +1122,10 @@ func kill_unit(i: int, cause: int) -> void:
 	var x := units.px[i]
 	var y := units.py[i]
 	var f := units.flags[i]
+	CardsCommon.on_unit_death(self, i, cause)
+	CardsPlague.on_unit_death(self, i, cause)
+	CardsDragon.on_unit_death(self, i, cause)
+	CardsLich.on_unit_death(self, i, cause)
 	if cause == K.Death.HERO and contract.size() > 0 and contract["goal"]["kind"] == "damage_no_xp":
 		contract["progress"] = 0.0   # "Sem Testemunhas": causar dano sem perder nenhum monstro
 	if cause == K.Death.HERO or cause == K.Death.SELF:
@@ -1566,6 +1585,10 @@ func play(hi_: int, x: float, y: float) -> int:
 	_apply(c, x, y)
 	if c.def.is_spell:
 		_after_spell(c)
+	CardsCommon.on_card_played(self, c, x, y)
+	CardsPlague.on_card_played(self, c, x, y)
+	CardsDragon.on_card_played(self, c, x, y)
+	CardsLich.on_card_played(self, c, x, y)
 	return K.Block.OK
 
 
