@@ -782,3 +782,49 @@ UI_PILE_PANEL_DISCARD,Descarte: {n} cartas,Discard pile: {n} cards
 UI_PILE_EMPTY,Nenhuma carta aqui.,No cards here.
 UI_PILE_BENCHED,Fora, na arena: {n} cartas (voltam depois),Out in the arena: {n} cards (they return later)
 UI_CONTEST_STAGE,Etapa {a} de {b},Stage {a} of {b}
+CARD_rat_brute,Ratazana,Brute Rat
+DESC_rat_brute,Gorda e resistente; cada mordida aplica {peste} acúmulo de Peste.,Fat and tough; each bite adds {peste} stack of Plague.
+CARD_infected_bite,Mordida Infectada,Infected Bite
+DESC_infected_bite,"Por {duration} s, toda mordida de [[pack|Bando]] a até {radius} m aplica +{extra} de Peste.","For {duration} s, every [[pack|Pack]] bite within {radius} m adds +{extra} Plague."
+N3_infected_bite,N3: aplica +{extra} acúmulos.,L3: adds +{extra} stacks.
+CARD_bat_cloud,Nuvem de Morcegos,Bat Cloud
+DESC_bat_cloud,Morcegos voadores: passam por cima de bloqueios.,Flying bats: they pass over obstacles.
+N3_bat_cloud,N3: os morcegos [[pierce|atravessam o escudo]].,L3: the bats [[pierce|pierce the shield]].
+CARD_rat_trap,Ratoeira Viva,Living Rat Trap
+DESC_rat_trap,"Armadilha: quando o herói pisa, fica [[root|Preso]] por {root} s e saltam {rats} ratos.","Trap: when the hero steps on it, they are [[root|Rooted]] for {root} s and {rats} rats leap out."
+CARD_wolf_pack,Matilha de Lobos,Wolf Pack
+DESC_wolf_pack,Fera veloz; +{peste_dmg_pct}% de dano por acúmulo de Peste no herói.,Fast Beast; +{peste_dmg_pct}% damage per Plague stack on the hero.
+N3_wolf_pack,N3: +{peste_dmg_pct}% de dano por acúmulo de Peste.,L3: +{peste_dmg_pct}% damage per Plague stack.
+CARD_brood_mother,Mãe da Ninhada,Brood Mother
+DESC_brood_mother,Pare {spawn_n} ratos a cada {spawn_interval} s e solta {death_spawn_n} ao morrer.,Births {spawn_n} rats every {spawn_interval} s and releases {death_spawn_n} when it dies.
+CARD_corrupt_piper,Flautista Corrompido,Corrupt Piper
+DESC_corrupt_piper,[[pack|Bando]] a até {aura_radius} m ataca {atk_speed_pct}% mais rápido.,[[pack|Pack]] within {aura_radius} m attacks {atk_speed_pct}% faster.
+CARD_sewer_flood,Esgoto Transbordante,Overflowing Sewer
+DESC_sewer_flood,Solta um rato a cada {spawn_interval} s por {spawn_duration} s.,Releases a rat every {spawn_interval} s for {spawn_duration} s.
+CARD_war_boar,Javali de Guerra,War Boar
+DESC_war_boar,"Fera: ao acertar, empurra o herói {push} m e o atordoa {stun} s (recarga {cd} s).","Beast: on a hit, pushes the hero {push} m and stuns them {stun} s ({cd} s cooldown)."
+N3_war_boar,N3: atordoa por {stun} s.,L3: stuns for {stun} s.
+CARD_hunt_instinct,Instinto de Caça,Hunting Instinct
+DESC_hunt_instinct,"Por {duration} s, as Feras correm +{speed_pct}% e roubam {steal_pct}% da vida que causam.","For {duration} s, Beasts run +{speed_pct}% faster and steal {steal_pct}% of the damage they deal."
+N3_hunt_instinct,N3: roubo de vida de {steal_pct}%.,L3: {steal_pct}% lifesteal.
+CARD_devour,Devorar,Devour
+DESC_devour,Retorna ao baralho. Sacrifica {sacrifice} ratos seus: a Fera mais próxima cura {heal} de vida e causa +{dmg_bonus_pct}% de dano até morrer.,Returns to the deck. Sacrifices {sacrifice} of your rats: the nearest Beast heals {heal} health and deals +{dmg_bonus_pct}% damage until it dies.
+N3_devour,N3: +{dmg_bonus_pct}% de dano.,L3: +{dmg_bonus_pct}% damage.
+CARD_bubonic_plague,Praga Bubônica,Bubonic Plague
+DESC_bubonic_plague,"Por {duration} s, toda mordida aplica Peste; no fim, {per_stack} de dano por acúmulo.","For {duration} s, every bite adds Plague; at the end, {per_stack} damage per stack."
+N3_bubonic_plague,N3: dura {duration} s.,L3: lasts {duration} s.
+CARD_rat_tide,Maré de Ratos,Rat Tide
+DESC_rat_tide,Solta {count} ratos de uma vez.,Releases {count} rats at once.
+CARD_mother_nest,Ninho-Mãe,Mother Nest
+DESC_mother_nest,"Por {duration} s, suas estruturas de ninho a até {radius} m produzem em dobro.","For {duration} s, your nest structures within {radius} m produce double."
+N3_mother_nest,N3: alcance de {radius} m.,L3: {radius} m range.
+CARD_alpha_beast,Besta Alfa,Alpha Beast
+DESC_alpha_beast,"Fera: +{pack_bonus_pct}% de dano por bicho de [[pack|Bando]] em campo e +{peste_dmg_pct}% por acúmulo de Peste; ao entrar, solta um Chamado do Bando.","Beast: +{pack_bonus_pct}% damage per [[pack|Pack]] creature on the field and +{peste_dmg_pct}% per Plague stack; on entering, casts a Pack Call."
+N3_alpha_beast,N3: +{peste_dmg_pct}% por acúmulo de Peste.,L3: +{peste_dmg_pct}% per Plague stack.
+CARD_endless_swarm,Enxame Sem Fim,Endless Swarm
+DESC_endless_swarm,"Invoca {summon_n} ratos; por {duration} s, toda criatura de [[pack|Bando]] que morre renasce uma vez.","Summons {summon_n} rats; for {duration} s, every [[pack|Pack]] creature that dies is reborn once."
+N3_endless_swarm,N3: invoca {summon_n} ratos.,L3: summons {summon_n} rats.
+KW_plague,Peste,Plague
+KWD_plague,Estado do herói: cada mordida da Praga acumula 1; cada acúmulo faz o herói receber +3% de dano (até 15) e some 8 s depois da última mordida.,Hero state: each Plague bite stacks 1; each stack makes the hero take +3% damage (up to 15) and fades 8 s after the last bite.
+KW_beast,Fera,Beast
+KWD_beast,"Tipo de monstro da Praga: predador solitário. As cartas de Fera se alimentam do Bando e da Peste (Devorar, Instinto de Caça).","Plague monster type: a lone predator. Beast cards feed on the Pack and on Plague (Devour, Hunting Instinct)."
