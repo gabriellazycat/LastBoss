@@ -3,7 +3,7 @@
   "dt": 0.05,
   "danger_hz": 5,
   "target_hz": 5,
-  "max_units": 1024,
+  "max_units": 400,
   "despawn_distance": 50.0,
   "max_run_seconds": 3000
  },
