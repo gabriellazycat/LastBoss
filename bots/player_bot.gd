@@ -121,10 +121,16 @@ func _shrine_ahead(sim: Sim) -> Dictionary:
 	return {}
 
 
+## Custo máximo que o bot joga: `max_cost` vale para elixir máximo 10 e escala com o elixir máximo atual (10, 13, 16...),
+## senão cartas de custo 10 a 12 nunca saem da mão nos atos 2 e 3.
+func _max_cost(sim: Sim) -> int:
+	return int(round(float(P.get("max_cost", 10)) * maxf(sim.elixir_max, 10.0) / 10.0))
+
+
 func _smart_value(sim: Sim, c: Sim.CardInst) -> float:
 	var d := c.def
 	var cost := sim.card_cost(c)
-	if d.category == "field" and cost > int(P.get("max_cost", 10)):
+	if d.category == "field" and cost > _max_cost(sim):
 		return -1.0
 	var v := float(cost) + d.rarity * 0.5
 	match d.category:
@@ -213,6 +219,10 @@ func _ai_metric(sim: Sim, c: Sim.CardInst, m: String) -> float:
 			return float(_own_units(sim))
 		"recent_spells":
 			return float(sim.recent_spells(float(c.def.fx["window"])))
+		"recent_deaths":
+			return float(CardsLich.recent_deaths(sim, float(c.def.fx.get("window", 10.0))))
+		"gold":
+			return sim.gold
 	push_error("ai: métrica desconhecida " + m)
 	return 0.0
 
@@ -252,6 +262,14 @@ func _ai_cond(sim: Sim, c: Sim.CardInst, cond: Dictionary) -> bool:
 				ok = _unit_with_key(sim, str(p)) >= 0
 			"wounded_near_hero":
 				ok = _wounded_near_hero(sim) >= int(p)
+			"recent_deaths":
+				ok = CardsLich.recent_deaths(sim, float(c.def.fx.get("window", 10.0))) >= int(p)
+			"gold_above":
+				ok = sim.gold >= float(p)
+			"contest_active":
+				ok = (sim.contest.size() > 0) == bool(p)
+			"pack_min":
+				ok = sim.units.n_pack >= int(p)
 			_:
 				push_error("ai: condição desconhecida " + key)
 		if not ok:
@@ -325,7 +343,7 @@ func _smart(sim: Sim) -> void:
 				continue
 			# Carta que este perfil nunca joga (cara demais) só trava a mão: vira elixir.
 			var hc: Sim.CardInst = sim.hand[i]
-			if hc.def.category == "field" and sim.card_cost(hc) > int(P.get("max_cost", 10)):
+			if hc.def.category == "field" and sim.card_cost(hc) > _max_cost(sim):
 				if sim.elixir < sim.elixir_max - 0.5 and sim.sacrifice_ready():
 					sim.sacrifice(i)
 					return
@@ -598,7 +616,7 @@ func _opt_value(sim: Sim, o: Dictionary) -> float:
 			v = c.cost + c.rarity * 2.0
 			if c.category == "lair":
 				v += float(P.get("lair_bonus", 0.0)) * 0.5
-			if c.category == "field" and sim.card_cost(_tmp_inst(c)) > int(P.get("max_cost", 10)):
+			if c.category == "field" and sim.card_cost(_tmp_inst(c)) > _max_cost(sim):
 				v -= 10.0
 			v -= excess
 		"mod":

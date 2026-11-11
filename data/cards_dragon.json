@@ -119,6 +119,9 @@
    "ai": {
     "aim": "cluster",
     "needs_hit": true,
+    "needs": {
+     "gold_above": 10
+    },
     "value": [
      {
       "if": {
@@ -126,6 +129,12 @@
       },
       "combo": true,
       "add": 0.8
+     },
+     {
+      "per": "gold",
+      "div": 15,
+      "cap": 2,
+      "add": 1.0
      }
     ]
    }
@@ -452,7 +461,18 @@
      "big"
     ],
     "aim": "cluster",
-    "needs_hit": true
+    "needs_hit": true,
+    "needs": {
+     "gold_above": 30
+    },
+    "value": [
+     {
+      "per": "gold",
+      "div": 30,
+      "cap": 2,
+      "add": 1.0
+     }
+    ]
    }
   },
   {
@@ -537,6 +557,14 @@
    "ai": {
     "keys": [
      "big"
+    ],
+    "value": [
+     {
+      "if": {
+       "contest_active": true
+      },
+      "add": 1.0
+     }
     ]
    },
    "fly": true

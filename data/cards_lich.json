@@ -196,7 +196,10 @@
    "family": "death",
    "art": "open_grave",
    "ai": {
-    "aim": "hero"
+    "aim": "hero",
+    "needs": {
+     "recent_deaths": 2
+    }
    }
   },
   {
@@ -231,11 +234,37 @@
    "art": "soul_storm",
    "ai": {
     "aim": "cluster",
-    "needs_hit": true
+    "needs_hit": true,
+    "wait_for": {
+     "if": {
+      "recent_deaths": 5
+     }
+    },
+    "value": [
+     {
+      "per": "recent_deaths",
+      "div": 5,
+      "cap": 3,
+      "add": 1.0
+     }
+    ]
    }
   },
   {
    "id": "bone_colossus",
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "value": [
+     {
+      "if": {
+       "contest_active": true
+      },
+      "add": 1.0
+     }
+    ]
+   },
    "category": "field",
    "type": "monster",
    "tags": [

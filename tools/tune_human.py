@@ -1,13 +1,13 @@
-"""Calibra a campanha contra o bot humano (rodada de 10/11/2026).
+"""Calibra a campanha contra o bot humano (rodada de 10/11/2026; vilões em 11/11/2026).
 
-Fase 1: `hero_hp_mult` de cada pacto (data/boss_lorde.json). Fases 2 a 4: `pact_hp[pacto]` da fase
-(data/campaign.json), um ajuste por pacto dentro da fase. Passo multiplicativo amortecido (±cap por ciclo);
+Fase 1: `rules.hero_hp_mult` de cada vilão (data/villains.json). Fases 2 a 4: `villain_hp[vilão]` da fase
+(data/campaign.json), um ajuste por vilão dentro da fase. Passo multiplicativo amortecido (±cap por ciclo);
 células já dentro da faixa (meta ± tol) não mexem.
 
 Ordem (os botões são aninhados: o da fase 1 vale em todas as fases): primeiro só --phases 1, depois congela e
 calibra --phases 2,3,4. Calibrar os dois juntos fazia as células oscilarem.
 
-Uso: python -I tools/tune_human.py --cycles 3 --runs 32 [--phases 1,2,3,4] [--pacts horde,ruin] [--seed0 101]
+Uso: python -I tools/tune_human.py --cycles 3 --runs 32 [--phases 1,2,3,4] [--villains plague,dragon] [--seed0 101]
 """
 import argparse
 import json
@@ -20,7 +20,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import run_batch  # noqa: E402
 
-PACTS = ["horde", "ruin", "treasure", "crypt", "cult"]
+VILLAINS = ["plague", "dragon", "lich"]
 # Meta do bot humano por fase: a campanha fica mais difícil a cada fase.
 TARGET = {1: 0.60, 2: 0.56, 3: 0.52, 4: 0.48}
 TOL = 0.06
@@ -53,22 +53,23 @@ def main():
     ap.add_argument("--cycles", type=int, default=3)
     ap.add_argument("--runs", type=int, default=32)
     ap.add_argument("--phases", default="1,2,3,4")
-    ap.add_argument("--pacts", default=",".join(PACTS))
+    ap.add_argument("--villains", "--pacts", dest="villains", default=",".join(VILLAINS))
+    ap.add_argument("--pool", default="full", help="full (pool inteiro do vilão) ou start (coleção inicial)")
     ap.add_argument("--seed0", type=int, default=101)
     ap.add_argument("--bot", default="human")
     ap.add_argument("--slope", action="store_true", help="um passo pela inclinação medida (k=1/SLOPE, teto 30%%, sem tolerância)")
     ap.add_argument("--fixed-seeds", action="store_true", help="as mesmas sementes em todo ciclo")
     a = ap.parse_args()
     phases = [int(x) for x in a.phases.split(",")]
-    pacts = a.pacts.split(",")
+    pacts = a.villains.split(",")
     for cyc in range(a.cycles):
         decks = [p if ph == 1 else f"{p}@{ph}" for ph in phases for p in pacts]
         out = os.path.join(ROOT, "reports", "tune_human_tmp")
         # Sementes novas a cada ciclo: não ajusta ao ruído de um mesmo lote.
-        runs, errs = run_batch.run_all([a.bot], decks, a.runs, seed0=a.seed0 + (0 if a.fixed_seeds else cyc * 1000), out=out)
+        runs, errs = run_batch.run_all([a.bot], decks, a.runs, seed0=a.seed0 + (0 if a.fixed_seeds else cyc * 1000), out=out, pool=a.pool)
         if errs:
             print("ERROS:", errs[:5])
-        boss = load("data/boss_lorde.json")
+        vil = load("data/villains.json")
         camp = load("data/campaign.json")
         print(f"\n== ciclo {cyc + 1}")
         for ph in phases:
@@ -80,21 +81,21 @@ def main():
                 to = sum(r["result"] == "timeout" for r in rs)
                 f = factor(w, TARGET[ph], k=1.0 / SLOPE, cap=0.3, tol=0.02) if a.slope else factor(w, TARGET[ph])
                 if ph == 1:
-                    for d in boss["decks"]:
+                    for d in vil["villains"]:
                         if d["id"] == p:
                             d["rules"]["hero_hp_mult"] = round(float(d["rules"].get("hero_hp_mult", 1.0)) * f, 3)
                             nv = d["rules"]["hero_hp_mult"]
                 else:
                     for phd in camp["phases"]:
                         if int(phd["id"]) == ph:
-                            ph_hp = phd.setdefault("pact_hp", {})
+                            ph_hp = phd.setdefault("villain_hp", {})
                             ph_hp[p] = round(float(ph_hp.get(p, 1.0)) * f, 3)
                             nv = ph_hp[p]
                 if nv < 0.55 or nv > 1.6:
                     print(f"  ATENÇÃO {lb}: botão em {nv} (fora de 0.55-1.6): problema de estrutura, não de número")
                 line.append(f"{p}={w:.0%}{'(' + str(to) + 'to)' if to else ''}->{nv}")
             print(f"fase {ph} (meta {TARGET[ph]:.0%}): " + "  ".join(line))
-        save("data/boss_lorde.json", boss)
+        save("data/villains.json", vil)
         save("data/campaign.json", camp)
 
 

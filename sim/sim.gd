@@ -162,7 +162,8 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 		"parts_lost": 0, "kills": 0, "units_peak": 0, "teleports": 0, "sacrifices": 0, "shield_breaks": 0,
 		"route_len": 0.0, "hero_hp_arena": 0.0, "locs_visited": 0, "locs_won": 0, "locs_lost": 0,
 		"skipped": 0, "card_levels": 0, "gold_earned": 0.0, "gold_spent": 0, "shop_buys": 0, "route": {},
-		"act_t": [], "relics": [], "event_picks": {}, "contests": {}}
+		"act_t": [], "relics": [], "event_picks": {}, "contests": {},
+		"time_act": [], "spent_act": [], "plays_act": [], "max_cost": 0, "stuck_s": 0.0, "walk_s": 0.0, "contest_s": 0.0}
 	unlocked = unlocked_.duplicate()
 	var list: Array = (card_list if card_list.size() > 0 else dk["cards"]).duplicate()
 	for i in range(list.size() - 1, 0, -1):
@@ -224,6 +225,7 @@ func step() -> void:
 		return
 	tick += 1
 	t += dt
+	_meter()
 	_temps()
 	_elixir()
 	hero.update(dt)
@@ -249,6 +251,39 @@ func step() -> void:
 		arena.update(dt)
 	_contract()
 	_check_end()
+
+
+## Contadores de métrica (só stats, nenhuma regra): tempo, elixir gasto e cartas jogadas por ato; tempo andando
+## × em disputa na estrada; tempo com a mão travada (nenhuma carta jogável e, ou o elixir está cheio, ou nenhuma
+## está só esperando elixir).
+func _act_slot() -> int:
+	var a := mini(act, maxi(acts(), 1) - 1)
+	var ta: Array = stats["time_act"]
+	while ta.size() <= a:
+		ta.append(0.0)
+		stats["spent_act"].append(0.0)
+		stats["plays_act"].append(0)
+	return a
+
+
+func _meter() -> void:
+	var a := _act_slot()
+	stats["time_act"][a] += dt
+	if phase == K.Phase.ROAD:
+		stats["contest_s" if contest.size() > 0 else "walk_s"] += dt
+	if hand.is_empty() or offers.size() > 0:
+		return
+	var short := false
+	for i in hand.size():
+		if hand[i] == null:
+			continue
+		var b := can_play(i)
+		if b == K.Block.OK:
+			return
+		if b == K.Block.NO_ELIXIR:
+			short = true
+	if not short or elixir >= elixir_max - 0.01:
+		stats["stuck_s"] += dt
 
 
 ## Escada de poder por ato (rules.acts[].elixir); a arena usa a do último ato.
@@ -1574,7 +1609,13 @@ func play(hi_: int, x: float, y: float) -> int:
 	var c: CardInst = hand[hi_]
 	if not valid_target(c, x, y):
 		return K.Block.BAD_TARGET
-	elixir -= card_cost(c)
+	var paid := card_cost(c)
+	elixir -= paid
+	var slot := _act_slot()
+	stats["spent_act"][slot] += paid
+	stats["plays_act"][slot] += 1
+	if paid > int(stats["max_cost"]):
+		stats["max_cost"] = paid
 	free_card_t = -100.0
 	if tax_cards > 0:
 		tax_cards -= 1

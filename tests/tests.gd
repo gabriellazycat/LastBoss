@@ -1132,7 +1132,8 @@ func t_card_fx() -> void:
 	check(bad.is_empty(), "toda carta tem owner válido %s" % [bad])
 	var aims := ["hero", "cluster", "line", "soaked", "own_unit", "ahead", "unit_key", "location"]
 	var conds := ["hero_hindered", "hero_soaked", "hero_shielded", "elixir_spare", "elixir_below", "hand_has", "pack_below",
-		"own_near_hero", "own_units_below", "last_spell_has", "unit_alive", "wounded_near_hero"]
+		"own_near_hero", "own_units_below", "last_spell_has", "unit_alive", "wounded_near_hero",
+		"recent_deaths", "gold_above", "contest_active", "pack_min"]
 	var ai_bad: Array = []
 	for c in data.pool:
 		if not aims.has(PlayerBot.aim_of(c)):

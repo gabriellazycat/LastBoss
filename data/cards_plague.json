@@ -370,7 +370,8 @@
    },
    "ai": {
     "needs": {
-     "unit_alive": "beast"
+     "unit_alive": "beast",
+     "pack_min": 3
     }
    }
   },
@@ -466,6 +467,8 @@
    },
    "family": "pack",
    "ai": {
+    "aim": "unit_key",
+    "aim_key": "nest",
     "needs": {
      "unit_alive": "nest"
     }
