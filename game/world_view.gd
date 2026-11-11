@@ -12,6 +12,7 @@ const LOC_COLORS := {
 	"event": Color(0.95, 0.9, 0.55),
 }
 const PART_OFFSETS := {"core": Vector3(0, 0, 0), "head": Vector3(0, 4.3, 0), "left_arm": Vector3(-1.6, 2.4, 0), "right_arm": Vector3(1.6, 2.4, 0)}
+var boss_offs: Dictionary = PART_OFFSETS   # partes do chefe da run (BossModels.part_offsets)
 const UNIT_COLORS := {
 	"rat_horde": Color(0.55, 0.45, 0.42), "rat": Color(0.55, 0.45, 0.42), "bat": Color(0.55, 0.3, 0.75), "rat_king": Color(0.9, 0.7, 0.25),
 	"skeleton_archers": Color(0.9, 0.86, 0.74), "skeleton": Color(0.9, 0.86, 0.74), "goblin_dynamiter": Color(0.45, 0.75, 0.28),
@@ -1141,8 +1142,14 @@ func build_arena() -> void:
 		if i % 2 == 1:
 			arena_root.add_child(_light(pp + Vector3(0, 2.5, 0), Color(1.0, 0.55, 0.2), 3.0, 14.0))
 	arena_root.add_child(_light(c + Vector3(0, 7, 0), Color(0.75, 0.35, 1.0), 3.0, 26.0))
+	# Chefe do vilão da run (Etapa D, 11/11/2026): modelo e posições das partes de BossModels.
+	boss_offs = BossModels.part_offsets(sim.deck_id)
+	if BossModels.has_model(sim.deck_id):
+		for ex in BossModels.EXTRAS.get(sim.deck_id, []):
+			var em := _mi(BossModels.part(sim.deck_id, ex), Vector3(A.bx, 0, A.by), Models.glow_material(0.15))
+			arena_root.add_child(em)
 	for id in A.part_ids:
-		var p := _mi(Models.boss_part(id), Vector3(A.bx, 0, A.by) + PART_OFFSETS[id], Models.glow_material(0.15))
+		var p := _mi(BossModels.part(sim.deck_id, id), Vector3(A.bx, 0, A.by) + boss_offs[id], Models.glow_material(0.15))
 		arena_root.add_child(p)
 		part_nodes.append(p)
 		part_flash.append(0.0)
@@ -1514,7 +1521,7 @@ func _draw_arena(delta: float) -> void:
 		if n.has_meta("dead"):
 			continue
 		var id: String = A.part_ids[k]
-		var off: Vector3 = PART_OFFSETS[id]
+		var off: Vector3 = boss_offs[id]
 		# Respiração e balanço: o chefe está vivo.
 		var idle := Vector3.ZERO
 		match id:
