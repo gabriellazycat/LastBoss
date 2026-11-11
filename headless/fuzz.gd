@@ -30,11 +30,12 @@ func _ready() -> void:
 func run_one(data: GameData, s: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = s * 31 + 7
-	var pacts := ["horde", "ruin", "treasure", "crypt", "cult"]
+	# Vilões (Etapa E, 11/11/2026): os 3, e às vezes um baralho mínimo (1 a 3 cartas) para pegar laço e mão vazia.
+	var pacts := ["plague", "dragon", "lich"]
 	var pact: String = pacts[rng.randi_range(0, pacts.size() - 1)]
 	var phase_n := rng.randi_range(0, 4)
 	var list: Array = []
-	for k in rng.randi_range(6, 16):
+	for k in (rng.randi_range(1, 3) if rng.randf() < 0.2 else rng.randi_range(6, 16)):
 		list.append(data.pool[rng.randi_range(0, data.pool.size() - 1)].id)
 	var sim := Sim.new()
 	sim.setup(data, s, pact, list, [], phase_n)
