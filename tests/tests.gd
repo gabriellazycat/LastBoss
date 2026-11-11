@@ -184,6 +184,8 @@ func t_hand_cap() -> void:
 	check(s.hand_size == 5 and s.hand.size() <= full, "Biblioteca acaba: a mão volta a 5 sem expulsar carta (%d, tamanho %d)" % [s.hand.size(), s.hand_size])
 	# Escada de elixir por ato, teto 20 e custo liberado por ato (C4).
 	var e := _sim(2, "dragon")
+	var AE: Array = data.rules["acts"]
+	var mx3 := float(AE[2]["elixir"]["max"])
 	check(is_equal_approx(e.elixir_max, 10.0) and e.max_offer_cost() == 7, "ato 1: elixir máximo 10, ofertas até custo 7")
 	e.act = 1
 	e.act_elixir_base = e._act_elixir("max", 0.0)
@@ -192,14 +194,14 @@ func t_hand_cap() -> void:
 	e.act = 2
 	e.act_elixir_base = e._act_elixir("max", 0.0)
 	e.recalc_elixir_max()
-	check(is_equal_approx(e.elixir_max, 16.0) and e.max_offer_cost() == 12, "ato 3: elixir máximo 16, ofertas até custo 12")
+	check(is_equal_approx(e.elixir_max, mx3) and e.max_offer_cost() == 12, "ato 3: elixir máximo da escada (%.0f), ofertas até custo 12" % mx3)
 	e.add_temp("elixir_max", 4.0, 40.0, "t")
 	e.add_temp("elixir_max", 4.0, 40.0, "t")
 	check(is_equal_approx(e.elixir_max, 20.0), "elixir máximo nunca passa de 20 (%.0f)" % e.elixir_max)
 	e.elixir = 20.0
 	e.temps.clear()
 	e.recalc_elixir_max()
-	check(is_equal_approx(e.elixir, 16.0), "elixir acima do máximo que encolheu é cortado")
+	check(is_equal_approx(e.elixir, mx3), "elixir acima do máximo que encolheu é cortado")
 	var cheap := _sim(3, "plague")
 	var okc := true
 	for k in 30:
@@ -790,11 +792,12 @@ func t_contests() -> void:
 	var s := _at_location("ritual")
 	var p: Vector2 = s.road.locations[int(s.contest["li"])]["pos"]
 	check(s.contest["type"] == "ritual" and s.hero.hold and int(s.contest["stages"]) == 3 and int(s.contest["stage"]) == 0, "Ritual: o herói para no local e a etapa 1 começa")
-	for k in 6:
+	var rg: Array = L["ritual"]["stages"]
+	for k in int(rg[0]["goal"]):
 		var j := s.units.spawn(data.card("ogre"), p.x + 1.0, p.y, 0.0, 0.0, 0, 999)
 		s.kill_unit(j, K.Death.HERO)
 	s.step()
-	check(int(s.contest["stage"]) == 1 and int(s.contest["won"]) == 1 and is_equal_approx(float(s.contest["goal"]), 10.0), "Ritual: 6 mortes vencem a etapa 1; a etapa 2 pede 10")
+	check(int(s.contest["stage"]) == 1 and int(s.contest["won"]) == 1 and is_equal_approx(float(s.contest["goal"]), float(rg[1]["goal"])), "Ritual: as mortes da meta vencem a etapa 1; a etapa 2 pede a meta seguinte")
 	_win_stage(s)
 	_win_stage(s)
 	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "upgrade", "Ritual: as 3 etapas dão a recompensa cheia (nível de 1 entre 3)")
@@ -825,8 +828,8 @@ func t_contests() -> void:
 	_steps(s, 7.0)
 	check(int(s.contest["won"]) == 0, "Santuário: só uma torre no círculo não conta")
 	s.units.spawn(data.card("slime"), p.x - 2.0, p.y, 0.0, 0.0, 0, 999)
-	_steps(s, 8.6)
-	check(int(s.contest["won"]) >= 1, "Santuário: 6 s com monstro no círculo vencem a etapa")
+	_steps(s, float(L["shrine"]["stages"][0]["goal"]) + 2.6)
+	check(int(s.contest["won"]) >= 1, "Santuário: os segundos da meta com monstro no círculo vencem a etapa")
 	s = _at_location("shrine")
 	s.act = 2
 	_win_stage(s)
@@ -858,9 +861,10 @@ func t_contests() -> void:
 	# Ponte: dano na janela (150, 250, 400).
 	s = _at_location("bridge")
 	check(s.hero.tavern_t > 0.0, "Ponte: o herói fica lento")
-	s.damage_hero(200.0, s.hero.x + 1.0, s.hero.y, 0, SimHero.DMG_PIERCE, "test")
+	var bg: Array = L["bridge"]["stages"]
+	s.damage_hero(float(bg[0]["goal"]) * 1.4, s.hero.x + 1.0, s.hero.y, 0, SimHero.DMG_PIERCE, "test")
 	s.step()
-	check(int(s.contest["won"]) == 1 and is_equal_approx(float(s.contest["goal"]), 250.0), "Ponte: 150 de dano vencem a etapa 1")
+	check(int(s.contest["won"]) == 1 and is_equal_approx(float(s.contest["goal"]), float(bg[1]["goal"])), "Ponte: o dano da meta vence a etapa 1")
 	_win_stage(s)
 	_win_stage(s)
 	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"][0]["kind"] == "pick", "Ponte: as 3 etapas dão a escolha do tipo")
