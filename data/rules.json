@@ -123,15 +123,15 @@
    "stages": [
     {
      "goal": 1,
-     "window": 15.0
+     "window": 25.0
     },
     {
      "goal": 2,
-     "window": 15.0
+     "window": 25.0
     },
     {
      "goal": 3,
-     "window": 15.0
+     "window": 25.0
     }
    ],
    "stage3": [
@@ -149,16 +149,16 @@
    "heal": 0.15,
    "stages": [
     {
-     "goal": 120,
-     "window": 4.0
+     "goal": 200,
+     "window": 6.0
     },
     {
-     "goal": 180,
-     "window": 4.0
+     "goal": 300,
+     "window": 6.0
     },
     {
-     "goal": 260,
-     "window": 4.0
+     "goal": 420,
+     "window": 6.0
     }
    ],
    "stage3": [
@@ -176,16 +176,16 @@
    "window": 25.0,
    "stages": [
     {
-     "goal": 6,
-     "window": 15.0
-    },
-    {
      "goal": 10,
-     "window": 15.0
+     "window": 25.0
     },
     {
-     "goal": 14,
-     "window": 15.0
+     "goal": 16,
+     "window": 25.0
+    },
+    {
+     "goal": 22,
+     "window": 25.0
     }
    ],
    "stage3": [
@@ -202,16 +202,16 @@
    "window": 20.0,
    "stages": [
     {
-     "goal": 6,
-     "window": 15.0
-    },
-    {
-     "goal": 8,
-     "window": 15.0
-    },
-    {
      "goal": 10,
-     "window": 15.0
+     "window": 25.0
+    },
+    {
+     "goal": 13,
+     "window": 25.0
+    },
+    {
+     "goal": 16,
+     "window": 25.0
     }
    ],
    "stage3": [
@@ -229,16 +229,16 @@
    "win_damage": 150.0,
    "stages": [
     {
-     "goal": 150,
-     "window": 15.0
-    },
-    {
      "goal": 250,
-     "window": 15.0
+     "window": 25.0
     },
     {
      "goal": 400,
-     "window": 15.0
+     "window": 25.0
+    },
+    {
+     "goal": 650,
+     "window": 25.0
     }
    ],
    "stage3": [
@@ -424,7 +424,7 @@
    ],
    "elixir": {
     "max": 13,
-    "seconds_per_point": 2.3,
+    "seconds_per_point": 2.1,
     "max_cost": 9
    }
   },
@@ -444,8 +444,8 @@
     0.08
    ],
    "elixir": {
-    "max": 16,
-    "seconds_per_point": 1.9,
+    "max": 18,
+    "seconds_per_point": 1.5,
     "max_cost": 12
    }
   }
