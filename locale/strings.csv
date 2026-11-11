@@ -818,3 +818,33 @@ N3_ember_rain,"N3: {dps} de fogo por segundo.","L3: {dps} fire per second."
 N3_gold_avalanche,"N3: deixa o herói preso por {stun} s.","L3: roots the hero for {stun} s."
 N3_eruption,"N3: o chão queima a {fire_dps}/s.","L3: the ground burns at {fire_dps}/s."
 N3_elder_dragon,"N3: a Chuva de Brasas causa {rain_dps}/s.","L3: the Ember Rain deals {rain_dps}/s."
+CARD_raised_servant,Servo Reanimado,Raised Servant
+CARD_life_drain,Dreno de Vida,Life Drain
+CARD_profane_ritual,Ritual Profano,Profane Ritual
+CARD_death_knight,Cavaleiro da Morte,Death Knight
+CARD_open_grave,Túmulo Aberto,Open Grave
+CARD_soul_storm,Tempestade de Almas,Soul Storm
+CARD_bone_colossus,Colosso de Ossos,Bone Colossus
+CARD_arcane_apocalypse,Apocalipse Arcano,Arcane Apocalypse
+CARD_barricade,Barricada,Barricade
+CARD_weakness_curse,Maldição da Fraqueza,Curse of Weakness
+CARD_deep_chalice,Cálice Profundo,Deep Chalice
+CARD_dark_sacrifice,Sacrifício Sombrio,Dark Sacrifice
+CARD_war_banner,Estandarte de Guerra,War Banner
+CARD_cave_troll,Troll das Cavernas,Cave Troll
+CARD_ruin_titan,Titã da Ruína,Ruin Titan
+DESC_raised_servant,"1 esqueleto barato; ao morrer, conta como 2 mortes.","1 cheap skeleton; when it dies, it counts as 2 deaths."
+DESC_life_drain,{damage} de dano de [[shadow|Sombra]]; cura {heal} nos seus [[undead|mortos-vivos]] a até {heal_radius} m.,{damage} [[shadow|Shadow]] damage; heals {heal} on your [[undead|undead]] within {heal_radius} m.
+DESC_profane_ritual,[[sacrifice|Sacrifica]] 1 monstro seu: os próximos {charges} [[spell|feitiços]] custam {discount} a menos e causam +{bonus_pct}%.,[[sacrifice|Sacrifices]] 1 of your monsters: your next {charges} [[spell|spells]] cost {discount} less and deal +{bonus_pct}%.
+DESC_death_knight,Cada [[spell|feitiço]] que você joga cura {spell_heal} nele e dá +{spell_dmg_pct}% de dano por {spell_dmg_s} s.,Each [[spell|spell]] you play heals it for {spell_heal} and gives +{spell_dmg_pct}% damage for {spell_dmg_s} s.
+DESC_open_grave,"Se {deaths} criaturas suas morreram nos últimos {window} s, levanta {raise} esqueletos. Retorna ao baralho (uma vez por embaralhada).","If {deaths} of your creatures died in the last {window} s, raises {raise} skeletons. Returns to the deck (once per shuffle)."
+DESC_soul_storm,{damage} de dano de [[shadow|Sombra]] por morte sua nos últimos {window} s (até {cap}) num raio de {radius} m.,{damage} [[shadow|Shadow]] damage per death of yours in the last {window} s (up to {cap}) within {radius} m.
+DESC_bone_colossus,"Absorve mortos por perto (+{absorb_hp} de vida cada, até {hp_cap}); ao morrer, vira {death_skeletons} esqueletos.","Absorbs the dead nearby (+{absorb_hp} health each, up to {hp_cap}); when it dies, becomes {death_skeletons} skeletons."
+DESC_arcane_apocalypse,"Repete os [[spell|feitiços]] que você jogou nos últimos {window} s (até {max_spells}), menos ele mesmo e o Eco.","Repeats the [[spell|spells]] you played in the last {window} s (up to {max_spells}), except itself and Echo."
+DESC_barricade,[[structure|Estrutura]] que bloqueia o caminho do herói.,[[structure|Structure]] that blocks the hero's path.
+DESC_weakness_curse,O herói causa {weak_pct}% menos dano por {duration} s.,The hero deals {weak_pct}% less damage for {duration} s.
+DESC_deep_chalice,[[lair|Temporário]]: +{elixir_max} de [[elixir|elixir]] máximo por {duration} s e {elixir} de elixir na hora.,[[lair|Temporary]]: +{elixir_max} max [[elixir|elixir]] for {duration} s and {elixir} elixir right now.
+DESC_dark_sacrifice,[[sacrifice|Sacrifica]] 1 monstro seu: ganha {refund_frac_pct}% do custo dele em [[elixir|elixir]] (até {refund_cap}).,[[sacrifice|Sacrifices]] 1 of your monsters: gain {refund_frac_pct}% of its cost as [[elixir|elixir]] (up to {refund_cap}).
+DESC_war_banner,[[structure|Estrutura]] por {duration} s: seus monstros a até {radius} m ganham +{dmg_pct}% de dano e +{hp_pct}% de vida.,[[structure|Structure]] for {duration} s: your monsters within {radius} m gain +{dmg_pct}% damage and +{hp_pct}% health.
+DESC_cave_troll,Regenera {regen_pct}% da vida por segundo; arremessa pedras.,Regenerates {regen_pct}% health per second; throws rocks.
+DESC_ruin_titan,O golpe vira um pisão em área que atordoa por {stomp_stun} s (a cada {stomp_cd} s).,Its blow becomes an area stomp that stuns for {stomp_stun} s (every {stomp_cd} s).
