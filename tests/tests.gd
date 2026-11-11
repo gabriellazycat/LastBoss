@@ -51,6 +51,7 @@ func _ready() -> void:
 	t_translations()
 	t_keywords()
 	t_card_fx()
+	t_dragon_c6()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -1567,3 +1568,159 @@ func t_deck_cycle() -> void:
 			if ci and ci.def.category == "route":
 				left += 1
 	check(routes > 0 and left == 0 and a.benched.size() == routes and _deck_total(a) == a.cards.size(), "cartas de Rota ficam fora do baralho na arena (%d)" % routes)
+
+
+## C6, Dragão Avarento: as 12 cartas novas (uma verificação por mecânica).
+func t_dragon_c6() -> void:
+	# Cofre do Dragão: ouro em dobro por 30 s.
+	var s := _sim(5, "dragon")
+	s.elixir = 20.0
+	s.hand[0] = _inst("dragon_vault")
+	var g0 := s.gold
+	s._earn_gold(10.0)
+	var plain := s.gold - g0
+	check(s.play(0, s.hero.x, s.hero.y) == K.Block.OK, "Cofre do Dragão joga")
+	g0 = s.gold
+	s._earn_gold(10.0)
+	check(is_equal_approx(s.gold - g0, plain * 2.0), "Cofre do Dragão dobra o ouro (%.1f → %.1f)" % [plain, s.gold - g0])
+	_steps(s, 31.0)
+	g0 = s.gold
+	s._earn_gold(10.0)
+	check(is_equal_approx(s.gold - g0, plain), "Cofre do Dragão acaba em 30 s")
+	# Imposto de Sangue: paga 20, a próxima carta custa 3 a menos (uma só) e a carta Retorna.
+	s = _sim(5, "dragon")
+	s.elixir = 20.0
+	s.gold = 100.0
+	var bt := _inst("blood_tax")
+	var bo := _inst("boiling_oil")
+	s.hand[0] = bt
+	s.hand[1] = bo
+	check(s.card_cost(bo) == 3, "Óleo Fervente custa 3 sem o Imposto")
+	s.play(0, s.hero.x, s.hero.y)
+	check(is_equal_approx(s.gold, 80.0), "Imposto de Sangue paga 20 de ouro (%.0f)" % s.gold)
+	check(s.card_cost(bo) == 0, "depois do Imposto a próxima carta custa 3 a menos (%d)" % s.card_cost(bo))
+	check(s.queue.has(bt) and s.returned.has(bt.uid), "Imposto de Sangue Retorna ao baralho")
+	s.play(s.hand.find(bo), s.hero.x, s.hero.y)
+	check(s.card_cost(_inst("boiling_oil")) == 3, "o desconto vale para uma carta só")
+	s.gold = 5.0
+	s.hand[0] = _inst("blood_tax")
+	check(s.can_play(0) == K.Block.CONDITION, "Imposto de Sangue sem 20 de ouro não joga")
+	# Avalanche de Ouro: 3× o ouro (teto 900), sem gastar; prende o herói.
+	s = _sim(5, "dragon")
+	_tough(s)
+	s.elixir = 20.0
+	s.hand[0] = _inst("gold_avalanche")
+	s.gold = 20.0
+	check(s.can_play(0) == K.Block.CONDITION, "Avalanche sem 30 de ouro não joga")
+	s.gold = 100.0
+	var h0 := s.hero.hp
+	s.play(0, s.hero.x, s.hero.y)
+	check(absf((h0 - s.hero.hp) - 300.0) < 1.0 and s.gold >= 100.0, "Avalanche: 3× o ouro e não gasta (%.0f, ouro %.0f)" % [h0 - s.hero.hp, s.gold])
+	check(s.hero.root_t > 1.5, "Avalanche prende o herói")
+	s.hand[0] = _inst("gold_avalanche")
+	s.gold = 1000.0
+	h0 = s.hero.hp
+	s.play(0, s.hero.x, s.hero.y)
+	check(absf((h0 - s.hero.hp) - 900.0) < 1.0, "Avalanche tem teto de 900 (%.0f)" % (h0 - s.hero.hp))
+	# Ouro Derretido: gasta até 30, 6 de fogo por ouro, lentidão.
+	s = _sim(5, "dragon")
+	_tough(s)
+	s.elixir = 20.0
+	s.gold = 20.0
+	s.hand[0] = _inst("molten_gold")
+	check(s.can_play(0) == K.Block.OK, "Ouro Derretido joga com 20 de ouro")
+	h0 = s.hero.hp
+	s.play(0, s.hero.x, s.hero.y)
+	check(s.gold < 10.0 and h0 - s.hero.hp >= 120.0 and s.hero.slow_t > 2.0, "Ouro Derretido: 20 de ouro viram 120+ de fogo e lentidão (%.0f)" % (h0 - s.hero.hp))
+	s.gold = 80.0
+	s.hand[0] = _inst("molten_gold")
+	s.play(0, s.hero.x, s.hero.y)
+	check(s.gold >= 50.0 and s.gold < 70.0, "Ouro Derretido gasta no máximo 30 (%.0f)" % s.gold)
+	# Faísca: só incendeia o encharcado.
+	s = _sim(5, "dragon")
+	_tough(s)
+	s._apply(_inst("spark"), s.hero.x, s.hero.y)
+	check(s.burn_t <= 0.0, "Faísca em herói seco não incendeia")
+	s.hero.soaked_t = 5.0
+	s._apply(_inst("spark"), s.hero.x, s.hero.y)
+	check(s.burn_t > 0.0 and s.burn_src == "spark", "Faísca em herói encharcado incendeia")
+	# Kobolds: cada golpe rende ouro.
+	s = _sim(5, "dragon")
+	var kb := _spawn(s, "kobold_scavengers", 2.0)
+	check(kb.size() == 4, "Kobolds Catadores: 4 kobolds (%d)" % kb.size())
+	g0 = s.gold
+	_hit(s, kb[0])
+	_hit(s, kb[1])
+	check(is_equal_approx(s.gold - g0, 2.0 + (s.gold - g0 - 2.0)) and s.gold > g0 + 1.9, "cada golpe dos Kobolds rende ouro (%.1f)" % (s.gold - g0))
+	# Baú Armadilha: ao ser destruído pelo herói explode e rende ouro; sozinho (expirar) não.
+	s = _sim(5, "dragon")
+	_tough(s)
+	var tc := _spawn(s, "trap_chest", 0.5)
+	g0 = s.gold
+	h0 = s.hero.hp
+	s.kill_unit(tc[0], K.Death.HERO)
+	check(h0 - s.hero.hp >= 150.0 and s.gold - g0 >= 15.0, "Baú Armadilha explode e rende ouro (%.0f, +%.0f)" % [h0 - s.hero.hp, s.gold - g0])
+	# Guarda do Tesouro: +5 de vida por ouro.
+	s = _sim(5, "dragon")
+	s.elixir = 20.0
+	s.hand[0] = _inst("treasure_guard")
+	s.gold = 0.0
+	s.play(0, s.hero.x + 8.0, s.hero.y)
+	var tg0 := 0.0
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == data.card("treasure_guard").idx:
+			tg0 = s.units.max_hp[j]
+	s.hand[0] = _inst("treasure_guard")
+	s.gold = 100.0
+	s.play(0, s.hero.x + 8.0, s.hero.y)
+	var tg1 := 0.0
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == data.card("treasure_guard").idx:
+			tg1 = maxf(tg1, s.units.max_hp[j])
+	check(absf(tg0 - 900.0) < 1.0 and absf(tg1 - 1400.0) < 1.0, "Guarda do Tesouro: 900 de vida, +500 com 100 de ouro (%.0f → %.0f)" % [tg0, tg1])
+	# Fornalha: o herói não seca, o fogo causa +30%, e ela some em 15 s.
+	s = _sim(5, "dragon")
+	var fu := _spawn(s, "furnace", 1.0)
+	s.hero.soaked_t = 10.0
+	_steps(s, 5.0)
+	check(s.hero.soaked_t > 9.5, "Fornalha: o herói não seca perto dela (%.1f)" % s.hero.soaked_t)
+	check(absf(CardsDragon.hero_damage_bonus(s, s.hero, K.TAG_FIRE, 0) - 0.3) < 0.001 and CardsDragon.hero_damage_bonus(s, s.hero, 0, 0) == 0.0, "Fornalha: +30% só no fogo")
+	_steps(s, 11.0)
+	check(s.units.alive[fu[0]] == 0, "Fornalha expira em 15 s")
+	check(CardsDragon.hero_damage_bonus(s, s.hero, K.TAG_FIRE, 0) == 0.0, "sem Fornalha, sem bônus")
+	# Chuva de Brasas: zona de fogo e o óleo no chão pega fogo.
+	s = _sim(5, "dragon")
+	_tough(s)
+	s.zones.append({"kind": "oil", "x": s.hero.x + 1.0, "y": s.hero.y, "r": 2.0, "t": 20.0, "dps": 0.0, "soaked": 5.0})
+	var z0 := s.zones.size()
+	s._apply(_inst("ember_rain"), s.hero.x, s.hero.y)
+	var fires := 0
+	for z in s.zones:
+		if z["kind"] == "fire":
+			fires += 1
+	check(s.zones.size() == z0 + 2 and fires == 2, "Chuva de Brasas: zona de fogo e o óleo pega fogo (%d zonas de fogo)" % fires)
+	# Erupção: encharcado explode; seco não sofre; o óleo vira fogo.
+	s = _sim(5, "dragon")
+	_tough(s)
+	h0 = s.hero.hp
+	s._apply(_inst("eruption"), s.hero.x, s.hero.y)
+	check(is_equal_approx(h0, s.hero.hp), "Erupção não machuca herói seco")
+	s.hero.soaked_t = 5.0
+	s._apply(_inst("eruption"), s.hero.x, s.hero.y)
+	check(h0 - s.hero.hp >= 400.0 and s.hero.soaked_t <= 0.0, "Erupção: encharcado leva 400+ de fogo (%.0f)" % (h0 - s.hero.hp))
+	var burning := false
+	for z in s.zones:
+		burning = burning or (z["kind"] == "fire" and float(z["t"]) > 9.0)
+	check(burning, "Erupção deixa o chão queimando por 10 s")
+	# Dragão Ancião: voa, 3000 de vida e solta a Chuva de Brasas ao entrar.
+	s = _sim(5, "dragon")
+	s.elixir = 20.0
+	s.hand[0] = _inst("elder_dragon")
+	var zz := s.zones.size()
+	s.play(0, s.hero.x + 8.0, s.hero.y)
+	var ed := -1
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == data.card("elder_dragon").idx:
+			ed = j
+	check(ed >= 0 and absf(s.units.max_hp[ed]) >= 3000.0 and (s.units.flags[ed] & K.F_FLY) != 0, "Dragão Ancião: voador de 3000 de vida")
+	check(s.zones.size() == zz + 1 and s.zones[-1]["kind"] == "fire", "Dragão Ancião solta a Chuva de Brasas ao entrar")
