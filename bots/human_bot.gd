@@ -311,7 +311,7 @@ func _human_target(sim: Sim, c: Sim.CardInst, spot: Dictionary) -> Vector2:
 				for hh in sim.all_heroes():
 					if hh.soaked_t > 0.3:
 						return _lead(sim, hh)
-			"own_unit", "ahead":
+			"own_unit", "ahead", "unit_key", "location":
 				return _target(sim, c, false)
 			"cluster":
 				return _cluster(sim, float(d.fx.get("radius", 3.0)))[0]

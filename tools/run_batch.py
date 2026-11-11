@@ -17,10 +17,11 @@ GODOT = os.environ.get("GODOT", r"C:\Users\gabri\AppData\Local\Microsoft\WinGet\
                        r"\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe")
 
 
-def run_chunk(bot, deck, seeds, out, data):
+def run_chunk(bot, deck, seeds, out, data, pool="full"):
     dk, _, ph = deck.partition("@")
     cmd = [GODOT, "--headless", "--path", ROOT, "res://headless/batch.tscn", "--",
-           f"--bot={bot}", f"--deck={dk}", f"--seeds={seeds}", f"--out={out}", f"--data={data}", f"--phase={ph or 1}"]
+           f"--bot={bot}", f"--deck={dk}", f"--seeds={seeds}", f"--out={out}", f"--data={data}", f"--phase={ph or 1}",
+           f"--pool={pool}"]
     p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     errs = [l for l in (p.stdout + p.stderr).splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l]
     if p.returncode != 0 or not os.path.exists(out):
@@ -47,6 +48,32 @@ def souls(r):
 def mean(xs):
     xs = [x for x in xs if x is not None]
     return sum(xs) / len(xs) if xs else None
+
+
+def per_min(r, key, a):
+    """Valor por minuto do ato `a` na run (stats[key][a] ÷ tempo no ato); None se a run não passou pelo ato."""
+    ta = r.get("time_act", [])
+    if a >= len(ta) or ta[a] < 1.0:
+        return None
+    return r[key][a] / ta[a] * 60.0
+
+
+def pace(rs):
+    """Métricas de ritmo da Etapa E: gasto e cartas por minuto por ato, custo máximo, mão travada, etapas por
+    disputa, andando × em disputa, embaralhadas e a razão gasto/min ato 3 ÷ ato 1 (meta >= 2)."""
+    sp = [mean([per_min(r, "spent_act", a) for r in rs]) for a in range(3)]
+    pl = [mean([per_min(r, "plays_act", a) for r in rs]) for a in range(3)]
+    sw = {k: mean([r.get("stages_won", {}).get(k, 0) for r in rs]) for k in ["0", "1", "2", "3"]}
+    road_t = [r.get("walk_s", 0.0) + r.get("contest_s", 0.0) for r in rs]
+    return {
+        "spent_min": sp, "plays_min": pl,
+        "spend_ratio": (sp[2] / sp[0]) if sp[0] and sp[2] else None,
+        "max_cost": mean([r.get("max_cost", 0) for r in rs]),
+        "stuck": mean([r.get("stuck_s", 0.0) / max(r["t_end"], 1.0) for r in rs]),
+        "stages": sw,
+        "contest_frac": mean([r.get("contest_s", 0.0) / t for r, t in zip(rs, road_t) if t > 0.0]),
+        "shuffles": mean([r.get("shuffles", 0) for r in rs]),
+    }
 
 
 def summarize(runs, goals):
@@ -78,6 +105,7 @@ def summarize(runs, goals):
             "gold": mean([r.get("gold_earned", 0.0) for r in rs]),
             "buys": mean([r.get("shop_buys", 0) for r in rs]),
             # Run em atos (09/11/2026): atos terminados, relíquias e disputas vencidas/perdidas por tipo.
+            "pace": pace(rs),
             "acts": mean([len(r.get("act_t", [])) for r in rs]),
             "relics": mean([len(r.get("relics", [])) for r in rs]),
             "contests": {ty: [sum(r.get("contests", {}).get(ty, [0, 0])[0] for r in rs) / len(rs),
@@ -178,6 +206,15 @@ def report_md(s, meta):
         cs = r.get("contests", {})
         L.append(f"| {r['bot']} | {r['deck']} | {num(r['game_s'], '{:.0f}')} | {num(r.get('acts'))} | {num(r.get('relics'))} | "
                  + " | ".join(f"{num(cs.get(t, [0, 0])[0])}/{num(cs.get(t, [0, 0])[1])}" for t in ["ritual", "shrine", "tavern", "bridge", "fountain"]) + " |")
+    L += ["", "## Ritmo (por ato: elixir gasto/min, cartas/min)", "",
+          "| bot | deck | gasto/min a1 | a2 | a3 | a3÷a1 | cartas/min a1 | a2 | a3 | maior custo | mão travada | "
+          "etapas 0/1/2/3 por run | em disputa | embaralhadas |",
+          "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for r in s["rows"]:
+        p = r["pace"]
+        L.append(f"| {r['bot']} | {r['deck']} | " + " | ".join(num(x) for x in p["spent_min"]) + f" | {num(p['spend_ratio'], '{:.2f}')} | "
+                 + " | ".join(num(x) for x in p["plays_min"]) + f" | {num(p['max_cost'])} | {pct(p['stuck'])} | "
+                 + "/".join(num(p["stages"][k]) for k in ["0", "1", "2", "3"]) + f" | {pct(p['contest_frac'])} | {num(p['shuffles'])} |")
     L += ["", "## Metas", "", "| meta | distância |", "|---|---|"]
     for k, v in s["score_parts"].items():
         L.append(f"| {k} | {v:.3f} |")
@@ -188,7 +225,7 @@ def report_md(s, meta):
     return "\n".join(L) + "\n"
 
 
-def run_all(bots, decks, runs, seed0=1, workers=None, data="res://data", out=None):
+def run_all(bots, decks, runs, seed0=1, workers=None, data="res://data", out=None, pool="full"):
     workers = workers or os.cpu_count() or 4
     out = out or os.path.join(ROOT, "reports", "tmp")
     os.makedirs(os.path.join(out, "parts"), exist_ok=True)
@@ -205,7 +242,7 @@ def run_all(bots, decks, runs, seed0=1, workers=None, data="res://data", out=Non
                 s = e + 1
     res_runs, errs = [], []
     with cf.ThreadPoolExecutor(max_workers=workers) as ex:
-        for res in ex.map(lambda j: run_chunk(*j, data), jobs):
+        for res in ex.map(lambda j: run_chunk(*j, data, pool), jobs):
             res_runs += res[0]
             errs += res[1]
     return res_runs, errs
@@ -220,17 +257,19 @@ def main():
     ap.add_argument("--workers", type=int, default=os.cpu_count() or 4)
     ap.add_argument("--data", default="res://data")
     ap.add_argument("--out", default="")
+    ap.add_argument("--pool", default="full", choices=["full", "start"],
+                    help="full = pool inteiro do vilão nas ofertas; start = só a coleção inicial (vilão + comuns)")
     a = ap.parse_args()
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     out = a.out or os.path.join(ROOT, "reports", stamp)
     os.makedirs(os.path.join(out, "parts"), exist_ok=True)
     t0 = time.time()
-    runs, errs = run_all(a.bots.split(","), a.decks.split(","), a.runs, a.seed0, a.workers, a.data, out)
+    runs, errs = run_all(a.bots.split(","), a.decks.split(","), a.runs, a.seed0, a.workers, a.data, out, a.pool)
     wall = time.time() - t0
     with open(os.path.join(ROOT, "data", "rules.json"), encoding="utf-8") as f:
         goals = json.load(f)["goals"]
     s = summarize(runs, goals)
-    meta = {"stamp": stamp, "runs": len(runs), "workers": a.workers, "wall_s": wall, "script_errors": errs[:20]}
+    meta = {"stamp": stamp, "pool": a.pool, "runs": len(runs), "workers": a.workers, "wall_s": wall, "script_errors": errs[:20]}
     with open(os.path.join(out, "runs.json"), "w", encoding="utf-8") as f:
         json.dump(runs, f)
     with open(os.path.join(out, "summary.json"), "w", encoding="utf-8") as f:

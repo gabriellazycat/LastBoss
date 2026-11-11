@@ -38,7 +38,7 @@ METRIC_KNOBS = {
     "arena_time": ("+time",),
     "deck_spread": ("deck",),
 }
-DECK_IDX = {"horde": 0, "ruin": 1, "treasure": 2}
+DECK_IDX = {"plague": 0, "dragon": 1, "lich": 2}   # posição em data/villains.json["villains"]
 
 
 def load(f):
@@ -74,7 +74,7 @@ def knob_id(f, path):
 
 def evaluate(args, tag):
     runs, errs = rb.run_all(args.bots.split(","), args.decks.split(","), args.runs, args.seed0,
-                            None, "res://data", os.path.join(ROOT, "reports", "tuner", tag))
+                            None, "res://data", os.path.join(ROOT, "reports", "tuner", tag), pool=args.pool)
     goals = load("rules.json")["goals"]
     s = rb.summarize(runs, goals)
     return s, runs, errs
@@ -114,16 +114,16 @@ def deck_candidates(s):
     hi = max(avg, key=avg.get)
     lo = min(avg, key=avg.get)
     out = []
-    b = load("boss_lorde.json")
+    b = load("villains.json")
     for step in (0.1, 0.2):
         for d, sign in ((hi, -1), (lo, 1)):
-            rules = b["decks"][DECK_IDX[d]]["rules"]
-            out.append(("boss_lorde.json", ["decks", DECK_IDX[d], "rules", "elixir_mult"], 1.0 + sign * step))
-            # Mais XP para o herói = deck mais fraco.
-            if "hero_xp_mult" in rules:
-                out.append(("boss_lorde.json", ["decks", DECK_IDX[d], "rules", "hero_xp_mult"], 1.0 - sign * step))
-            if "hero_passive_mult" in rules:
-                out.append(("boss_lorde.json", ["decks", DECK_IDX[d], "rules", "hero_passive_mult"], 1.0 - sign * step))
+            if d not in DECK_IDX:
+                continue
+            i = DECK_IDX[d]
+            rules = b["villains"][i]["rules"]
+            out.append(("villains.json", ["villains", i, "rules", "elixir_mult"], 1.0 + sign * step))
+            # Heróis mais fortes = vilão mais fraco.
+            out.append(("villains.json", ["villains", i, "rules", "hero_hp_mult"], 1.0 - sign * step))
     return out
 
 
@@ -150,7 +150,10 @@ def candidates(metric, sign, s=None):
 
 def apply(f, path, mult):
     obj = load(f)
-    old = get(obj, path)
+    try:
+        old = get(obj, path)
+    except KeyError:
+        old = 1.0   # regra opcional do vilão (ex.: elixir_mult): sem o campo vale 1
     new = old * mult
     if isinstance(old, int):
         new = int(round(new))
@@ -168,7 +171,8 @@ def main():
     ap.add_argument("--cycles", type=int, default=10)
     ap.add_argument("--runs", type=int, default=16)
     ap.add_argument("--bots", default="heuristic,random")
-    ap.add_argument("--decks", default="horde,ruin,treasure")
+    ap.add_argument("--decks", default="plague,dragon,lich")
+    ap.add_argument("--pool", default="full", help="full ou start (ver run_batch.py)")
     ap.add_argument("--seed0", type=int, default=1000)
     ap.add_argument("--no-commit", action="store_true")
     args = ap.parse_args()

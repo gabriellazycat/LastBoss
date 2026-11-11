@@ -220,6 +220,16 @@
   },
   {
    "id": "ruin_titan",
+   "ai": {
+    "value": [
+     {
+      "if": {
+       "contest_active": true
+      },
+      "add": 1.0
+     }
+    ]
+   },
    "category": "field",
    "type": "monster",
    "tags": [
