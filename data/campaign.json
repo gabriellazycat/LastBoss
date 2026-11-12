@@ -10,7 +10,7 @@
     "escudeiro",
     "escudeiro"
    ],
-   "hp_mult": 0.4,
+   "hp_mult": 0.135,
    "damage_mult": 0.55,
    "acts": 1,
    "deck": "plague",

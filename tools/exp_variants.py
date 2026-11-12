@@ -35,7 +35,7 @@ def main():
             for k in ks[:-1]:
                 if isinstance(cur, dict) and k in cur: cur = cur[k]
                 elif isinstance(cur, dict):
-                    for lk in ("villains", "phases"):
+                    for lk in ("villains", "phases", "cards"):
                         if lk in cur: cur = next(x for x in cur[lk] if str(x.get("id")) == k); break
                 else: cur = next(x for x in cur if str(x.get("id")) == k)
             cur[ks[-1]] = val

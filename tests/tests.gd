@@ -824,9 +824,9 @@ func t_contests() -> void:
 	p = s.road.locations[int(s.contest["li"])]["pos"]
 	check(str(s.contest["variant"]) == "cost3" and is_equal_approx(float(s.contest["marks"][0]), roundf(float(rm[0]) * 1.5)), "Ritual ato 2: variante de custo 3+ e metas ×1,5")
 	for k in 3:
-		var j := s.units.spawn(data.card("rat_horde"), p.x + 1.0, p.y, 0.0, 0.0, 0, 999)
+		var j := s.units.spawn(data.card("kobold_scavengers"), p.x + 1.0, p.y, 0.0, 0.0, 0, 999)
 		s.kill_unit(j, K.Death.HERO)
-	check(is_equal_approx(float(s.contest["progress"]), 0.0), "Ritual ato 2: morte de rato (custo 2) não conta")
+	check(is_equal_approx(float(s.contest["progress"]), 0.0), "Ritual ato 2: morte de monstro de custo 2 não conta")
 	# Santuário: monstro que luta no círculo; torre não conta.
 	s = _at_location("shrine")
 	p = s.road.locations[int(s.contest["li"])]["pos"]
