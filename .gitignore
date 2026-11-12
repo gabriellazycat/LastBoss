@@ -5,3 +5,4 @@ export/
 __pycache__/
 *.translation
 tools/art/out/
+.claude/

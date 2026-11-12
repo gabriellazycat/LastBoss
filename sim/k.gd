@@ -27,6 +27,7 @@ const F_BITTEN := 128     # Mímico já mordeu
 const F_DEFEND := 256     # invocada perto do chefe: defende
 const F_ABSORBED := 512
 const F_SNUBBED := 1024    # Mímico que o herói desistiu de alcançar (isca fora do alcance): não atrai mais
+const F_DEVOURED := 2048   # fera que devorou ratos (Devorar): bate mais forte até morrer; a tela marca
 
 # Modificadores de carta (bitmask na instância).
 const M_VETERAN := 1
@@ -52,4 +53,5 @@ enum Block { OK, NO_ELIXIR, WRONG_PHASE, CONDITION, BAD_TARGET, STACK_LIMIT, OFF
 # Eventos (para o visual): [tipo, x, y, valor, extra]
 enum Ev { DAMAGE_HERO, DAMAGE_UNIT, DEATH, SPAWN, EXPLOSION, SHOT, HERO_LEVEL, PLAYER_LEVEL, SHIELD_BREAK,
 	SPELL, SHRINE, CONTRACT, PART_DESTROYED, TELEPORT, ARENA, HEAL, CURSE, FEAR, SPIN, LOCATION, HERO_FALL,
-	CONTEST, ACT_END, ACT_START, RELIC, ABILITY, ABILITY_TELL }
+	CONTEST, ACT_END, ACT_START, RELIC, ABILITY, ABILITY_TELL,
+	HERO_SHOT }   # HERO_SHOT: [x, y do herói, x do alvo, (y do alvo*100 << 2) | tipo (0 flecha, 1 orbe)]

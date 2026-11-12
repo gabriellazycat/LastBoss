@@ -34,7 +34,7 @@ func _ready() -> void:
 			d = data.card("skeleton_archers")
 		var names: Array = c[2].map(func(m): return TranslationServer.translate("MOD_" + m))
 		var cost := d.cost_at(c[1]) - (1 if c[2].has("cheap") else 0)
-		cost = maxi(cost, 1)
+		cost = maxi(cost, 0)
 		var cell := HBoxContainer.new()
 		cell.add_theme_constant_override("separation", 8)
 		cell.add_child(UiKit.card(d, cost, names, "", 168.0, c[1]))

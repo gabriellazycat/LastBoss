@@ -1,0 +1,549 @@
+{
+ "cards": [
+  {
+   "id": "rat_brute",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "chaser",
+   "rarity": "common",
+   "cost": 1,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 90,
+   "dps": 6,
+   "attack_interval": 0.25,
+   "speed": 4.0,
+   "range": 1.0,
+   "fx": {
+    "peste": 1,
+    "peste_max": 15,
+    "peste_taken": 0.03,
+    "peste_secs": 8.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "owner": "plague",
+   "family": "pack"
+  },
+  {
+   "id": "infected_bite",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "",
+   "rarity": "common",
+   "cost": 1,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 6,
+   "fx": {
+    "duration": 6.0,
+    "radius": 6.0,
+    "extra": 1
+   },
+   "lvl": [
+    "duration"
+   ],
+   "model": "dark_fury",
+   "owner": "plague",
+   "n3": {
+    "extra": 2
+   },
+   "family": "pack",
+   "ai": {
+    "wait_for": {
+     "if": {
+      "own_near_hero": 4.0
+     }
+    }
+   }
+  },
+  {
+   "id": "bat_cloud",
+   "category": "field",
+   "type": "swarm",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "swarm",
+   "rarity": "common",
+   "cost": 3,
+   "count": 5,
+   "xp_parts": 5,
+   "hp": 30,
+   "dps": 5,
+   "attack_interval": 0.25,
+   "speed": 5.0,
+   "range": 0.8,
+   "fx": {},
+   "lvl": [
+    "count"
+   ],
+   "owner": "plague",
+   "fly": true,
+   "n3": {
+    "pierce": true
+   },
+   "family": "pack"
+  },
+  {
+   "id": "rat_trap",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "common",
+   "cost": 2,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 120,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "root": 1.5,
+    "rats": 4,
+    "trigger": 1.0
+   },
+   "lvl": [
+    "hp",
+    "root"
+   ],
+   "owner": "plague"
+  },
+  {
+   "id": "wolf_pack",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "chaser",
+   "rarity": "uncommon",
+   "cost": 4,
+   "count": 3,
+   "xp_parts": 3,
+   "hp": 150,
+   "dps": 14,
+   "attack_interval": 0.25,
+   "speed": 6.2,
+   "range": 1.2,
+   "fx": {
+    "beast": true,
+    "peste_dmg": 0.1
+   },
+   "lvl": [
+    "count"
+   ],
+   "owner": "plague",
+   "n3": {
+    "peste_dmg": 0.15
+   },
+   "ai": {
+    "keys": [
+     "beast"
+    ]
+   }
+  },
+  {
+   "id": "brood_mother",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "tank",
+   "rarity": "uncommon",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 600,
+   "dps": 8,
+   "attack_interval": 0.25,
+   "speed": 2.2,
+   "range": 1.2,
+   "fx": {
+    "spawn_unit": "rat",
+    "spawn_n": 2,
+    "spawn_interval": 4.0,
+    "death_spawn": "rat",
+    "death_spawn_n": 6
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "owner": "plague",
+   "family": "pack"
+  },
+  {
+   "id": "corrupt_piper",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "support",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 160,
+   "dps": 4,
+   "attack_interval": 0.25,
+   "speed": 3.0,
+   "range": 1.2,
+   "fx": {
+    "aura_radius": 6.0,
+    "atk_speed": 0.4
+   },
+   "lvl": [
+    "hp",
+    "atk_speed"
+   ],
+   "owner": "plague",
+   "family": "pack"
+  },
+  {
+   "id": "sewer_flood",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "pack",
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "uncommon",
+   "cost": 6,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 500,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 1,
+   "fx": {
+    "spawn": "rat",
+    "spawn_interval": 1.0,
+    "spawn_duration": 15.0
+   },
+   "lvl": [
+    "hp",
+    "spawn_duration"
+   ],
+   "owner": "plague",
+   "family": "pack",
+   "ai": {
+    "keys": [
+     "nest"
+    ]
+   }
+  },
+  {
+   "id": "war_boar",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "chaser",
+   "rarity": "uncommon",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 700,
+   "dps": 20,
+   "attack_interval": 0.25,
+   "speed": 5.0,
+   "range": 1.3,
+   "fx": {
+    "beast": true,
+    "push": 5.0,
+    "stun": 1.0,
+    "cd": 8.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "owner": "plague",
+   "n3": {
+    "stun": 1.5
+   },
+   "ai": {
+    "keys": [
+     "beast"
+    ]
+   }
+  },
+  {
+   "id": "hunt_instinct",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 2,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "duration": 8.0,
+    "speed": 0.6,
+    "steal": 0.2
+   },
+   "lvl": [
+    "duration"
+   ],
+   "model": "dark_fury",
+   "owner": "plague",
+   "n3": {
+    "steal": 0.3
+   },
+   "ai": {
+    "wait_for": {
+     "if": {
+      "unit_alive": "beast"
+     }
+    }
+   }
+  },
+  {
+   "id": "devour",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 0,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "returns": true,
+    "sacrifice": 3,
+    "heal": 200,
+    "dmg_bonus": 0.25
+   },
+   "lvl": [
+    "heal"
+   ],
+   "model": "dark_fury",
+   "owner": "plague",
+   "n3": {
+    "dmg_bonus": 0.4
+   },
+   "ai": {
+    "needs": {
+     "unit_alive": "beast",
+     "pack_min": 3
+    }
+   }
+  },
+  {
+   "id": "bubonic_plague",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 4,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "duration": 10.0,
+    "per_stack": 15
+   },
+   "lvl": [
+    "per_stack"
+   ],
+   "model": "dark_fury",
+   "owner": "plague",
+   "n3": {
+    "duration": 14.0
+   },
+   "ai": {
+    "wait_for": {
+     "if": {
+      "own_near_hero": 3.0
+     }
+    }
+   }
+  },
+  {
+   "id": "rat_tide",
+   "category": "field",
+   "type": "swarm",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "swarm",
+   "rarity": "rare",
+   "cost": 8,
+   "count": 30,
+   "xp_parts": 30,
+   "hp": 22,
+   "dps": 4,
+   "attack_interval": 0.25,
+   "speed": 5.6,
+   "range": 0.8,
+   "fx": {},
+   "lvl": [
+    "count"
+   ],
+   "model": "rat_horde",
+   "owner": "plague",
+   "family": "pack"
+  },
+  {
+   "id": "mother_nest",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 7,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "duration": 12.0,
+    "radius": 10.0
+   },
+   "lvl": [
+    "duration"
+   ],
+   "model": "dark_fury",
+   "owner": "plague",
+   "n3": {
+    "radius": 14.0
+   },
+   "family": "pack",
+   "ai": {
+    "aim": "unit_key",
+    "aim_key": "nest",
+    "needs": {
+     "unit_alive": "nest"
+    }
+   }
+  },
+  {
+   "id": "alpha_beast",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "chaser",
+   "rarity": "legendary",
+   "cost": 10,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 2500,
+   "dps": 80,
+   "attack_interval": 0.25,
+   "speed": 3.5,
+   "range": 1.6,
+   "fx": {
+    "beast": true,
+    "pack_bonus": 0.02,
+    "pack_cap": 3.0,
+    "peste_dmg": 0.05,
+    "rally_s": 6.0,
+    "rally_dmg": 0.5,
+    "rally_speed": 0.5
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "owner": "plague",
+   "n3": {
+    "peste_dmg": 0.1
+   },
+   "ops": [
+    {
+     "op": "buff",
+     "slot": "rally",
+     "duration": "rally_s",
+     "damage": "rally_dmg",
+     "speed": "rally_speed"
+    }
+   ],
+   "ai": {
+    "keys": [
+     "beast"
+    ]
+   }
+  },
+  {
+   "id": "endless_swarm",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "",
+   "rarity": "legendary",
+   "cost": 12,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "summon_n": 12,
+    "duration": 20.0
+   },
+   "lvl": [
+    "duration"
+   ],
+   "model": "dark_fury",
+   "owner": "plague",
+   "n3": {
+    "summon_n": 18
+   },
+   "family": "pack",
+   "ops": [
+    {
+     "op": "summon",
+     "unit": "rat",
+     "n": "summon_n",
+     "ring": 1.5
+    }
+   ],
+   "ai": {
+    "wait_for": {
+     "if": {
+      "own_near_hero": 4.0
+     }
+    }
+   }
+  }
+ ]
+}

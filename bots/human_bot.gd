@@ -19,12 +19,12 @@ extends PlayerBot
 ##  - disputas, combos, ofertas, rota e arena como o bot heurístico (o que ele faz bem fica).
 ##
 ## Robustez: toda jogada passa por `hands` (o Sim direto, ou a entrada real da janela no --humantest);
-## jogada recusada tenta outro ponto uma vez; carta presa na mão vira sacrifício; oferta que não aceita a
+## jogada recusada tenta outro ponto uma vez; mão parada com o elixir cheio joga a melhor carta que der; oferta que não aceita a
 ## escolha é pulada; bifurcação sem resposta segue o primeiro ramo. Os tropeços contam em `stats`.
 
 ## Executor das jogadas. Sem janela é o próprio Sim; no --humantest, o nó que move o mouse.
 var hands: Object = null
-var stats := {"plays": 0, "retries": 0, "refused": 0, "sacrifices": 0, "mistakes": 0, "lapses": 0, "waves": 0,
+var stats := {"plays": 0, "retries": 0, "refused": 0, "mistakes": 0, "lapses": 0, "waves": 0,
 	"stuck_dumps": 0, "offer_skips": 0, "route_fallbacks": 0}
 var _stuck_since := -1.0
 var _avoid := {}   # carta -> até quando não tentar de novo (a jogada falhou na interface; a pessoa desiste um pouco)
@@ -92,21 +92,12 @@ func _window(sim: Sim) -> bool:
 func _act(sim: Sim) -> bool:
 	if sim.hand.is_empty():
 		return false
-	# Carta morta (fora de fase, condição, limite): sacrifica na hora, como uma pessoa limpando a mão.
-	for i in sim.hand.size():
-		if sim.hand[i] == null:
-			continue
-		var b := sim.can_play(i)
-		if b == K.Block.WRONG_PHASE or b == K.Block.STACK_LIMIT:
-			if hands.sacrifice(i):
-				stats["sacrifices"] += 1
-				return true
 	var h := sim.hero
 	# Disputa à frente (Ponte, Fonte): guarda elixir até ela abrir.
 	var contest := _contest_ahead(sim)
 	var ctype := str(contest.get("type", ""))
 	var guard := {}
-	if ctype in ["bridge", "fountain"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)) * sim.elixir_max / 10.0:
+	if ctype in ["bridge", "fountain", "helper"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)) * sim.elixir_max / 10.0:
 		return false
 	if ctype in ["ritual", "tavern"]:
 		if Vector2(h.x, h.y).distance_to(contest["pos"]) <= 18.0 or contest["entered"]:
@@ -133,7 +124,9 @@ func _act(sim: Sim) -> bool:
 			best_v = v
 			best = i
 	if best < 0:
-		return _maybe_dump(sim, full)
+		best = _maybe_dump(sim, full)
+		if best < 0:
+			return false
 	_stuck_since = -1.0
 	var c: Sim.CardInst = sim.hand[best]
 	if sim.phase == K.Phase.ARENA and sim.elixir - sim.card_cost(c) < float(P.get("teleport_reserve", 2.0)) and sim.arena.tp_cd <= 0.0:
@@ -161,30 +154,29 @@ func _act(sim: Sim) -> bool:
 	return true
 
 
-## Nada para jogar há um tempo com o elixir cheio: troca a carta que menos vale por elixir.
-func _maybe_dump(sim: Sim, full: bool) -> bool:
+## Nada que valha jogar há um tempo com o elixir cheio: joga a carta jogável que mais vale mesmo assim (o
+## sacrifício da mão saiu em 11/11/2026; sem isto a mão travava). Devolve o índice, ou -1.
+func _maybe_dump(sim: Sim, full: bool) -> int:
 	if not full:
 		_stuck_since = -1.0
-		return false
+		return -1
 	if _stuck_since < 0.0:
 		_stuck_since = sim.t
-		return false
-	if sim.t - _stuck_since < float(P.get("dump_after", 3.0)) or not sim.sacrifice_ready():
-		return false
-	var worst := -1
-	var wv := INF
+		return -1
+	if sim.t - _stuck_since < float(P.get("dump_after", 3.0)):
+		return -1
+	var best := -1
+	var bv := -INF
 	for i in sim.hand.size():
-		if sim.hand[i] == null:
+		if sim.hand[i] == null or sim.can_play(i) != K.Block.OK:
 			continue
 		var v := _human_value(sim, sim.hand[i])
-		if v < wv:
-			wv = v
-			worst = i
-	if worst >= 0 and hands.sacrifice(worst):
+		if v > bv:
+			bv = v
+			best = i
+	if best >= 0:
 		stats["stuck_dumps"] += 1
-		_stuck_since = -1.0
-		return true
-	return false
+	return best
 
 
 ## Monstros seus brigando perto do herói da vez (até 4 m).
@@ -292,6 +284,8 @@ func _bolt_line(sim: Sim, fx: Dictionary) -> Array:
 
 ## Herói que os monstros devem caçar: na fase de grupo, o de pé com menos vida (até 12 m do da vez).
 func _focus(sim: Sim) -> SimHero:
+	if sim.helper != null:
+		return sim.helper   # Herói Ajudante em disputa: tudo nele
 	var t: SimHero = sim.hero
 	for f in sim.followers:
 		if Vector2(f.x - sim.hero.x, f.y - sim.hero.y).length() < 12.0 and f.hp < t.hp:
@@ -315,7 +309,7 @@ func _human_target(sim: Sim, c: Sim.CardInst, spot: Dictionary) -> Vector2:
 				return _target(sim, c, false)
 			"cluster":
 				return _cluster(sim, float(d.fx.get("radius", 3.0)))[0]
-		return _lead(sim, sim.hero)
+		return _lead(sim, sim.helper if sim.helper != null else sim.hero)
 	if sim.phase == K.Phase.ARENA:
 		return _smart_target(sim, c, {})
 	if spot.size() > 0:

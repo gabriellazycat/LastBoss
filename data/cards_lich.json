@@ -14,7 +14,7 @@
    "xp_parts": 1,
    "hp": 90,
    "dps": 9,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 4.2,
    "range": 1.0,
    "fx": {

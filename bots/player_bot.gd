@@ -44,10 +44,6 @@ func _random(sim: Sim) -> void:
 		return
 	var i := rng.randi_range(0, sim.hand.size() - 1)
 	var b := sim.can_play(i)
-	if b == K.Block.WRONG_PHASE or b == K.Block.CONDITION or b == K.Block.STACK_LIMIT:
-		if rng.randf() < float(P.get("sacrifice_unusable", 0.3)):
-			sim.sacrifice(i)
-		return
 	if b != K.Block.OK or rng.randf() > float(P.get("play_chance", 0.6)):
 		return
 	var c: Sim.CardInst = sim.hand[i]
@@ -69,19 +65,11 @@ func _greedy(sim: Sim) -> void:
 		var best_v := -1.0
 		for i in sim.hand.size():
 			var b := sim.can_play(i)
-			if b == K.Block.WRONG_PHASE or b == K.Block.STACK_LIMIT:
-				if rng.randf() < float(P.get("sacrifice_unusable", 1.0)):
-					sim.sacrifice(i)
-					return
-				continue
 			if b != K.Block.OK:
 				continue
 			var c: Sim.CardInst = sim.hand[i]
-			if not _needs_ok(sim, c):
-				if sim.elixir >= sim.elixir_max - 1.0 and sim.sacrifice_ready():
-					sim.sacrifice(i)
-					return
-				continue
+			if not _needs_ok(sim, c) and sim.elixir < sim.elixir_max - 1.0:
+				continue   # sem o sacrifício (11/11/2026), com o elixir cheio a carta fraca sai mesmo assim
 			var v := float(sim.card_cost(c)) + c.def.rarity * 0.5 + c.def.hp * c.def.count * 0.0001
 			if v > best_v:
 				best_v = v
@@ -321,7 +309,7 @@ func _smart(sim: Sim) -> void:
 	var ctype := str(contest.get("type", ""))
 	var guard := {}
 	# Ponte e Fonte (rodada 09/11/2026): dano ou controle numa janela curta; guarda elixir até ela abrir.
-	if ctype in ["bridge", "fountain"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)) * sim.elixir_max / 10.0:
+	if ctype in ["bridge", "fountain", "helper"] and not contest["entered"] and sim.elixir < float(P.get("contest_reserve", 6)) * sim.elixir_max / 10.0:
 		return
 	# Ritual (mortes no círculo), Santuário (monstros no círculo) e Taverna (casas): monstros no local.
 	if ctype in ["ritual", "tavern"]:
@@ -336,21 +324,13 @@ func _smart(sim: Sim) -> void:
 		var best_v := 0.0
 		for i in sim.hand.size():
 			var b := sim.can_play(i)
-			if b == K.Block.WRONG_PHASE or b == K.Block.STACK_LIMIT:
-				if sim.elixir < sim.elixir_max - 0.5 or sim.phase == K.Phase.ARENA:
-					sim.sacrifice(i)
-					return
-				continue
-			# Carta que este perfil nunca joga (cara demais) só trava a mão: vira elixir.
-			var hc: Sim.CardInst = sim.hand[i]
-			if hc.def.category == "field" and sim.card_cost(hc) > _max_cost(sim):
-				if sim.elixir < sim.elixir_max - 0.5 and sim.sacrifice_ready():
-					sim.sacrifice(i)
-					return
-				continue
 			if b != K.Block.OK:
 				continue
 			var v := _smart_value(sim, sim.hand[i])
+			# Sem o sacrifício (11/11/2026): carta cara demais para o perfil sai quando o elixir enche (senão
+			# trava a vaga da mão para sempre).
+			if v < 0.0 and sim.elixir >= sim.elixir_max - 0.5:
+				v = 0.01
 			if v > best_v:
 				best_v = v
 				best = i
@@ -370,7 +350,7 @@ func _smart(sim: Sim) -> void:
 func _smart_target(sim: Sim, c: Sim.CardInst, shrine: Dictionary) -> Vector2:
 	var d := c.def
 	var h := Vector2(sim.hero.x, sim.hero.y)
-	if d.category != "field" or d.is_spell:
+	if d.category != "field" or d.is_spell or sim.helper != null:
 		return _target(sim, c, false)
 	if sim.phase == K.Phase.ARENA:
 		# Entre o chefe e o herói (arena_front: 0 = colado no chefe, 1 = no herói), a pelo menos 3,5 m dele.
@@ -440,10 +420,22 @@ func _forward(sim: Sim) -> Vector2:
 	return Vector2(sim.hero.face_x, sim.hero.face_y)
 
 
+## Herói Ajudante em disputa (11/11/2026): monstros do lado de lá dele (longe do herói da vez) e feitiços nele.
+func _helper_aim(sim: Sim, c: Sim.CardInst) -> Vector2:
+	var hp := Vector2(sim.helper.x, sim.helper.y)
+	if c.def.is_spell:
+		return hp
+	var away := hp - Vector2(sim.hero.x, sim.hero.y)
+	away = away.normalized() if away.length() > 0.1 else Vector2(1, 0)
+	return hp + away.rotated(rng.randf_range(-1.0, 1.0)) * (2.5 if c.def.arch != K.Arch.SHOOTER else 5.0)
+
+
 func _target(sim: Sim, c: Sim.CardInst, randomize: bool) -> Vector2:
 	var h := Vector2(sim.hero.x, sim.hero.y)
 	var d := c.def
 	var ring: Dictionary = sim.R["ring"]
+	if d.category == "field" and sim.helper != null and not aim_of(d) in ["own_unit"]:
+		return _helper_aim(sim, c)
 	if d.category == "field":
 		if d.is_spell:
 			match aim_of(d):
@@ -535,6 +527,8 @@ func _loc_value(sim: Sim, ty: String) -> float:
 			return float(P.get("route_ritual", 4.0))
 		"shop":
 			return float(P.get("route_shop", 3.5)) + sim.gold / 150.0
+		"helper":
+			return float(P.get("route_helper", 4.5))   # 1 de 3 relíquias se matar
 		"fountain":
 			# Remover carta vale mais com o deck grande.
 			return 2.5 + maxf(0.0, sim.cards.size() - float(P.get("deck_target", 12))) * 0.5
@@ -613,7 +607,7 @@ func _opt_value(sim: Sim, o: Dictionary) -> float:
 	match str(o["kind"]):
 		"card":
 			var c: CardDef = sim.data.card(o["id"])
-			v = c.cost + c.rarity * 2.0
+			v = c.cost + c.rarity * 2.0 + (int(o.get("level", 1)) - 1) * 2.0   # carta já melhorada vale mais
 			if c.category == "lair":
 				v += float(P.get("lair_bonus", 0.0)) * 0.5
 			if c.category == "field" and sim.card_cost(_tmp_inst(c)) > _max_cost(sim):

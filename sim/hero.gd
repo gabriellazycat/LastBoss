@@ -12,6 +12,7 @@ const TGT_LOC := 2
 const TGT_PART := 3
 const TGT_ALTAR := 4
 const TGT_PILLAR := 5
+const HELPER_PIDX := 99    # índice do Herói Ajudante (chaves por herói, como a Peste, não colidem com a fila)
 const LEASH_MAX := 18.0   # a coleira estica até aqui enquanto persegue um alvo
 
 var sim: Sim
@@ -27,6 +28,13 @@ var radius := 0.6
 var level := 1
 var pidx := 0                   # índice deste herói na fila do grupo
 var follower := false           # fase de grupo: anda junto do herói da vez, levantado por quem chegou
+var is_helper := false          # Herói Ajudante (11/11/2026): parado no local, fora do grupo; some no fim da disputa
+# Bônus do Herói Ajudante quando o jogador falha (valem até o fim do ato; herói novo não herda).
+var ward := 0.0                 # escudo extra: absorve qualquer dano antes da vida
+var bonus_dmg := 0.0            # +dano (fração)
+var bonus_regen := 0.0          # +regeneração por s (fração da vida máx)
+var bonus_splash := 0.0         # golpe em área (raio em m; 0 = nenhum)
+var bonus_splash_mult := 0.0
 var xp := 0.0
 var hp := 0.0
 var base_hp := 0.0
@@ -123,6 +131,7 @@ func init_follower(s_: Sim, i: int, lead: SimHero, hp_frac: float) -> void:
 	hp = base_hp * hp_frac
 	upgrades = lead.upgrades.duplicate(true)
 	upgrade_order = lead.upgrade_order.duplicate()
+	_refresh_shield()
 	var a := float(i) * 2.4
 	x = lead.x + cos(a) * 1.6
 	y = lead.y + sin(a) * 1.6
@@ -133,12 +142,48 @@ func init_follower(s_: Sim, i: int, lead: SimHero, hp_frac: float) -> void:
 	seg = lead.seg
 
 
+## Herói Ajudante: outro herói da classe `cls`, parado em `p` com `hp_` de vida; bate como o herói da vez (nível `lv`).
+func init_helper(s_: Sim, cls: String, hp_: float, p: Vector2, lv: int, seg_: int) -> void:
+	setup(s_)
+	is_helper = true
+	pidx = HELPER_PIDX
+	H = sim.data.hero_of(cls, sim.phase_hp_mult, sim.phase_dmg_mult)
+	AI = H["ai"]
+	radius = H["radius"]
+	shield_max = H["shield"]["hp"]
+	shield_hp = shield_max
+	shield_cos = cos(deg_to_rad(float(H["shield"]["cone"]) * 0.5))
+	level = lv
+	base_hp = hp_
+	hp = hp_
+	x = p.x
+	y = p.y
+	ox = x
+	oy = y
+	hold = true
+	hold_x = p.x
+	hold_y = p.y
+	seg = seg_
+	s = sim.hero.s
+	s_max = sim.hero.s_max
+
+
+## Fim do ato: os bônus do Herói Ajudante acabam.
+func clear_act_bonus() -> void:
+	ward = 0.0
+	bonus_dmg = 0.0
+	bonus_regen = 0.0
+	bonus_splash = 0.0
+	bonus_splash_mult = 0.0
+
+
 ## Copia o estado de outro herói (o seguidor que vira o herói da vez quando a fila acaba).
 func take_over(f: SimHero) -> void:
 	next_hero(f.pidx)
 	hp = f.hp
 	upgrades = f.upgrades.duplicate(true)
 	upgrade_order = f.upgrade_order.duplicate()
+	_refresh_shield()
 	x = f.x
 	y = f.y
 	ox = x
@@ -163,7 +208,7 @@ func damage() -> float:
 	# golpe na arena mais forte. Chegar à arena sem ter derrubado heróis na estrada passa a custar caro.
 	if sim.phase == K.Phase.ARENA:
 		m *= 1.0 + float(sim.data.rules["arena"].get("queue_dmg", 0.0)) * maxi(0, sim.party_size() - 1 - sim.party_idx)
-	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * m
+	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * m * (1.0 + bonus_dmg)
 
 
 ## Herói seguinte da fila: um nível acima, vida e dano ×step, tudo cheio. Habilidades e dano recebido ficam (são do grupo).
@@ -178,6 +223,7 @@ func next_hero(i: int) -> void:
 	hp = base_hp
 	shield_hp = shield_max
 	shield_t = 0.0
+	_refresh_shield()   # o Escudo de Torre é do grupo: o herói seguinte (se tem escudo) o mantém
 	slow_t = 0.0
 	fear_t = 0.0
 	root_t = 0.0
@@ -193,6 +239,7 @@ func next_hero(i: int) -> void:
 	target = -1
 	target_kind = TGT_NONE
 	last_hit_t = -100.0
+	clear_act_bonus()
 
 
 func xp_needed() -> float:
@@ -231,7 +278,7 @@ func update(dt: float) -> void:
 		shield_t -= dt
 		if shield_t <= 0.0:
 			shield_hp = shield_max
-	var regen: float = H.get("regen", 0.0)
+	var regen: float = H.get("regen", 0.0) + bonus_regen
 	if regen > 0.0 and petrify_t <= 0.0 and hp > 0.0 and sim.overtime() <= 0.0:
 		hp = minf(max_hp(), hp + max_hp() * regen * dt)
 	if sim.tick % sim.ai_period == 0:
@@ -239,6 +286,12 @@ func update(dt: float) -> void:
 		_rebuild_danger()
 	_validate_target()
 	_move(dt)
+	if is_helper:
+		# Herói Ajudante: plantado no local (não anda, não é empurrado nem arrastado); só bate em quem chega perto.
+		x = hold_x
+		y = hold_y
+		_attack(dt)
+		return
 	if sim.phase == K.Phase.ROAD:
 		# O progresso só recua um pouco: senão a projeção escorrega para trás e a coleira o arrasta.
 		var pr := sim.road.project(Vector2(x, y), seg, s_max - float(sim.data.rules["road"]["max_backtrack"]))
@@ -298,7 +351,7 @@ func _move(dt: float) -> void:
 		return
 	if drink_t > 0.0 and fear_t <= 0.0 and kb_t <= 0.0:
 		return
-	var speed: float = H["speed"]
+	var speed: float = H["speed"] * sim.hero_speed_mult(self)   # Piche (relíquia)
 	if slow_t > 0.0:
 		var sl: float = sim.data.rules["status"]["slow"]
 		if has("steady_boots"):
@@ -450,6 +503,11 @@ func _attack(dt: float) -> void:
 	var dmg := damage()
 	if has("purifying_blade") and curses > 0:
 		curses = maxi(0, curses - int(upgrades["purifying_blade"]["remove"]))
+	# Herói à distância: sai um projétil da arma até o alvo (só visual; o dano é imediato).
+	var pk := str(H.get("projectile", ""))
+	if pk != "":
+		var tp := _target_pos()
+		sim.emit(K.Ev.HERO_SHOT, x, y, tp.x, (int(tp.y * 100.0) << 2) | (1 if pk == "orb" else 0))
 	match target_kind:
 		TGT_UNIT:
 			var tx := sim.units.px[target]
@@ -491,6 +549,10 @@ func _cleave(tx: float, ty: float, dmg: float) -> void:
 ## Mago: o golpe explode no alvo e atinge todos em volta.
 func _splash(tx: float, ty: float, dmg: float) -> void:
 	var r: float = H.get("splash", 0.0)
+	var sm := float(H.get("splash_mult", 0.7))
+	if bonus_splash > r:
+		r = bonus_splash
+		sm = bonus_splash_mult
 	if r <= 0.0:
 		return
 	var U := sim.units
@@ -498,7 +560,7 @@ func _splash(tx: float, ty: float, dmg: float) -> void:
 	for i in tmp.duplicate():
 		if i == target or U.alive[i] == 0 or (U.flags[i] & K.F_STONE):
 			continue
-		sim.hero_hits_unit(i, _unit_mult(i, dmg * float(H.get("splash_mult", 0.7)), false))
+		sim.hero_hits_unit(i, _unit_mult(i, dmg * sm, false))
 	sim.emit(K.Ev.EXPLOSION, tx, ty, r, 2)
 
 
@@ -679,6 +741,8 @@ func _choose_target() -> void:
 	var best_score := -INF
 	var arena := sim.phase == K.Phase.ARENA
 	var unit_r := 3.0 if arena else engage
+	if is_helper:
+		unit_r = minf(unit_r, float(H["attack_range"]) + 1.5)   # parado: só o que ele alcança
 	if push_t > 0.0 and not arena:
 		unit_r = minf(unit_r, 2.5)   # impaciência: só o que está colado nele
 	# Prorrogação longa (10/11/2026): depois de 2 min dela, o herói vai no chefe e só briga com o que está
@@ -714,6 +778,9 @@ func _choose_target() -> void:
 			continue
 		var th := U.dmg[i] / maxf(U.atk_int[i], 0.1)
 		var sc := th * 0.05 + (1.0 - U.hp[i] / U.max_hp[i]) + float(strat.get(sim.data.cards[di].id, 0.0)) - d * (0.12 if far_ok else 0.35)
+		# Santuário abençoado: o herói defende o círculo e vai primeiro em quem está dentro.
+		if sim.in_shrine_circle(U.px[i], U.py[i]):
+			sc += 3.0
 		if arena:
 			sc += 2.0
 		# Taverna em disputa: quem está atacando uma casa vira prioridade.
@@ -815,9 +882,18 @@ func apply_upgrade(id: String) -> void:
 	upgrades[id] = u["p"]
 	upgrade_order.append(id)
 	if id == "tower_shield":
-		shield_max *= float(u["p"]["hp_mult"])
-		shield_hp = shield_max
-		shield_cos = cos(deg_to_rad(float(u["p"]["cone"]) * 0.5))
+		_refresh_shield()
+
+
+## Escudo da classe; com o Escudo de Torre (habilidade do grupo), vida e cone maiores para quem tem escudo.
+func _refresh_shield() -> void:
+	shield_max = float(H["shield"]["hp"])
+	shield_cos = cos(deg_to_rad(float(H["shield"]["cone"]) * 0.5))
+	if has("tower_shield") and shield_max > 0.0:
+		var p: Dictionary = upgrades["tower_shield"]
+		shield_max *= float(p["hp_mult"])
+		shield_cos = cos(deg_to_rad(float(p["cone"]) * 0.5))
+	shield_hp = shield_max
 
 
 func level_up() -> void:
@@ -849,6 +925,14 @@ func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) 
 		sim.emit(K.Ev.SHIELD_BREAK, x, y, 0.0, 1)
 		sim.ability_fired("reflect_shield")
 		return 0.0
+	if ward > 0.0:
+		# Escudo do Herói Ajudante (Escudeiro): absorve qualquer dano antes do escudo frontal e da vida.
+		var wb := minf(ward, amount)
+		ward -= wb
+		amount -= wb
+		last_absorbed += wb
+		if amount <= 0.0:
+			return 0.0
 	var pierce := (kind & (DMG_PIERCE | DMG_AREA)) != 0 or (src_tags & K.TAG_SHADOW) != 0
 	if not pierce and shield_hp > 0.0:
 		var to := Vector2(sx - x, sy - y)
@@ -856,7 +940,7 @@ func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) 
 			to = to.normalized()
 			if to.x * face_x + to.y * face_y >= shield_cos:
 				var ab := minf(shield_hp, amount)
-				last_absorbed = ab
+				last_absorbed += ab
 				shield_hp -= ab
 				amount -= ab
 				if shield_hp <= 0.0:

@@ -18,7 +18,7 @@ const KEYWORDS := [
 	"shield", "pierce", "elixir", "sacrifice", "teleport", "altar",
 	"swarm", "monster", "spell", "structure", "route", "lair", "finisher", "plague", "beast",
 	"veteran", "cheap", "explosive", "cursed", "shadowy",
-	"shop", "tavern", "fountain", "ritual", "shrine", "bridge", "gold", "event",
+	"shop", "tavern", "fountain", "ritual", "shrine", "bridge", "gold", "event", "helper",
 ]
 
 static var inst: Tips
@@ -141,11 +141,17 @@ static func _kw_params() -> Dictionary:
 		"fountain_s": _num(L["fountain"]["drink_s"]), "fountain_dmg": _num(L["fountain"]["interrupt_damage"]),
 		"fountain_heal": _pct(L["fountain"]["heal"]),
 		"ritual_mult": _num(L["ritual"]["elixir_mult"]), "ritual_kills": _num(L["ritual"]["kills"]), "ritual_s": _num(L["ritual"]["window"]),
-		"shrine_s": _num(L["shrine"]["hold_s"]), "shrine_window": _num(L["shrine"]["window"]),
-		"bridge_atk": _pct(L["bridge"]["attack_speed"]), "bridge_s": _num(L["bridge"]["duration"]), "bridge_win": _num(L["bridge"]["win_damage"]),
+		"shrine_window": _num(L["shrine"]["window"]),
+		"helper_s": _num(L["helper"]["window"]), "helper_hp1": _num(L["helper"]["hp_act"][0]),
+		"helper_hp2": _num(L["helper"]["hp_act"][1]), "helper_hp3": _num(L["helper"]["hp_act"][2]),
+		"bridge_atk": _pct(L["bridge"]["attack_speed"]), "bridge_s": _num(L["bridge"]["duration"]), "bridge_window": _num(L["bridge"]["window"]),
+		"fountain_window": _num(L["fountain"]["window"]),
 		"tp_cd": _num(A["teleport_cooldown"]), "tp_cost": _num(A["teleport_cost"]), "altar_hp": _num(A["altar_hp"]),
-		"sac_cd": _num(R["sacrifice_cooldown"]), "sac_pct": _num(roundf(float(R["sacrifice_elixir_frac"]) * 100.0)),
 	}
+	# Marcos das barras (ato 1): fountain_m1..3, ritual_m1..3, shrine_m1..3, bridge_m1..3.
+	for ty in ["fountain", "ritual", "shrine", "bridge"]:
+		for k in 3:
+			p["%s_m%d" % [ty, k + 1]] = _num(L[ty]["marks"][k])
 	for mid in data.modifiers:
 		var mp: Dictionary = data.modifiers[mid].get("p", {})
 		for k in mp:

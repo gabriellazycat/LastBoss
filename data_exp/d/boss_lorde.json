@@ -1,0 +1,42 @@
+{
+ "id": "dark_lord",
+ "parts": [
+  {
+   "id": "left_arm",
+   "hp": 800,
+   "offset": [
+    -1.6,
+    0.0
+   ],
+   "radius": 0.9
+  },
+  {
+   "id": "right_arm",
+   "hp": 800,
+   "offset": [
+    1.6,
+    0.0
+   ],
+   "radius": 0.9
+  },
+  {
+   "id": "head",
+   "hp": 1500,
+   "offset": [
+    0.0,
+    -1.2
+   ],
+   "radius": 0.9
+  },
+  {
+   "id": "core",
+   "hp": 3000,
+   "offset": [
+    0.0,
+    0.4
+   ],
+   "radius": 0.9
+  }
+ ],
+ "right_arm_dps": 40
+}

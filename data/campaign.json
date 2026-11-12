@@ -46,9 +46,9 @@
    "hp_mult": 1.606,
    "unlock_villain": "lich",
    "villain_hp": {
-    "plague": 1.0,
-    "dragon": 1.184,
-    "lich": 0.884
+    "plague": 1.285,
+    "dragon": 1.1,
+    "lich": 1.6
    }
   },
   {
@@ -66,9 +66,9 @@
    "hp_mult": 1.492,
    "unlock_villain": "",
    "villain_hp": {
-    "plague": 1.111,
-    "dragon": 0.924,
-    "lich": 0.96
+    "plague": 1.6,
+    "dragon": 1.6,
+    "lich": 1.6
    },
    "reward_souls": 60,
    "rare_choice": true
@@ -89,9 +89,9 @@
    "hp_mult": 1.329,
    "unlock_villain": "",
    "villain_hp": {
-    "plague": 0.427,
-    "dragon": 1.443,
-    "lich": 1.474
+    "plague": 0.17,
+    "dragon": 1.2,
+    "lich": 1.3
    },
    "reward_souls": 60,
    "rare_choice": true

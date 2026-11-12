@@ -1,7 +1,7 @@
 class_name Sim
 extends RefCounted
 ## Simulação completa de uma run. Lógica pura, passo fixo, determinística pela semente.
-## Entrada só por comandos (play, sacrifice, choose, teleport); saída: estado + eventos + stats.
+## Entrada só por comandos (play, choose, teleport); saída: estado + eventos + stats.
 
 class CardInst:
 	var def: CardDef
@@ -9,6 +9,7 @@ class CardInst:
 	var first_mod := 0      # bit do primeiro modificador ganho (dono do papel da carta)
 	var uid := 0
 	var level := 1
+	var discount := 0       # desconto permanente desta cópia (relíquia Lima do Funileiro, quando já é Barata)
 
 	func has_mod(m: int) -> bool:
 		return (mods & m) != 0
@@ -21,12 +22,14 @@ var run_seed := 0
 var dt := 0.05
 var tick := 0
 var t := 0.0
+var soul_absorb_ready := 0.0   # instante em que "Absorver Almas" pode curar de novo
 var ai_period := 4
 var phase: int = K.Phase.ROAD
 var result: int = K.Result.NONE
 var units := SimUnits.new()
 var hero := SimHero.new()
 var followers: Array = []          # fase de grupo: heróis que andam junto do da vez
+var helper: SimHero = null         # Herói Ajudante em disputa (11/11/2026): parado no local, fora do grupo
 var revived: Array = []            # índices da fila já levantados uma vez
 var hit_hero: SimHero = null       # herói que a unidade da vez acerta (null = o da vez)
 var group_falls := 0
@@ -43,7 +46,7 @@ var elixir := 0.0
 var elixir_max := 10.0
 var hand: Array = []
 ## Pilha de compra (o nome antigo ficou): a mão compra do começo dela. Baralho com descarte (passo C2, 10/11/2026):
-## carta jogada ou sacrificada vai para `discard`; quando a compra acaba, o descarte é embaralhado e vira a compra.
+## carta jogada vai para `discard`; quando a compra acaba, o descarte é embaralhado e vira a compra.
 var queue: Array = []
 var discard: Array = []
 var benched: Array = []         # cartas de Rota fora do baralho durante a arena
@@ -55,7 +58,8 @@ var hand_size := 5
 ## Teto da mão (passo C4, 10/11/2026: 7). Mão base 5 para todos; cresce com relíquias e cartas Temporárias.
 const HAND_MAX := 7
 ## Teto do elixir máximo (C4): a escada por ato e o que o jogador constrói nunca passam disto.
-const ELIXIR_CAP := 20.0
+## Sem teto prático (11/11/2026): as relíquias de elixir empilham sem limite.
+const ELIXIR_CAP := 999.0
 var next_uid := 1
 var party_idx := 0                 # herói da fila (0 a size-1); o nível dele é party_idx + 1
 var campaign_phase := 1            # fase da campanha (data/campaign.json); 1 = a run clássica de 7 Escudeiros
@@ -101,7 +105,13 @@ var gold := 0.0                 # ouro da run (dano no herói e disputas vencida
 var shop_removes := 0           # remoções compradas na run (cada uma encarece a próxima)
 var route_wait := false         # o herói chegou a uma bifurcação sem ramo escolhido: o jogo espera a escolha
 var auto_route := false         # sem escolha, segue o primeiro ramo em vez de esperar (testes que não jogam a rota)
-var sac_elixir_t := -100.0      # último sacrifício que rendeu elixir
+var relic_max_gain := 0.0       # Marca da Vitória e Cofre Vivo: elixir máximo ganho na run (soma das duas)
+var victory_gain := 0.0         # parte da Marca da Vitória (teto contest_max_cap)
+var vault_gain := 0.0           # parte do Cofre Vivo (teto shop_max_cap)
+var vault_spent := 0.0          # ouro gasto na loja ainda não convertido pelo Cofre Vivo
+var gambit_hero := -1           # Abertura: herói (pidx) contra quem a 1ª carta grátis já saiu
+var phyl_hero := -1             # Filactério: herói (pidx) em que a volta já foi usada
+var slow_hero := -1             # Piche: herói (pidx) mais lento até cair (-1 = nenhum)
 var contract: Dictionary = {}
 var contract_next := 0.0
 var last_teleport_t := -100.0
@@ -110,7 +120,7 @@ var ritual_mult := 1.0
 ## kind: elixir_regen (+fração de ganho), monster_hp (+fração de vida ao entrar), hand (+cartas), elixir_max (+máximo),
 ## gold_mult (+fração do ouro ganho). Cópias somam, cada uma com o seu tempo.
 var temps: Array = []
-var act_elixir_base := 10.0     # elixir máximo da escada do ato atual
+var act_elixir_base := 10.0     # elixir máximo base (rules.elixir.max; a escada por ato saiu em 11/11/2026)
 ## Estado livre das cartas por dono (C6): cada arquivo de sim/cards/ guarda o que precisar aqui, numa chave
 ## própria (ex.: cstate["plague"]). Vai no salvamento (só tipos simples: números, textos, Array, Dictionary).
 var cstate: Dictionary = {}
@@ -152,14 +162,14 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	hero.setup(self)
 	hand_size = int(deck_rules.get("hand_size", R["hand_size"]))
 	elixir = float(deck_rules.get("elixir_start", R["elixir"]["start"]))
-	act_elixir_base = _act_elixir("max", float(R["elixir"]["max"]))
+	act_elixir_base = float(R["elixir"]["max"])
 	recalc_elixir_max()
 	dead_by_def.resize(d.cards.size())
 	stats = {"seed": run_seed, "deck": deck_id, "result": "none", "t_end": 0.0, "arena_t": -1.0,
 		"heroes_fallen": 0, "hero_level_arena": 0, "player_level_arena": 0, "hero_level": 1, "player_level": 1,
 		"waste_s": 0.0, "offered": {}, "picked": {}, "played": {}, "dmg_by_card": {}, "deck_final": [],
 		"upgrades": [], "shrines_won": 0, "shrines_lost": 0, "contracts_ok": 0, "contracts_fail": 0,
-		"parts_lost": 0, "kills": 0, "units_peak": 0, "teleports": 0, "sacrifices": 0, "shield_breaks": 0,
+		"parts_lost": 0, "kills": 0, "units_peak": 0, "teleports": 0, "shield_breaks": 0,
 		"route_len": 0.0, "hero_hp_arena": 0.0, "locs_visited": 0, "locs_won": 0, "locs_lost": 0,
 		"skipped": 0, "card_levels": 0, "gold_earned": 0.0, "gold_spent": 0, "shop_buys": 0, "route": {},
 		"act_t": [], "relics": [], "event_picks": {}, "contests": {},
@@ -286,7 +296,7 @@ func _meter() -> void:
 		stats["stuck_s"] += dt
 
 
-## Escada de poder por ato (rules.acts[].elixir); a arena usa a do último ato.
+## Valor por ato (rules.acts[].elixir; hoje só max_cost: a escada de máximo e regen saiu em 11/11/2026).
 func _act_elixir(k: String, fallback: float) -> float:
 	var A: Array = R.get("acts", [])
 	if A.is_empty():
@@ -294,14 +304,26 @@ func _act_elixir(k: String, fallback: float) -> float:
 	return float(A[mini(act, A.size() - 1)].get("elixir", {}).get(k, fallback))
 
 
-## Custo máximo de carta que as ofertas deste ato podem trazer (loja inclusive).
+## Custo máximo de carta que as ofertas deste ato podem trazer (loja inclusive). Sem a escada (11/11/2026) o
+## máximo pode ficar em 10 no ato 3: a oferta nunca traz carta mais cara que o elixir máximo permanente (sem o
+## sacrifício da mão, uma carta impagável travaria uma vaga da mão para sempre).
 func max_offer_cost() -> int:
-	return int(_act_elixir("max_cost", 99.0))
+	return mini(int(_act_elixir("max_cost", 99.0)), int(floorf(perm_elixir_max())))
 
 
-## Elixir máximo = escada do ato + relíquias + eventos do ato + Temporários, entre 3 e o teto.
+## Elixir máximo sem os efeitos passageiros (Temporários e eventos do ato).
+func perm_elixir_max() -> float:
+	return maxf(3.0, act_elixir_base + rv("elixir_max") + relic_max_gain)
+
+
+## Segundos por ponto de elixir agora, sem ritual, arena e Temporários (métrica e texto da relíquia).
+func seconds_per_elixir() -> float:
+	return float(R["elixir"]["seconds_per_point"]) / maxf(0.1, 1.0 + rv("elixir_regen"))
+
+
+## Elixir máximo = base + relíquias + eventos do ato + Temporários, no mínimo 3 (sem teto prático).
 func recalc_elixir_max() -> void:
-	elixir_max = clampf(act_elixir_base + rv("elixir_max") + act_elixir_bonus + temp_sum("elixir_max"), 3.0, ELIXIR_CAP)
+	elixir_max = clampf(act_elixir_base + rv("elixir_max") + relic_max_gain + act_elixir_bonus + temp_sum("elixir_max"), 3.0, ELIXIR_CAP)
 	elixir = minf(elixir, elixir_max)
 
 
@@ -343,7 +365,7 @@ func _temps() -> void:
 
 
 func _elixir() -> void:
-	var rate := 1.0 / _act_elixir("seconds_per_point", float(R["elixir"]["seconds_per_point"]))
+	var rate := 1.0 / seconds_per_elixir()
 	rate *= 1.0 + temp_sum("elixir_regen")
 	rate *= ritual_mult
 	rate *= float(deck_rules.get("elixir_mult", 1.0))
@@ -422,42 +444,82 @@ func _arrive(li: int) -> void:
 			loc["state"] = SimRoad.LocState.USED
 			_offer_event()
 			return
+		"helper":
+			_start_helper(li)
+			if rv("contest_enter_elixir") > 0.0:
+				elixir = minf(elixir_max, elixir + rv("contest_enter_elixir"))   # Tambor de Guerra: o ajudante também é briga
+			return
 	var P: Dictionary = L[ty]
-	contest = {"li": li, "type": ty, "stage": 0, "stages": 3, "won": 0, "t": 0.0, "progress": 0.0, "goal": 1.0,
+	contest = {"li": li, "type": ty, "marks": [1.0, 2.0, 3.0], "won": 0, "t": 0.0, "progress": 0.0, "goal": 3.0,
 		"window": 15.0, "variant": "", "r": float(loc["r"])}
 	if ty == "tavern":
 		var n := int(P["houses"])
 		var houses: Array = []
 		var a0 := rng.randf() * TAU
+		var hpa: Array = P.get("house_hp_act", [])
 		for k in n:
 			var a := a0 + TAU * k / n
-			var hp0 := float(P["house_hp"])
+			var hp0 := float(hpa[mini(act, hpa.size() - 1)]) if hpa.size() > 0 else float(P["house_hp"])
 			houses.append({"x": p.x + cos(a) * float(P["house_ring"]), "y": p.y + sin(a) * float(P["house_ring"]), "hp": hp0, "max_hp": hp0})
 		loc["houses"] = houses
 	hero.hold = true
 	hero.hold_x = p.x
 	hero.hold_y = p.y
+	if ty == "fountain":
+		_spawn_fountain_guard(li)
+	if rv("contest_enter_elixir") > 0.0:
+		elixir = minf(elixir_max, elixir + rv("contest_enter_elixir"))   # Tambor de Guerra
 	emit(K.Ev.CONTEST, p.x, p.y, li, 0)
-	_start_stage(0)
+	_start_bar()
 
 
-## Começa a etapa k da disputa (C5): meta e janela da etapa; a 3ª etapa muda por ato (rules.locations.*.stage3).
-func _start_stage(k: int) -> void:
+## Guarda da Fonte (12/11/2026): enquanto o herói bebe indefeso, um outro herói (classe sorteada, diferente da do
+## herói da vez) defende o local, parado ao lado dele, e bate nos monstros que chegam. Reaproveita o Herói Ajudante
+## (puxa os monstros como ele). Matar o guarda não conta para a meta do gole; só tira a ameaça. Some com a disputa.
+func _spawn_fountain_guard(li: int) -> void:
+	var G: Dictionary = R["locations"]["fountain"].get("guard", {})
+	if G.is_empty() or helper != null:
+		return
+	var pool: Array = []
+	for c in R["locations"]["helper"]["classes"]:
+		if str(c) != hero.cls():
+			pool.append(str(c))
+	var cls: String = pool[rng.randi_range(0, pool.size() - 1)]
+	var hpa: Array = G["hp_act"]
+	var hp0 := float(hpa[mini(act, hpa.size() - 1)])
+	var stand := helper_spot(li)
+	var p: Vector2 = road.locations[li]["pos"]
+	helper = SimHero.new()
+	helper.init_helper(self, cls, hp0, stand, party_idx + 1, hero.seg)
+	var fv := (p - stand).normalized()
+	helper.face_x = fv.x
+	helper.face_y = fv.y
+
+
+## Começa a barra da disputa (rodada 12/11/2026): uma janela e uma barra com 3 marcos (rules.locations.*.marks);
+## cada marco alcançado vale uma recompensa. Metas escalam por ato (act_mult) e a variante do ato (stage3[ato])
+## vale para a barra inteira.
+func _start_bar() -> void:
 	var ty: String = contest["type"]
 	var P: Dictionary = R["locations"][ty]
-	var sg: Dictionary = P["stages"][k]
 	var loc: Dictionary = road.locations[int(contest["li"])]
 	var p: Vector2 = loc["pos"]
-	var var_: String = ""
-	if k == 2:
-		var v3: Array = P.get("stage3", [])
-		var_ = str(v3[mini(act, v3.size() - 1)]) if v3.size() > 0 else ""
-	contest["stage"] = k
+	var v3: Array = P.get("stage3", [])
+	var var_: String = str(v3[mini(act, v3.size() - 1)]) if v3.size() > 0 else ""
+	var am: Array = P.get("act_mult", [])
+	var mult := float(am[mini(act, am.size() - 1)]) if am.size() > 0 else 1.0
+	if loc.get("hard", false):
+		mult *= float(P.get("hard_goal_mult", R["locations"].get("hard_goal_mult", 1.0)))
+	var marks: Array = []
+	for m in P["marks"]:
+		marks.append(maxf(1.0, roundf(float(m) * mult)))
+	contest["marks"] = marks
+	contest["goal"] = float(marks[marks.size() - 1])
 	contest["variant"] = var_
 	contest["t"] = 0.0
 	contest["progress"] = 0.0
-	contest["goal"] = float(sg["goal"])
-	contest["window"] = float(sg["window"]) * (1.0 + rv("contest_window"))
+	contest["won"] = 0
+	contest["window"] = float(P["window"]) * (1.0 + rv("contest_window"))
 	contest["r"] = float(loc["r"])
 	contest.erase("p2")
 	contest["inside"] = {}
@@ -469,7 +531,7 @@ func _start_stage(k: int) -> void:
 				var a := rng.randf() * TAU
 				contest["p2"] = p + Vector2(cos(a), sin(a)) * float(P["two_offset"])
 		"tavern":
-			# Meta cumulativa: 1, 2 e 3 casas no chão até o fim de cada etapa.
+			# Meta cumulativa: 1, 2 e 3 casas no chão.
 			contest["progress"] = float(_houses_down(loc))
 			if var_ == "guarded":
 				for h in loc["houses"]:
@@ -480,11 +542,9 @@ func _start_stage(k: int) -> void:
 			hero.tavern_t = contest["window"]
 		"fountain":
 			if var_ == "quick":
-				contest["window"] = float(P["quick_s"]) * (1.0 + rv("contest_window"))
-			elif var_ == "hard":
-				contest["goal"] = float(sg["goal"]) * float(P["hard_mult"])
+				contest["window"] = float(contest["window"]) * float(P["quick_mult"])
 			hero.drink_t = contest["window"]
-	emit(K.Ev.CONTEST, p.x, p.y, int(contest["li"]), 2 + k)
+	emit(K.Ev.CONTEST, p.x, p.y, int(contest["li"]), 2)
 
 
 func _houses_down(loc: Dictionary) -> int:
@@ -495,8 +555,20 @@ func _houses_down(loc: Dictionary) -> int:
 	return down
 
 
+## Quantos marcos a barra já passou (0 a 3).
+func marks_reached() -> int:
+	var n := 0
+	for m in contest["marks"]:
+		if float(contest["progress"]) + 0.0001 >= float(m):
+			n += 1
+	return n
+
+
 func _contest_tick() -> void:
 	if contest.is_empty():
+		return
+	if str(contest["type"]) == "helper":
+		_helper_tick()
 		return
 	var loc: Dictionary = road.locations[int(contest["li"])]
 	var p: Vector2 = loc["pos"]
@@ -527,19 +599,15 @@ func _contest_tick() -> void:
 			if var_ == "heal":
 				hero.heal(hero.max_hp() * float(P["heal_per_s"]) * dt)
 		"fountain":
-			# Medo, raiz, empurrão ou petrificação durante o gole interrompem na hora.
+			# Medo, raiz, empurrão ou petrificação durante o gole interrompem na hora: a barra enche inteira.
 			if hero.fear_t > 0.0 or hero.root_t > 0.0 or hero.kb_t > 0.0 or hero.petrify_t > 0.0:
 				contest["progress"] = contest["goal"]
-	var done := float(contest["progress"]) >= float(contest["goal"])
-	if done or float(contest["t"]) >= float(contest["window"]):
-		if done:
-			contest["won"] = int(contest["won"]) + 1
-		if int(contest["stage"]) + 1 < int(contest["stages"]):
-			hero.drink_t = 0.0
-			hero.tavern_t = 0.0
-			_start_stage(int(contest["stage"]) + 1)
-		else:
-			_resolve_contest(int(contest["won"]))
+	var n := marks_reached()
+	if n > int(contest["won"]):
+		contest["won"] = n
+		emit(K.Ev.CONTEST, p.x, p.y, int(contest["li"]), 1 + n)   # 2 = barra aberta; 3, 4 e 5 = marco 1, 2 e 3
+	if n >= contest["marks"].size() or float(contest["t"]) >= float(contest["window"]):
+		_resolve_contest(n)
 
 
 ## Ritual, 3ª etapa do ato 3: quem fica mais de `secs` s no círculo é jogado para fora pelo herói.
@@ -564,11 +632,12 @@ func _expel(p: Vector2, r: float, secs: float) -> void:
 			units.oy[i] = q.y
 
 
-## Fim da disputa (C5): recompensa por degraus. 0 etapas = nada; 1 ou 2 = ouro; as 3 = a recompensa cheia do local.
+## Fim da disputa (12/11/2026): 0 marcos = nada; cada marco alcançado = 1 recompensa do local (ver _offer_marks);
+## os 3 = local vencido (ouro, elixir, Marca da Vitória e, na disputa difícil, uma relíquia).
 func _resolve_contest(won_n: int) -> void:
 	var c := contest
 	contest = {}
-	var won := won_n >= int(c.get("stages", 3))
+	var won := won_n >= 3
 	var li := int(c["li"])
 	var loc: Dictionary = road.locations[li]
 	var ty: String = c["type"]
@@ -577,6 +646,7 @@ func _resolve_contest(won_n: int) -> void:
 	hero.hold = false
 	hero.drink_t = 0.0
 	hero.tavern_t = 0.0
+	_remove_helper()   # o guarda da Fonte vai embora com a disputa
 	var cs: Dictionary = stats["contests"]
 	var row: Array = cs.get(ty, [0, 0])
 	row[0 if won else 1] += 1
@@ -587,22 +657,136 @@ func _resolve_contest(won_n: int) -> void:
 	if ty == "shrine":
 		stats["shrines_won" if won else "shrines_lost"] += 1
 		emit(K.Ev.SHRINE, p.x, p.y, 1 if won else 0, li)
-	emit(K.Ev.CONTEST, p.x, p.y, li, 1 if won else -1)
+	emit(K.Ev.CONTEST, p.x, p.y, li, 1 if won else (-1 if won_n <= 0 else 10 + won_n))
+	if won_n <= 0:
+		stats["locs_lost"] += 1
+		if ty == "fountain":
+			hero.heal(hero.max_hp() * float(R["locations"]["fountain"]["heal"]))   # terminou o gole sem ser interrompido
+		return
+	_offer_marks(ty, won_n)
 	if not won:
 		stats["locs_lost"] += 1
-		var cg: Array = R["gold"].get("contest_gold", [0])
-		var g := float(cg[mini(won_n, cg.size() - 1)])
-		if g > 0.0:
-			_earn_gold(g)
-		elif ty == "fountain":
-			hero.heal(hero.max_hp() * float(R["locations"]["fountain"]["heal"]))
 		return
 	elixir = minf(elixir_max, elixir + rv("contest_elixir"))
-	_offer_location(ty, true)
+	if rv("contest_max_gain") > 0.0 and victory_gain < rv("contest_max_cap"):
+		var g := minf(rv("contest_max_gain"), rv("contest_max_cap") - victory_gain)
+		victory_gain += g
+		relic_max_gain += g
+		recalc_elixir_max()
+	# Disputa difícil (caveira no mapa): os 3 marcos dão também 1 de 3 relíquias, depois das recompensas.
+	if loc.get("hard", false):
+		stats["hard_won"] = int(stats.get("hard_won", 0)) + 1
+		offer_relic_choice("hard")
+
+
+# ---------------------------------------------------------------- Herói Ajudante (11/11/2026, rascunho D)
+
+## Chegou ao Herói Ajudante: outro herói (classe sorteada, diferente da do herói da vez) já está parado no
+## local. O herói da vez para e briga ali; o jogador tem `window` s para matar o ajudante.
+func _start_helper(li: int) -> void:
+	var loc: Dictionary = road.locations[li]
+	var P: Dictionary = R["locations"]["helper"]
+	var pool: Array = []
+	for c in P["classes"]:
+		if str(c) != hero.cls():
+			pool.append(str(c))
+	if pool.is_empty():
+		pool = P["classes"].duplicate()
+	var cls: String = pool[rng.randi_range(0, pool.size() - 1)]
+	var hpa: Array = P["hp_act"]
+	var hp0 := float(hpa[mini(act, hpa.size() - 1)])
+	var p: Vector2 = loc["pos"]
+	var stand := helper_spot(li)
+	helper = SimHero.new()
+	helper.init_helper(self, cls, hp0, stand, party_idx + 1, hero.seg)
+	var fv := (p - stand).normalized()
+	helper.face_x = fv.x
+	helper.face_y = fv.y
+	contest = {"li": li, "type": "helper", "marks": [hp0], "won": 0, "t": 0.0, "progress": 0.0, "goal": hp0,
+		"window": float(P["window"]) * (1.0 + rv("contest_window")), "variant": "", "r": float(loc["r"]), "cls": cls}
+	hero.hold = true
+	hero.hold_x = p.x
+	hero.hold_y = p.y
+	emit(K.Ev.CONTEST, p.x, p.y, li, 0)
+
+
+## Onde o Herói Ajudante fica: ao lado da estrada, a `stand_offset` m do centro do local (o lado do acampamento).
+func helper_spot(li: int) -> Vector2:
+	var loc: Dictionary = road.locations[li]
+	var pts: PackedVector2Array = road.legs[int(loc["leg"])]["pts"][0]
+	var dir := (pts[pts.size() - 1] - pts[maxi(0, pts.size() - 3)]).normalized()
+	if dir.length() < 0.1:
+		dir = Vector2(0, -1)
+	return Vector2(loc["pos"]) - dir.orthogonal() * float(R["locations"]["helper"].get("stand_offset", 5.5))
+
+
+func _helper_tick() -> void:
+	contest["t"] += dt
+	if helper == null:
+		_resolve_helper(false)   # run carregada sem o ajudante: conta como falha
+		return
+	contest["progress"] = clampf(float(contest["goal"]) - helper.hp, 0.0, float(contest["goal"]))
+	if helper.hp <= 0.0:
+		_resolve_helper(true)
+	elif float(contest["t"]) >= float(contest["window"]):
+		_resolve_helper(false)
+
+
+## Fim da disputa do ajudante. Matou: 1 de 3 relíquias. Falhou: bônus da classe ao herói da vez e ele vai embora.
+## Nunca conta como herói do grupo caído (sem queda, sem nível, sem cena).
+func _resolve_helper(won: bool) -> void:
+	var c := contest
+	contest = {}
+	var li := int(c["li"])
+	var loc: Dictionary = road.locations[li]
+	var p: Vector2 = loc["pos"]
+	loc["state"] = SimRoad.LocState.WON if won else SimRoad.LocState.USED
+	loc["helper_cls"] = str(c.get("cls", ""))
+	hero.hold = false
+	var cs: Dictionary = stats["contests"]
+	var row: Array = cs.get("helper", [0, 0])
+	row[0 if won else 1] += 1
+	cs["helper"] = row
+	stats["locs_won" if won else "locs_lost"] += 1
+	_remove_helper()
+	emit(K.Ev.CONTEST, p.x, p.y, li, 1 if won else -1)
+	if not won:
+		return   # 12/11/2026: sem bônus de classe; o ajudante só dá algo se você o matar
+	elixir = minf(elixir_max, elixir + rv("contest_elixir"))
+	var n0 := offers.size()
+	offer_relic_choice("helper")
+	if offers.size() > n0:
+		offers[-1]["from"] = "helper"
+
+
+func _remove_helper() -> void:
+	if helper == null:
+		return
+	if cstate.has("plague") and cstate["plague"].has("peste"):
+		cstate["plague"]["peste"].erase(str(helper.pidx))
+	if hit_hero == helper:
+		hit_hero = null
+	helper = null
+
+
+## Santuário em disputa: o herói está abençoado (não leva dano) e bate mais forte em quem está no círculo.
+func hero_blessed() -> bool:
+	return not contest.is_empty() and str(contest.get("type", "")) == "shrine"
+
+
+## O ponto (x, y) está dentro de um círculo do Santuário em disputa.
+func in_shrine_circle(x: float, y: float) -> bool:
+	if not hero_blessed() or not contest.has("li"):
+		return false
+	var r := float(contest["r"])
+	var p: Vector2 = road.locations[int(contest["li"])]["pos"]
+	if Vector2(x, y).distance_to(p) <= r:
+		return true
+	return contest.has("p2") and Vector2(x, y).distance_to(contest["p2"]) <= r
 
 
 func _burn() -> void:
-	for f in followers:
+	for f in (followers + [helper] if helper else followers):
 		if f.burn_t > 0.0:
 			f.burn_t -= dt
 			hit_hero = f
@@ -651,7 +835,7 @@ func house_pos(k: int) -> Vector2:
 
 # ================================================================ atos
 
-## O herói chegou ao fim do ato: escolha de relíquia e, depois dela, o próximo ato (ou a arena).
+## O herói chegou ao fim do ato: uma carta (3 opções, mais chance de rara e de já melhorada), a relíquia e, depois delas, o próximo ato (ou a arena).
 func _end_act() -> void:
 	act_pending = true
 	route_wait = false
@@ -668,7 +852,8 @@ func _end_act() -> void:
 			emit(K.Ev.CONTRACT, hero.x, hero.y, -1, 0)
 			contract = {}
 	emit(K.Ev.ACT_END, hero.x, hero.y, act, 0)
-	_offer_relics()
+	_offer_act_card()
+	offer_relic_choice("act")
 
 
 func _next_act() -> void:
@@ -680,8 +865,10 @@ func _next_act() -> void:
 		return
 	act += 1
 	act_elixir_bonus = 0.0
-	act_elixir_base = _act_elixir("max", act_elixir_base)
+	hero.clear_act_bonus()   # bônus do Herói Ajudante valem só o ato
 	recalc_elixir_max()
+	if rv("act_gold") > 0.0:
+		_earn_gold(rv("act_gold"))   # Tesouro de Ato
 	stats["route_len"] = float(stats.get("route_len", 0.0)) + road.length()
 	road = SimRoad.new()
 	road.generate(rng, R, _act_cfg(act))
@@ -715,8 +902,10 @@ func rebuild_rfx() -> void:
 			rfx[k] = float(rfx.get(k, 0.0)) + float(r["fx"][k])
 
 
+## Ganha a relíquia. Relíquias empilham (11/11/2026): a mesma pode vir de novo e os efeitos somam, menos as
+## marcadas "unique" em data/relics.json (efeitos que não fazem sentido em dobro). Efeitos "ao pegar" rodam aqui.
 func gain_relic(id: String) -> void:
-	if relics.has(id) or not data.relics.has(id):
+	if not data.relics.has(id) or (relics.has(id) and data.relics[id].get("unique", false)):
 		return
 	relics.append(id)
 	stats["relics"].append(id)
@@ -725,13 +914,60 @@ func gain_relic(id: String) -> void:
 	rebuild_rfx()
 	recalc_elixir_max()
 	_refill_hand()
+	_relic_pickup(fx)
 	emit(K.Ev.RELIC, hero.x, hero.y, data.relic_ids.find(id), 0)
+
+
+## Efeitos de uma vez, na hora em que a relíquia é pega (Martelo da Forja, Lima do Funileiro, Dízimo de
+## Sangue, Piche, Tinta de Carimbo).
+func _relic_pickup(fx: Dictionary) -> void:
+	var mx := int(R["card_levels"]["max"])
+	for k in int(fx.get("pickup_upgrade", 0)):
+		var cand: Array = cards.filter(func(ci): return ci.level < mx)
+		if cand.is_empty():
+			break
+		cand[rng.randi_range(0, cand.size() - 1)].level += 1
+	var picked: Array = []
+	for k in int(fx.get("pickup_discount", 0)):
+		# Nunca uma carta de custo 0. Usa o modificador Barata quando a carta ainda não tem e cai de custo com
+		# ele (custo 2+); senão, desconto permanente de 1 na cópia.
+		var cand: Array = cards.filter(func(ci): return not picked.has(ci) and ci.def.cost_at(ci.level) - ci.discount > 0)
+		if cand.is_empty():
+			break
+		var ci: CardInst = cand[rng.randi_range(0, cand.size() - 1)]
+		picked.append(ci)
+		if not ci.has_mod(K.M_CHEAP) and ci.def.cost_at(ci.level) >= 1:
+			if ci.mods == 0:
+				ci.first_mod = K.M_CHEAP
+			ci.mods |= K.M_CHEAP
+		else:
+			ci.discount += 1
+	if float(fx.get("pickup_hero_dmg", 0.0)) > 0.0 and phase != K.Phase.OVER:
+		hero.hp = maxf(1.0, hero.hp - hero.max_hp() * float(fx["pickup_hero_dmg"]))
+		emit(K.Ev.DAMAGE_HERO, hero.x, hero.y, hero.max_hp() * float(fx["pickup_hero_dmg"]), 0)
+	if float(fx.get("hero_slow", 0.0)) > 0.0:
+		slow_hero = hero.pidx
+	var ex: Array = []
+	for k in int(fx.get("pickup_mods", 0)):
+		var m := _mod_option(ex)
+		if m.is_empty():
+			break
+		ex.append(str(m["uid"]) + str(m["mod"]))
+		_apply_option(m)
+
+
+## Piche: o herói marcado anda mais devagar até cair (o seguinte vem normal).
+func hero_speed_mult(h: SimHero) -> float:
+	if slow_hero >= 0 and h.pidx == slow_hero:
+		return maxf(0.1, 1.0 - rv("hero_slow"))
+	return 1.0
 
 
 func _relic_pool() -> Array:
 	var pool: Array = []
 	for id in data.relic_ids:
-		if not relics.has(id) and _owner_ok(data.relics[id]):
+		var r: Dictionary = data.relics[id]
+		if _owner_ok(r) and float(r.get("weight", 1.0)) > 0.0 and not (relics.has(id) and r.get("unique", false)):
 			pool.append(id)
 	return pool
 
@@ -742,10 +978,32 @@ func _owner_ok(x: Dictionary) -> bool:
 	return o == "common" or o == deck_id
 
 
-func _offer_relics() -> void:
+## Sorteio de uma relíquia do pool pelo peso (data/relics.json "weight", padrão 1).
+func _pick_relic(pool: Array) -> String:
+	var tot := 0.0
+	for id in pool:
+		tot += float(data.relics[id].get("weight", 1.0))
+	var r := rng.randf() * tot
+	for id in pool:
+		r -= float(data.relics[id].get("weight", 1.0))
+		if r <= 0.0:
+			return id
+	return pool[pool.size() - 1]
+
+
+## Oferta de 1 entre N relíquias (fim de ato, disputa difícil, herói ajudante...). `source` só vai para a
+## oferta e as métricas (stats.relic_src). Ponto de entrada para outras fontes de relíquia.
+func offer_relic_choice(source := "relic") -> void:
+	var src: Dictionary = stats.get("relic_src", {})
+	src[source] = int(src.get(source, 0)) + 1
+	stats["relic_src"] = src
+	_offer_relics(source)
+
+
+func _offer_relics(source := "act") -> void:
 	var pool := _relic_pool()
 	var opts: Array = []
-	var want := int(R.get("relics", {}).get("options", 3))
+	var want := int(R.get("relics", {}).get("options", 3)) + int(rv("relic_options"))
 	# Raridade única por oferta (10/11/2026): a raridade vem de uma relíquia sorteada do que resta; se ela não
 	# tem opções suficientes, a oferta inteira vai para a raridade com mais opções (a mais próxima no empate).
 	if pool.size() > 0:
@@ -755,7 +1013,7 @@ func _offer_relics() -> void:
 			if not by.has(rr):
 				by[rr] = []
 			by[rr].append(id)
-		var r0 := K.RARITIES.find(str(data.relics[pool[rng.randi_range(0, pool.size() - 1)]].get("rarity", "common")))
+		var r0 := K.RARITIES.find(str(data.relics[_pick_relic(pool)].get("rarity", "common")))
 		var best: int = r0
 		if by[r0].size() < want:
 			for dr in [-1, 1, -2, 2, -3, 3]:
@@ -766,17 +1024,20 @@ func _offer_relics() -> void:
 	for k in want:
 		if pool.is_empty():
 			break
-		var id: String = pool[rng.randi_range(0, pool.size() - 1)]
+		var id := _pick_relic(pool)
 		pool.erase(id)
 		opts.append({"kind": "relic", "id": id})
-	_push_offer("relic", opts, {"act": act})
+	_push_offer("relic", opts, {"act": act, "relic_src": source})
 
 
 ## Uma relíquia sorteada direto (eventos de texto).
 func random_relic() -> void:
 	var pool := _relic_pool()
 	if pool.size() > 0:
-		gain_relic(pool[rng.randi_range(0, pool.size() - 1)])
+		var src: Dictionary = stats.get("relic_src", {})
+		src["event"] = int(src.get("event", 0)) + 1
+		stats["relic_src"] = src
+		gain_relic(_pick_relic(pool))
 
 
 func teleport_cost() -> float:
@@ -836,6 +1097,9 @@ func enter_arena() -> void:
 	stats["arena_t"] = t
 	stats["hero_level_arena"] = hero.level
 	stats["player_level_arena"] = player_level
+	# Métrica da calibração de 11/11/2026: poder de elixir ao fim do ato 3 (meta 18 de máximo e 1,5 s por ponto).
+	stats["elixir_max_arena"] = perm_elixir_max()
+	stats["spp_arena"] = seconds_per_elixir()
 	stats["route_len"] = float(stats.get("route_len", 0.0)) + road.length()
 	var A: Dictionary = R["arena"]
 	var dir := road.lair_dir
@@ -1019,9 +1283,14 @@ func splash_mult(k: int) -> float:
 	return 1.0 if k == 0 else float(R.get("group_spell_splash", 0.5))
 
 
+## Mais de um herói em campo (fase de grupo ou Herói Ajudante): feitiços de "o mais perto" escolhem o alvo.
+func multi_heroes() -> bool:
+	return group_mode() or helper != null
+
+
 ## Todos os heróis de pé (o da vez primeiro).
 func all_heroes() -> Array:
-	return [hero] + followers
+	return [hero] + followers + ([helper] if helper else [])
 
 
 func _finish(r: int) -> void:
@@ -1048,6 +1317,8 @@ func _finish(r: int) -> void:
 # ================================================================ dano e mortes
 
 func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card_id: String) -> float:
+	if hero_blessed():
+		return 0.0   # herói abençoado no Santuário: sem dano (a graça é o herói defender, não ficar apanhando)
 	if tags & K.TAG_FIRE:
 		amount *= 1.0 + hoard_fire()
 	var hh0: SimHero = hit_hero if hit_hero else hero
@@ -1063,6 +1334,8 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 		return 0.0
 	if real > 0.0:
 		emit(K.Ev.DAMAGE_HERO, hh.x, hh.y, real, tags)
+	if hh == helper:
+		return real   # Herói Ajudante: o dano só conta para a disputa (sem ouro, contrato nem estatística de carta)
 	if contest.size() > 0 and contest["type"] in ["bridge", "fountain"]:
 		var pm := float(R["locations"]["bridge"]["shield_mult"]) if contest.get("variant", "") == "shield" else 1.0
 		contest["progress"] += real * pm
@@ -1107,11 +1380,17 @@ func unit_hits_hero(i: int) -> void:
 		emit(K.Ev.SHOT, units.px[i], units.py[i], hero.x, int(hero.y * 100.0))
 	if c.has_n3(lv, "pierce"):
 		kind |= SimHero.DMG_PIERCE
+	# Golpe no Herói Ajudante: empurrão, fogo e maldição vão nele, não no herói da vez.
+	var on_helper := helper != null and hit_hero == helper
 	if c.has_n3(lv, "burn_dps"):
 		tg |= K.TAG_FIRE
-		burn_t = float(c.n3["burn_s"])
-		burn_dps = float(c.n3["burn_dps"])
-		burn_src = "skeleton_archers"
+		if on_helper:
+			helper.burn_t = float(c.n3["burn_s"])
+			helper.burn_dps = float(c.n3["burn_dps"])
+		else:
+			burn_t = float(c.n3["burn_s"])
+			burn_dps = float(c.n3["burn_dps"])
+			burn_src = "skeleton_archers"
 	var src := str(card_of_uid.get(units.uid[i], c.id))
 	amount *= CardsCommon.unit_hit_mult(self, i) * CardsPlague.unit_hit_mult(self, i) * CardsDragon.unit_hit_mult(self, i) * CardsLich.unit_hit_mult(self, i)
 	var real := damage_hero(amount, units.px[i], units.py[i], tg, kind, src)
@@ -1125,12 +1404,13 @@ func unit_hits_hero(i: int) -> void:
 		hero.note("swarm", real)
 	if units.max_hp[i] >= float(data.upgrades["heroic_strike"]["p"]["big_hp"]):
 		hero.note("big", real)
+	var hk: SimHero = helper if on_helper else hero
 	if di == units.d_ogre:
-		hero.knockback(units.px[i], units.py[i], float(c.fx.get("knockback", 4.0)))
+		hk.knockback(units.px[i], units.py[i], float(c.fx.get("knockback", 4.0)))
 		if c.has_n3(lv, "root"):
-			hero.root_t = maxf(hero.root_t, float(c.n3["root"]) * cc_mult())
+			hk.root_t = maxf(hk.root_t, float(c.n3["root"]) * cc_mult())
 	if (units.flags[i] & K.F_CURSED) and units.curse_t[i] <= 0.0:
-		hero.add_curse(1)
+		hk.add_curse(1)
 		units.curse_t[i] = R["curse"]["cursed_mod_cooldown"]
 
 
@@ -1138,6 +1418,8 @@ func hero_hits_unit(i: int, dmg: float) -> void:
 	if units.alive[i] == 0:
 		return
 	dmg *= CardsCommon.hero_out_mult(self) * CardsPlague.hero_out_mult(self) * CardsDragon.hero_out_mult(self) * CardsLich.hero_out_mult(self)
+	if hero_blessed() and in_shrine_circle(units.px[i], units.py[i]):
+		dmg *= 1.0 + float(R["locations"]["shrine"]["blessed_dmg"])
 	if units.flags[i] & K.F_STONE:
 		# Gárgula N3: em pedra, devolve parte do golpe.
 		var gc: CardDef = data.cards[units.def[i]]
@@ -1169,8 +1451,10 @@ func kill_unit(i: int, cause: int) -> void:
 			stats["kills"] += 1
 		if not (f & K.F_NO_XP):
 			hero_gain_xp(units.xp[i])
-		if hero.has("soul_absorb"):
-			hero.heal(hero.max_hp() * float(hero.upgrades["soul_absorb"]["heal"]))
+		if hero.has("soul_absorb") and t >= soul_absorb_ready:
+			var SA: Dictionary = hero.upgrades["soul_absorb"]
+			hero.heal(hero.max_hp() * float(SA["heal"]))
+			soul_absorb_ready = t + float(SA.get("cd", 2.0))   # recarga: sem ela o enxame torna o herói imortal
 		if not (f & K.F_REVIVED) and c.id != "spectre":
 			dead_by_def[di] += 1
 		_death_in_contest(x, y, c, f)
@@ -1207,7 +1491,7 @@ func kill_unit(i: int, cause: int) -> void:
 				var a := TAU * k / float(c.fx["death_spawn_n"])
 				spawn_child(sd, x + cos(a) * 1.0, y + sin(a) * 1.0, i)
 		if c.arch != K.Arch.STRUCTURE and not (f & K.F_REVIVED):
-			if not _golem_absorb(i, x, y):
+			if not _golem_absorb(i, x, y) and not _relic_revive(i, x, y, c):
 				_totem_revive(i, x, y)
 	# Gatilho "ao morrer" declarado em dados (data/cards.json "on_death"; docs/CARD_FX.md).
 	if not c.on_death.is_empty() and (cause == K.Death.HERO or cause == K.Death.SELF):
@@ -1277,6 +1561,26 @@ func _golem_absorb(i: int, x: float, y: float) -> bool:
 				units.max_hp[j] = minf(cap, units.max_hp[j] + float(fx["absorb_hp"]))
 				units.hp[j] = minf(units.max_hp[j], units.hp[j] + float(fx["absorb_hp"]))
 				return true
+	return false
+
+
+## Relíquias de volta (11/11/2026). Filactério: o 1º monstro seu morto pelo herói da vez volta com a vida cheia
+## (uma vez por herói). Chamado da Cova: chance de voltar como Esqueleto (só vida e dano; nunca volta de novo).
+## Quem volta ganha F_REVIVED e não volta outra vez. Devolve true se voltou.
+func _relic_revive(i: int, x: float, y: float, c: CardDef) -> bool:
+	if rv("revive_once") > 0.0 and phyl_hero != hero.pidx:
+		phyl_hero = hero.pidx
+		var j := units.spawn(c, x, y, 0.0, 0.0, K.F_NO_XP | K.F_REVIVED, units.uid[i], 1.0)
+		if j >= 0:
+			units.lvl[j] = units.lvl[i]
+			units.max_hp[j] = units.max_hp[i]
+			units.hp[j] = units.max_hp[i]
+			units.dmg[j] = units.dmg[i]
+			return true
+	if rv("skeleton_return") > 0.0 and c.id != "skeleton" and rng.randf() < rv("skeleton_return"):
+		units.spawn(data.card("skeleton"), x, y, 0.0, 0.0, K.F_NO_XP | K.F_REVIVED, units.uid[i], _forge())
+		stats["skeletons_back"] = int(stats.get("skeletons_back", 0)) + 1
+		return true
 	return false
 
 
@@ -1365,6 +1669,8 @@ func hero_gain_xp(_v: float) -> void:
 func _hero_fell() -> void:
 	var fell := party_idx + 1
 	stats["heroes_fallen"] = fell
+	if hero.pidx == slow_hero:
+		slow_hero = -1   # Piche: vale até o herói cair
 	var bless: float = hero.H.get("bless_next", 0.0)
 	if bless > 0.0:
 		# Clériga: a bênção dela fica para o próximo herói.
@@ -1382,6 +1688,7 @@ func _hero_fell() -> void:
 		road.locations[int(contest["li"])]["state"] = SimRoad.LocState.USED
 		stats["locs_lost"] += 1
 	contest = {}
+	_remove_helper()   # o Herói Ajudante vai embora junto com a disputa perdida
 	hero.hold = false
 	if phase == K.Phase.ROAD:
 		var s0 := maxf(0.0, hero.s_max - back)
@@ -1533,12 +1840,13 @@ func _zones() -> void:
 # ================================================================ cartas
 
 func card_cost(c: CardInst) -> int:
-	if free_card_active():
+	if free_card_active() or gambit_ready():
 		return 0
 	var d := c.def
 	var cost := d.cost_at(c.level)
 	if c.has_mod(K.M_CHEAP):
-		cost = maxi(mini(cost, 1), cost - 1)
+		cost = maxi(0, cost - 1)
+	cost -= c.discount
 	if d.category == "field" and (d.type == "monster" or d.type == "swarm"):
 		cost += int(deck_rules.get("monster_cost_add", 0))
 	if d.is_spell and harvest_free:
@@ -1557,6 +1865,11 @@ func card_cost(c: CardInst) -> int:
 	if contest.size() > 0 and not contest.get("first", false):
 		cost = maxi(0, cost - int(rv("contest_first_discount")))
 	return cost
+
+
+## Abertura: a 1ª carta contra o herói da vez ainda não saiu (sai de graça).
+func gambit_ready() -> bool:
+	return rv("hero_first_free") > 0.0 and gambit_hero != hero.pidx and phase != K.Phase.OVER
 
 
 func can_play(hi_: int) -> int:
@@ -1610,6 +1923,12 @@ func play(hi_: int, x: float, y: float) -> int:
 	if not valid_target(c, x, y):
 		return K.Block.BAD_TARGET
 	var paid := card_cost(c)
+	if gambit_ready():
+		gambit_hero = hero.pidx
+	# Moeda da Sorte: chance de a carta não gastar o elixir.
+	if paid > 0 and rv("free_play_chance") > 0.0 and rng.randf() < rv("free_play_chance"):
+		paid = 0
+		stats["lucky_free"] = int(stats.get("lucky_free", 0)) + 1
 	elixir -= paid
 	var slot := _act_slot()
 	stats["spent_act"][slot] += paid
@@ -1655,7 +1974,7 @@ func recent_spells(window: float) -> int:
 	return spell_times.size()
 
 
-## Carta saiu da mão (jogada ou sacrificada): vai ao descarte e a vaga compra outra. Mão acima do tamanho (efeito
+## Carta saiu da mão (jogada): vai ao descarte e a vaga compra outra. Mão acima do tamanho (efeito
 ## que acabou) não repõe a vaga; nenhuma carta é expulsa.
 func _cycle(hi_: int) -> void:
 	var c: CardInst = hand[hi_]
@@ -1709,34 +2028,6 @@ func _refill_hand() -> void:
 		hand.append(c)
 
 
-func sacrifice(hi_: int) -> bool:
-	if phase == K.Phase.OVER or offers.size() > 0 or hi_ < 0 or hi_ >= hand.size() or hand[hi_] == null:
-		return false
-	# O elixir vem no máximo uma vez a cada `sacrifice_cooldown` s (sem isso, sacrificar sem parar era
-	# elixir infinito). Durante a recarga só gira carta morta (fora de fase, condição, limite): girar de
-	# graça qualquer carta deixava cavar o deck sem parar atrás da melhor (rodada de 09/11/2026).
-	if not sacrifice_ready() and not sacrifice_free(hi_):
-		return false
-	if sacrifice_ready():
-		elixir = minf(elixir_max, elixir + elixir_max * float(R["sacrifice_elixir_frac"]))
-		sac_elixir_t = t
-	_cycle(hi_)
-	stats["sacrifices"] += 1
-	if contract.size() > 0 and contract["goal"]["kind"] == "sacrifice":
-		contract["progress"] += 1
-	emit(K.Ev.SPELL, hero.x, hero.y, -1, 0)
-	return true
-
-
-func sacrifice_ready() -> bool:
-	return t - sac_elixir_t >= float(R.get("sacrifice_cooldown", 0.0)) * maxf(0.1, 1.0 + rv("sacrifice_cd"))
-
-
-## Carta que não dá para jogar agora por outro motivo que não o elixir: gira mesmo durante a recarga.
-func sacrifice_free(hi_: int) -> bool:
-	return can_play(hi_) in [K.Block.WRONG_PHASE, K.Block.CONDITION, K.Block.STACK_LIMIT]
-
-
 ## Aplica o efeito de uma carta jogada. Unidades: CardFxLib.spawn_card_units. Depois as "ops" declaradas em
 ## data/cards.json (CardFxLib) e, por fim, o código por id no arquivo do dono (sim/cards/<owner>.gd).
 func _apply(c: CardInst, x: float, y: float) -> void:
@@ -1784,7 +2075,7 @@ func teleport(k: int) -> bool:
 
 # ================================================================ ofertas
 
-func _roll_rarity() -> int:
+func _roll_rarity(rare_mult := 1.0) -> int:
 	var w: Array
 	var A: Array = R.get("acts", [])
 	if A.size() > 0:
@@ -1796,12 +2087,53 @@ func _roll_rarity() -> int:
 			if t >= float(b):
 				row += 1
 		w = RT["weights"][row]
+	if rare_mult != 1.0:
+		# Fim de ato: rara e lendária pesam mais; os pesos são renormalizados.
+		w = w.duplicate()
+		var tot := 0.0
+		for k in w.size():
+			if k >= 2:
+				w[k] = float(w[k]) * rare_mult
+			tot += float(w[k])
+		for k in w.size():
+			w[k] = float(w[k]) / maxf(tot, 0.0001)
 	var r := rng.randf()
 	for k in w.size():
 		r -= float(w[k])
 		if r <= 0.0:
 			return k
 	return w.size() - 1
+
+
+## Progresso da run em [0, 1]: 0 no começo do ato 1, 1 no fim do ato 3 (ato + fração da estrada já andada).
+func run_progress() -> float:
+	var f := 1.0
+	if phase == K.Phase.ROAD and not act_pending:
+		var L := road.length()
+		f = clampf(hero.s / L, 0.0, 1.0) if L > 0.0 else 0.0
+	return clampf((float(act) + f) / float(maxi(acts(), 1)), 0.0, 1.0)
+
+
+## Nível das cartas de UMA oferta (10/11: uma sorteada por oferta, igual a raridade única): 1, 2 ou 3.
+## Chance de 2+ = p*lv2_end; de 3 = p*lv3_end. `end_act`: fim de ato dobra as chances (nível 3 com teto próprio).
+func roll_offer_level(end_act := false, p := -1.0) -> int:
+	var mx := int(R["card_levels"]["max"])
+	if mx < 2:
+		return 1
+	if p < 0.0:
+		p = run_progress()
+	var U: Dictionary = R["offer_upgrades"]
+	var m := float(U["act_end_mult"]) if end_act else 1.0
+	var c2 := clampf(p * float(U["lv2_end"]) * m, 0.0, 1.0)
+	var c3 := minf(p * float(U["lv3_end"]) * m, c2)
+	if end_act:
+		c3 = minf(c3, float(U["act_end_lv3_cap"]))
+	var u := rng.randf()
+	if mx >= 3 and u < c3:
+		return 3
+	if u < c2:
+		return 2
+	return 1
 
 
 func _card_ok(c: CardDef) -> bool:
@@ -1882,39 +2214,47 @@ func _opt_key(o: Dictionary) -> String:
 
 
 ## Recompensa de um local: o tipo do local decide o que vem; vencer a disputa dá mais opções.
-func _offer_location(ty: String, won: bool) -> void:
+## Recompensas dos marcos (12/11/2026): `n` marcos alcançados (1 a 3). Taverna, Santuário e Ponte dão uma oferta por
+## marco; Fonte e Ritual dão uma só, com mais cartas à escolha quanto mais alto o marco (rules.location_rewards.*.frac).
+func _offer_marks(ty: String, n: int) -> void:
 	var LR: Dictionary = R["location_rewards"][ty]
-	var O: Dictionary = R["offers"]
-	var n := int(O["location_win"] if won else O["location_lose"])
-	stats["locs_won" if won else "locs_lost"] += 1
+	var cnt := int(R["offers"]["location_win"])
+	var won := n >= 3
 	if won:
+		stats["locs_won"] += 1
 		_earn_gold(float(R["gold"]["per_contest"]))
-	if n <= 0:
-		return
-	var opts: Array = []
+	var ex: Array = []
 	match str(LR["reward"]):
-		"card":
-			if LR.has("min_rarity"):
-				var minr := K.RARITIES.find(str(LR["min_rarity"]))
-				opts = _card_options(n, func(cd: CardDef): return cd.rarity >= minr)
-			else:
-				opts = _card_options(n, _rarity_filter(LR["rarities"]))
-		"upgrade":
-			opts = _level_up_options(n)
 		"mod":
-			var ex: Array = []
 			for k in n:
-				var m := _mod_option(ex)
-				if m.size() > 0:
-					ex.append(str(m["uid"]) + str(m["mod"]))
-					opts.append(m)
+				var opts: Array = []
+				for j in cnt:
+					var m := _mod_option(ex)
+					if m.size() > 0:
+						ex.append(str(m["uid"]) + str(m["mod"]))
+						opts.append(m)
+				_push_offer("location", opts, {"loc": ty, "won": won, "mark": k + 1})
+		"card":
+			var minr := K.RARITIES.find(str(LR["min_rarity"]))
+			for k in n:
+				_push_offer("location", _card_options(cnt, func(cd: CardDef): return cd.rarity >= minr), {"loc": ty, "won": won, "mark": k + 1})
+		"cards":
+			var rar: Array = LR["rarities"]
+			for k in n:
+				var r := K.RARITIES.find(str(rar[mini(k, rar.size() - 1)]))
+				_push_offer("location", _card_options(cnt, func(cd: CardDef): return cd.rarity == r), {"loc": ty, "won": won, "mark": k + 1})
 		"remove":
-			opts = _remove_options(-1)
-		"choice":
-			opts = [{"kind": "pick", "what": "card"}, {"kind": "pick", "what": "upgrade"}]
+			var fr: Array = LR["frac"]
+			var f := float(fr[mini(n, fr.size()) - 1])
+			var pick := -1 if f >= 1.0 else maxi(1, roundi(cards.size() * f))
 			if _can_remove():
-				opts.append({"kind": "pick", "what": "remove"})
-	_push_offer("location", opts, {"loc": ty, "won": won})
+				_push_offer("location", _pick_insts(cards.duplicate(), pick, "remove"), {"loc": ty, "won": won, "mark": n})
+		"upgrade":
+			var fr: Array = LR["frac"]
+			var f := float(fr[mini(n, fr.size()) - 1])
+			var elig := cards.filter(func(ci): return ci.level < int(R["card_levels"]["max"]))
+			var pick := -1 if f >= 1.0 else maxi(1, roundi(elig.size() * f))
+			_push_offer("location", _pick_insts(elig, pick, "upgrade"), {"loc": ty, "won": won, "mark": n})
 
 
 func _earn_gold(v: float) -> void:
@@ -1931,6 +2271,7 @@ func _open_shop() -> void:
 	var price := func(v: float) -> int: return int(round(v * (1.0 - disc)))
 	var items: Array = []
 	var ex: Array = []
+	var lv := roll_offer_level()   # nível único das cartas da loja
 	for k in int(S["cards"]) + int(rv("shop_cards")):
 		var r := _roll_rarity()
 		var c: CardDef = null
@@ -1943,7 +2284,9 @@ func _open_shop() -> void:
 				break
 		if c:
 			ex.append(c.id)
-			items.append({"kind": "buy", "item": {"kind": "card", "id": c.id}, "price": price.call(float(S["prices"][K.RARITIES[c.rarity]]))})
+			# Carta já melhorada custa o preço da raridade + o preço de subir nível por nível extra (assumido).
+			var base := float(S["prices"][K.RARITIES[c.rarity]]) + float(S.get("card_upgrade", S["upgrade"])) * (lv - 1)
+			items.append({"kind": "buy", "item": {"kind": "card", "id": c.id, "level": lv}, "price": price.call(base)})
 	if not _level_up_options(1).is_empty():
 		items.append({"kind": "buy", "item": {"kind": "pick", "what": "upgrade"}, "price": price.call(float(S["upgrade"]))})
 	var m := _mod_option([])
@@ -1952,6 +2295,16 @@ func _open_shop() -> void:
 	if _can_remove():
 		items.append({"kind": "buy", "item": {"kind": "pick", "what": "remove"},
 			"price": price.call(float(S["remove"]) + float(S["remove_step"]) * shop_removes)})
+	# 1 relíquia à venda por loja (11/11/2026), preço por raridade (rules.shop.relic_prices, a testar).
+	var rpool := _relic_pool()
+	for k in int(S.get("relics", 0)):
+		if rpool.is_empty():
+			break
+		var rid := _pick_relic(rpool)
+		rpool.erase(rid)
+		var rp: Dictionary = S.get("relic_prices", {})
+		items.append({"kind": "buy", "item": {"kind": "relic", "id": rid},
+			"price": price.call(float(rp.get(str(data.relics[rid].get("rarity", "common")), 150)))})
 	_push_offer("shop", items, {"won": true})
 
 
@@ -1972,12 +2325,12 @@ func _rarity_filter(names: Array) -> Callable:
 ## Raridade única por oferta (10/11/2026): sorteia a raridade uma vez (peso do ato) e devolve a mais próxima que
 ## tem `n` cartas possíveis pelo filtro; sem nenhuma com `n`, aceita menos opções em vez de misturar raridades.
 ## -1 = o filtro não deixa carta nenhuma.
-func _single_rarity(f: Callable, n: int, exclude: Array = []) -> int:
+func _single_rarity(f: Callable, n: int, exclude: Array = [], rare_mult := 1.0) -> int:
 	var cnt := [0, 0, 0, 0]
 	for c in data.pool:
 		if f.call(c) and _card_ok(c) and not exclude.has(c.id):
 			cnt[c.rarity] += 1
-	var r := _roll_rarity()
+	var r := _roll_rarity(rare_mult)
 	for need in range(maxi(n, 1), 0, -1):
 		for dr in [0, -1, 1, -2, 2, -3, 3]:
 			var rr: int = r + dr
@@ -1986,17 +2339,25 @@ func _single_rarity(f: Callable, n: int, exclude: Array = []) -> int:
 	return -1
 
 
-func _card_options(n: int, f: Callable) -> Array:
+## Cartas da oferta: mesma raridade e mesmo nível (opção "level") para todas. `end_act`: carta de fim de ato.
+func _card_options(n: int, f: Callable, end_act := false) -> Array:
 	var opts: Array = []
 	var ex: Array = []
-	var one := _single_rarity(f, n)
+	var one := _single_rarity(f, n, [], float(R["offer_upgrades"]["act_end_rare_mult"]) if end_act else 1.0)
 	var f1 := func(cd: CardDef): return cd.rarity == one and f.call(cd)
+	var lv := roll_offer_level(end_act)
 	for k in n:
 		var c := _pick_card(f1, ex)
 		if c:
 			ex.append(c.id)
-			opts.append({"kind": "card", "id": c.id})
+			opts.append({"kind": "card", "id": c.id, "level": lv})
 	return opts
+
+
+## Fim de ato: 3 cartas quaisquer (mais chance de rara e de já melhoradas), recusável; vem antes da relíquia.
+func _offer_act_card() -> void:
+	var n := int(R["offer_upgrades"]["act_end_options"])
+	_push_offer("act_card", _card_options(n, func(_cd: CardDef): return true, true), {"act": act})
 
 
 ## Até n cartas diferentes do deck que ainda podem subir de nível (-1 = todas).
@@ -2051,6 +2412,7 @@ func _offer_level() -> void:
 	var cards_first := rng.randf() < float(R["offers"]["new_card_weight"])
 	var want_cards := cards_first
 	var one := -2   # raridade única da oferta, sorteada na primeira carta
+	var lv := roll_offer_level()   # nível único da oferta
 	while opts.size() < n and tries < 20:
 		tries += 1
 		if tries == 11 and opts.is_empty():
@@ -2061,7 +2423,7 @@ func _offer_level() -> void:
 			var c := _pick_card(func(cd: CardDef): return cd.rarity == one, ex)
 			if c:
 				ex.append(c.id)
-				opts.append({"kind": "card", "id": c.id})
+				opts.append({"kind": "card", "id": c.id, "level": lv})
 		else:
 			var m := _mod_option(ex)
 			if m.size() > 0:
@@ -2088,11 +2450,12 @@ func _offer_contract(rw: Dictionary) -> void:
 			if one < 0:
 				fsel = f2
 				one = _single_rarity(f2, n)
+			var lv := roll_offer_level()
 			for k in n:
 				var c := _pick_card(func(cd: CardDef): return cd.rarity == one and fsel.call(cd), ex)
 				if c:
 					ex.append(c.id)
-					opts.append({"kind": "card", "id": c.id})
+					opts.append({"kind": "card", "id": c.id, "level": lv})
 		"modifier":
 			for k in n:
 				var m := _mod_option(ex)
@@ -2177,6 +2540,10 @@ func _buy(k: int) -> bool:
 	var key := _opt_key(op)
 	pk[key] = int(pk.get(key, 0)) + 1
 	_pay(int(op["price"]))
+	if item["kind"] == "relic":
+		var src: Dictionary = stats.get("relic_src", {})
+		src["shop"] = int(src.get("shop", 0)) + 1
+		stats["relic_src"] = src
 	_apply_option(item)
 	o["options"].remove_at(k)
 	if o["options"].is_empty():
@@ -2188,6 +2555,15 @@ func _pay(p: int) -> void:
 	gold = maxf(0.0, gold - p)
 	stats["gold_spent"] += p
 	stats["shop_buys"] += 1
+	# Cofre Vivo: cada `shop_max_gain` de ouro gasto na loja vira +1 de elixir máximo (até shop_max_cap).
+	var step_ := rv("shop_max_gain")
+	if step_ > 0.0 and vault_gain < rv("shop_max_cap"):
+		vault_spent += p
+		while vault_spent >= step_ and vault_gain < rv("shop_max_cap"):
+			vault_spent -= step_
+			vault_gain += 1.0
+			relic_max_gain += 1.0
+		recalc_elixir_max()
 
 
 func can_afford(op: Dictionary) -> bool:
@@ -2200,6 +2576,7 @@ func _apply_option(op: Dictionary) -> Array:
 	match str(op["kind"]):
 		"card":
 			var ci := _new_inst(data.card(op["id"]))
+			ci.level = clampi(int(op.get("level", 1)), 1, int(R["card_levels"]["max"]))
 			queue.push_front(ci)
 			_refill()
 		"mod":

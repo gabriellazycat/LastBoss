@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traço e aquarela: 3 técnicas</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Alegreya+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#1b1512; --ink:#efe6d4; --muted:#b9ab92; --gold:#e3b75c; --card:#2a211b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Alegreya Sans",system-ui,sans-serif; line-height:1.5; }
+  main { max-width:1500px; margin:0 auto; padding:28px 16px 60px; }
+  h1, h2 { font-family:"IM Fell English SC",Georgia,serif; font-weight:400; margin:0 0 6px; }
+  h1 { font-size:34px; }
+  h2 { font-size:26px; margin-top:36px; color:var(--gold); }
+  p.lead { color:var(--muted); max-width:900px; }
+  .grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px; margin-top:14px; }
+  figure { margin:0; background:var(--card); border-radius:10px; padding:10px; }
+  figure img { width:100%; display:block; border-radius:6px; background:#fbf6ea; cursor:zoom-in; }
+  figcaption { margin-top:8px; font-size:14px; }
+  figcaption b { display:block; font-size:16px; color:var(--gold); }
+  .zoom { position:fixed; inset:0; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; padding:16px; z-index:9; cursor:zoom-out; }
+  .zoom img { max-width:100%; max-height:100%; }
+  .zoom.on { display:flex; }
+  @media (max-width:900px) { .grid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Traço contínuo + aquarela solta: 3 técnicas</h1>
+  <p class="lead">Mesmas poses da v2. Pedido: um contorno contínuo por figura (sem formas geométricas empilhadas), traço com pressão e aquarela solta por baixo. A primeira coluna é a v2 pintada, para comparar. Clique numa imagem para ampliar.</p>
+
+  <h2>Rei dos Ratos</h2>
+  <div class="grid">
+    <figure><img src="v2/rat_king.png" alt="v2 pintada"><figcaption><b>v2 pintada (referência)</b>Recorte da arte da v2 (moldura A).</figcaption></figure>
+    <figure><img src="blender/rat_king.png" alt="Blender"><figcaption><b>Blender Grease Pencil</b>Traços desenhados à mão por pontos, com pressão; aquarela feita por fora. Linha mais limpa das três.</figcaption></figure>
+    <figure><img src="svg/rat_king.png" alt="SVG unido"><figcaption><b>SVG com formas unidas</b>As peças da v2 fundidas em silhuetas, contorno de largura variável. Mantém mais detalhe do fundo.</figcaption></figure>
+    <figure><img src="krita/rat_king.png" alt="Krita"><figcaption><b>Pincéis do Krita</b>Nanquim G-pen e aguadas reais do Krita. Aquarela mais orgânica, traço e formas mais simples.</figcaption></figure>
+  </div>
+
+  <h2>Dragão Ancião</h2>
+  <div class="grid">
+    <figure><img src="v2/elder_dragon.png" alt="v2 pintada"><figcaption><b>v2 pintada (referência)</b>Recorte da arte da v2 (moldura A).</figcaption></figure>
+    <figure><img src="blender/elder_dragon.png" alt="Blender"><figcaption><b>Blender Grease Pencil</b>Lê bem, castelos em chamas e lua; asas ainda chapadas.</figcaption></figure>
+    <figure><img src="svg/elder_dragon.png" alt="SVG unido"><figcaption><b>SVG com formas unidas</b>Traço fino e elegante; braços ainda retos, castelo escondido.</figcaption></figure>
+    <figure><img src="krita/elder_dragon.png" alt="Krita"><figcaption><b>Pincéis do Krita</b>Aguada com granulação de verdade; pouco contraste, quase tudo vermelho.</figcaption></figure>
+  </div>
+</main>
+<div class="zoom" id="z"><img alt=""></div>
+<script>
+  const z = document.getElementById('z');
+  document.querySelectorAll('figure img').forEach(i => i.addEventListener('click', () => {
+    if (i.style.objectFit) return;
+    z.querySelector('img').src = i.src; z.classList.add('on');
+  }));
+  z.addEventListener('click', () => z.classList.remove('on'));
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 		"oil_splash":
 			# Sozinho: encharca o herói. Em grupo (10/11/2026): só o herói mais perto do ponto (a até 3 m; nenhum
 			# perto = o da vez). Encharcar o grupo todo e incendiar com a Tocha dava 96% de vitória na fase 4.
-			var near_w: Array = sim.heroes_near(x, y, float(fx.get("radius", 3.0))) if sim.group_mode() else []
+			var near_w: Array = sim.heroes_near(x, y, float(fx.get("radius", 3.0))) if sim.multi_heroes() else []
 			var wet: Array = [near_w[0]] if near_w.size() > 0 else [sim.hero]
 			for hh in wet:
 				hh.soaked_t = maxf(hh.soaked_t, d.fxv("soaked", lv) * vet)
@@ -115,7 +115,7 @@ static func _st(sim: Sim) -> Dictionary:
 static func _spark(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> void:
 	var d := k.d
 	var dmg := d.fxv("damage", k.lv) * k.smult * k.vet
-	var near := sim.heroes_near(x, y, 3.0) if sim.group_mode() else []
+	var near := sim.heroes_near(x, y, 3.0) if sim.multi_heroes() else []
 	var first: SimHero = near[0] if near.size() > 0 else sim.hero
 	var wet := first.soaked_t > 0.0
 	var targets: Array = [first]
@@ -260,7 +260,7 @@ static func on_unit_hit(sim: Sim, i: int, real: float) -> void:
 	# Kobolds Catadores: cada golpe que entra rende ouro.
 	var c: CardDef = sim.data.cards[sim.units.def[i]]
 	if real > 0.0 and c.id == "kobold_scavengers":
-		sim._earn_gold(c.fxv("gold_per_hit", sim.units.lvl[i], 1.0))
+		sim._earn_gold(c.fxv("gold_per_hit", sim.units.lvl[i], 1.0) * minf(1.0, sim.units.atk_int[i]))   # golpe rápido rende fração: o ouro por segundo é o de antes
 
 
 ## Bônus somado ao dano que o herói `hh` recebe de qualquer fonte (0.0 = nada; 0.15 = +15%).

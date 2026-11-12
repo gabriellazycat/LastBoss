@@ -12,13 +12,13 @@ var acc := 0.0
 var speed := 1.0
 var paused := false
 var running := false
-var sac_mode := false
 var cursor := Vector2.ZERO        # cursor virtual do controle (tela)
 var pad_active := false
 var arena_built := false
-var b_hold := 0.0
 var map_auto := false             # o mapa grande abriu sozinho numa bifurcação (fecha quando o herói volta a andar)
 var route_sel := 0                 # ramo destacado pelo controle na bifurcação
+var status_ov: StatusOverlay
+var was_blocking := false           # oferta/bifurcação/mapa abertos no quadro anterior (solta a carta selecionada)
 var auto_bot: PlayerBot
 var auto_args := {}
 var shots: Array = []
@@ -118,13 +118,15 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 	var layer := CanvasLayer.new()
 	layer.layer = 1
 	add_child(layer)
+	# Status à vista e prévia do feitiço: por baixo do HUD, por cima do mundo.
+	status_ov = StatusOverlay.new()
+	layer.add_child(status_ov)
 	hud = Hud.new()
 	layer.add_child(hud)
 	tutorial = Tutorial.new()
 	tutorial.visible = false
 	layer.add_child(tutorial)
 	hud.card_pressed.connect(_select)
-	hud.card_sacrificed.connect(_sacrifice)
 	hud.offer_chosen.connect(func(k): if sim: sim.choose(k))
 	hud.resume.connect(_toggle_pause)
 	hud.to_menu.connect(_to_menu)
@@ -227,10 +229,13 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		auto_bot = PlayerBot.load_bot(str(auto_args["autoplay"]), sim.run_seed)
 		speed = float(auto_args.get("speed", "4"))
 		# --skip=600 pula até o segundo 600; --skip=arena pula até a arena começar.
-		var to_arena: bool = auto_args.get("skip", "") == "arena"
-		var skip := 1e9 if to_arena else float(auto_args.get("skip", "0"))
+		# --skip=<tipo de local> (ex.: bridge) pula até a disputa desse local começar.
+		var sk := str(auto_args.get("skip", "0"))
+		var to_arena: bool = sk == "arena"
+		var to_loc := sk if sk in SimRoad.LOC_TYPES else ""
+		var skip := 1e9 if to_arena or to_loc != "" else float(sk)
 		sim.record_events = false
-		while sim.t < skip and sim.phase != K.Phase.OVER and not (to_arena and sim.phase == K.Phase.ARENA):
+		while sim.t < skip and sim.phase != K.Phase.OVER and not (to_arena and sim.phase == K.Phase.ARENA) 				and not (to_loc != "" and str(sim.contest.get("type", "")) == to_loc):
 			auto_bot.think(sim)
 			sim.step()
 		sim.record_events = true
@@ -657,7 +662,7 @@ func _process(delta: float) -> void:
 	if not running or sim == null:
 		return
 	# Capturas da mão (rodada C-UI): --elixirmax=20 (barra), --cost=12 (custo da mão), --discardfill=6, --pile=draw|discard,
-	# --stages=1 (disputa em 3 etapas simulada no painel, se a simulação ainda não a tem).
+	# --stages=1 (disputa com a barra no 1º marco, no painel).
 	if life >= 2.0 and not auto_args.has("_capdone") and (auto_args.has("elixirmax") or auto_args.has("cost") or auto_args.has("discardfill") or auto_args.has("pile") or auto_args.has("stages")):
 		auto_args["_capdone"] = true
 		if auto_args.has("elixirmax"):
@@ -672,13 +677,23 @@ func _process(delta: float) -> void:
 				sim.discard.append(sim.queue.pop_back())
 		if auto_args.has("stages"):
 			_debug_contest("tavern")
-			sim.contest["stages"] = 3
-			sim.contest["stage"] = 1
+			sim.contest["progress"] = 1.5
 			sim.contest["won"] = 1
 	if auto_args.has("pile") and life >= 3.0:
 		var pw := str(auto_args["pile"])
 		auto_args.erase("pile")
 		hud.fan._open_pile(pw)
+	# --shopbuy=<s>: com a loja aberta (--offer=shop), compra pela Hud a 1ª carta e o modificador nesse instante;
+	# --shopgold=<n> deixa esse ouro depois (captura do livro-caixa com vendidos, registro e falta de ouro).
+	if auto_args.has("shopbuy") and life >= float(auto_args["shopbuy"]) and sim.offers.size() > 0 and sim.offers[0]["source"] == "shop":
+		auto_args.erase("shopbuy")
+		hud.choose_offer(0)
+		for bi in sim.offers[0]["options"].size() if sim.offers.size() > 0 else 0:
+			if sim.offers[0]["options"][bi]["item"]["kind"] == "mod":
+				hud.choose_offer(bi)
+				break
+		if auto_args.has("shopgold"):
+			sim.gold = float(auto_args["shopgold"])
 	if auto_args.has("pauseat") and life >= float(auto_args["pauseat"]):
 		auto_args.erase("pauseat")
 		_toggle_pause()
@@ -718,10 +733,21 @@ func _process(delta: float) -> void:
 				# --offer=contest:<tipo>: o herói chega a um local desse tipo e a disputa começa.
 				_debug_contest(ow[1] if ow.size() > 1 else "tavern")
 			else:
-				sim._offer_location(ow[0], ow.size() < 2 or ow[1] != "0")
+				sim._offer_marks(ow[0], 3 if (ow.size() < 2 or ow[1] != "0") else 1)
 		else:
 			sim._offer_level()
 			sim.damage_hero(1.0, sim.hero.x, sim.hero.y + 5.0, 0, SimHero.DMG_PIERCE, "test")
+	# Uma oferta, a bifurcação ou o mapa grande abrindo soltam a carta da mão; antes ela ficava erguida por cima
+	# das outras até o clique direito. Só na transição: com oferta aberta o controle usa hud.selected como cursor.
+	var blocking := not sim.offers.is_empty() or sim.route_wait or hud.minimap.visible
+	if blocking and not was_blocking and hud.selected >= 0:
+		var sel_ci := sim.hand_card(hud.selected)
+		if not (hud.minimap.visible and sim.offers.is_empty() and not sim.route_wait and sel_ci and sel_ci.def.id == "burn_village"):
+			hud.selected = -1
+	was_blocking = blocking
+	if status_ov.sim != sim:
+		status_ov.setup(sim, world, cam)
+	status_ov.visible = not world.cine_active()
 	# Cena da morte do herói: a recompensa só abre quando a câmera chega no herói novo; cartas travadas.
 	hud.hold_offers = world.cine_active()
 	# --spawn=<id>,<id>: coloca essas criaturas em campo, em arco diante do herói, 2 s depois do início (fotos do mapa).
@@ -732,6 +758,23 @@ func _process(delta: float) -> void:
 			var sa := -0.9 + 1.8 * float(si) / maxf(sp_ids.size() - 1.0, 1.0)
 			var sc_: CardDef = data.card(sp_ids[si])
 			sim.units.spawn(sc_, sim.hero.x + sin(sa) * 9.0, sim.hero.y - cos(sa) * 9.0 - 2.0, 0.0, 0.0, K.F_NO_XP, 0)
+	# --statusdemo=1: herói com vários efeitos ao mesmo tempo (captura dos selos de status).
+	if auto_args.has("statusdemo") and life >= 2.0:
+		auto_args.erase("statusdemo")
+		sim.hero.slow_t = 4.0
+		sim.hero.soaked_t = 6.0
+		sim.mark_until = sim.t + 5.0
+		CardsCommon._st(sim)["weak_until"] = sim.t + 8.0
+		CardsCommon._st(sim)["weak"] = 0.3
+		sim.hero.curses = 2
+	# --aim=<id da carta>: essa carta na vaga 1, selecionada, mirando no herói (captura da prévia do feitiço).
+	if auto_args.has("aim") and life >= 2.5:
+		sim.hand[0] = sim._new_inst(data.card(str(auto_args["aim"])))
+		auto_args.erase("aim")
+		hud.selected = 0
+		pad_active = true
+		var off_ := float(auto_args.get("aimoff", "0"))
+		cursor = cam.unproject_position(Vector3(sim.hero.x + off_, 0.0, sim.hero.y))
 	# --hand=<n>: mão com n cartas (captura da interface com mão cheia, até HAND_MAX).
 	if auto_args.has("hand") and sim.hand_size != int(auto_args["hand"]):
 		sim.hand_size = int(auto_args["hand"])
@@ -742,6 +785,14 @@ func _process(delta: float) -> void:
 		sim.damage_hero(sim.hero.hp + 99999.0, sim.hero.x, sim.hero.y + 1.0, 0, SimHero.DMG_PIERCE, "test")
 	if auto_bot:
 		auto_bot.think(sim)
+	# --mapshot=<s>: abre o mapa grande nesse instante (capturas do mapa); --mapscroll=<y> rola até essa altura
+	# do mapa (em unidades de desenho de uma tela 1920x1080; 0 = topo, onde fica o último ato).
+	if auto_args.has("mapshot") and life >= float(auto_args["mapshot"]) and sim.phase == K.Phase.ROAD:
+		auto_args.erase("mapshot")
+		if not hud.minimap.visible:
+			_toggle_map()
+		if auto_args.has("mapscroll"):
+			hud.minimap.scroll_to_design(float(auto_args["mapscroll"]))
 	# Bifurcação sem escolha: o jogo espera e o mapa grande abre sozinho.
 	if sim.route_wait and not hud.minimap.visible and sim.offers.is_empty():
 		map_auto = true
@@ -803,6 +854,7 @@ func _process(delta: float) -> void:
 		audio.music("")
 		audio.play("victory" if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] else "defeat", 0.0)
 	var alpha := clampf(acc / sim.dt, 0.0, 1.0)
+	world.look_freeze = hud.fan != null and (hud.fan.hover >= 0 or hud.fan.press_i >= 0)
 	world.draw(alpha, delta * (0.15 if stopped else 1.0))
 	flash_rect.color = world.screen_flash if Settings.v["flash"] else Color(0, 0, 0, 0)
 	_update_placement()
@@ -847,19 +899,22 @@ func _ui_test() -> void:
 		played += int(sim.stats["played"][k])
 	print("uitest clique no mundo jogou a carta: ", played == 1, " unidades=", sim.units.count)
 	ok = ok and played == 1
+	# Sem sacrifício da mão (11/11/2026): clique direito numa carta não tira a carta da mão nem mexe no elixir.
+	var h0: Array = sim.hand.duplicate()
 	var e0 := sim.elixir
-	var x := InputEventKey.new()
-	x.keycode = KEY_X
-	x.pressed = true
-	Input.parse_input_event(x)
-	var two := InputEventKey.new()
-	two.keycode = KEY_2
-	two.pressed = true
-	Input.parse_input_event(two)
+	var rc := InputEventMouseButton.new()
+	rc.button_index = MOUSE_BUTTON_RIGHT
+	rc.pressed = true
+	rc.position = hud.fan.get_global_rect().get_center()
+	Input.parse_input_event(rc)
+	var rcu := rc.duplicate()
+	rcu.pressed = false
+	Input.parse_input_event(rcu)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	print("uitest X+2 sacrificou: ", sim.stats["sacrifices"] == 1)
-	ok = ok and sim.stats["sacrifices"] == 1
+	var rc_ok := sim.hand == h0 and sim.elixir >= e0 - 0.001
+	print("uitest clique direito na carta não faz nada: ", rc_ok)
+	ok = ok and rc_ok
 	sim._offer_level()
 	sim.damage_hero(1.0, sim.hero.x, sim.hero.y + 5.0, 0, SimHero.DMG_PIERCE, "test")
 	await get_tree().process_frame
@@ -923,6 +978,9 @@ func _ui_test() -> void:
 		after += int(sim.stats["played"][k2])
 	print("uitest arrastar e soltar jogou a carta: ", after == before + 1)
 	ok = ok and after == before + 1
+	# Loja (livro-caixa): sem ouro o Enter não compra e avisa; com ouro, Enter compra o item em foco; um clique
+	# na linha de Subir nível abre o passo do baralho, Enter confirma e volta à loja; 0 sai.
+	ok = ok and await _shop_ui_test()
 	# M abre e fecha o mapa grande.
 	var mk := InputEventKey.new()
 	mk.keycode = KEY_M
@@ -1008,6 +1066,59 @@ func _route_test() -> void:
 
 
 ## Captura do teste da entrada (só com --out=<pasta>).
+func _shop_ui_test() -> bool:
+	var ok := true
+	sim.gold = 0.0
+	sim._open_shop()
+	for _f in 3:
+		await get_tree().process_frame
+	var n0: int = sim.offers[0]["options"].size()
+	var shown := hud.ledger.is_visible_in_tree() and hud.selected == 0
+	await _key(KEY_ENTER)
+	var refused: bool = sim.offers[0]["options"].size() == n0 and hud.ledger.toast_bad
+	print("uitest loja abre no livro-caixa com foco: ", shown, " · sem ouro não compra e avisa: ", refused)
+	ok = ok and shown and refused
+	_ui_shot("shop")
+	sim.gold = 999.0
+	var cards0 := sim.cards.size()
+	await _key(KEY_ENTER)
+	var bought: bool = sim.cards.size() == cards0 + 1 and sim.offers[0]["options"].size() == n0 - 1 and hud.ledger.rows[0]["sold"]
+	print("uitest Enter compra o item em foco (vendido no livro): ", bought)
+	ok = ok and bought
+	var up_k := -1
+	for i in sim.offers[0]["options"].size():
+		var it: Dictionary = sim.offers[0]["options"][i]["item"]
+		if it["kind"] == "pick" and it["what"] == "upgrade":
+			up_k = i
+	var picked := false
+	if up_k >= 0:
+		# O clique entra em pixels da janela (passa pela escala do conteúdo).
+		var wp: Vector2 = get_viewport().get_final_transform() * (hud.offer_click_points(up_k)[0] as Vector2)
+		for down in [true, false]:
+			var mb := InputEventMouseButton.new()
+			mb.button_index = MOUSE_BUTTON_LEFT
+			mb.pressed = down
+			mb.position = wp
+			mb.global_position = wp
+			Input.parse_input_event(mb)
+		for _f in 3:
+			await get_tree().process_frame
+		var in_pick: bool = sim.offers[0]["source"] == "shop_pick"
+		_ui_shot("shop_pick")
+		var g := sim.gold
+		await _key(KEY_DOWN)
+		await _key(KEY_ENTER)
+		picked = in_pick and sim.offers.size() > 0 and sim.offers[0]["source"] == "shop" and sim.gold < g
+	print("uitest clique em Subir nível abre o baralho e Enter confirma: ", picked)
+	ok = ok and picked
+	await get_tree().process_frame
+	_ui_shot("shop_after")
+	await _key(KEY_0)
+	print("uitest 0 sai da loja: ", sim.offers.is_empty())
+	ok = ok and sim.offers.is_empty()
+	return ok
+
+
 func _ui_shot(tag: String) -> void:
 	if auto_args.has("out"):
 		get_viewport().get_texture().get_image().save_png(str(auto_args["out"]) + "uitest_%s.png" % tag)
@@ -1390,10 +1501,12 @@ func _pointer() -> Vector2:
 
 func _update_placement() -> void:
 	var ci := sim.hand_card(hud.selected)
-	if ci == null or sim.phase == K.Phase.OVER:
+	if ci == null or sim.phase == K.Phase.OVER or not sim.offers.is_empty():
 		world.show_placement(false, Vector3.ZERO, true, 1.0)
+		status_ov.set_preview(null, Vector3.ZERO)
 		return
 	var p := _ground_point(_pointer())
+	status_ov.set_preview(ci if _on_ground(_pointer()) else null, p)
 	var d := ci.def
 	var r: float = d.fx.get("radius", 1.0)
 	world.show_placement(d.category == "field" or d.id == "gold_bait", p, _on_ground(_pointer()) and sim.valid_target(ci, p.x, p.z), r)
@@ -1403,10 +1516,6 @@ func _update_placement() -> void:
 
 func _select(i: int) -> void:
 	if sim == null or sim.phase == K.Phase.OVER:
-		return
-	if sac_mode:
-		sac_mode = false
-		_sacrifice(i)
 		return
 	var ci := sim.hand_card(i)
 	if ci == null:
@@ -1418,13 +1527,6 @@ func _select(i: int) -> void:
 	# Cartas sem alvo (covil, finalização) saem na hora.
 	if hud.selected >= 0 and (ci.def.category == "lair" or ci.def.category == "finisher"):
 		_play_at(Vector2(sim.hero.x, sim.hero.y))
-
-
-func _sacrifice(i: int) -> void:
-	if sim and sim.sacrifice(i):
-		hud.selected = -1
-	elif sim and i >= 0 and i < sim.hand.size() and not sim.sacrifice_ready():
-		hud.say(tr("UI_SACRIFICE_WAIT"))
 
 
 func _play_at(p: Vector2) -> void:
@@ -1519,9 +1621,9 @@ func _unhandled_input(e: InputEvent) -> void:
 		elif e.button_index == MOUSE_BUTTON_RIGHT:
 			hud.selected = -1
 		elif e.button_index == MOUSE_BUTTON_WHEEL_UP:
-			world.zoom = clampf(world.zoom - 2.0, -12.0, 20.0)
+			world.zoom = clampf(world.zoom - 2.0, 0.0, 20.0)
 		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			world.zoom = clampf(world.zoom + 2.0, -12.0, 20.0)
+			world.zoom = clampf(world.zoom + 2.0, 0.0, 20.0)
 	if e is InputEventKey and e.pressed and not e.echo:
 		var kc: int = e.keycode
 		if paused and kc != KEY_ESCAPE and kc != KEY_SPACE:
@@ -1529,14 +1631,12 @@ func _unhandled_input(e: InputEvent) -> void:
 		if kc >= KEY_1 and kc <= KEY_9:
 			var n := kc - KEY_1
 			if sim.offers.size() > 0:
-				sim.choose(n)
+				hud.choose_offer(n)
 			elif not _route_option(n):
 				_select(n)
 		if kc == KEY_0 and sim.offers.size() > 0:
-			sim.choose(Sim.SKIP)
+			hud.choose_offer(Sim.SKIP)
 		match kc:
-			KEY_X:
-				sac_mode = true
 			KEY_ESCAPE:
 				if paused and hud.back():
 					pass
@@ -1544,9 +1644,8 @@ func _unhandled_input(e: InputEvent) -> void:
 					# Esc fecha o mapa (e solta a carta que o abriu, como o Incêndio).
 					hud.selected = -1
 					_toggle_map()
-				elif not paused and (hud.selected >= 0 or sac_mode):
+				elif not paused and hud.selected >= 0:
 					hud.selected = -1
-					sac_mode = false
 				else:
 					_toggle_pause()
 			KEY_SPACE:
@@ -1559,8 +1658,6 @@ func _unhandled_input(e: InputEvent) -> void:
 				_altar_step(-1)
 			KEY_E:
 				_altar_step(1)
-	if e is InputEventKey and not e.pressed and e.keycode == KEY_X:
-		sac_mode = false
 	_pad_input(e)
 
 
@@ -1607,12 +1704,11 @@ func _pad_input(e: InputEvent) -> void:
 		if e.is_action_pressed("pad_prev") or e.is_action_pressed("pad_next"):
 			var d := -1 if e.is_action_pressed("pad_prev") else 1
 			hud.selected = wrapi(hud.selected + d, 0, sim.offers[0]["options"].size())
+		# Pela Hud: na loja o livro-caixa confere o ouro e mantém o cursor (hud.selected) na página.
 		if e.is_action_pressed("pad_confirm"):
-			sim.choose(maxi(hud.selected, 0))
-			hud.selected = -1
+			hud.choose_offer(maxi(hud.selected, 0), true)
 		elif e.is_action_pressed("pad_back"):
-			sim.choose(Sim.SKIP)
-			hud.selected = -1
+			hud.choose_offer(Sim.SKIP, true)
 		return
 	if e.is_action_pressed("pad_prev") or e.is_action_pressed("pad_next"):
 		var d := -1 if e.is_action_pressed("pad_prev") else 1
@@ -1625,7 +1721,7 @@ func _pad_input(e: InputEvent) -> void:
 			else:
 				_click_world(cursor)
 	if e.is_action_pressed("pad_back"):
-		b_hold = 0.0
+		hud.selected = -1   # B solta a carta (segurar B sacrificava até 11/11/2026)
 	if e.is_action_pressed("pad_map"):
 		_toggle_map()
 	if e.is_action_pressed("pad_altar_prev"):
@@ -1640,9 +1736,3 @@ func _pad_cursor(delta: float) -> void:
 		pad_active = true
 		cursor += v * 900.0 * float(Settings.v["pad_speed"]) * delta
 		cursor = cursor.clamp(Vector2.ZERO, get_viewport().get_visible_rect().size)
-	# Segurar B sacrifica a carta selecionada.
-	if Input.is_action_pressed("pad_back") and hud.selected >= 0:
-		b_hold += delta
-		if b_hold > 0.5:
-			b_hold = 0.0
-			_sacrifice(hud.selected)

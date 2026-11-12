@@ -42,8 +42,8 @@ DESC_scrap_golem,Absorve aliados mortos por perto e ganha vida.,Absorbs nearby f
 DESC_soul_feast,Sacrifica seus monstros a até {radius} m e devolve o [[elixir|Elixir]] deles +{bonus_per_card} por carta.,Sacrifices your monsters within {radius} m and refunds their [[elixir|Elixir]] +{bonus_per_card} per card.
 DESC_gold_bait,Atrai o herói até um ponto.,Lures the hero to a spot.
 DESC_burn_village,"Marque um local à frente na rota: quando o herói chegar, o local pega [[fire|Fogo]] ({dps} de dano por segundo, por {duration} s).","Mark a place ahead on the route: when the hero arrives, it bursts into [[fire|Fire]] ({dps} damage per second for {duration} s)."
-DESC_soul_collector,"[[lair|Temporário]]: +{elixir_regen_pct}% de ganho de [[elixir|Elixir]] por {duration} s.","[[lair|Temporary]]: +{elixir_regen_pct}% [[elixir|Elixir]] gain for {duration} s."
-DESC_forbidden_library,"[[lair|Temporário]]: +1 carta na mão por {duration} s.","[[lair|Temporary]]: +1 card in hand for {duration} s."
+DESC_soul_collector,[[lair|Temporário]]: +{elixir_regen_pct}% de ganho de [[elixir|Elixir]] por {duration} s.,[[lair|Temporary]]: +{elixir_regen_pct}% [[elixir|Elixir]] gain for {duration} s.
+DESC_forbidden_library,[[lair|Temporário]]: +1 carta na mão por {duration} s.,[[lair|Temporary]]: +1 card in hand for {duration} s.
 DESC_dark_forge,"[[lair|Temporário]]: por {duration} s, monstros entram com +{monster_hp_pct}% de vida.","[[lair|Temporary]]: for {duration} s, monsters enter with +{monster_hp_pct}% health."
 UPG_sword_spin,Giro de Espada,Sword Spin
 UPG_tower_shield,Escudo Torre,Tower Shield
@@ -74,7 +74,6 @@ CON_crossfire,Fogo Cruzado,Crossfire
 CON_rat_storm,Tempestade de Ratos,Rat Storm
 CON_no_witnesses,Sem Testemunhas,No Witnesses
 CON_ambush,Emboscada,Ambush
-CON_empty_hand,Mão Vazia,Empty Hand
 CON_evil_architecture,Arquitetura do Mal,Evil Architecture
 CON_hunt,Caçada,Hunt
 CON_ritual_interrupted,Ritual Interrompido,Ritual Interrupted
@@ -82,7 +81,6 @@ CONG_tag_damage,Cause {amount} de dano com {tag},Deal {amount} damage with {tag}
 CONG_alive_tag,Tenha {amount} unidades de {tag} vivas,Have {amount} {tag} units alive
 CONG_damage_no_xp,Cause {amount} de dano sem perder nenhum monstro,Deal {amount} damage without losing a single monster
 CONG_burst,Cause {amount} de dano em {window} s,Deal {amount} damage within {window} s
-CONG_sacrifice,[[sacrifice|Sacrifique]] {amount} cartas,[[sacrifice|Sacrifice]] {amount} cards
 CONG_structures,Tenha {amount} [[structure|estruturas]] em campo,Have {amount} [[structure|structures]] on the field
 CONG_cc,Aplique [[slow|Lentidão]] ou [[fear|Medo]] {amount} vezes,Apply [[slow|Slow]] or [[fear|Fear]] {amount} times
 CONG_ritual_time,Mantenha o herói num [[ritual|Círculo]] por {amount} s,Keep the hero in a [[ritual|Circle]] for {amount} s
@@ -121,16 +119,15 @@ UI_RESULT_loss,Seu núcleo foi destruído.,Your core was destroyed.
 UI_RESULT_timeout,A run chegou ao limite de tempo.,The run reached its time limit.
 UI_RESTART,Nova run,New run
 UI_QUIT,Sair,Quit
-UI_SACRIFICE,Sacrificar (+{n}),Sacrifice (+{n})
 UI_ARENA,A LUTA FINAL COMEÇOU,THE FINAL BATTLE BEGINS
-UI_OVERTIME,"PRORROGAÇÃO: os altares apagaram e o herói não se cura mais","OVERTIME: the altars went dark and the hero no longer heals"
+UI_OVERTIME,PRORROGAÇÃO: os altares apagaram e o herói não se cura mais,OVERTIME: the altars went dark and the hero no longer heals
 UI_PART_left_arm,Braço esquerdo,Left arm
 UI_PART_right_arm,Braço direito,Right arm
 UI_PART_head,Cabeça,Head
 UI_PART_core,Núcleo,Core
 UI_PAUSED,Pausado,Paused
 UI_SPEED,Velocidade {n}x,Speed {n}x
-UI_HELP,1–6 carta · clique posiciona · X+nº ou clique direito sacrifica · M mapa · Q/E altares · Espaço pausa · F velocidade,1–6 card · click to place · X+num or right-click sacrifices · M map · Q/E altars · Space pauses · F speed
+UI_HELP,1–6 carta · clique posiciona · M mapa · Q/E altares · Espaço pausa · F velocidade,1–6 card · click to place · M map · Q/E altars · Space pauses · F speed
 UI_BLOCK_1,Elixir insuficiente,Not enough elixir
 UI_BLOCK_2,Não pode ser usada agora,Can't be used now
 UI_BLOCK_3,Condição não cumprida,Condition not met
@@ -151,7 +148,7 @@ TYPE_finisher,Finalização,Finisher
 UI_SUBTITLE,O herói está a caminho. Molde quem vai bater à sua porta.,The hero is coming. Shape who will knock on your door.
 HINT_start,"Jogue cartas em qualquer ponto da tela, a pelo menos 3 m do herói. Derrube os 5 heróis em fila: cada queda dá uma recompensa. Passe o mouse nas palavras coloridas para ler o que significam.","Play cards anywhere on screen, at least 3 m from the hero. Bring down the 5 queued heroes: each fall gives a reward. Hover the colored words to read what they mean."
 HINT_offer,Escolha uma recompensa para o deck (ou recuse). Cada local da estrada dá uma: vencer a disputa do local dá mais opções.,Pick a reward for your deck (or skip it). Every place on the road gives one: winning its contest gives more choices.
-HINT_shrine,[[shrine|Santuário]] à frente! Tenha monstros vivos no raio quando a contagem acabar para ganhar uma carta rara.,[[shrine|Shrine]] ahead! Have monsters alive in its radius when the countdown ends to earn a rare card.
+HINT_shrine,[[shrine|Santuário]] à frente! O herói abençoado defende o local: não leva dano e bate mais forte em quem está no círculo. Mantenha monstros vivos lá dentro para ganhar uma carta rara.,[[shrine|Shrine]] ahead! The blessed hero defends it: he takes no damage and hits harder at whoever stands in the circle. Keep monsters alive inside to earn a rare card.
 HINT_contract,Contrato! Cumpra o objetivo no prazo para escolher uma recompensa.,Contract! Meet the goal in time to choose a reward.
 HINT_route,Cartas de [[route|Rota]] são jogadas na faixa de rota à esquerda ou no mapa grande (M): clique no local que quer afetar.,[[route|Route]] cards are played on the route strip on the left or on the big map (M): click the place you want to affect.
 HINT_arena,A arena! Proteja o seu corpo. [[teleport|Teleporte]] o chefe com Q/E ou clicando num [[altar|altar]].,The arena! Protect your body. [[teleport|Teleport]] the boss with Q/E or by clicking an [[altar|altar]].
@@ -221,9 +218,6 @@ CTLP_card,L1 / R1,L1 / R1
 CTL_place,Posicionar,Place
 CTLK_place,Clique no mapa ou arraste a carta,Click the map or drag the card
 CTLP_place,A,A
-CTL_sacrifice,Sacrificar (+1 elixir),Sacrifice (+1 elixir)
-CTLK_sacrifice,"X + nº, clique direito ou arraste ao altar","X + number, right-click or drag to the altar"
-CTLP_sacrifice,Segurar B,Hold B
 CTL_cursor,Mover o cursor,Move the cursor
 CTLK_cursor,Mouse,Mouse
 CTLP_cursor,Analógico direito,Right stick
@@ -248,7 +242,6 @@ UI_IN_ARENA,Luta final no covil,Final battle in the lair
 UI_TIP_PAUSE,Pausar (Espaço),Pause (Space)
 UI_TIP_SPEED,Velocidade (F),Speed (F)
 UI_TIP_MAP,Mapa da rota (M),Route map (M)
-UI_TIP_SACRIFICE,Arraste uma carta até aqui (ou selecione e clique): ela vai para o descarte e devolve um pouco de elixir.,Drag a card here (or select it and click): it goes to the discard pile and refunds some elixir.
 UI_OFFER_KEYS,Clique numa opção ou aperte o número dela · 0 recusa,Click an option or press its number · 0 skips
 UI_RESUME,Continuar,Resume
 UI_SAVE_MENU,Salvar e voltar ao menu,Save and return to menu
@@ -331,7 +324,7 @@ KWD_root,"Preso no lugar: o herói não anda, mas ainda ataca quem estiver ao al
 KWD_shield,"O herói bloqueia o dano que vem da frente (cone de {shield_cone}°), até {shield_hp} de dano. Quebrado, volta inteiro em {shield_regen} s. Não bloqueia dano em área, de [[shadow|Sombra]] nem o que [[pierce|atravessa o escudo]].","The hero blocks damage coming from the front ({shield_cone}° cone), up to {shield_hp} damage. Once broken, it comes back whole after {shield_regen} s. It does not block area damage, [[shadow|Shadow]] or anything that [[pierce|pierces the shield]]."
 KWD_pierce,Esse dano ignora o [[shield|Escudo]] do herói.,This damage ignores the hero's [[shield|Shield]].
 KWD_elixir,O recurso para jogar cartas. Enche sozinho com o tempo; o custo fica no losango de cada carta.,The resource for playing cards. It refills over time; the cost is in each card's diamond.
-KWD_sacrifice,"Manda uma carta da mão para o descarte e devolve {sac_pct}% do [[elixir|Elixir]] máximo. Recarga de {sac_cd} s; durante ela, só giram as cartas que não dá para jogar agora (fora de fase ou sem condição). Clique direito na carta, X + número ou arraste até o botão Sacrificar.","Sends a card from your hand to the discard pile and refunds {sac_pct}% of your max [[elixir|Elixir]]. {sac_cd} s cooldown; meanwhile only cards you cannot play right now cycle (wrong phase or unmet condition). Right-click the card, X + number or drag it to the Sacrifice button."
+KWD_sacrifice,"Matar um monstro seu de propósito, com uma carta (Devorar, Sacrifício Sombrio, Ritual Profano, Banquete de Almas). A carta diz o que você ganha em troca.","Killing one of your own monsters on purpose, with a card (Devour, Dark Sacrifice, Profane Ritual, Soul Feast). The card says what you get in return."
 KWD_teleport,"Na arena, você (o chefe) salta para um [[altar|Altar]]. Custa {tp_cost} de [[elixir|Elixir]] e recarrega em {tp_cd} s. Use Q/E ou clique num altar.","In the arena, you (the boss) jump to an [[altar|Altar]]. Costs {tp_cost} [[elixir|Elixir]] and recharges in {tp_cd} s. Use Q/E or click an altar."
 KWD_altar,Pontos da arena para onde o chefe se [[teleport|teleporta]]. O herói pode quebrá-los ({altar_hp} de vida).,Arena spots the boss can [[teleport|teleport]] to. The hero can break them ({altar_hp} health).
 KWD_swarm,Tipo de carta: várias unidades pequenas de uma vez.,Card type: several small units at once.
@@ -340,17 +333,17 @@ KWD_spell,Tipo de carta: efeito imediato onde você joga.,Card type: an instant 
 KWD_structure,Tipo de carta: fica parada no lugar e age enquanto existir.,Card type: stays in place and acts while it stands.
 KWD_route,Tipo de carta: age sobre a estrada e os locais do herói. Jogue na faixa de rota ou no mapa (M).,Card type: acts on the hero's road and its places. Play it on the route strip or the map (M).
 KWD_lair,"Tipo de carta: efeito com duração. Depois vai ao descarte e volta no ciclo, sem limite de usos; funciona também na arena.","Card type: an effect with a duration. Then it goes to the discard and comes back in the cycle, with no use limit; also works in the arena."
-KWD_finisher,"Tipo de carta: só funciona na arena. Na estrada, dá para [[sacrifice|sacrificar]].",Card type: only works in the arena. On the road you can [[sacrifice|sacrifice]] it.
+KWD_finisher,Tipo de carta: só funciona na arena.,Card type: only works in the arena.
 KWD_veteran,Modificador: a carta cria +{veteran_extra_units} unidade ao ser jogada.,Modifier: the card creates +{veteran_extra_units} unit when played.
 KWD_cheap,Modificador: {cheap_cost} de custo de [[elixir|Elixir]] (mínimo {cheap_min_cost}).,Modifier: {cheap_cost} [[elixir|Elixir]] cost (minimum {cheap_min_cost}).
 KWD_explosive,Modificador: a unidade explode ao morrer e causa {explosive_damage} de dano ao herói a até {explosive_radius} m.,"Modifier: the unit explodes on death, dealing {explosive_damage} damage to the hero within {explosive_radius} m."
 KWD_cursed,Modificador: o dano da unidade aplica [[curse|Maldição]] no herói.,Modifier: the unit's damage applies a [[curse|Curse]] to the hero.
 KWD_shadowy,Modificador: a unidade não conta como baixa ao morrer.,Modifier: the unit does not count as a loss when it dies.
-KWD_tavern,"O herói para na taverna e defende as {tavern_houses} casas ({tavern_house_hp} de vida cada). Seus monstros a até {tavern_aggro} m vão nas casas. Destrua todas em {tavern_s} s para escolher entre 3 modificadores; se não, nada.",The hero stops at the tavern and defends its {tavern_houses} houses ({tavern_house_hp} health each). Your monsters within {tavern_aggro} m go for the houses. Destroy them all within {tavern_s} s to pick from 3 modifiers; otherwise nothing.
-KWD_fountain,"O herói se ajoelha e bebe por {fountain_s} s. Interrompa com medo, raiz, empurrão, petrificação ou {fountain_dmg} de dano para tirar a carta que quiser do deck. Se ele terminar de beber, cura {fountain_heal}% da vida e você não ganha nada.","The hero kneels and drinks for {fountain_s} s. Interrupt with fear, root, knockback, petrify or {fountain_dmg} damage to remove any card from your deck. If he finishes drinking, he heals {fountain_heal}% health and you get nothing."
-KWD_ritual,"Sacrifício: o herói para no círculo e seu [[elixir|Elixir]] enche {ritual_mult}× mais rápido. Faça {ritual_kills} monstros seus morrerem dentro dele em {ritual_s} s para subir o nível de 1 entre 3 cartas; se não, nada.",Sacrifice: the hero stops in the circle and your [[elixir|Elixir]] fills {ritual_mult}× faster. Get {ritual_kills} of your monsters killed inside it within {ritual_s} s to level up 1 of 3 cards; otherwise nothing.
-KWD_shrine,"O herói para no santuário por até {shrine_window} s. Mantenha monstros seus (não estruturas nem Mímico) dentro do círculo por {shrine_s} s somados para escolher entre 3 cartas raras; se não, nada.",The hero stops at the shrine for up to {shrine_window} s. Keep your monsters (not structures or the Mimic) inside the circle for {shrine_s} s in total to pick from 3 rare cards; otherwise nothing.
-KWD_bridge,"Na ponte o herói ataca {bridge_atk}% mais devagar por {bridge_s} s. Cause {bridge_win} de dano nesse tempo para escolher o tipo da recompensa (carta, nível ou remoção); se não, nada.","On the bridge the hero attacks {bridge_atk}% slower for {bridge_s} s. Deal {bridge_win} damage in that time to choose the reward type (card, level or removal); otherwise nothing."
+KWD_tavern,"O herói para na taverna e defende as {tavern_houses} casas ({tavern_house_hp} de vida cada no ato 1, mais nos seguintes). Seus monstros a até {tavern_aggro} m vão nas casas. Cada casa destruída em {tavern_s} s dá 1 escolha entre 3 modificadores: até 3 no total.","The hero stops at the tavern and defends its {tavern_houses} houses ({tavern_house_hp} health each in act 1, more later). Your monsters within {tavern_aggro} m go for the houses. Each house destroyed within {tavern_s} s gives 1 pick from 3 modifiers: up to 3 in total."
+KWD_fountain,"O herói se ajoelha e bebe. Em {fountain_window} s, a barra de dano mede o quanto você o atrapalha: {fountain_m1} de dano deixa remover 1 carta entre 25% do deck, {fountain_m2} entre 50% e {fountain_m3} qualquer carta (os números sobem a cada ato). Medo, raiz, empurrão ou petrificação enchem a barra na hora. Se ele terminar de beber sem nenhum marco, cura {fountain_heal}% da vida e você não ganha nada.","The hero kneels and drinks. Within {fountain_window} s the damage bar measures how much you disrupt him: {fountain_m1} damage lets you remove 1 card from 25% of the deck, {fountain_m2} from 50% and {fountain_m3} any card (numbers rise each act). Fear, root, knockback or petrify fill the bar at once. If he finishes drinking with no mark, he heals {fountain_heal}% health and you get nothing."
+KWD_ritual,"Sacrifício: o herói para no círculo e seu [[elixir|Elixir]] enche {ritual_mult}× mais rápido. Em {ritual_s} s, {ritual_m1} monstros seus mortos dentro dele deixam subir de nível 1 carta entre 25% do deck, {ritual_m2} entre 50% e {ritual_m3} qualquer carta (os números sobem a cada ato).","Sacrifice: the hero stops in the circle and your [[elixir|Elixir]] fills {ritual_mult}× faster. Within {ritual_s} s, {ritual_m1} of your monsters killed inside it lets you level up 1 card from 25% of the deck, {ritual_m2} from 50% and {ritual_m3} any card (numbers rise each act)."
+KWD_shrine,"O herói para no santuário por até {shrine_window} s e fica abençoado: não leva dano e causa +50% de dano a quem está no círculo (ele ataca esses monstros primeiro). Uma barra enche enquanto monstros seus (não estruturas nem Mímico) estão dentro do círculo: {shrine_m1}, {shrine_m2} e {shrine_m3} s somados dão, cada marco, 1 escolha entre 3 cartas raras.","The hero stops at the shrine for up to {shrine_window} s and is blessed: he takes no damage and deals +50% damage to whoever is in the circle (he attacks those monsters first). A bar fills while your monsters (not structures or the Mimic) are inside the circle: {shrine_m1}, {shrine_m2} and {shrine_m3} s in total each give 1 pick from 3 rare cards."
+KWD_bridge,"Na ponte o herói ataca {bridge_atk}% mais devagar por {bridge_s} s. Em {bridge_window} s, {bridge_m1} de dano dão 1 escolha de carta comum, {bridge_m2} somam 1 incomum e {bridge_m3} somam 1 rara (os números sobem a cada ato).","On the bridge the hero attacks {bridge_atk}% slower for {bridge_s} s. Within {bridge_window} s, {bridge_m1} damage gives a pick of 1 common card, {bridge_m2} adds 1 uncommon and {bridge_m3} adds 1 rare (numbers rise each act)."
 UPGD_sword_spin,"A cada {interval} s, se houver inimigos a até {radius} m, gira a espada e acerta todos com {mult_pct}% do dano.","Every {interval} s, if enemies are within {radius} m, spins his sword and hits them all for {mult_pct}% damage."
 UPGD_tower_shield,O [[shield|Escudo]] fica com {hp_mult}× de vida e passa a cobrir {cone}° à frente.,The [[shield|Shield]] gets {hp_mult}× health and covers {cone}° in front.
 UPGD_dash,Cercado por {surround}+ inimigos ou com [[slow|Lentidão]]: avança {distance} m pela estrada e se livra da Lentidão. Recarga de {cooldown} s. Só na estrada.,When surrounded by {surround}+ enemies or [[slow|Slowed]]: dashes {distance} m along the road and shakes off the Slow. {cooldown} s cooldown. Road only.
@@ -390,11 +383,11 @@ UI_OFFER_LOC_tavern,Taverna: escolha um modificador,Tavern: pick a modifier
 UI_OFFER_LOC_fountain,Fonte: tire uma carta do deck,Fountain: remove a card from your deck
 UI_OFFER_LOC_ritual,Ritual: suba o nível de uma carta,Ritual: level up a card
 UI_OFFER_LOC_shrine,Santuário: escolha uma carta rara,Shrine: pick a rare card
-UI_OFFER_LOC_bridge,Ponte: escolha sua recompensa,Bridge: pick your reward
+UI_OFFER_LOC_bridge,Ponte: escolha uma carta,Bridge: pick a card
 UI_OFFER_WON,Disputa vencida: recompensa completa,Contest won: full reward
 UI_OFFER_LOST,Disputa perdida: recompensa menor,Contest lost: smaller reward
 UI_OFFER_SKIP,Recusar,Skip
-UI_OPT_UP_HEAD,Subir de nível: {a} → {b},Level up: {a} → {b}
+UI_OPT_UP_HEAD,Nível {a} → {b} ★,Level {a} → {b} ★
 UI_OPT_UP_N3,Ganha o efeito especial do nível 3.,Gains its level 3 special effect.
 UI_OPT_PICK_HEAD,Escolha o tipo,Choose the type
 UI_PICK_card,Carta nova,New card
@@ -434,7 +427,6 @@ LVLK_hero_hp_loss,Vida do herói,Hero health
 LVLK_cone,Cone (°),Cone (°)
 LVLK_root,Preso (s),Root (s)
 LVLK_petrify,Petrificação (s),Petrify (s)
-UI_SACRIFICE_CD,Sacrificar (recarga),Sacrifice (recharging)
 LOC_shop,Loja,Shop
 KW_shop,Loja,Shop
 KWD_shop,"Sem disputa: quando o herói chega, a loja abre. Gaste [[gold|Ouro]] em cartas, nível de carta, modificador ou remoção. Toda rota de cada ato passa por uma loja.","No contest: when the hero arrives, the shop opens. Spend [[gold|Gold]] on cards, a card level, a modifier or a removal. Every route of every act passes a shop."
@@ -457,7 +449,6 @@ UI_ROUTE_CHOOSE,Escolha o caminho,Choose the path
 UI_ROUTE_KEYS,"Clique num local da próxima fileira · 1, 2 e 3 escolhem da esquerda para a direita","Click a place on the next row · 1, 2 and 3 pick from left to right"
 UI_MAP_PICK,Clique num local à frente para planejar o caminho,Click a place ahead to plan the path
 UI_GOLD,{g} de ouro,{g} gold
-UI_SACRIFICE_WAIT,Sacrifício recarregando: agora só gira carta que não dá para jogar,Sacrifice recharging: only cards you cannot play cycle now
 LOC_event,Encruzilhada ?,Crossroads ?
 KWD_event,"Um encontro de texto sorteado: escolha uma das opções. Algumas dão recompensas, outras cobram um preço.","A random text encounter: pick one of the options. Some give rewards, others come at a price."
 UI_ACT,Ato {n},Act {n}
@@ -488,8 +479,6 @@ UI_COMP_PASSIVE,Passiva,Passive
 UI_COMP_REWARD,Recompensa: {r},Reward: {r}
 REL_bone_crown,Coroa de Ossos,Bone Crown
 RELD_bone_crown,"A cada 10 monstros seus mortos, +1 de elixir.","Every 10 of your monsters killed, +1 elixir."
-REL_portable_altar,Altar Portátil,Portable Altar
-RELD_portable_altar,A recarga do sacrifício cai pela metade.,Sacrifice cooldown is halved.
 REL_lair_tithe,Dízimo do Covil,Lair Tithe
 RELD_lair_tithe,"Ouro do dano no herói ×1,3.",Gold from damage to the hero ×1.3.
 REL_black_mortar,Argamassa Negra,Black Mortar
@@ -529,7 +518,7 @@ EVT_profane_altar_BODY,Um altar pede uma oferenda.,An altar demands an offering.
 EVT_profane_altar_card,Oferecer uma carta,Offer a card
 EVT_profane_altar_card_D,Remova 1 carta e suba outra de nível.,Remove 1 card and level up another.
 EVT_profane_altar_blood,Oferecer sangue,Offer blood
-EVT_profane_altar_blood_D,"+2 de elixir máximo até o fim do ato; suas próximas 3 cartas custam 1 a mais.","+2 max elixir until the end of the act; your next 3 cards cost 1 more."
+EVT_profane_altar_blood_D,+2 de elixir máximo até o fim do ato; suas próximas 3 cartas custam 1 a mais.,+2 max elixir until the end of the act; your next 3 cards cost 1 more.
 EVT_profane_altar_leave,Seguir,Move on
 EVT_profane_altar_leave_D,Nada acontece.,Nothing happens.
 EVT_prisoner,Prisioneiro,Prisoner
@@ -622,7 +611,7 @@ UI_WANTED_REWARD,recompensa: o reino,reward: the kingdom
 UI_GOAL_ritual,Mate {g} no círculo!,Kill {g} in the circle!
 UI_GOALSUB_ritual,Faça monstros morrerem no ritual · {s} s,Get monsters killed in the ritual · {s} s
 UI_GOAL_shrine,Segure o santuário!,Hold the shrine!
-UI_GOALSUB_shrine,{g} s com monstros no círculo · {s} s,{g} s with monsters in the circle · {s} s
+UI_GOALSUB_shrine,Herói abençoado (sem dano) · {g} s com monstros no círculo · {s} s,Blessed hero (no damage) · {g} s with monsters in the circle · {s} s
 UI_GOAL_tavern,Destrua {g} casas!,Destroy {g} houses!
 UI_GOALSUB_tavern,Antes que o herói descanse · {s} s,Before the hero rests · {s} s
 UI_GOAL_bridge,Cause {g} de dano!,Deal {g} damage!
@@ -687,8 +676,8 @@ DECK_cult,Culto,Cult
 DECK_plague,Rainha da Praga,Plague Queen
 DECK_dragon,Dragão Avarento,Greedy Dragon
 DECK_lich,Lich,Lich
-VILLAIN_plague_PASSIVE,"Infestação: criatura de [[pack|Bando]] que morre tem 20% de chance de deixar um rato.","Infestation: a [[pack|Pack]] creature that dies has a 20% chance to leave a rat behind."
-VILLAIN_dragon_PASSIVE,"Tesouro do Dragão: começa com 30 de ouro; cada 50 de ouro guardado dá +5% de dano de fogo (até +30%).","Dragon's Hoard: start with 30 gold; every 50 gold kept gives +5% fire damage (up to +30%)."
+VILLAIN_plague_PASSIVE,Infestação: criatura de [[pack|Bando]] que morre tem 20% de chance de deixar um rato.,Infestation: a [[pack|Pack]] creature that dies has a 20% chance to leave a rat behind.
+VILLAIN_dragon_PASSIVE,Tesouro do Dragão: começa com 30 de ouro; cada 50 de ouro guardado dá +5% de dano de fogo (até +30%).,Dragon's Hoard: start with 30 gold; every 50 gold kept gives +5% fire damage (up to +30%).
 VILLAIN_lich_PASSIVE,"Colheita: a cada 8 mortes de criaturas suas, o próximo feitiço custa 0.","Harvest: every 8 deaths of your creatures, your next spell costs 0."
 UI_PACT_OF_crypt,Pacto da,Pact of the
 UI_PACT_OF_cult,Pacto do,Pact of the
@@ -724,14 +713,13 @@ PHASED_3,Clérigas se curam e abençoam quem vem depois. Derrube-as rápido.,Cle
 PHASED_4,"Eles andam juntos: quando um cai, quem chega levanta o caído (uma vez cada). O grupo cresce a cada queda. Enxames sofrem contra o grupo: fogo e mortes funcionam melhor.","They travel together: when one falls, whoever arrives raises the fallen (once each). The party grows with every fall. Swarms struggle against the group: fire and deaths work better."
 UI_HEROES_STANDING,{n} de pé,{n} standing
 TUT_welcome,"Você é o Lorde das Trevas, hoje com a Rainha da Praga como vilão. Os heróis vêm pela estrada até o seu covil: derrube os 3 antes que cheguem a você.","You are the Dark Lord, today playing the Plague Queen as your villain. Heroes come down the road to your lair: bring down all 3 before they reach you."
-TUT_play,"Arraste uma carta da mão para o chão perto do herói (ou aperte 1 a 5 e clique). Cartas custam [[elixir|Elixir]], que enche sozinho; o máximo sobe a cada ato.","Drag a card from your hand onto the ground near the hero (or press 1 to 5 and click). Cards cost [[elixir|Elixir]], which refills on its own; the maximum goes up every act."
+TUT_play,"Arraste uma carta da mão para o chão perto do herói (ou aperte 1 a 5 e clique). Cartas custam [[elixir|Elixir]], que enche sozinho; só as relíquias aumentam o máximo e a velocidade.","Drag a card from your hand onto the ground near the hero (or press 1 to 5 and click). Cards cost [[elixir|Elixir]], which refills on its own; only relics raise its maximum and speed."
 TUT_deck,"A carta jogada vai para o descarte e outra vem da pilha de compra (os montes ficam ao lado da mão; clique para ver a lista). Quando a compra acaba, o descarte é embaralhado e volta.","A played card goes to the discard pile and another comes from the draw pile (the piles sit beside your hand; click one to see its list). When the draw pile runs out, the discard is shuffled and comes back."
 TUT_temp,"Esta carta é [[lair|Temporária]]: dá um efeito por alguns segundos, vai ao descarte e volta no ciclo como qualquer outra.","This card is [[lair|Temporary]]: it gives an effect for a few seconds, goes to the discard and returns in the cycle like any other."
 TUT_pack,Combo do [[pack|Bando]]: os Ratos Raivosos ficam mais fortes com mais ratos em campo. Jogue a Horda e depois os Raivosos.,"[[pack|Pack]] combo: Rabid Rats get stronger with more rats on the field. Play the Horde, then the Rabid Rats."
 TUT_call,O Chamado do Bando deixa todos os seus ratos mais rápidos e fortes por alguns segundos. Use quando o bando estiver grande.,Pack Call makes all your rats faster and stronger for a few seconds. Use it when the pack is big.
 TUT_shield,O herói tem escudo na frente. Monstros que chegam por trás e pelos lados acertam em cheio.,The hero has a shield in front. Monsters coming from behind and the sides land full hits.
-TUT_sacrifice,Carta ruim agora? Clique com o botão direito para [[sacrifice|sacrificar]]: ela vai para o descarte e você recupera uma parte do elixir máximo.,Bad card right now? Right-click to [[sacrifice|sacrifice]] it: it goes to the discard pile and you recover part of your max elixir.
-TUT_location,"Os locais na estrada (círculos) são disputas em 3 etapas enquanto o herói está lá. Quanto mais etapas você vencer, maior a recompensa: com 1 ou 2 vem ouro; com as 3, o prêmio inteiro.","Places on the road (circles) are contests in 3 stages while the hero is there. The more stages you win, the bigger the reward: 1 or 2 give gold; all 3 give the full prize."
+TUT_location,Os locais na estrada (círculos) são disputas com uma barra de 3 marcos enquanto o herói está lá. Cada marco que a barra alcança dá uma recompensa; os 3 marcos dão ainda mais ouro.,Places on the road (circles) are contests with a 3-mark bar while the hero is there. Each mark the bar reaches gives a reward; all 3 marks also give bonus gold.
 TUT_fall,"Um herói caiu! O próximo vem mais forte, com uma habilidade nova. Escolha a sua recompensa.","A hero fell! The next one comes stronger, with a new ability. Pick your reward."
 TUT_arena,"O herói chegou ao covil. Na arena, ele ataca as partes do seu corpo: defenda com monstros e feitiços. As cartas de Rota ficam fora do baralho até a arena acabar.",The hero reached the lair. In the arena he attacks your body parts: defend with monsters and spells. Route cards stay out of your deck until the arena ends.
 TUT_done,Tutorial concluído! A Fase 1 está liberada.,Tutorial complete! Stage 1 is unlocked.
@@ -797,29 +785,29 @@ CARD_gold_avalanche,Avalanche de Ouro,Gold Avalanche
 CARD_eruption,Erupção,Eruption
 CARD_elder_dragon,Dragão Ancião,Elder Dragon
 DESC_spark,"{damage} de dano de [[fire|Fogo]]. Detona: no herói [[soaked|Encharcado]], ele pega fogo ({burn_dps}/s por {burn_s} s) e o fogo salta para quem estiver a até {radius} m.","{damage} [[fire|Fire]] damage. Payoff: on a [[soaked|Soaked]] hero, he catches fire ({burn_dps}/s for {burn_s} s) and the fire jumps to anyone within {radius} m."
-DESC_kobold_scavengers,"Enxame de kobolds fracos. Cada golpe no herói rende {gold_per_hit} de [[gold|Ouro]].","A swarm of weak kobolds. Each hit on the hero earns you {gold_per_hit} [[gold|Gold]]."
-DESC_molten_gold,"Precisa de {gold_cost} de [[gold|Ouro]]. Gasta até {gold_max}: cada um vira {fire_per_gold} de dano de [[fire|Fogo]] num raio de {radius} m e deixa o herói com [[slow|Lentidão]] por {slow} s.","Needs {gold_cost} [[gold|Gold]]. Spends up to {gold_max}: each becomes {fire_per_gold} [[fire|Fire]] damage in a {radius} m radius and leaves the hero [[slow|Slowed]] for {slow} s."
+DESC_kobold_scavengers,Enxame de kobolds fracos. Cada golpe no herói rende {gold_per_hit} de [[gold|Ouro]].,A swarm of weak kobolds. Each hit on the hero earns you {gold_per_hit} [[gold|Gold]].
+DESC_molten_gold,Precisa de {gold_cost} de [[gold|Ouro]]. Gasta até {gold_max}: cada um vira {fire_per_gold} de dano de [[fire|Fogo]] num raio de {radius} m e deixa o herói com [[slow|Lentidão]] por {slow} s.,Needs {gold_cost} [[gold|Gold]]. Spends up to {gold_max}: each becomes {fire_per_gold} [[fire|Fire]] damage in a {radius} m radius and leaves the hero [[slow|Slowed]] for {slow} s.
 DESC_trap_chest,"Baú que parece um tesouro. Quando o herói o destrói, explode em {boom} de dano de [[fire|Fogo]] e você ganha {gold} de [[gold|Ouro]].","A chest that looks like treasure. When the hero destroys it, it explodes for {boom} [[fire|Fire]] damage and you gain {gold} [[gold|Gold]]."
-DESC_treasure_guard,"Guardião de ouro e osso. Ganha {hp_per_gold} de vida por [[gold|Ouro]] que você tem (até +{hp_cap}) quando entra.","A guardian of gold and bone. When it enters, it gains {hp_per_gold} health per [[gold|Gold]] you hold (up to +{hp_cap})."
+DESC_treasure_guard,Guardião de ouro e osso. Ganha {hp_per_gold} de vida por [[gold|Ouro]] que você tem (até +{hp_cap}) quando entra.,"A guardian of gold and bone. When it enters, it gains {hp_per_gold} health per [[gold|Gold]] you hold (up to +{hp_cap})."
 DESC_furnace,"Dura {duration} s. A até {radius} m, o herói não seca ([[soaked|Encharcado]] não acaba) e o [[fire|Fogo]] causa +{fire_bonus_pct}% de dano.","Lasts {duration} s. Within {radius} m, the hero does not dry off ([[soaked|Soaked]] never ends) and [[fire|Fire]] deals +{fire_bonus_pct}% damage."
 DESC_dragon_vault,"[[lair|Temporário]]: por {duration} s, todo [[gold|Ouro]] que você ganha vem com +{gold_mult_pct}%.","[[lair|Temporary]]: for {duration} s, all [[gold|Gold]] you earn is increased by {gold_mult_pct}%."
-DESC_blood_tax,"Paga {gold_cost} de [[gold|Ouro]]: a próxima carta custa {discount} a menos. Retorna ao baralho uma vez por embaralhada.","Pay {gold_cost} [[gold|Gold]]: the next card costs {discount} less. Returns to the draw pile once per shuffle."
+DESC_blood_tax,Paga {gold_cost} de [[gold|Ouro]]: a próxima carta custa {discount} a menos. Retorna ao baralho uma vez por embaralhada.,Pay {gold_cost} [[gold|Gold]]: the next card costs {discount} less. Returns to the draw pile once per shuffle.
 DESC_ember_rain,"Por {duration} s, num raio de {radius} m: {dps} de dano de [[fire|Fogo]] por segundo. Óleo no chão pega fogo.","For {duration} s, in a {radius} m radius: {dps} [[fire|Fire]] damage per second. Oil on the ground catches fire."
-DESC_gold_avalanche,"Precisa de {gold_cost} de [[gold|Ouro]]. Dano igual a {gold_mult}× o seu ouro (até {cap}) num raio de {radius} m e deixa o herói [[root|Preso]] por {stun} s. O ouro não é gasto.","Needs {gold_cost} [[gold|Gold]]. Damage equal to {gold_mult}× your gold (up to {cap}) in a {radius} m radius, and the hero is [[root|Rooted]] for {stun} s. The gold is not spent."
-DESC_eruption,"Tudo que está [[soaked|Encharcado]] ou coberto de óleo explode: {damage} de dano de [[fire|Fogo]]. O chão queima por {fire_s} s ({fire_dps}/s).","Everything [[soaked|Soaked]] or covered in oil explodes: {damage} [[fire|Fire]] damage. The ground burns for {fire_s} s ({fire_dps}/s)."
+DESC_gold_avalanche,Precisa de {gold_cost} de [[gold|Ouro]]. Dano igual a {gold_mult}× o seu ouro (até {cap}) num raio de {radius} m e deixa o herói [[root|Preso]] por {stun} s. O ouro não é gasto.,"Needs {gold_cost} [[gold|Gold]]. Damage equal to {gold_mult}× your gold (up to {cap}) in a {radius} m radius, and the hero is [[root|Rooted]] for {stun} s. The gold is not spent."
+DESC_eruption,Tudo que está [[soaked|Encharcado]] ou coberto de óleo explode: {damage} de dano de [[fire|Fogo]]. O chão queima por {fire_s} s ({fire_dps}/s).,Everything [[soaked|Soaked]] or covered in oil explodes: {damage} [[fire|Fire]] damage. The ground burns for {fire_s} s ({fire_dps}/s).
 DESC_elder_dragon,"Dragão voador com sopro de [[fire|Fogo]] ({breath_dps} por segundo). Ao entrar, solta uma Chuva de Brasas ({rain_dps}/s por {rain_s} s num raio de {rain_radius} m).","A flying dragon with a [[fire|Fire]] breath ({breath_dps} per second). When it enters, it unleashes an Ember Rain ({rain_dps}/s for {rain_s} s in a {rain_radius} m radius)."
-N3_spark,"N3: queima mais forte ({burn_dps}/s por {burn_s} s).","L3: burns harder ({burn_dps}/s for {burn_s} s)."
-N3_kobold_scavengers,"N3: cada golpe rende {gold_per_hit} de ouro.","L3: each hit earns {gold_per_hit} gold."
-N3_molten_gold,"N3: {fire_per_gold} de fogo por ouro.","L3: {fire_per_gold} fire per gold."
-N3_trap_chest,"N3: explode em {boom} e rende {gold} de ouro.","L3: explodes for {boom} and earns {gold} gold."
-N3_treasure_guard,"N3: {hp_per_gold} de vida por ouro (até +{hp_cap}).","L3: {hp_per_gold} health per gold (up to +{hp_cap})."
-N3_furnace,"N3: o fogo causa +{fire_bonus_pct}%.","L3: fire deals +{fire_bonus_pct}%."
-N3_dragon_vault,"N3: +{gold_mult_pct}% de ouro.","L3: +{gold_mult_pct}% gold."
-N3_blood_tax,"N3: a próxima carta custa {discount} a menos.","L3: the next card costs {discount} less."
-N3_ember_rain,"N3: {dps} de fogo por segundo.","L3: {dps} fire per second."
-N3_gold_avalanche,"N3: deixa o herói preso por {stun} s.","L3: roots the hero for {stun} s."
-N3_eruption,"N3: o chão queima a {fire_dps}/s.","L3: the ground burns at {fire_dps}/s."
-N3_elder_dragon,"N3: a Chuva de Brasas causa {rain_dps}/s.","L3: the Ember Rain deals {rain_dps}/s."
+N3_spark,N3: queima mais forte ({burn_dps}/s por {burn_s} s).,L3: burns harder ({burn_dps}/s for {burn_s} s).
+N3_kobold_scavengers,N3: cada golpe rende {gold_per_hit} de ouro.,L3: each hit earns {gold_per_hit} gold.
+N3_molten_gold,N3: {fire_per_gold} de fogo por ouro.,L3: {fire_per_gold} fire per gold.
+N3_trap_chest,N3: explode em {boom} e rende {gold} de ouro.,L3: explodes for {boom} and earns {gold} gold.
+N3_treasure_guard,N3: {hp_per_gold} de vida por ouro (até +{hp_cap}).,L3: {hp_per_gold} health per gold (up to +{hp_cap}).
+N3_furnace,N3: o fogo causa +{fire_bonus_pct}%.,L3: fire deals +{fire_bonus_pct}%.
+N3_dragon_vault,N3: +{gold_mult_pct}% de ouro.,L3: +{gold_mult_pct}% gold.
+N3_blood_tax,N3: a próxima carta custa {discount} a menos.,L3: the next card costs {discount} less.
+N3_ember_rain,N3: {dps} de fogo por segundo.,L3: {dps} fire per second.
+N3_gold_avalanche,N3: deixa o herói preso por {stun} s.,L3: roots the hero for {stun} s.
+N3_eruption,N3: o chão queima a {fire_dps}/s.,L3: the ground burns at {fire_dps}/s.
+N3_elder_dragon,N3: a Chuva de Brasas causa {rain_dps}/s.,L3: the Ember Rain deals {rain_dps}/s.
 CARD_raised_servant,Servo Reanimado,Raised Servant
 CARD_life_drain,Dreno de Vida,Life Drain
 CARD_profane_ritual,Ritual Profano,Profane Ritual
@@ -896,3 +884,125 @@ KW_plague,Peste,Plague
 KWD_plague,Estado do herói: cada mordida da Praga acumula 1; cada acúmulo faz o herói receber +3% de dano (até 15) e some 8 s depois da última mordida.,Hero state: each Plague bite stacks 1; each stack makes the hero take +3% damage (up to 15) and fades 8 s after the last bite.
 KW_beast,Fera,Beast
 KWD_beast,"Tipo de monstro da Praga: predador solitário. As cartas de Fera se alimentam do Bando e da Peste (Devorar, Instinto de Caça).","Plague monster type: a lone predator. Beast cards feed on the Pack and on Plague (Devour, Hunting Instinct)."
+UI_OFFER_ACT_CARD,Fim do ato {a}: escolha uma carta (mais chance de rara e de melhorada),End of act {a}: pick a card (better odds of rare and upgraded)
+UI_MAP_SCROLL,"Roda do mouse, arrastar ou setas: rolar o mapa","Mouse wheel, drag or arrows: scroll the map"
+UI_MAP_LEG_DONE,Já percorrido,Travelled
+UI_MAP_LEG_PLAN,Caminho escolhido,Chosen path
+UI_MAP_LEG_OPEN,Caminho possível,Possible path
+UI_MAP_LEG_SHUT,Fora da rota,Off the route
+UI_MAP_UNKNOWN,Terra desconhecida,Unknown lands
+UI_MAP_WEST,O,W
+UI_MAP_EAST,L,E
+UI_MAP_ACTNAME_0_0,As Marchas Cinzentas,The Grey Marches
+UI_MAP_ACTNAME_0_1,Os Campos do Sino Rachado,The Cracked Bell Fields
+UI_MAP_ACTNAME_0_2,O Bosque dos Enforcados,The Hanged Men's Wood
+UI_MAP_ACTNAME_1_0,O Vale dos Corvos Mudos,The Vale of Silent Crows
+UI_MAP_ACTNAME_1_1,Os Brejos da Lua Torta,The Crooked Moon Fens
+UI_MAP_ACTNAME_1_2,As Colinas do Último Sino,The Last Bell Hills
+UI_MAP_ACTNAME_2_0,A Serra da Coroa Rachada,The Cracked Crown Range
+UI_MAP_ACTNAME_2_1,Os Picos do Rei Cinzento,The Grey King's Peaks
+UI_MAP_ACTNAME_2_2,O Planalto das Cinzas Frias,The Cold Ash Plateau
+LOC_helper,Herói Ajudante,Helper Hero
+KW_helper,Herói Ajudante,Helper Hero
+KWD_helper,"Outro herói está parado ao lado do herói da vez e luta junto dele contra os seus monstros: são 2 contra você. O herói para e briga ali por até {helper_s} s. Mate o ajudante a tempo ({helper_hp1} / {helper_hp2} / {helper_hp3} de vida nos atos 1 / 2 / 3) para escolher 1 de 3 relíquias. Se o tempo acabar, ele vai embora e você não ganha nada.","Another hero stands beside the current hero and fights with him against your monsters: it is 2 against you. The hero stops and fights there for up to {helper_s} s. Kill the helper in time ({helper_hp1} / {helper_hp2} / {helper_hp3} health in acts 1 / 2 / 3) to pick 1 of 3 relics. If time runs out, he leaves and you get nothing."
+UI_CONTEST_helper,Herói Ajudante: {p} de {g} de dano · {s} s,Helper Hero: {p} of {g} damage · {s} s
+UI_GOAL_helper,Mate o Herói Ajudante!,Kill the Helper Hero!
+UI_GOALSUB_helper,{g} de vida · {s} s · matar = 1 de 3 relíquias; falhar = nada,{g} health · {s} s · kill = 1 of 3 relics; fail = nothing
+HINT_helper,"[[helper|Herói Ajudante]] à frente! Ele luta junto do herói da vez: são 2 contra você. Mande monstros e feitiços no ajudante: matá-lo em 60 s dá 1 de 3 relíquias; se não, ele vai embora sem nada.",[[helper|Helper Hero]] ahead! He fights alongside the current hero: it is 2 against you. Send monsters and spells at the helper: killing him within 60 s gives 1 of 3 relics; otherwise he leaves with nothing.
+UI_OFFER_RELIC_HELPER,Herói Ajudante derrotado: escolha uma relíquia do covil,Helper Hero defeated: pick a lair relic
+UI_HELPER_BONUS_escudeiro,O ajudante deu um escudo ao herói,The helper gave the hero a shield
+UI_HELPER_BONUS_arqueira,O ajudante deu +20% de dano ao herói,The helper gave the hero +20% damage
+UI_HELPER_BONUS_cleriga,O ajudante curou e abençoou o herói,The helper healed and blessed the hero
+UI_HELPER_BONUS_mago,O ajudante deu dano e golpe em área ao herói,The helper gave the hero damage and area hits
+UI_SHOP_RELIC,Relíquia {r},{r} relic
+UI_CONTEST_HARD,☠ Difícil: os 3 marcos dão também uma relíquia,☠ Hard: all 3 marks also give a relic
+REL_elixir_flask,Frasco de Elixir,Elixir Flask
+RELD_elixir_flask,+2 de elixir máximo.,+2 max elixir.
+REL_quick_spring,Nascente Veloz,Quick Spring
+RELD_quick_spring,O elixir enche 40% mais rápido.,Elixir refills 40% faster.
+REL_deep_cauldron,Caldeirão Fundo,Deep Cauldron
+RELD_deep_cauldron,+3 de elixir máximo.,+3 max elixir.
+REL_rushing_tide,Maré Veloz,Rushing Tide
+RELD_rushing_tide,O elixir enche 60% mais rápido.,Elixir refills 60% faster.
+REL_victory_mark,Marca da Vitória,Victory Mark
+RELD_victory_mark,Alcançar os 3 marcos de uma disputa dá +1 de elixir máximo até o fim da run (até +4).,Reaching all 3 marks of a contest grants +1 max elixir for the rest of the run (up to +4).
+REL_heart_of_well,Coração do Poço,Heart of the Well
+RELD_heart_of_well,+4 de elixir máximo.,+4 max elixir.
+REL_eternal_fountain,Fonte Eterna,Eternal Fountain
+RELD_eternal_fountain,+3 de elixir máximo e o elixir enche 60% mais rápido.,+3 max elixir and elixir refills 60% faster.
+REL_living_vault,Cofre Vivo,Living Vault
+RELD_living_vault,Cada 100 de ouro gastos na loja dão +1 de elixir máximo (até +4).,Every 100 gold spent in shops grants +1 max elixir (up to +4).
+REL_hand_pocket,Bolso Extra,Extra Pocket
+RELD_hand_pocket,Mão +1 carta.,Hand +1 card.
+REL_opening_gambit,Abertura,Opening Gambit
+RELD_opening_gambit,A primeira carta jogada contra cada herói custa 0.,The first card played against each hero costs 0.
+REL_act_hoard,Tesouro de Ato,Act Hoard
+RELD_act_hoard,Começa cada ato com +80 de ouro.,Start each act with +80 gold.
+REL_twin_litter,Ninhada Dobrada,Twin Litter
+RELD_twin_litter,Cartas de [[pack|Bando]] invocam +1 unidade.,[[pack|Pack]] cards summon +1 unit.
+REL_phylactery,Filactério,Phylactery
+RELD_phylactery,"Uma vez por herói, o primeiro monstro seu morto por ele volta com a vida cheia.","Once per hero, the first of your monsters he kills comes back at full health."
+REL_greedy_seal,Selo da Ganância,Greedy Seal
+RELD_greedy_seal,Ofertas de relíquia mostram +1 opção.,Relic offers show +1 option.
+REL_grave_call,Chamado da Cova,Grave Call
+RELD_grave_call,Monstro seu que morre tem 25% de chance de voltar como Esqueleto (só vida e dano; não volta de novo).,Your monsters that die have a 25% chance to come back as a Skeleton (health and damage only; never returns again).
+REL_lucky_coin,Moeda da Sorte,Lucky Coin
+RELD_lucky_coin,20% de chance de uma carta jogada não gastar o [[elixir|elixir]].,20% chance that a played card costs no [[elixir|elixir]].
+REL_war_drum,Tambor de Guerra,War Drum
+RELD_war_drum,Chegar a um local com disputa dá +3 de elixir.,Reaching a location with a contest grants +3 elixir.
+REL_forge_hammer,Martelo da Forja,Forge Hammer
+RELD_forge_hammer,"Ao pegar: 3 cartas do baralho, sorteadas, sobem 1 nível.",On pickup: 3 random cards in your deck go up 1 level.
+REL_tinker_file,Lima do Funileiro,Tinker's File
+RELD_tinker_file,"Ao pegar: 2 cartas do baralho, sorteadas, custam 1 a menos para sempre (nunca uma de custo 0).",On pickup: 2 random cards in your deck cost 1 less for good (never a 0-cost card).
+REL_blood_tithe,Dízimo de Sangue,Blood Tithe
+RELD_blood_tithe,Ao pegar: o herói da vez perde 10% da vida máxima.,On pickup: the current hero loses 10% of his max health.
+REL_tar_pit,Piche,Tar Pit
+RELD_tar_pit,O herói da vez anda 25% mais devagar até cair (o seguinte vem normal).,The current hero walks 25% slower until he falls (the next one is normal).
+REL_stamp_ink,Tinta de Carimbo,Stamp Ink
+RELD_stamp_ink,Ao pegar: 2 modificadores sorteados em cartas sorteadas do baralho.,On pickup: 2 random modifiers on random cards in your deck.
+UI_LEDGER_TITLE,Livro-caixa do Mascate,The Peddler's Ledger
+UI_LEDGER_SUB,"estoque do dia (sem fiado, sem troco)","today's stock (no credit, no change)"
+UI_LEDGER_SERV,Serviços e relíquia,Services and relic
+UI_LEDGER_SERV_SUB,cobrado à parte,charged separately
+UI_LEDGER_LOG,Registro do dia,Today's record
+UI_LEDGER_OPEN,Abri a banca. O Vilão entrou.,Opened the stall. The Villain walked in.
+UI_LEDGER_SOLD,Vendido ao Vilão: {x},Sold to the Villain: {x}
+UI_LEDGER_MODDED,Colei {x},Applied {x}
+UI_LEDGER_UPGRADED,Melhorei {card},Upgraded {card}
+UI_LEDGER_BURNT,Queimei {card},Burned {card}
+UI_LEDGER_DECK,{n} cartas no baralho,{n} cards in deck
+UI_LEDGER_DECKN,baralho: {n},deck: {n}
+UI_LEDGER_STAMP_SOLD,VENDIDO,SOLD
+UI_LEDGER_STAMP_DONE,FEITO,DONE
+UI_LEDGER_BUY,Enter ou clique para comprar.,Enter or click to buy.
+UI_LEDGER_BUY_PAD,Aperte A para comprar.,Press A to buy.
+UI_LEDGER_SHORT,Faltam {n} de ouro.,{n} more gold needed.
+UI_LEDGER_POOR,Ouro insuficiente: faltam {n} de ouro,Not enough gold: {n} short
+UI_LEDGER_TOAST_CARD,Foi para o seu baralho.,Added to your deck.
+UI_LEDGER_TOAST_REL,Agora é sua.,It's yours now.
+UI_LEDGER_TOAST_UP,Carta melhorada.,Card upgraded.
+UI_LEDGER_TOAST_MOD,Efeito colado.,Effect applied.
+UI_LEDGER_TOAST_REM,Carta queimada.,Card burned.
+UI_LEDGER_MOD,{mod} em {card},{mod} on {card}
+UI_LEDGER_MOD_TYPE,Modificador,Modifier
+UI_LEDGER_D_upgrade,Escolha uma carta do baralho para subir um nível (+). Ela passa a valer mais.,Pick a card in your deck to level up (+). It becomes stronger.
+UI_LEDGER_D_remove,Queime uma carta do baralho para deixá-lo mais enxuto. Cada remoção na run custa {s} a mais.,Burn a card from your deck to make it leaner. Each removal this run costs {s} more.
+UI_LEDGER_K_MOVE,mover,move
+UI_LEDGER_K_BUY,comprar,buy
+UI_LEDGER_K_LEAVE,sair,leave
+UI_LEDGER_PICK_SUB_upgrade,Escolha a carta que ganha a melhoria (+),Pick the card that gets the upgrade (+)
+UI_LEDGER_PICK_SUB_remove,Escolha a carta que vai para a fogueira,Pick the card that goes into the fire
+UI_LEDGER_BEFORE,antes,before
+UI_LEDGER_AFTER,depois,after
+UI_LEDGER_CAP_upgrade,"Em verde, o que melhora.",Green shows what improves.
+UI_LEDGER_CAP_remove,A carta vira cinza.,The card turns to ash.
+UI_LEDGER_MAXED,já no máximo,already maxed
+UI_LEDGER_NONE,Nenhuma carta para escolher.,No card to choose.
+UI_LEDGER_CONFIRM,Confirmar,Confirm
+UI_LEDGER_BACK,Voltar,Back
+UI_LEDGER_PICK_HINT,↑ ↓ escolher · clique escolhe · Enter confirma · Esc volta,↑ ↓ choose · click selects · Enter confirms · Esc goes back
+UI_LEDGER_PICK_HINT_PAD,LB RB escolher · A confirma · B volta,LB RB choose · A confirms · B goes back
+UI_OFFER_MARK,Marco {a} de 3 alcançado,Mark {a} of 3 reached
+UI_BANNER_MARK,Marco {n}!,Mark {n}!
+UI_BANNER_PARTIAL,{n} de 3 marcos,{n} of 3 marks
+UI_HELPER_LOST,O ajudante foi embora sem nada,The helper left with nothing

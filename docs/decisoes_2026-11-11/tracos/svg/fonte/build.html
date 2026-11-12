@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#fbf6ea;overflow:hidden}svg{display:block}</style></head><body>
+<script src="node_modules/paper/dist/paper-core.js"></script>
+<script src="helpers.js"></script>
+<script src="engine.js"></script>
+<script src="king.js"></script>
+<script src="dragon.js"></script>
+<script>
+const t0=performance.now();let out="";
+try{const sc=(location.hash||"#king").slice(1);out=sc==="king"?sceneKing():sceneDragon();}catch(e){out=`<pre style="color:red;font-size:11px">${e.stack}</pre>`;}
+document.body.insertAdjacentHTML("beforeend",out);
+document.body.insertAdjacentHTML("beforeend",`<!--ms:${Math.round(performance.now()-t0)}-->`);
+</script></body></html>

@@ -92,7 +92,7 @@ static func cell(d: CardDef, w := CELL_W) -> PanelContainer:
 	v.add_theme_constant_override("separation", 0)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var art := TextureRect.new()
-	art.texture = CardArt.textures.get(d.id)
+	art.texture = UiDiario.hand_art(d.id)
 	art.custom_minimum_size = Vector2(w - 4, (w - 4) * 0.52)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED

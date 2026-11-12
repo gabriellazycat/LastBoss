@@ -3,23 +3,18 @@
   {
    "id": "veteran",
    "p": {
-    "extra_units": 1,
-    "spell_effect": 0.2
+    "extra_units": 1
    },
    "applies": [
     "monster",
-    "swarm",
-    "spell"
-   ],
-   "exclude": [
-    "soul_feast"
+    "swarm"
    ]
   },
   {
    "id": "cheap",
    "p": {
     "cost": -1,
-    "min_cost": 1
+    "min_cost": 0
    },
    "applies": [
     "any"

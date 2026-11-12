@@ -485,7 +485,7 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 	var art := TextureRect.new()
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture = CardArt.textures.get(d.id)
+	art.texture = UiDiario.hand_art(d.id)
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	art.set_anchors_preset(Control.PRESET_FULL_RECT)
 	clip.add_child(art)
@@ -590,7 +590,7 @@ static func mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float,
 	var art := TextureRect.new()
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture = CardArt.textures.get(d.id)
+	art.texture = UiDiario.hand_art(d.id)
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	art.set_anchors_preset(Control.PRESET_FULL_RECT)
 	if named:

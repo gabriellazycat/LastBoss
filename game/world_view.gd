@@ -9,7 +9,7 @@ const STRIDE := 20
 const LOC_COLORS := {
 	"shop": Color(0.95, 0.75, 0.35), "tavern": Color(0.9, 0.55, 0.25), "fountain": Color(0.35, 0.75, 1.0),
 	"ritual": Color(0.8, 0.25, 1.0), "shrine": Color(0.3, 1.0, 0.6), "bridge": Color(0.65, 0.6, 0.55),
-	"event": Color(0.95, 0.9, 0.55),
+	"event": Color(0.95, 0.9, 0.55), "helper": Color(1.0, 0.82, 0.25),
 }
 const PART_OFFSETS := {"core": Vector3(0, 0, 0), "head": Vector3(0, 4.3, 0), "left_arm": Vector3(-1.6, 2.4, 0), "right_arm": Vector3(1.6, 2.4, 0)}
 var boss_offs: Dictionary = PART_OFFSETS   # partes do chefe da run (BossModels.part_offsets)
@@ -31,7 +31,7 @@ const ACCENT := {
 	"scrap_golem": Color(1.0, 0.62, 0.2),
 }
 # Câmera: distância base, quanto ela afasta por unidade em campo (até 300) e o extra na arena.
-const CAM_DIST := 30.0
+const CAM_DIST := 36.0  # também é o mínimo: o zoom só afasta (main.gd limita zoom a >= 0)
 const CAM_PER_UNIT := 0.02
 const CAM_ARENA := 6.0
 # O chão (terreno, estrada, grama) fica na camada 2: a contraluz não o ilumina.
@@ -43,6 +43,9 @@ var look_off := Vector3.ZERO      # deslize da câmera para o lado do mouse (met
 var look_hold := false            # cena que manda na câmera (morte do herói): sem deslize
 const LOOK_MAX := 9.0             # quanto a câmera anda até a borda da tela
 const LOOK_DEAD := 0.22           # zona morta no meio da tela (fração da meia-tela)
+const LOOK_DOWN_FROM := 0.6        # a partir desta altura da tela (0 a 1) o deslize para baixo ganha reforço
+const LOOK_DOWN_BOOST := 0.8       # reforço extra na borda de baixo (0.8 = 1,8x o deslize normal)
+var look_freeze := false           # mouse sobre uma carta da mão: a câmera fica onde está (main.gd liga a cada quadro)
 ## Morte do herói (rodada 09/11/2026): câmera lenta no corpo caindo, depois a câmera recua até o herói novo.
 ## Só apresentação: a simulação já trocou o herói e espera a recompensa; o HUD segura a oferta até acabar.
 var cine_enabled := true
@@ -60,6 +63,8 @@ var hero_root: Node3D
 var hero_rig_node: Node3D = null    # rig da classe do herói da vez (troca quando a classe muda)
 var rig_cls := "escudeiro"
 var follower_nodes: Dictionary = {} # SimHero -> Node3D (fase de grupo)
+var helper_node: Node3D = null      # Herói Ajudante em disputa (rig da classe dele)
+var helper_of: SimHero = null
 var body: Node3D
 var hero_mat: ShaderMaterial
 var leg_l: Node3D
@@ -87,6 +92,9 @@ const ROAD_DMAX := 4.0       # distância máxima guardada (m): além disso não
 const ROAD_TILE := 16.0      # lado dos ladrilhos da malha (só os que têm estrada)
 var barricades: Array = []      # [nó 3D, ligação]: barreira na entrada de cada ramo, aparece quando o ramo é fechado
 var loc_nodes: Array = []
+var surf_fields: Array = []         # alturas do chão sob ponte e rio: [{o: Vector2, n: int, h: PackedFloat32Array}]
+const SURF_STEP := 0.5
+const SURF_MAX := 0.6               # acima disso é corrimão ou pedra da margem: não serve de piso
 var lanterns: Array = []
 var lantern_lights: Array = []
 var zone_pool: Array = []
@@ -96,6 +104,8 @@ var burst_pool: Array = []
 var burst_i := 0
 var shot_pool: Array = []
 var shot_i := 0
+var hshot_pool: Array = []   # projéteis dos heróis à distância (flecha / orbe), voando da arma até o alvo
+var hshot_i := 0
 var orb_pool: Array = []
 var orb_i := 0
 var decal_pool: Array = []
@@ -188,12 +198,15 @@ func build(s: Sim, camera: Camera3D) -> void:
 	road_field = null
 	road_piece_of.clear()
 	road_state_last = PackedByteArray()
-	for a in [road_meshes, barricades, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
+	for a in [road_meshes, barricades, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, hshot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
 		a.clear()
 	mm_by_def.clear()
+	surf_fields.clear()
 	house_nodes.clear()
 	fx.clear()
 	follower_nodes.clear()
+	helper_node = null
+	helper_of = null
 	arena_root = null
 	flash.resize(sim.units.cap)
 	flash.fill(0.0)
@@ -707,14 +720,53 @@ func _build_locations() -> void:
 			"shrine":
 				n.add_child(_mi(Models.prop("shrine"), off * 3.5))
 			"bridge":
-				n.add_child(_mi(Models.prop("water"), Vector3.ZERO, Models.glow_material(0.2), yaw + PI * 0.5))
-				n.add_child(_mi(Models.prop("bridge"), Vector3.ZERO, null, yaw))
+				var wmi := _mi(Models.prop("water"), Vector3.ZERO, Models.glow_material(0.2), yaw + PI * 0.5)
+				# O tabuleiro segue a estrada (o rio cruza com yaw + 90°); com yaw ele ficava paralelo ao rio.
+				var bmi := _mi(Models.prop("bridge"), Vector3.ZERO, null, yaw + PI * 0.5)
+				n.add_child(wmi)
+				n.add_child(bmi)
+				_add_surface(p, [wmi, bmi])
 			"event":
 				# Encruzilhada "?": placa, pedras e lanterna.
 				n.add_child(_mi(Models.prop("fence"), off * 3.5, null, yaw))
 				n.add_child(_mi(Models.prop("gravestone"), off * 4.5 + fwd * 1.5, null, yaw + 0.4))
 				n.add_child(_mi(Models.prop("lantern"), off * 3.0 - fwd * 2.0, null, yaw))
-		if t in ["shrine", "ritual", "fountain", "tavern", "bridge"]:
+			"helper":
+				# Herói Ajudante: acampamento atrás de onde ele fica (cerca, braseiro, lanterna e um estandarte dourado).
+				var hs: Vector2 = sim.helper_spot(li) - p
+				var hv := Vector3(hs.x, 0, hs.y)
+				var back := hv.normalized()
+				n.add_child(_mi(Models.prop("fence"), hv + back * 3.0, null, yaw))
+				n.add_child(_mi(Models.prop("brazier"), hv + back * 2.2 + fwd * 2.4))
+				n.add_child(_mi(Models.prop("lantern"), hv + back * 2.0 - fwd * 2.4, null, yaw))
+				var pole := MeshInstance3D.new()
+				var pm := CylinderMesh.new()
+				pm.top_radius = 0.06
+				pm.bottom_radius = 0.08
+				pm.height = 3.6
+				pole.mesh = pm
+				pole.material_override = _unshaded(Color(0.35, 0.24, 0.14), 0.6)
+				pole.position = hv + back * 1.6 + Vector3(0, 1.8, 0)
+				n.add_child(pole)
+				var flag := MeshInstance3D.new()
+				var fm := BoxMesh.new()
+				fm.size = Vector3(0.05, 0.9, 1.2)
+				flag.mesh = fm
+				flag.material_override = _unshaded(col, 1.2)
+				flag.position = hv + back * 1.6 + Vector3(0, 3.1, 0) + fwd * 0.6
+				flag.rotation.y = yaw
+				n.add_child(flag)
+				# Exclamação dourada sobre o acampamento (o ícone do mapa).
+				var ex := Label3D.new()
+				ex.text = "!"
+				ex.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+				ex.font_size = 120
+				ex.outline_size = 18
+				ex.modulate = col
+				ex.position = hv + Vector3(0, 4.4, 0)
+				n.add_child(ex)
+				n.set_meta("bang", ex)
+		if t in ["shrine", "ritual", "fountain", "tavern", "bridge", "helper"]:
 			var ring := MeshInstance3D.new()
 			var tm := TorusMesh.new()
 			tm.inner_radius = float(loc["r"]) - 0.12
@@ -1070,6 +1122,26 @@ func _build_pools() -> void:
 		s.visible = false
 		add_child(s)
 		shot_pool.append({"n": s, "t": 0.0})
+	for i in 16:
+		var hn := Node3D.new()
+		var arrow := MeshInstance3D.new()
+		var ab := BoxMesh.new()
+		ab.size = Vector3(0.07, 0.07, 0.75)
+		arrow.mesh = ab
+		arrow.material_override = _unshaded(Color(1.0, 0.93, 0.7), 2.5)
+		hn.add_child(arrow)
+		var orbm := MeshInstance3D.new()
+		var osph := SphereMesh.new()
+		osph.radius = 0.24
+		osph.height = 0.48
+		osph.radial_segments = 10
+		osph.rings = 5
+		orbm.mesh = osph
+		orbm.material_override = _unshaded(Color(0.65, 0.5, 1.0), 4.0)
+		hn.add_child(orbm)
+		hn.visible = false
+		add_child(hn)
+		hshot_pool.append({"n": hn, "arrow": arrow, "orb": orbm, "t": 0.0, "T": 0.1, "a": Vector3.ZERO, "b": Vector3.ZERO})
 	var om := SphereMesh.new()
 	om.radius = 0.16
 	om.height = 0.32
@@ -1186,7 +1258,7 @@ func show_placement(on: bool, pos: Vector3, valid: bool, radius: float) -> void:
 	ghost.visible = on
 	if not on:
 		return
-	ghost.position = pos + Vector3(0, 0.05, 0)
+	ghost.position = pos + Vector3(0, 0.05 + surface_y(pos.x, pos.z), 0)
 	ghost.scale = Vector3(radius, 1, radius)
 	var c := Color(0.4, 1, 0.5, 0.9) if valid else Color(1, 0.3, 0.3, 0.9)
 	ghost_mat.set_shader_parameter("tint", c)
@@ -1270,9 +1342,10 @@ func _draw_units(alpha: float, delta: float) -> void:
 				col = Color(0.55, 0.55, 0.6)
 			elif U.fear_t[i] > 0.0:
 				col = Color(0.8, 0.6, 1.0)
-			var y := 0.0
+			var gy := surface_y(x, z) if not surf_fields.is_empty() else 0.0
+			var y := gy
 			if fly:
-				y = 1.6 + sin(sim.t * 7.0 + i) * 0.25
+				y = gy + 1.6 + sin(sim.t * 7.0 + i) * 0.25
 			var lunge := 0.0
 			if not is_struct and U.atk_int[i] > 0.0:
 				lunge = clampf((U.atk_t[i] - (U.atk_int[i] - 0.2)) / 0.2, 0.0, 1.0)
@@ -1286,7 +1359,7 @@ func _draw_units(alpha: float, delta: float) -> void:
 			var acc: Color = e["acc"]
 			var ro := rn * 16
 			rb[ro] = rr; rb[ro + 1] = 0.0; rb[ro + 2] = 0.0; rb[ro + 3] = x
-			rb[ro + 4] = 0.0; rb[ro + 5] = 1.0; rb[ro + 6] = 0.0; rb[ro + 7] = 0.055
+			rb[ro + 4] = 0.0; rb[ro + 5] = 1.0; rb[ro + 6] = 0.0; rb[ro + 7] = 0.055 + gy
 			rb[ro + 8] = 0.0; rb[ro + 9] = 0.0; rb[ro + 10] = rr; rb[ro + 11] = z
 			rb[ro + 12] = acc.r; rb[ro + 13] = acc.g; rb[ro + 14] = acc.b; rb[ro + 15] = acc.a
 			rn += 1
@@ -1327,9 +1400,95 @@ func _draw_bars(alpha: float) -> void:
 	bar_buf = buf
 
 
+## Ponte e rio ficam acima do chão (o tabuleiro a ~0,4 m, a água a ~0,1 m): sem isto o círculo de mira, as
+## unidades e o herói eram desenhados por baixo deles e pareciam não poder ir ali.
+func _add_surface(center: Vector2, mis: Array) -> void:
+	var half := 18.0
+	var n := int(half * 2.0 / SURF_STEP)
+	var o := center - Vector2(half, half)
+	var h := PackedFloat32Array()
+	h.resize(n * n)
+	h.fill(0.0)
+	for mi in mis:
+		var mesh: Mesh = mi.mesh
+		if mesh == null:
+			continue
+		var xf := Transform3D(Basis(Vector3.UP, mi.rotation.y), Vector3(center.x, 0.0, center.y))
+		for si in mesh.get_surface_count():
+			var arr := mesh.surface_get_arrays(si)
+			var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+			var tri_n := idx.size() / 3 if idx.size() > 0 else v.size() / 3
+			for t in tri_n:
+				var a := xf * v[idx[t * 3] if idx.size() > 0 else t * 3]
+				var b := xf * v[idx[t * 3 + 1] if idx.size() > 0 else t * 3 + 1]
+				var c := xf * v[idx[t * 3 + 2] if idx.size() > 0 else t * 3 + 2]
+				if maxf(a.y, maxf(b.y, c.y)) > SURF_MAX + 0.2:
+					continue
+				var den := (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z)
+				if absf(den) < 1e-5:
+					continue
+				var i0 := clampi(int((minf(a.x, minf(b.x, c.x)) - o.x) / SURF_STEP), 0, n - 1)
+				var i1 := clampi(int((maxf(a.x, maxf(b.x, c.x)) - o.x) / SURF_STEP) + 1, 0, n - 1)
+				var j0 := clampi(int((minf(a.z, minf(b.z, c.z)) - o.y) / SURF_STEP), 0, n - 1)
+				var j1 := clampi(int((maxf(a.z, maxf(b.z, c.z)) - o.y) / SURF_STEP) + 1, 0, n - 1)
+				for j in range(j0, j1 + 1):
+					var pz := o.y + (j + 0.5) * SURF_STEP
+					for i in range(i0, i1 + 1):
+						var px := o.x + (i + 0.5) * SURF_STEP
+						var w0 := ((b.z - c.z) * (px - c.x) + (c.x - b.x) * (pz - c.z)) / den
+						var w1 := ((c.z - a.z) * (px - c.x) + (a.x - c.x) * (pz - c.z)) / den
+						var w2 := 1.0 - w0 - w1
+						if w0 < -0.01 or w1 < -0.01 or w2 < -0.01:
+							continue
+						var y := minf(SURF_MAX, w0 * a.y + w1 * b.y + w2 * c.y)
+						if y > h[j * n + i]:
+							h[j * n + i] = y
+	surf_fields.append({"o": o, "n": n, "h": h})
+
+
+## Altura do piso em (x, z): 0 no chão comum, o tabuleiro da ponte ou a água onde houver.
+func surface_y(x: float, z: float) -> float:
+	for f in surf_fields:
+		var o: Vector2 = f["o"]
+		var n: int = f["n"]
+		var i := int((x - o.x) / SURF_STEP)
+		var j := int((z - o.y) / SURF_STEP)
+		if i >= 0 and j >= 0 and i < n and j < n:
+			return f["h"][j * n + i]
+	return 0.0
+
+
 func hero_pos(alpha: float) -> Vector3:
 	var h := sim.hero
 	return Vector3(lerpf(h.ox, h.x, alpha), 0.0, lerpf(h.oy, h.y, alpha))
+
+
+## Herói Ajudante: rig da classe dele, parado no local enquanto a disputa dura; some quando ela acaba.
+func _draw_helper(alpha: float, delta: float) -> void:
+	var hh: SimHero = sim.helper
+	if helper_node != null and hh != helper_of:
+		emit_fx("smoke", helper_node.position + Vector3(0, 1, 0), 1.2)
+		helper_node.queue_free()
+		helper_node = null
+		helper_of = null
+	if hh == null:
+		return
+	if helper_node == null:
+		helper_node = Node3D.new()
+		helper_node.scale = Vector3.ONE * 1.3
+		add_child(helper_node)
+		var rig := Looks.hero_rig(hero_mat, hh.cls())
+		if rig:
+			rig.hero_ref = hh
+			helper_node.add_child(rig)
+		helper_of = hh
+		emit_fx("heal", Vector3(hh.x, 1.0, hh.y), 1.2)
+	helper_node.position = Vector3(lerpf(hh.ox, hh.x, alpha), 0.0, lerpf(hh.oy, hh.y, alpha))
+	helper_node.position.y = surface_y(helper_node.position.x, helper_node.position.z)
+	var fv := Vector3(hh.face_x, 0, hh.face_y)
+	if fv.length() > 0.01:
+		helper_node.rotation.y = lerp_angle(helper_node.rotation.y, atan2(-fv.x, -fv.z), clampf(delta * 14.0, 0.0, 1.0))
 
 
 ## Fase de grupo: os seguidores andam com rig próprio; quem cai some, quem chega aparece.
@@ -1351,6 +1510,7 @@ func _draw_followers(alpha: float, delta: float) -> void:
 			emit_fx("heal", Vector3(f.x, 1.0, f.y), 1.2)
 		var n: Node3D = follower_nodes[f]
 		n.position = Vector3(lerpf(f.ox, f.x, alpha), 0.0, lerpf(f.oy, f.y, alpha))
+		n.position.y = surface_y(n.position.x, n.position.z)
 		var fv := Vector3(f.face_x, 0, f.face_y)
 		if fv.length() > 0.01:
 			n.rotation.y = lerp_angle(n.rotation.y, atan2(-fv.x, -fv.z), clampf(delta * 14.0, 0.0, 1.0))
@@ -1367,11 +1527,13 @@ func _draw_hero(alpha: float, delta: float) -> void:
 		if hero_rig_node:
 			parent_.add_child(hero_rig_node)
 	_draw_followers(alpha, delta)
+	_draw_helper(alpha, delta)
 	var p := hero_pos(alpha)
 	var speed := Vector2(h.x - h.ox, h.y - h.oy).length() / sim.dt
 	var walk := clampf(speed / 3.0, 0.0, 1.0)
 	var frozen := h.petrify_t > 0.0 or h.root_t > 0.0 or h.drink_t > 0.0
 	hero_root.position = p
+	hero_root.position.y += surface_y(p.x, p.z)
 	# Fonte: ajoelhado bebendo.
 	if h.drink_t > 0.0:
 		hero_root.position.y -= 0.35
@@ -1460,6 +1622,11 @@ func _draw_road_state() -> void:
 			var ring: MeshInstance3D = n.get_meta("ring")
 			var s := 1.0 + 0.05 * sin(sim.t * 12.0)
 			ring.scale = Vector3(s, 0.2, s)
+		elif loc["type"] == "helper":
+			if n.has_meta("bang"):
+				(n.get_meta("bang") as Label3D).visible = st == SimRoad.LocState.ACTIVE and not loc["entered"]
+			if sim.helper != null and sim.contest.get("li", -1) == li:
+				txt = "%s  %d%%" % [txt, ceili(100.0 * sim.helper.hp / maxf(sim.helper.base_hp, 1.0))]
 		elif loc["type"] == "ritual" and st == SimRoad.LocState.ACTIVE and loc["hp"] < loc["max_hp"]:
 			txt = "%s  %d%%" % [txt, int(100.0 * loc["hp"] / loc["max_hp"])]
 		lab.text = txt
@@ -1599,6 +1766,14 @@ func _tick_pools(delta: float, alpha: float) -> void:
 			e["t"] -= delta
 			if e["t"] <= 0.0:
 				e["n"].visible = false
+	for e in hshot_pool:
+		if e["t"] > 0.0:
+			e["t"] -= delta
+			var hn: Node3D = e["n"]
+			if e["t"] <= 0.0:
+				hn.visible = false
+			else:
+				hn.position = (e["a"] as Vector3).lerp(e["b"], 1.0 - float(e["t"]) / float(e["T"]))
 	for e in decal_pool:
 		if e["t"] > 0.0:
 			e["t"] -= delta
@@ -1716,15 +1891,18 @@ func _camera(alpha: float, delta: float) -> void:
 	cam.rotation.z += sin(t * 31.0) * sh * 0.03
 
 
-## Para onde o mouse puxa a câmera: fora da zona morta do meio, até LOOK_MAX metros na direção dele. Parado
-## na faixa de baixo (mão, barra de elixir) ou fora da janela, ela volta para o herói.
+## Para onde o mouse puxa a câmera: fora da zona morta do meio, até LOOK_MAX metros na direção dele. Fora da
+## janela ela volta para o herói. Sobre uma carta da mão (`look_freeze`) ela fica parada onde está; na metade
+## de baixo o deslize para baixo é reforçado (até 1 + LOOK_DOWN_BOOST), para chegar logo abaixo da mão.
 func _look_target() -> Vector3:
 	if look_hold or not get_window().has_focus():
 		return Vector3.ZERO
+	if look_freeze:
+		return look_off
 	var vp := get_viewport()
 	var vs := vp.get_visible_rect().size
 	var m := vp.get_mouse_position()
-	if not Rect2(Vector2.ZERO, vs).has_point(m) or m.y > vs.y * 0.68:
+	if not Rect2(Vector2.ZERO, vs).has_point(m):
 		return Vector3.ZERO
 	var n := (m - vs * 0.5) / (vs * 0.5)
 	var l := n.length()
@@ -1732,6 +1910,8 @@ func _look_target() -> Vector3:
 		return Vector3.ZERO
 	var k := smoothstep(LOOK_DEAD, 1.0, minf(l, 1.0))
 	var dir := n / l
+	if dir.y > 0.0:
+		dir.y *= 1.0 + LOOK_DOWN_BOOST * smoothstep(LOOK_DOWN_FROM, 1.0, m.y / vs.y)
 	return Vector3(dir.x, 0, dir.y) * LOOK_MAX * k
 
 
@@ -1804,6 +1984,29 @@ func shot(a: Vector3, b: Vector3) -> void:
 	n.scale = Vector3(1, 1, l)
 	n.visible = true
 	e["t"] = 0.08
+
+
+## Projétil do herói à distância: nasce na mão/arma (um passo à frente, na altura do peito) e voa até o alvo.
+## kind 0 = flecha (aponta para o alvo), 1 = orbe mágico.
+func hero_shot(from: Vector3, to: Vector3, kind: int) -> void:
+	var dir := to - from
+	dir.y = 0.0
+	if dir.length() < 0.3:
+		return
+	var a := from + dir.normalized() * 0.5 + Vector3(0, 1.25, 0)
+	var b := to + Vector3(0, 0.9, 0)
+	var e: Dictionary = hshot_pool[hshot_i]
+	hshot_i = (hshot_i + 1) % hshot_pool.size()
+	var n: Node3D = e["n"]
+	n.position = a
+	n.look_at_from_position(a, b, UP)
+	(e["arrow"] as Node3D).visible = kind == 0
+	(e["orb"] as Node3D).visible = kind == 1
+	n.visible = true
+	e["a"] = a
+	e["b"] = b
+	e["T"] = clampf(a.distance_to(b) / 32.0, 0.06, 0.25)
+	e["t"] = e["T"]
 
 
 func orb(from: Vector3) -> void:
@@ -1938,6 +2141,8 @@ func handle_events(evs: Array) -> void:
 				_stop(0.05)
 			K.Ev.SHOT:
 				shot(p, Vector3(ev[3], 0, float(ev[4]) / 100.0))
+			K.Ev.HERO_SHOT:
+				hero_shot(p, Vector3(ev[3], 0, float(int(ev[4]) >> 2) / 100.0), int(ev[4]) & 3)
 			K.Ev.SPIN:
 				ring_burst(p, float(ev[3]), Color(0.7, 0.85, 1.0))
 				emit_fx("spark", p + Vector3(0, 1.0, 0), 0.8)

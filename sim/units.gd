@@ -175,14 +175,17 @@ func update(dt: float) -> void:
 	# Taverna em disputa: os monstros a até aggro_r de uma casa viva vão nela (rodada 09/11/2026).
 	var houses: Array = sim.live_houses() if on_road else []
 	var aggro: float = float(sim.data.rules["locations"]["tavern"].get("aggro_r", 10.0))
+	# Herói Ajudante (11/11/2026): alvo como o herói; a distância até ele conta × pull (< 1 = preferido).
+	var helper: SimHero = sim.helper if sim.helper != null and sim.helper.hp > 0.0 else null
+	var pull2 := pow(float(sim.data.rules["locations"].get("helper", {}).get("pull", 1.0)), 2) if helper else 1.0
 	n_pack = 0; n_struct = 0; n_cultists = 0; n_kings = 0
 	for i in hi:
 		if alive[i] == 0:
 			continue
 		ox[i] = px[i]
 		oy[i] = py[i]
-		if sim.followers.size() > 0:
-			# Fase de grupo: cada monstro vai no herói mais perto.
+		if sim.followers.size() > 0 or helper:
+			# Fase de grupo: cada monstro vai no herói mais perto (o Herói Ajudante entra na conta).
 			hero = sim.hero
 			var bd := Vector2(sim.hero.x - px[i], sim.hero.y - py[i]).length_squared()
 			for f in sim.followers:
@@ -190,6 +193,8 @@ func update(dt: float) -> void:
 				if fd < bd:
 					bd = fd
 					hero = f
+			if helper and Vector2(helper.x - px[i], helper.y - py[i]).length_squared() * pull2 < bd:
+				hero = helper
 			hx = hero.x
 			hy = hero.y
 			hr = hero.radius
@@ -359,7 +364,10 @@ func _structure(i: int, di: int, d: float, dt: float, nose: bool) -> void:
 	var smult := 1.0 + sim.rv("structure")
 	if c.fx.has("spawn"):
 		var dur := c.fxv("spawn_duration", lvl[i], 15.0) * smult
-		if timer[i] >= timer2[i] and timer2[i] <= dur + 0.001:
+		if timer[i] > dur:
+			# Acabou o tempo de gerar criaturas: a estrutura some junto (como o Totem).
+			sim.kill_unit(i, K.Death.EXPIRE)
+		elif timer[i] >= timer2[i] and timer2[i] <= dur + 0.001:
 			timer2[i] += float(c.fx.get("spawn_interval", 3.0))
 			var bat: CardDef = sim.data.card(str(c.fx.get("spawn", "bat")))
 			var a := slot[i] + timer[i]

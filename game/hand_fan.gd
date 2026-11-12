@@ -6,7 +6,6 @@ extends Control
 ## O controle recebe a entrada do leque inteiro: a carta sob o mouse é a fatia do arco onde ele está.
 
 signal card_pressed(i: int)
-signal card_sacrificed(i: int)
 signal card_dropped(i: int, screen_pos: Vector2)
 
 const CARD := Vector2(124, 158)
@@ -24,7 +23,6 @@ const TIP_HOLD := 0.6              # parado na carta por este tempo: abrem as ca
 var sim: Sim
 var selected := -1
 var pad := false                   # o jogador está no controle (o balão fica visível)
-var sac_rect := Rect2()            # retângulo global do botão Sacrificar
 var hover := -1
 var panels := {}                   # uid -> carta compacta
 var panel_sig := {}                # uid -> "mods" (refaz a carta quando ganha modificador)
@@ -159,17 +157,15 @@ func _gui_input(e: InputEvent) -> void:
 		card_pressed.emit(k)
 		accept_event()
 	elif e.pressed and e.button_index == MOUSE_BUTTON_RIGHT and k >= 0 and sim.hand[k] != null:
-		card_sacrificed.emit(k)
+		# Clique direito na carta não faz nada (o sacrifício da mão saiu na rodada de 11/11/2026).
 		accept_event()
 	elif not e.pressed and e.button_index == MOUSE_BUTTON_LEFT and press_i >= 0:
-		# Arrastar e soltar: fora do leque = posicionar; sobre o altar = sacrificar.
+		# Arrastar e soltar: fora do leque = posicionar.
 		var gp: Vector2 = get_global_transform() * e.position
 		var fr := fan_rect().grow(8.0)
 		var i := press_i
 		press_i = -1
-		if sac_rect.has_point(gp):
-			card_sacrificed.emit(i)
-		elif not Rect2(global_position + fr.position, fr.size).has_point(gp):
+		if not Rect2(global_position + fr.position, fr.size).has_point(gp):
 			card_dropped.emit(i, gp)
 		accept_event()
 

@@ -21,7 +21,7 @@ func run(main: Node) -> void:
 	await _bad_drags()
 	await _pause_clicks()
 	await _offer_pause()
-	await _sacrifice_spam()
+	await _right_click_spam()
 	await _resize()
 	await _mash(400)
 	await _save_continue()
@@ -162,7 +162,7 @@ func _hud_clicks() -> void:
 	var hud = m.hud
 	# O tempo da run é texto solto sobre o mundo (deixa o clique passar de propósito); as peças sólidas não.
 	var targets := {"barra do herói": hud.hero_badge, "elixir": hud.elixir_badge, "bandeja do elixir": hud.elixir_bar,
-		"botão de sacrifício": hud.sac_zone, "velocidade": hud.speed_btn}
+		"velocidade": hud.speed_btn}
 	for name in targets:
 		var c: Control = targets[name]
 		if c == null or not c.is_visible_in_tree():
@@ -172,12 +172,9 @@ func _hud_clicks() -> void:
 			break
 		m._select(i)
 		var p0 := _played()
-		var sac0: int = m.sim.stats["sacrifices"]
 		_click(c.get_global_rect().get_center())
 		await _frames(3)
 		var ok: bool = _played() == p0
-		if name == "botão de sacrifício":
-			ok = true   # clicar no Sacrificar com a carta selecionada sacrifica (é o botão)
 		step("clique com carta em cima de '%s' não joga a carta no mundo" % name, ok)
 		m.hud.selected = -1
 		await _frames(2)
@@ -295,20 +292,22 @@ func _offer_pause() -> void:
 	_check_inv("oferta")
 
 
-## Sacrifício esmagado: clique direito, X+número e arrastar ao Sacrificar, muitas vezes seguidas.
-func _sacrifice_spam() -> void:
+## Clique direito e X+número esmagados nas cartas (o sacrifício da mão saiu em 11/11/2026): a mão não muda e
+## nenhuma carta é jogada.
+func _right_click_spam() -> void:
 	m.sim.elixir = 2.0
-	var s0: int = m.sim.stats["sacrifices"]
-	var e0: float = m.sim.elixir
+	var h0: Array = m.sim.hand.duplicate()
+	var p0 := _played()
+	var fan: Control = m.hud.fan
 	for r in 25:
 		_key(KEY_X, true)
 		_tap(KEY_1 + (r % 5) as Key)
 		_key(KEY_X, false)
+		_click(fan.get_global_rect().get_center() + Vector2((r % 5 - 2) * 110.0, 0.0), MOUSE_BUTTON_RIGHT)
 		await m.get_tree().process_frame
-	var gained: float = m.sim.elixir - e0
-	step("25 sacrifícios seguidos dão no máximo +1 de elixir (%.2f)" % gained, gained <= 1.0 + 3.0 / 2.8 * 0.5 + 0.01)
-	step("sacrifício na recarga é recusado para carta jogável (%d aceitos)" % (int(m.sim.stats["sacrifices"]) - s0), int(m.sim.stats["sacrifices"]) - s0 <= 6)
-	_check_inv("sacrifício")
+	m.hud.selected = -1
+	step("clique direito e X+número nas cartas não tiram carta da mão", m.sim.hand == h0 and _played() == p0)
+	_check_inv("clique direito")
 
 
 ## Janela redimensionada: pequena, grande e de volta, com clique no meio.

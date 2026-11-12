@@ -64,7 +64,7 @@
    "xp_parts": 4,
    "hp": 35,
    "dps": 4,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 5.5,
    "range": 0.8,
    "fx": {
@@ -518,7 +518,7 @@
    "xp_parts": 1,
    "hp": 3000,
    "dps": 120,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 3.0,
    "range": 6.0,
    "fx": {

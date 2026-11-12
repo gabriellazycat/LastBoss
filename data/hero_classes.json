@@ -10,6 +10,8 @@
    "damage_mult": 0.8,
    "attack_range": 7.0,
    "attack_interval": 0.85,
+   "cleave_arc": 0.0,
+   "projectile": "arrow",
    "speed": 3.3,
    "shield": {
     "hp": 0,
@@ -36,6 +38,8 @@
    "damage_mult": 1.25,
    "attack_range": 5.0,
    "attack_interval": 1.5,
+   "cleave_arc": 0.0,
+   "projectile": "orb",
    "splash": 2.6,
    "splash_mult": 0.5,
    "shield": {

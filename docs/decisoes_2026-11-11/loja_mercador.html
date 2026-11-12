@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Last Boss - Loja do mercador: 4 variações sem repetição</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Alegreya+Sans:wght@400;500;700&family=Caveat:wght@500;700&display=swap">
+<style>
+:root{--bg:#120e18;--panel:#1b1524;--line:#2f2640;--fg:#ece6f2;--muted:#a99fba;--gold:#e2b65a;
+--paper:#e7d7b0;--ink:#2a2018;--wax:#8e2f27;--blue:#2a2a6a;
+--display:"Marcellus SC","Palatino Linotype",Georgia,serif;--body:"Alegreya Sans","Segoe UI",system-ui,sans-serif;--hand:"Caveat","Segoe Print","Bradley Hand",cursive}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 1.0625rem/1.5 var(--body);padding:0 16px}
+.wrap{max-width:1700px;margin:0 auto;padding:28px 0 60px;display:grid;gap:20px}
+a{color:var(--gold)}
+h1{font:400 clamp(1.7rem,3.4vw,2.5rem)/1.1 var(--display);margin:0}
+.eyebrow{font:500 .8rem/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.lead{color:var(--muted);max-width:92ch;margin:0}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tabs button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px 18px;font:500 1rem var(--body);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--gold);color:#1b1306;border-color:var(--gold)}
+.tabs button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+section.var{display:none;gap:14px}
+section.var.on{display:grid}
+.cap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cap div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.cap b{display:block;font:400 1.1rem var(--display);margin-bottom:2px}
+.cap .pro b{color:#a5c97f}.cap .con b{color:#e8997c}
+@media(max-width:800px){.cap{grid-template-columns:1fr}}
+.stage{position:relative;width:100%;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:#000}
+.frame{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;font-family:var(--body);color:var(--ink);user-select:none;background:radial-gradient(ellipse at 50% 40%,#3a2a20,#120d0b)}
+.reset{justify-self:start;background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}
+
+/* ---------- componentes comuns ---------- */
+.coin{display:inline-block;width:.8em;height:.8em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff1b5,#d9a02f 60%,#8a5f14);border:.1em solid #6e4c10;vertical-align:-.05em;margin-right:.25em}
+.gem{position:absolute;display:grid;place-items:center;font:700 1.5em var(--display);color:#fff;background:linear-gradient(#a56be0,#5b2c93);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);z-index:4}
+.stamp{position:absolute;inset:0;display:none;place-items:center;font:400 2.2em var(--display);color:#8e2f27;letter-spacing:.08em;pointer-events:none;z-index:9}
+.stamp span{border:.1em solid #8e2f27;padding:.05em .35em;transform:rotate(-12deg);background:rgba(240,228,196,.9);border-radius:.2em}
+.sold>.stamp,.sold .stamp{display:grid}
+.sold{filter:grayscale(.7) brightness(.85);cursor:default}
+.nope{animation:nope .4s}
+@keyframes nope{20%{translate:-10px 0}40%{translate:10px 0}60%{translate:-6px 0}80%{translate:6px 0}}
+
+/* carta */
+.card{position:relative;width:20em;height:26.5em;font-size:calc(var(--cw)/20);background:linear-gradient(#efe0ba,#dcc994);border:.2em solid #3a2c1d;border-radius:.7em;box-shadow:0 .8em 1.6em rgba(0,0,0,.45),inset 0 0 2em rgba(120,80,30,.25)}
+.card::before{content:"";position:absolute;left:50%;top:-.9em;width:6em;height:1.7em;margin-left:-3em;background:rgba(214,196,140,.82);transform:rotate(-2deg);box-shadow:0 .1em .3em rgba(0,0,0,.3);z-index:3}
+.card .gem{left:-.8em;top:-.5em;width:3em;height:3em}
+.card .art{position:absolute;left:1em;right:1em;top:1.2em;height:13em;border:.15em solid #3a2c1d;background:radial-gradient(#5a3f78,#241635);overflow:hidden}
+.card .art img{width:100%;height:100%;object-fit:contain;display:block}
+.card .nm{position:absolute;left:.6em;right:.6em;top:10.3em;text-align:center;font:400 1.3em/1.1 var(--display);background:#2a2018;color:#f3e6c4;padding:.35em .2em;border:.12em solid #b99a55;z-index:2}
+.card .up{color:#ffd35a;text-shadow:0 0 .6em #ff9d1c}
+.card .ty{position:absolute;left:0;right:0;top:20.9em;text-align:center;font:700 .8em var(--body);letter-spacing:.16em;text-transform:uppercase;color:#6b5a40}
+.card .ds{position:absolute;left:1.1em;right:1.1em;top:16em;text-align:center;font:500 1.15em/1.22 var(--body);color:#2a2018}
+.card .ds b{color:#1f6b2a;background:rgba(120,220,120,.35);padding:0 .2em;border-radius:.2em}
+.card.noname .ty{left:.6em;right:.6em;top:14.1em;background:#2a2018;color:#f3e6c4;border:.12em solid #b99a55;padding:.55em .2em;font-size:.95em;z-index:2}
+.card.noname .ds{top:15.3em}
+.card .mod{position:absolute;right:-.6em;top:2.2em;z-index:6;background:#2d5b69;color:#e8fbff;font:700 1em var(--body);padding:.2em .7em;border-radius:1em;border:.12em solid #9ad;transform:rotate(6deg)}
+.card.noname{height:21.5em}
+.card.r-uncommon{border-color:#2d5b69}.card.r-rare{border-color:#5d2f73}
+.card.burnt{filter:grayscale(1) brightness(.45) contrast(1.2)}
+.card .stamp{font-size:2em}
+
+/* esboco colado */
+.sk{position:relative;background:#f7efd8;border:1px solid rgba(60,40,20,.4);padding:10px 10px 18px;box-shadow:0 6px 14px rgba(0,0,0,.35);transform:rotate(var(--r,0deg));transition:transform .2s}
+.sk .arti{background:radial-gradient(#fff7dc,#ead9a8);height:100%;display:grid;place-items:center;border:1px solid rgba(60,40,20,.25)}
+.sk img{width:100%;height:100%;object-fit:contain;display:block}
+.sk .tape{position:absolute;left:50%;top:-14px;width:90px;height:28px;margin-left:-45px;background:rgba(214,196,140,.85);transform:rotate(-3deg);box-shadow:0 1px 3px rgba(0,0,0,.3);z-index:3}
+.sk .gem{right:-14px;top:-12px;width:50px;height:50px;font-size:24px}
+.sk .stamp{font-size:34px}
+
+/* linha de livro-caixa */
+.ln{position:relative;display:flex;align-items:center;gap:14px;height:58px;font:700 38px/1 var(--hand);color:var(--blue);cursor:pointer}
+.ln .ico{flex:none;width:50px;height:50px}.ln .ico svg{width:100%;height:100%}
+.lc{white-space:nowrap}
+.lc em.prop{font:700 .62em var(--body);font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:#8e2f27;border:2px solid #8e2f27;border-radius:4px;padding:1px 6px;margin-left:12px;vertical-align:.25em;transform:rotate(-3deg);display:inline-block}
+.lc .up{color:#8e2f27}
+.dots{flex:1;border-bottom:3px dotted rgba(42,42,106,.5);transform:translateY(9px);min-width:20px}
+.lp{white-space:nowrap;font-size:1.1em;border:3px solid var(--blue);border-radius:8px;padding:0 12px;transform:rotate(-2deg)}
+.sold .lc{text-decoration:line-through;text-decoration-color:#8e2f27;text-decoration-thickness:4px}
+.sold .lp{opacity:.55}
+.ln .stamp{font-size:26px;inset:0 90px 0 auto;width:200px}
+.poor .lp{color:#b3342a;border-color:#b3342a;background:rgba(190,50,40,.12)}
+.fx.ln::before,.fx.crow::before{content:"\261E";position:absolute;left:-46px;top:50%;margin-top:-26px;font-size:42px;color:#8e2f27;line-height:1}
+.ln.fx,.crow.fx{background:linear-gradient(100deg,transparent,rgba(255,213,80,.5) 5%,rgba(255,213,80,.38) 95%,transparent)}
+
+/* margem / anotacao (unico lugar da descricao) */
+.note{position:absolute;padding:16px 26px 12px 34px;background:repeating-linear-gradient(transparent 0 40px,rgba(60,90,160,.3) 40px 42px),#f3e9c6;box-shadow:2px 6px 14px rgba(0,0,0,.35);transform:rotate(.5deg);border-left:4px solid #c05040;overflow:hidden}
+.note .dk{font:700 20px var(--body);letter-spacing:.16em;text-transform:uppercase;opacity:.7}
+.note .dd{font:700 36px/42px var(--hand);color:#3a2a6a}
+.note .dp{font:700 22px var(--body);margin-top:6px;color:#6b3a10}
+.note .dp.bad{color:#b3342a}
+
+.hud{display:flex;gap:16px;align-items:center;font:700 24px var(--body);position:absolute;left:70px;bottom:18px;z-index:3}
+.hud .chip{display:flex;align-items:center;gap:.4em;padding:.25em .9em;border-radius:2em;color:var(--blue);border:3px dashed var(--blue)}
+.hud .chip.pulse{animation:pulse .6s;background:#b3342a;color:#fff;border-color:#b3342a}
+@keyframes pulse{50%{transform:scale(1.18)}}
+.exit{cursor:pointer;position:absolute;transition:transform .15s,background .15s;z-index:7}
+.exit.seal{background:radial-gradient(circle at 35% 30%,#c0453a,#7a1f1a);color:#ffe6c0;width:150px;height:150px;font:400 25px/1.05 var(--display);display:grid;place-items:center;text-align:center;border-radius:50%;box-shadow:0 4px 10px rgba(0,0,0,.45),inset 0 0 0 6px rgba(0,0,0,.15)}
+.exit.seal:hover{transform:rotate(-6deg) scale(1.05);background:radial-gradient(circle at 35% 30%,#d4574a,#8a2a22)}
+.toast{position:absolute;left:50%;bottom:78px;transform:translate(-50%,30px);opacity:0;background:#2a2018;color:#ffd978;border:2px solid #b99a55;padding:12px 28px;border-radius:30px;font:700 28px var(--body);transition:.25s;pointer-events:none;z-index:99;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.bad{background:#5a1d18;color:#ffd1c8;border-color:#e0584a}
+.keys{position:absolute;left:0;right:0;bottom:0;height:60px;display:flex;justify-content:center;align-items:center;gap:30px;font:600 22px var(--body);color:#c9b99a;background:rgba(0,0,0,.35);z-index:50}
+.keys kbd{font:700 20px var(--body);background:#e7d7b0;color:#2a2018;border-radius:6px;padding:2px 9px;margin-right:6px;box-shadow:0 2px 0 #8a7448}
+
+/* livro */
+.book{position:absolute;left:40px;top:24px;width:1780px;height:980px;background:#33200f;border-radius:24px;box-shadow:0 30px 80px rgba(0,0,0,.8);padding:26px;display:flex;background-image:linear-gradient(135deg,rgba(255,255,255,.06),transparent 45%)}
+.pg{position:relative;overflow:hidden;background:repeating-linear-gradient(0deg,transparent 0 41px,rgba(70,90,140,.22) 41px 43px),linear-gradient(90deg,#d6bd84,#e4cf9a 9%,#e4cf9a 91%,#cfb479)}
+.pgL{width:1070px;border-radius:10px 0 0 10px;box-shadow:inset -40px 0 50px -20px rgba(80,50,20,.55),inset 0 0 70px rgba(120,80,30,.35)}
+.pgR{flex:1;border-radius:0 10px 10px 0;box-shadow:inset 40px 0 50px -20px rgba(80,50,20,.55),inset 0 0 70px rgba(120,80,30,.35)}
+.pgL::after,.pgR::after{content:"";position:absolute;top:0;bottom:0;width:4px;border-left:2px solid rgba(190,60,50,.55);border-right:2px solid rgba(190,60,50,.55);pointer-events:none}
+.pgL::after{left:34px}.pgR::after{right:34px}
+.pg h2{position:absolute;left:70px;top:26px;margin:0;font:400 42px var(--display);letter-spacing:.04em;color:var(--ink)}
+.pgR h2{left:56px}
+.pg .sub{position:absolute;left:72px;top:84px;font:700 28px var(--hand);color:#6b3a10}
+.pgR .sub{left:58px}
+.stain{position:absolute;width:210px;height:210px;border-radius:50%;border:12px solid rgba(110,60,20,.22);box-shadow:inset 0 0 20px rgba(110,60,20,.15);filter:blur(.6px);pointer-events:none}
+.doodle{position:absolute;pointer-events:none;opacity:.8}
+.logh{position:absolute;left:70px;right:70px;font:400 28px var(--display);border-bottom:3px solid #2a2018}
+.log{position:absolute;left:70px;right:70px;height:88px;overflow:hidden;font:700 30px/43px var(--hand);color:#1d2a6a}
+.log .ent{white-space:nowrap;height:43px;overflow:hidden}
+.log .ent span{display:inline-block}
+.log .ent.minus b{color:#8e2f27}
+.quill{position:absolute;right:2px;bottom:-30px;transform-origin:60px 150px;pointer-events:none;z-index:8;transform:rotate(-4deg)}
+.quill.writing{animation:wr .35s infinite alternate}
+@keyframes wr{from{transform:rotate(-10deg) translateX(-30px)}to{transform:rotate(2deg) translateX(10px)}}
+.pgR .exit.seal{left:56px;bottom:24px}
+.pgR .rows{position:absolute;left:56px;right:56px;top:128px;display:grid;gap:6px}
+.pgR .ln{height:84px}
+.pgR .ln .ico{width:62px;height:62px}
+.pgR .ln{font-size:36px}
+
+/* ---------- V1 ---------- */
+.V1 .crow{position:absolute;left:30px;right:56px;height:176px;cursor:pointer;display:flex;align-items:center;gap:40px;padding-left:40px;border-bottom:3px dotted rgba(60,40,20,.4)}
+.V1 .crow .sk{width:250px;height:152px;flex:none}
+.V1 .crow:hover .sk,.V1 .crow.fx .sk{transform:rotate(0deg) scale(1.06)}
+.V1 .crow .cl{flex:1;display:flex;align-items:center;gap:14px;font:700 46px/1 var(--hand);color:var(--blue)}
+.V1 .crow .cl .lp{font-size:1em}
+.V1 .crow.sold .lc{text-decoration:line-through;text-decoration-color:#8e2f27;text-decoration-thickness:4px}
+.V1 .crow.sold .lp{opacity:.55}
+.V1 .crow.poor .lp{color:#b3342a;border-color:#b3342a;background:rgba(190,50,40,.12)}
+.V1 .crow.fx::before{left:-4px}
+.V1 .relrow{position:absolute;left:56px;right:56px;top:396px;height:112px;border:3px double #6b3a10;background:rgba(255,235,170,.35);padding:0 70px 0 18px}
+.V1 .relrow .ico{width:84px;height:84px}
+
+.relrow .lc{white-space:normal;line-height:1}.relrow .lc em.prop{display:table;margin:4px 0 0}.relrow .ln{font-size:34px}
+/* ---------- V2 ---------- */
+.V2 .led{position:absolute;left:70px;right:70px;top:122px}
+.V2 .led .hd{font:400 27px/43px var(--display);color:#8e2f27;border-bottom:3px solid rgba(142,47,39,.55);margin-top:2px}
+.V2 .led .ln{height:58px;font-size:40px}
+.V2 .led .ln .ico{width:44px;height:44px}
+.V2 .pn{position:absolute;display:none}
+.V2 .pn.on{display:block}
+.V2 .pn.card-pn{left:calc(50% - 210px);top:130px;transform:rotate(-1.2deg);cursor:pointer}
+.V2 .pn.fiche{display:none;left:60px;right:60px;top:110px;height:570px;background:#f7efd8;border:1px solid rgba(60,40,20,.4);box-shadow:0 8px 20px rgba(0,0,0,.4);transform:rotate(.8deg);padding:30px;justify-items:center;align-content:center;gap:20px;cursor:pointer}
+.V2 .pn.fiche.on{display:grid}
+.V2 .pn.fiche .big{width:250px;height:250px}.V2 .pn.fiche .big svg{width:100%;height:100%}
+.V2 .pn.fiche .dd{font:700 44px/1.05 var(--hand);color:#3a2a6a;text-align:center}
+.V2 .pn.fiche .tape{position:absolute;left:50%;top:-16px;width:110px;height:32px;margin-left:-55px;background:rgba(214,196,140,.85);transform:rotate(-2deg)}
+.V2 .pn .stamp{font-size:2.4em}
+.V2 .note{left:56px;right:56px;top:700px;height:48px;padding:6px 26px 0 34px}
+.V2 .note .dp{margin:0;font-size:24px}
+
+/* ---------- V3 ---------- */
+.V3 .cw{position:absolute;top:150px;cursor:pointer;transform:rotate(var(--rot,0deg));transition:transform .2s}
+.V3 .cw:hover,.V3 .cw.fx{transform:translateY(-14px) scale(1.04);z-index:20}
+.V3 .cw.fx{filter:drop-shadow(0 0 18px rgba(255,215,120,.7))}
+.V3 .tag{position:absolute;right:-46px;bottom:-74px;z-index:12}
+.V3 .tag .str{position:absolute;left:-30px;top:-34px;width:4px;height:60px;background:#6b4a1c;transform:rotate(-38deg);transform-origin:top;border-radius:2px}
+.V3 .tag .tb{position:relative;padding:12px 18px 8px 40px;background:linear-gradient(#f3e5bb,#e2cd90);clip-path:polygon(0 50%,22px 0,100% 0,100% 100%,22px 100%);font:700 42px/1 var(--hand);color:var(--blue);box-shadow:0 2px 6px rgba(0,0,0,.4);transform:rotate(6deg)}
+.V3 .tag .tb::before{content:"";position:absolute;left:20px;top:50%;margin-top:-6px;width:12px;height:12px;border-radius:50%;background:#33200f}
+.V3 .tag .lp{border:0;padding:0;transform:none;font-size:1em}
+.V3 .cw.poor .tag .tb{background:linear-gradient(#e8b8ac,#d28a7a)}
+.V3 .cw.sold .tag{opacity:.5}
+.V3 .cw .card .stamp{font-size:2em}
+.V3 .note{left:56px;right:56px;top:530px;min-height:70px}
+
+/* ---------- V4: nota de pedido ---------- */
+.V4 .pad{position:absolute;left:50px;top:24px;width:1040px;height:980px;background:repeating-linear-gradient(0deg,transparent 0 55px,rgba(70,90,140,.2) 55px 57px),linear-gradient(#f4ead0,#eadcb4);box-shadow:0 24px 60px rgba(0,0,0,.7),inset 0 0 70px rgba(120,80,30,.25);transform:rotate(-.4deg);border-radius:6px}
+.V4 .pad::before{content:"";position:absolute;left:0;right:0;top:0;height:30px;background:repeating-linear-gradient(90deg,#2a2018 0 14px,transparent 14px 42px);opacity:.75;border-radius:6px 6px 0 0}
+.V4 .pad h2{position:absolute;left:60px;top:44px;margin:0;font:400 54px var(--display);letter-spacing:.06em;color:#2a2018}
+.V4 .pad .nr{position:absolute;right:60px;top:50px;font:700 44px var(--hand);color:#b3342a;transform:rotate(3deg)}
+.V4 .pad .to{position:absolute;left:62px;top:116px;font:700 32px var(--hand);color:#6b3a10}
+.V4 .pad .hud{left:60px;top:152px;bottom:auto}
+.V4 .form{position:absolute;left:60px;right:60px;top:214px}
+.V4 .form .hd{font:400 26px/44px var(--display);color:#8e2f27;border-bottom:3px solid rgba(142,47,39,.5)}
+.V4 .form .ln{height:58px;gap:16px;font-size:38px}
+.V4 .form .ln .bx{flex:none;width:36px;height:36px;border:3px solid var(--blue);border-radius:4px;position:relative;background:rgba(255,255,255,.4)}
+.V4 .form .ln.sold .bx::after,.V4 .form .ln.done .bx::after{content:"\2713";position:absolute;left:3px;top:-14px;font:700 54px/1 var(--hand);color:#1d2a6a}
+.V4 .form .ln.sold .lc{text-decoration:none}
+.V4 .form .ln.sold{filter:none}
+.V4 .form .ln .dots{position:relative}
+.V4 .form .ln .rp{position:absolute;left:0;right:0;bottom:-6px;text-align:center;font:700 34px/1 var(--hand);color:#1f6b3a;transform:rotate(-2deg);white-space:nowrap}
+.V4 .form .ln .rp span{display:inline-block;clip-path:inset(0 100% 0 0)}
+.V4 .form .ln.has .dots{border-bottom-color:transparent}
+.V4 .form .ln .ico{width:44px;height:44px}
+.V4 .form .ln .stamp{display:none!important}
+.V4 .sig{position:absolute;left:60px;bottom:50px;font:700 34px var(--hand);color:#6b3a10;display:flex;align-items:flex-end;gap:14px;width:600px}
+.V4 .sig i{flex:1;border-bottom:3px solid #2a2018;height:60px;position:relative;font:italic 700 56px/60px var(--hand);color:#1d2a6a;padding-left:20px}
+.V4 .pad .exit.seal{right:50px;bottom:18px}
+.V4 .cork{position:absolute;left:1130px;top:24px;width:740px;height:980px;border:22px solid #5a3a1c;border-radius:10px;background:radial-gradient(circle at 20% 30%,#c4905a,transparent 40%),radial-gradient(circle at 80% 70%,#b07f48,transparent 45%),#b98650;box-shadow:0 24px 60px rgba(0,0,0,.7),inset 0 0 60px rgba(60,30,10,.5)}
+.V4 .sample{position:absolute;left:80px;width:330px;height:200px;cursor:pointer}
+.V4 .sample .sk{position:absolute;inset:0}
+.V4 .sample.fx .sk,.V4 .sample:hover .sk{transform:rotate(0) scale(1.07)}
+.V4 .sample .pin{position:absolute;left:50%;top:-6px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a7a,#a8281d);box-shadow:0 3px 4px rgba(0,0,0,.5);z-index:6}
+.V4 .sample .sk .tape{display:none}
+.V4 .stk{position:absolute;left:60px;right:60px;top:720px;height:196px;background:#f7e27a;box-shadow:0 8px 16px rgba(0,0,0,.45);transform:rotate(1.2deg);padding:14px 22px 10px;overflow:hidden}
+.V4 .stk .note{position:static;transform:none;background:none;box-shadow:none;border:0;padding:0;overflow:visible}
+.V4 .stk .dd{font-size:34px;line-height:38px;color:#3a2a6a}
+.V4 .stk .dk{color:#5a4a10}
+
+/* ---------- overlay do baralho ---------- */
+.ov{position:absolute;inset:0;background:rgba(10,6,4,.78);z-index:60;display:grid;place-items:center}
+.ovp{position:relative;width:1560px;height:880px;background:linear-gradient(#efe0ba,#dcc994);border:6px solid #3a2c1d;border-radius:12px;box-shadow:0 30px 80px #000,inset 0 0 90px rgba(120,80,30,.35);padding:26px 40px 22px;display:grid;grid-template-columns:540px 1fr;grid-template-rows:auto 1fr auto;column-gap:34px;color:var(--ink)}
+.ovh{grid-column:1/3;display:flex;align-items:baseline;gap:24px;border-bottom:3px dashed rgba(60,40,20,.5);padding-bottom:10px}
+.ovh h3{margin:0;font:400 48px var(--display)}
+.ovh span.t{font:700 30px var(--hand);color:#6b3a10}
+.ovh .ovg{margin-left:auto;font:700 26px var(--body);color:#6b3a10}
+.ovl{overflow:auto;padding:12px 6px 12px 0;margin-top:6px;display:grid;align-content:start;gap:6px;scrollbar-width:thin}
+.dr{display:flex;align-items:center;gap:14px;height:52px;padding:0 14px;border:2px solid rgba(60,40,20,.35);border-radius:6px;background:rgba(255,245,210,.5);font:700 25px var(--body);cursor:pointer}
+.dr i{font-style:normal;flex:none;width:36px;height:36px;display:grid;place-items:center;color:#fff;font:700 21px var(--display);background:linear-gradient(#a56be0,#5b2c93);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.dr em{font-style:normal;color:#b07a10;margin-left:-6px}
+.dr small{margin-left:auto;font:600 17px var(--body);color:#6b5a40;text-transform:uppercase;letter-spacing:.1em}
+.dr.sel{background:#2a2018;color:#f3e6c4;border-color:#b3342a;box-shadow:0 0 0 3px #b3342a}
+.dr.no{opacity:.4;cursor:default}
+.ovr{display:flex;align-items:center;justify-content:center;gap:40px;padding-top:16px;position:relative}
+.ovr .col{display:grid;justify-items:center;gap:30px}
+.ovr .lab{font:700 34px var(--hand);color:#3a2a6a}
+.ovr .arrow{font:400 80px var(--display);color:#8e2f27}
+.ovr .none{font:700 32px var(--hand);color:#6b3a10;text-align:center;max-width:520px}
+.ovr .ch{position:absolute;left:0;right:0;bottom:0;text-align:center;font:700 32px var(--hand);color:#3a2a6a}
+.ovb{grid-column:1/3;display:flex;justify-content:flex-end;align-items:center;gap:20px;border-top:3px dashed rgba(60,40,20,.5);padding-top:14px}
+.ovb .hint{margin-right:auto;font:600 21px var(--body);color:#6b5a40}
+.btn{cursor:pointer;font:400 30px var(--display);padding:10px 30px;border-radius:8px;border:3px solid #3a2c1d;background:#efe0ba;color:var(--ink)}
+.btn.ok{background:#2a2018;color:#ffd978;border-color:#b99a55}
+.btn.ok.off{opacity:.35;cursor:default}
+.ov .card{box-shadow:0 .6em 1em rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Decisão 11/11 &middot; Loja &middot; Diário do mercador, sem repetição</div>
+  <h1>Loja do mercador: quatro versões sem informação repetida</h1>
+  <p class="lead">Partindo da variação 4 do <a href="loja_diario.html">Loja Diário</a>. Regra em todas: nome, preço, descrição e tipo de cada item aparecem <strong>uma única vez</strong> na tela. O foco (setas ou mouse) não repete nada; só mostra a descrição que ainda estava escondida. As artes das cartas são usadas sem faixa de tipo. Ouro de teste: 340, baralho de 12. <strong>Setas</strong> movem, <strong>Enter</strong> compra, teclas 1 a 4 trocam de versão (ou #1 a #4 no endereço). Ao escolher Melhorar, Modificador ou Remover abre o passo do baralho com antes e depois.</p>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <div id="vars"></div>
+  <p class="lead">Preços das cartas seguem o rules.json (comum 50; carta melhorada custa um pouco mais). O preço da relíquia (190) é proposta, não está no JSON. Depois de Melhorar ou Modificador a loja marca o serviço como feito (uma vez por visita, proposta); Remover pode repetir com +25. O Registro do dia é histórico das compras já feitas, não repete o que ainda está à venda. <a href="index.html">Voltar ao índice</a></p>
+</div>
+<script>
+"use strict";
+var ITEMS=[
+ {k:"card",id:"skeleton_archers",name:"Esqueletos Arqueiros",up:"",cost:2,ty:"Monstro · Morto-vivo",desc:"2 arqueiros que atacam de longe e recuam.",rar:"common",price:50},
+ {k:"card",id:"boiling_oil",name:"Óleo Fervente",up:"+",cost:3,ty:"Feitiço · Fogo",desc:"Poça que queima com Fogo e deixa o herói Encharcado. Melhorada: dura 2 s a mais.",rar:"uncommon",price:90},
+ {k:"card",id:"cave_troll",name:"Troll das Cavernas",up:"++",cost:8,ty:"Monstro · Gigante",desc:"Brutamontes lento e resistente. Melhorada duas vezes: mais vida e dano.",rar:"rare",price:150},
+ {k:"upg",name:"Melhorar carta",desc:"Escolha uma carta do seu baralho para receber uma melhoria (+). Ela passa a valer mais e a bater mais forte.",price:75},
+ {k:"mod",name:"Modificador",desc:"Cole um modificador numa carta do baralho, como Veloz, Enxame ou Espinhoso. O efeito vale para o resto da corrida.",price:60},
+ {k:"rem",name:"Remover carta",desc:"Queime uma carta do baralho para deixá-lo mais enxuto. Cada remoção nesta corrida custa 25 a mais.",price:50},
+ {k:"rel",name:"Olho Vigilante",prop:1,desc:"Quando uma habilidade do herói dispara, a primeira carta jogada em até 3 s custa 0.",price:190}
+];
+var REPLY=["Boa pontaria!","Ferve bem!","Pesado, patrão!","Feito na hora.","Colado e secando.","Fogueira acesa.","Ele vê tudo."];
+var DECK0=[
+ {id:"skeleton_archers",name:"Esqueletos Arqueiros",cost:2,ty:"Monstro",d:"2 arqueiros atacam de longe. Dano {v}.",v:[4,5,6],up:0},
+ {id:"slime",name:"Gosma",cost:1,ty:"Monstro",d:"Cola no chão e retarda heróis por {v} s.",v:[2,3,4],up:0},
+ {id:"fire_imp",name:"Diabrete",cost:2,ty:"Monstro · Fogo",d:"Cospe fogo com {v} de dano.",v:[3,4,5],up:0},
+ {id:"ghoul",name:"Carniçal",cost:3,ty:"Monstro · Morto-vivo",d:"Devora corpos e cura {v} de vida.",v:[5,7,9],up:1},
+ {id:"spark",name:"Faísca",cost:1,ty:"Feitiço",d:"Raio que causa {v} de dano.",v:[4,6,8],up:0},
+ {id:"barricade",name:"Barricada",cost:2,ty:"Estrutura",d:"Bloqueia a passagem com {v} de vida.",v:[20,28,36],up:0},
+ {id:"rat_horde",name:"Horda de Ratos",cost:2,ty:"Monstro",d:"{v} ratos correm até o herói.",v:[4,5,6],up:0},
+ {id:"ogre",name:"Ogro",cost:5,ty:"Monstro · Gigante",d:"Brutamontes que bate com {v} de dano.",v:[12,16,20],up:2},
+ {id:"shadow_bolt",name:"Raio Sombrio",cost:2,ty:"Feitiço",d:"Dardo sombrio com {v} de dano.",v:[6,8,10],up:0},
+ {id:"bone_totem",name:"Totem de Ossos",cost:3,ty:"Estrutura",d:"Aliados próximos ganham {v}% de dano.",v:[20,30,40],up:0},
+ {id:"ghost",name:"Fantasma",cost:3,ty:"Monstro · Espírito",d:"Atravessa paredes. Dano {v}.",v:[5,7,9],up:0},
+ {id:"war_banner",name:"Estandarte de Guerra",cost:2,ty:"Estrutura",d:"Aliados correm {v}% mais rápido.",v:[15,25,35],up:0}
+];
+var IC={
+ upg:'<svg viewBox="0 0 100 100"><g fill="none" stroke="#2a2018" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M50 82V28"/><path d="M28 50l22-24 22 24"/><path d="M30 90h40"/></g><circle cx="76" cy="22" r="14" fill="#8e2f27"/><path d="M76 15v14M69 22h14" stroke="#f3e6c4" stroke-width="4" stroke-linecap="round"/></svg>',
+ mod:'<svg viewBox="0 0 100 100"><path d="M30 68h40l8 18H22z" fill="#6b3fa0" opacity=".85"/><g fill="none" stroke="#2a2018" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M40 12h20M44 12v22L22 80q-4 10 8 10h40q12 0 8-10L56 34V12"/></g><circle cx="44" cy="52" r="4" fill="#6b3fa0"/><circle cx="58" cy="44" r="3" fill="#6b3fa0"/></svg>',
+ rem:'<svg viewBox="0 0 100 100"><path d="M50 90C24 82 20 56 38 40c0 12 8 14 10 6C44 28 52 18 58 10c2 18 22 26 20 48 0 18-14 28-28 32z" fill="#e08a2a" stroke="#2a2018" stroke-width="5" stroke-linejoin="round"/><path d="M50 84c-10-4-12-14-6-22 2 6 6 6 8 2 2-6 4-8 6-12 4 10 10 14 4 24-3 4-7 7-12 8z" fill="#ffd35a"/></svg>',
+ rel:'<svg viewBox="0 0 120 120"><defs><radialGradient id="rg%ID%" cx="50%" cy="45%"><stop offset="0" stop-color="#fff6c8"/><stop offset=".5" stop-color="#e2b65a"/><stop offset="1" stop-color="#7a5314"/></radialGradient></defs><circle cx="60" cy="60" r="52" fill="#2a1d12" stroke="#d9a02f" stroke-width="5"/><path d="M14 60q46-52 92 0q-46 52-92 0z" fill="#f3e6c4" stroke="#2a2018" stroke-width="4"/><circle cx="60" cy="60" r="20" fill="url(#rg%ID%)" stroke="#2a2018" stroke-width="4"/><circle cx="60" cy="60" r="8" fill="#1b1228"/><circle cx="54" cy="54" r="3" fill="#fff"/></svg>'
+};
+var uid=0;
+function icon(k){return IC[k].replace(/%ID%/g,"u"+(uid++));}
+function priceOf(root,i){var it=ITEMS[i];return it.k==="rem"?it.price+25*root._s.rem:it.price;}
+function nmH(it){return it.name+(it.up?' <span class="up">'+it.up+'</span>':'');}
+function plus(n){return n>0?(n>1?'++':'+'):'';}
+function art(it){return '<img src="../../assets/cards/'+it.id+'.png" alt="">';}
+var STAMPW=function(it){return it.k==='card'||it.k==='rel'?'VENDIDO':'FEITO';};
+
+/* ---------- pecas ---------- */
+function cardHTML(i,cw,o){o=o||{};var it=ITEMS[i];
+ return '<div class="card r-'+it.rar+(o.noname?' noname':'')+'" style="--cw:'+cw+'px"><div class="gem">'+it.cost+'</div><div class="art">'+art(it)+'</div>'
+ +(o.noname?'':'<div class="nm">'+nmH(it)+'</div>')+'<div class="ty">'+it.ty+'</div><div class="ds">'+it.desc+'</div><div class="stamp"><span>VENDIDO</span></div></div>';}
+function sketchHTML(i,w,h,rot){var it=ITEMS[i];
+ return '<div class="sk" style="width:'+w+'px;height:'+h+'px;--r:'+rot+'deg"><div class="tape"></div><div class="arti">'+art(it)+'</div><div class="gem">'+it.cost+'</div><div class="stamp"><span>VENDIDO</span></div></div>';}
+function lcH(i){var it=ITEMS[i];return '<span class="lc">'+nmH(it)+(it.prop?'<em class="prop">proposta</em>':'')+'</span><span class="dots"></span><span class="lp" data-p="'+i+'"></span>';}
+function lnHTML(i,o){o=o||{};var it=ITEMS[i];
+ return '<div class="ln'+(o.cls?' '+o.cls:'')+'" data-i="'+i+'"'+(o.style?' style="'+o.style+'"':'')+'>'+(o.box?'<span class="bx"></span>':'')+(it.k!=='card'&&!o.noico?'<span class="ico">'+icon(it.k)+'</span>':'')+lcH(i).replace('<span class="dots"></span>','<span class="dots">'+(o.reply?'<span class="rp"><span></span></span>':'')+'</span>')+'<div class="stamp"><span>'+STAMPW(it)+'</span></div></div>';}
+function deckCard(c,lvl,cw,o){o=o||{};var v=c.v[Math.min(lvl,2)],dd=c.d.replace('{v}',o.chg?'<b>'+v+'</b>':v);
+ return '<div class="card noname r-common'+(o.burn?' burnt':'')+'" style="--cw:'+cw+'px"><div class="gem">'+c.cost+'</div><div class="art">'+art(c)+'</div>'
+ +(o.mod?'<div class="mod">'+o.mod+'</div>':'')+'<div class="ty">'+c.ty+(lvl?' '+plus(lvl):'')+'</div><div class="ds">'+dd+'</div></div>';}
+function hudHTML(){return '<div class="hud"><div class="chip gc"><span class="coin"></span><span class="g">340</span></div><div class="chip"><span class="dkc">12</span> cartas no baralho</div></div>';}
+var QUILL='<svg class="quill" width="150" height="230" viewBox="0 0 150 230"><path d="M20 20C60 0 120 30 130 80c-30-4-52 6-70 40C50 80 36 50 20 20z" fill="#f3e6c4" stroke="#2a2018" stroke-width="3"/><path d="M26 28C60 50 80 80 62 118" fill="none" stroke="#2a2018" stroke-width="2"/><path d="M62 118l-14 52" stroke="#2a2018" stroke-width="3"/><path d="M30 170h90l-8 56H38z" fill="#1b1228" stroke="#2a2018" stroke-width="3"/><ellipse cx="75" cy="170" rx="45" ry="8" fill="#0d0912"/></svg>';
+var BOX=function(){return '<div class="toast"></div>';};
+
+/* anotacao: descricao + tipo, uma vez, so do que esta em foco */
+function noteHTML(root,i){var it=ITEMS[i],s=root._s,p=priceOf(root,i),sold=s.sold[i],m=root._L.note(it),h='';
+ if(m.ty&&it.ty)h+='<div class="dk">'+it.ty+'</div>';
+ if(m.desc)h+='<div class="dd">'+it.desc+'</div>';
+ var bad=!sold&&s.gold<p;
+ h+='<div class="dp'+(bad?' bad':'')+'">'+(sold?'Já comprado.':bad?'Faltam '+(p-s.gold)+' de ouro.':'Enter ou clique para comprar.')+'</div>';return h;}
+
+/* ---------- estado e interacao ---------- */
+function newState(){return {gold:340,deck:DECK0.map(function(c){return Object.assign({},c);}),rem:0,sold:{}};}
+function all(root,i){return root.querySelectorAll('[data-i="'+i+'"],[data-a="'+i+'"]');}
+function refresh(root){var s=root._s;
+ [].forEach.call(root.querySelectorAll('.g'),function(e){e.textContent=s.gold;});
+ [].forEach.call(root.querySelectorAll('.dkc'),function(e){e.textContent=s.deck.length;});
+ [].forEach.call(root.querySelectorAll('[data-i],[data-a]'),function(e){var i=+(e.getAttribute('data-i')||e.getAttribute('data-a'));
+  e.classList.toggle('sold',!!s.sold[i]);e.classList.toggle('poor',!s.sold[i]&&s.gold<priceOf(root,i));});
+ [].forEach.call(root.querySelectorAll('[data-p]'),function(e){var i=+e.getAttribute('data-p');e.innerHTML='<span class="coin"></span>'+priceOf(root,i);});
+ showNote(root);}
+function showNote(root){if(root._fx==null)return;var h=noteHTML(root,root._fx);[].forEach.call(root.querySelectorAll('.note'),function(d){d.innerHTML=h;});}
+function visibleItems(root){return [].filter.call(root.querySelectorAll('[data-i]'),function(e){return e.getClientRects().length&&!e.closest('.ov');});}
+function setFx(root,i){[].forEach.call(root.querySelectorAll('.fx'),function(e){e.classList.remove('fx');});
+ [].forEach.call(all(root,i),function(e){e.classList.add('fx');});root._fx=i;if(root._L.focus)root._L.focus(root,i);showNote(root);}
+function toast(root,t,bad){var e=root.querySelector('.toast');e.textContent=t;e.classList.toggle('bad',!!bad);e.classList.add('on');clearTimeout(root._t);root._t=setTimeout(function(){e.classList.remove('on');},1900);}
+function fail(root,i,p){[].forEach.call(all(root,i),function(e){e.classList.remove('nope');void e.offsetWidth;e.classList.add('nope');});
+ [].forEach.call(root.querySelectorAll('.gc'),function(e){e.classList.remove('pulse');void e.offsetWidth;e.classList.add('pulse');});
+ toast(root,'Ouro insuficiente: faltam '+(p-root._s.gold)+' de ouro',true);}
+function buy(root,i){var s=root._s,it=ITEMS[i];if(s.sold[i])return;var p=priceOf(root,i);
+ if(s.gold<p){fail(root,i,p);return;}
+ if(it.k==="upg"||it.k==="mod"||it.k==="rem"){openOv(root,i);return;}
+ s.gold-=p;s.sold[i]=1;
+ if(it.k==="card")s.deck.push({id:it.id,name:it.name,cost:it.cost,ty:it.ty.split(' ·')[0],d:it.desc,v:[0,0,0],up:it.up.length,raw:1});
+ toast(root,it.k==="card"?'Foi para o seu baralho.':'Agora é sua.');
+ afterBuy(root,i,p,'Vendido ao Vilão: '+it.name+(it.up?' '+it.up:''));}
+function afterBuy(root,i,p,txt){refresh(root);if(root._L.onBuy)root._L.onBuy(root,txt,p,i);}
+function writeLog(root,txt,minus){var log=root.querySelector('.log');if(!log)return;var q=root.querySelector('.quill'),en=document.createElement('div');en.className='ent'+(minus?' minus':'');
+ var sp=document.createElement('span');sp.innerHTML=txt;en.appendChild(sp);log.appendChild(en);
+ while(log.children.length>2)log.removeChild(log.firstChild);
+ inkIn(root,sp,q);}
+function inkIn(root,sp,q){var n=Math.max(8,sp.textContent.length),dur=Math.min(2200,n*50);
+ if(q){q.classList.add('writing');clearTimeout(root._q);root._q=setTimeout(function(){q.classList.remove('writing');},dur);}
+ sp.style.clipPath='inset(0 100% 0 0)';sp.animate([{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{duration:dur,easing:'steps('+n+',end)',fill:'forwards'});}
+
+/* overlay do baralho: nome so na lista, tipo/descricao so na carta, preco so como saldo */
+function eligible(kind,c){return kind==='upg'?c.up<2:true;}
+function openOv(root,i){var s=root._s,kind=ITEMS[i].k,ov={i:i,sel:-1,kind:kind};
+ s.deck.forEach(function(c,n){if(ov.sel<0&&eligible(kind,c))ov.sel=n;});root._ov=ov;ovRender(root);}
+function ovRender(root){var s=root._s,ov=root._ov,p=priceOf(root,ov.i),old=root.querySelector('.ovl'),sc=old?old.scrollTop:0;
+ var e=root.querySelector('.ov');if(!e){e=document.createElement('div');e.className='ov';root.appendChild(e);}
+ var titles={upg:['Melhorar carta','Escolha a carta que ganha a melhoria (+)'],mod:['Modificador','Escolha a carta que recebe o efeito Veloz (+30% de velocidade)'],rem:['Remover carta','Escolha a carta que vai para a fogueira']};
+ var h='<div class="ovp"><div class="ovh"><h3>'+titles[ov.kind][0]+'</h3><span class="t">'+titles[ov.kind][1]+'</span><div class="ovg"><span class="coin"></span>'+s.gold+' &rarr; '+(s.gold-p)+' &middot; baralho: '+s.deck.length+(ov.kind==='rem'?' &rarr; '+(s.deck.length-1):'')+'</div></div><div class="ovl">';
+ s.deck.forEach(function(c,n){var ok=eligible(ov.kind,c);
+  h+='<div class="dr'+(n===ov.sel?' sel':'')+(ok?'':' no')+'" data-dk="'+n+'"><i>'+c.cost+'</i>'+c.name+(c.up?' <em>'+plus(c.up)+'</em>':'')+(c.mod?' <em>('+c.mod+')</em>':'')+(ok?'':'<small>já no máximo</small>')+'</div>';});
+ h+='</div><div class="ovr">';
+ var c=s.deck[ov.sel];
+ if(!c)h+='<div class="none">Nenhuma carta para escolher.</div>';
+ else if(ov.kind==='upg')h+='<div class="col"><div class="lab">antes</div>'+deckCard(c,c.up,300)+'</div><div class="arrow">&rarr;</div><div class="col"><div class="lab">depois</div>'+deckCard(c,c.up+1,300,{chg:1})+'</div><div class="ch">Mesmo custo, valor maior.</div>';
+ else if(ov.kind==='mod')h+='<div class="col"><div class="lab">antes</div>'+deckCard(c,c.up,300,{mod:c.mod})+'</div><div class="arrow">&rarr;</div><div class="col"><div class="lab">depois</div>'+deckCard(c,c.up,300,{mod:'Veloz'})+'</div><div class="ch">O selo vale para o resto da corrida.</div>';
+ else h+='<div class="col"><div class="lab">antes</div>'+deckCard(c,c.up,300,{mod:c.mod})+'</div><div class="arrow">&rarr;</div><div class="col"><div class="lab">depois</div>'+deckCard(c,c.up,300,{burn:1})+'</div><div class="ch">A carta vira cinza.</div>';
+ h+='</div><div class="ovb"><div class="hint">&uarr; &darr; escolher &middot; Enter confirmar &middot; Esc voltar</div><div class="btn" data-ovc="0">Voltar</div><div class="btn ok'+(c?'':' off')+'" data-ovc="1">Confirmar</div></div></div>';
+ e.innerHTML=h;var l=e.querySelector('.ovl');l.scrollTop=sc;var r=l.querySelector('.sel');if(r){var a=r.offsetTop,b=a+r.offsetHeight;if(a<l.scrollTop)l.scrollTop=a-8;else if(b>l.scrollTop+l.clientHeight)l.scrollTop=b-l.clientHeight+8;}}
+function ovConfirm(root){var s=root._s,ov=root._ov,c=s.deck[ov.sel];if(!c)return;var p=priceOf(root,ov.i),txt;
+ s.gold-=p;
+ if(ov.kind==='upg'){c.up++;s.sold[ov.i]=1;txt='Melhorei '+c.name+' para '+plus(c.up);toast(root,'Carta melhorada.');}
+ else if(ov.kind==='mod'){c.mod='Veloz';s.sold[ov.i]=1;txt='Colei Veloz em '+c.name;toast(root,'Efeito colado.');}
+ else{s.deck.splice(ov.sel,1);s.rem++;txt='Queimei '+c.name;toast(root,'Carta queimada.');}
+ closeOv(root);afterBuy(root,ov.i,p,txt);}
+function closeOv(root){var e=root.querySelector('.ov');if(e)e.remove();var i=root._ov&&root._ov.i;root._ov=null;if(i!=null)setFx(root,i);}
+function ovKey(root,e){var s=root._s,ov=root._ov;
+ if(e.key==='Escape'){closeOv(root);return;}
+ if(e.key==='Enter'||e.key===' '){ovConfirm(root);return;}
+ var d=e.key==='ArrowDown'?1:e.key==='ArrowUp'?-1:0;if(!d)return;
+ var n=ov.sel;do{n+=d;}while(n>=0&&n<s.deck.length&&!eligible(ov.kind,s.deck[n]));
+ if(n>=0&&n<s.deck.length){ov.sel=n;ovRender(root);}}
+
+function nav(root,dx,dy){var els=visibleItems(root),ce=els.filter(function(e){return +e.getAttribute('data-i')===root._fx;})[0];
+ if(!ce){if(els[0])setFx(root,+els[0].getAttribute('data-i'));return;}
+ var cr=ce.getBoundingClientRect(),ax=cr.left+cr.width/2,ay=cr.top+cr.height/2,best=null,bs=1e9;
+ els.forEach(function(e){if(e===ce)return;var r=e.getBoundingClientRect(),vx=r.left+r.width/2-ax,vy=r.top+r.height/2-ay,main=dx?vx*dx:vy*dy;
+  if(main<=6)return;var sc=main+Math.abs(dx?vy:vx)*2.4;if(sc<bs){bs=sc;best=e;}});
+ if(best)setFx(root,+best.getAttribute('data-i'));}
+
+/* ---------- layouts ---------- */
+var COMMON_R='<div class="exit seal">Sair da loja</div>'+QUILL;
+function logInit(r){writeLog(r,'Abri a banca. O Vilão entrou.',0);}
+function logOnBuy(r,txt,p){writeLog(r,txt+' &mdash; <b>&minus;'+p+'</b>',1);}
+var HINT='<span><kbd>&larr;&uarr;&darr;&rarr;</kbd>mover</span><span><kbd>Enter</kbd>comprar</span>';
+var LAYOUTS=[
+{id:"V1",tab:"1. Revisado",hint:HINT+'<span>a descrição aparece só na margem, do item em foco</span>',
+ note:function(it){return {ty:it.k==='card',desc:true};},
+ cap:["A variação 4 limpa: cada item é uma única linha de livro-caixa (nome, pontinhos, preço). As cartas viraram esboços colados ao lado da linha, só com a arte e o custo de energia, sem título nem preço; o tipo (Monstro, Feitiço) e a descrição só existem na anotação da margem, que mostra o item em foco. Preço sai do estoque e do serviço uma vez só; o Registro do dia só guarda o histórico depois da compra.","Pró: é o mais próximo do que você escolheu, mantém rabiscos, pena e lacre; leitura de menu clara, nada repetido. Contra: o jogador só lê a regra da carta ao focar nela (precisa passar o mouse ou a seta), e a carta aparece pequena como esboço, sem o formato de carta."],
+ build:function(){var h='<div class="book"><div class="pg pgL"><div class="stain" style="left:800px;top:700px"></div><div class="stain" style="left:30px;top:20px;width:150px;height:150px;opacity:.7"></div>';
+  h+='<h2>Livro-caixa do Mascate</h2><div class="sub">estoque do dia (sem fiado, sem troco)</div>';
+  h+='<svg class="doodle" style="right:50px;top:24px" width="220" height="110" viewBox="0 0 220 110" fill="none" stroke="#2a2018" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M110 20v70M70 90h80M110 24l-50 14M110 24l50 14M60 38l-18 34h36zM160 38l-18 34h36z"/><circle cx="110" cy="16" r="6"/></svg>';
+  [0,1,2].forEach(function(n){h+='<div class="crow" data-i="'+n+'" style="top:'+(124+n*182)+'px">'+sketchHTML(n,250,152,[-2,1.5,-1][n])+'<div class="cl">'+lcH(n)+'</div></div>';});
+  h+='<div class="logh" style="top:690px">Registro do dia</div><div class="log" style="top:736px"></div>'+hudHTML()+'</div>';
+  h+='<div class="pg pgR"><h2>Serviços e relíquia</h2><div class="sub">cobrado à parte</div><div class="rows">'+lnHTML(3)+lnHTML(4)+lnHTML(5)+'</div>';
+  h+='<div class="relrow">'+lnHTML(6,{cls:'',style:'height:112px'}).replace('class="ln"','class="ln" data-i="6"')+'</div>';
+  h+='<div class="note" style="left:56px;right:56px;top:530px;height:210px"></div>'+COMMON_R+'</div></div>';
+  return h;},
+ after:function(root){root._L.onBuy=logOnBuy;logInit(root);}},
+
+{id:"V2",tab:"2. Só o livro-caixa",hint:HINT+'<span>a carta grande só aparece na página ao lado</span>',
+ note:function(it){return {ty:false,desc:false};},
+ cap:["Os itens são só lançamentos de caneta: uma lista única (Mercadoria, Serviços, Relíquia) com nome e preço, mais nada. A página ao lado mostra, em grande, o item selecionado: para cartas, a carta inteira (arte, custo, tipo e regra) sem o título, que já está no lançamento; para serviço e relíquia, uma ficha com o desenho e a descrição. É o único lugar com arte e regra. O Registro do dia fica embaixo da lista.","Pró: o mais limpo, parece mesmo um menu de papel; cada carta aparece grande e legível, e não existe informação em dois lugares. Contra: só uma carta é vista por vez (não dá para comparar as três de relance), e a carta grande sem o título pede que o olhar volte à lista para saber o nome."],
+ build:function(){var h='<div class="book"><div class="pg pgL"><div class="stain" style="left:820px;top:690px"></div>';
+  h+='<h2>Livro-caixa do Mascate</h2><div class="sub">tudo anotado, nada de fiado</div><div class="led"><div class="hd">Mercadoria</div>'+lnHTML(0)+lnHTML(1)+lnHTML(2)+'<div class="hd">Serviços</div>'+lnHTML(3)+lnHTML(4)+lnHTML(5)+'<div class="hd">Relíquia</div>'+lnHTML(6)+'</div>';
+  h+='<div class="logh" style="top:716px">Registro do dia</div><div class="log" style="top:760px"></div>'+hudHTML()+'</div>';
+  h+='<div class="pg pgR"><div class="stain" style="right:-50px;top:560px;width:240px;height:240px;opacity:.6"></div>';
+  [0,1,2].forEach(function(n){h+='<div class="pn card-pn" data-a="'+n+'">'+cardHTML(n,420,{noname:true})+'</div>';});
+  [3,4,5,6].forEach(function(n){var it=ITEMS[n];h+='<div class="pn fiche" data-a="'+n+'"><div class="tape"></div><div class="big">'+icon(it.k)+'</div><div class="dd">'+it.desc+'</div><div class="stamp"><span>'+STAMPW(it)+'</span></div></div>';});
+  h+='<div class="note"></div>'+COMMON_R+'</div></div>';return h;},
+ focus:function(r,i){[].forEach.call(r.querySelectorAll('.pn'),function(e){e.classList.toggle('on',+e.getAttribute('data-a')===i);});},
+ after:function(root){root._L.onBuy=logOnBuy;logInit(root);}},
+
+{id:"V3",tab:"3. Vitrine com etiquetas",hint:HINT+'<span>o preço está na etiqueta amarrada à carta</span>',
+ note:function(it){return {ty:false,desc:it.k!=='card'};},
+ cap:["As cartas são a estrela: três cartas grandes coladas na página, com título, tipo e regra impressos nelas. O preço vira uma etiqueta de papel amarrada na ponta de cada carta (fica vermelha quando falta ouro). A lista de preços do livro fica só com serviços e relíquia, e a margem mostra a descrição desses dois grupos. O Registro do dia fica sob as cartas.","Pró: as cartas aparecem como cartas, com o formato que o jogador já conhece, e as três podem ser comparadas de relance; preço e nome nunca se repetem. Contra: a etiqueta mistura dois estilos de leitura (carta impressa, preço escrito à mão) e as cartas disputam espaço com o registro; se uma carta tiver texto longo, ela fica mais alta que as outras."],
+ build:function(){var h='<div class="book"><div class="pg pgL"><div class="stain" style="left:830px;top:700px"></div>';
+  h+='<h2>Vitrine do Mascate</h2><div class="sub">preço na etiqueta, sem troco</div>';
+  var xs=[56,392,728];[0,1,2].forEach(function(n){h+='<div class="cw" data-i="'+n+'" style="left:'+xs[n]+'px;--rot:'+[-1.2,.9,-.7][n]+'deg">'+cardHTML(n,300)+'<div class="tag"><div class="str"></div><div class="tb"><span class="lp" data-p="'+n+'"></span></div></div></div>';});
+  h+='<div class="logh" style="top:700px">Registro do dia</div><div class="log" style="top:746px"></div>'+hudHTML()+'</div>';
+  h+='<div class="pg pgR"><h2>Serviços e relíquia</h2><div class="sub">cobrado à parte</div><div class="rows">'+lnHTML(3)+lnHTML(4)+lnHTML(5)+'</div>';
+  h+='<div class="relrow" style="position:absolute;left:56px;right:56px;top:396px;height:112px;border:3px double #6b3a10;background:rgba(255,235,170,.35);padding:0 70px 0 18px">'+lnHTML(6,{style:'height:112px'})+'</div>';
+  h+='<div class="note"></div>'+COMMON_R+'</div></div>';return h;},
+ after:function(root){root._L.onBuy=logOnBuy;logInit(root);}},
+
+{id:"V4",tab:"4. Nota de pedido",hint:HINT+'<span>o mercador responde a cada pedido com a letra dele</span>',
+ note:function(it){return {ty:it.k==='card',desc:true};},
+ cap:["Uma ideia nova: o Vilão pede do cardápio como um chefe de verdade. A tela é uma nota de pedido (bloco de comanda) com uma caixinha para cada item; ao comprar, a caixa recebe um ticado a tinta azul e o próprio mercador responde, em verde, no lugar dos pontinhos (Entregue, patrão). As cartas ficam presas num mural de cortiça ao lado só como amostras (arte e custo), e a descrição vem num post-it. Sair é assinar a nota e carimbar o lacre. Não há Registro do dia: a própria nota é o histórico.","Pró: cada item aparece uma vez na nota e uma vez como amostra sem texto, a fantasia do chefe pedindo ao mercador fica forte, e a resposta do mercador dá personalidade sem repetir nome nem preço. Contra: a amostra no mural fica longe da linha correspondente (ligada só pelo destaque ao focar); é a versão que mais se afasta da variação 4 aprovada."],
+ build:function(){var h='<div class="pad"><h2>Nota de pedido</h2><div class="nr">Nº 47</div><div class="to">Para o mercador, em nome do Vilão do Covil</div>'+hudHTML();
+  h+='<div class="form"><div class="hd">I. Cartas</div>'+lnHTML(0,{box:1,reply:1,noico:1})+lnHTML(1,{box:1,reply:1,noico:1})+lnHTML(2,{box:1,reply:1,noico:1})+'<div class="hd">II. Serviços</div>'+lnHTML(3,{box:1,reply:1,noico:1})+lnHTML(4,{box:1,reply:1,noico:1})+lnHTML(5,{box:1,reply:1,noico:1})+'<div class="hd">III. Relíquia</div>'+lnHTML(6,{box:1,reply:1,noico:1})+'</div>';
+  h+='<div class="sig">Assinado:<i>O Vilão</i></div><div class="exit seal">Assinar e sair</div></div>';
+  h+='<div class="cork">';[0,1,2].forEach(function(n){h+='<div class="sample" data-a="'+n+'" style="top:'+(50+n*212)+'px;left:'+[90,300,110][n]+'px"><div class="pin"></div>'+sketchHTML(n,330,200,[-2,2,-1][n])+'</div>';});
+  h+='<div class="stk"><div class="note"></div></div></div>';return h;},
+ after:function(root){root._L.onBuy=function(r,txt,p,i){var ln=r.querySelector('.ln[data-i="'+i+'"]');if(!ln)return;ln.classList.add('has');ln.classList.add('done');
+   var sp=ln.querySelector('.rp span');sp.textContent=REPLY[i];inkIn(r,sp,null);};}}
+];
+
+/* ---------- montagem ---------- */
+function mount(L,sec){
+ sec.innerHTML='<div class="stage"><div class="frame '+L.id+'">'+L.build()+'<div class="toast"></div><div class="keys">'+L.hint+'</div></div></div><div class="cap"><div class="pro"><b>O que muda</b>'+L.cap[0]+'</div><div class="con"><b>Prós e contras</b>'+L.cap[1]+'</div></div><button class="reset">Reiniciar esta loja (ouro 340)</button>';
+ var root=sec.querySelector('.frame');root._s=newState();root._L=L;root._fx=null;if(L.after)L.after(root);
+ root.addEventListener('mouseover',function(ev){if(root._ov)return;var e=ev.target.closest('[data-i],[data-a]');if(e)setFx(root,+(e.getAttribute('data-i')||e.getAttribute('data-a')));});
+ root.addEventListener('click',function(ev){
+  if(root._ov){var r=ev.target.closest('[data-dk]'),b=ev.target.closest('[data-ovc]');
+   if(r&&!r.classList.contains('no')){root._ov.sel=+r.getAttribute('data-dk');ovRender(root);}
+   else if(b){if(b.getAttribute('data-ovc')==='1')ovConfirm(root);else closeOv(root);}
+   else if(ev.target.classList.contains('ov'))closeOv(root);return;}
+  if(ev.target.closest('.exit')){toast(root,'Você saiu da loja (protótipo)');return;}
+  var e=ev.target.closest('[data-i],[data-a]');if(!e)return;var i=+(e.getAttribute('data-i')||e.getAttribute('data-a'));setFx(root,i);buy(root,i);});
+ sec.querySelector('.reset').onclick=function(){mount(L,sec);fit();};
+ setFx(root,0);refresh(root);
+}
+var tabs=document.getElementById('tabs'),secs=[];
+LAYOUTS.forEach(function(L,n){var sec=document.createElement('section');sec.className='var';document.getElementById('vars').appendChild(sec);secs.push(sec);mount(L,sec);
+ var b=document.createElement('button');b.textContent=L.tab;b.setAttribute('role','tab');b.onclick=function(){sel(n);};tabs.appendChild(b);});
+var cur=0;
+function sel(n){cur=n;[].forEach.call(tabs.children,function(b,i){b.setAttribute('aria-selected',i===n);});
+ secs.forEach(function(s,i){s.classList.toggle('on',i===n);});fit();
+ try{history.replaceState(null,'','#'+(n+1));}catch(e){}}
+function fit(){document.querySelectorAll('.stage').forEach(function(s){var k=s.clientWidth/1920;if(!k)return;s.style.height=(1080*k)+'px';s.firstElementChild.style.transform='scale('+k+')';});}
+window.addEventListener('resize',fit);
+function active(){return secs[cur].querySelector('.frame');}
+document.addEventListener('keydown',function(e){var root=active();
+ if(root._ov){if(['ArrowUp','ArrowDown','Enter','Escape',' '].indexOf(e.key)>=0){e.preventDefault();ovKey(root,e);}return;}
+ var n=+e.key;if(n>=1&&n<=4){sel(n-1);return;}
+ if(e.target.tagName==='BUTTON'&&e.key==='Enter')return;
+ var d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+ if(d){e.preventDefault();nav(root,d[0],d[1]);}
+ else if(e.key==='Enter'||e.key===' '){e.preventDefault();if(root._fx!=null)buy(root,root._fx);}});
+var hm=(location.hash||'').replace('#','');sel(Math.max(0,Math.min(3,(parseInt(hm)||1)-1)));
+/* ganchos de captura: o abre Melhorar; b compra a carta 3 e a 1; p ouro 40; fN foca o item N; x compra tudo barato */
+(function(){var r=active(),m;
+ if(/o/.test(hm.slice(1)))buy(r,3);
+ if(/b/.test(hm.slice(1))){buy(r,0);buy(r,2);}
+ if(/p/.test(hm.slice(1))){r._s.gold=40;refresh(r);}
+ if(m=hm.match(/f(\d)/))setFx(r,+m[1]);
+})();
+</script>
+</body>
+</html>

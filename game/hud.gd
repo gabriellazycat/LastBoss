@@ -5,7 +5,6 @@ extends Control
 ## (na arena) à direita → esteira do ciclo, mão em leque e elixir embaixo.
 
 signal card_pressed(i: int)
-signal card_sacrificed(i: int)
 signal offer_chosen(k: int)
 signal minimap_clicked(pos: Vector2)
 signal route_clicked(node: int)
@@ -68,7 +67,6 @@ var pad := false
 var elixir_bar: ElixirBar
 var elixir_badge: PanelContainer
 var elixir_tray: HBoxContainer
-var sac_zone: Button
 # Mensagens.
 var info_label: Label
 var help_label: Label
@@ -91,6 +89,7 @@ var offer_sig := ""
 var offer_slots: Array = []
 var offer_rays: Juice.Rays             # raios de luz atrás da oferta (impacto, rodada 09/11/2026)
 var offer_obj = null                   # oferta já animada (a mesma oferta reconstruída não anima de novo)
+var ledger: ShopLedger                 # a loja é o livro-caixa do mercador (game/shop_ledger.gd, decisão 11/11/2026)
 var sfx: Callable                      # som da interface: sfx.call(id, tom)
 var souls_gained := 0
 var pause_layer: Control
@@ -264,7 +263,6 @@ func _build_bottom() -> void:
 	add_child(bottom_box)
 	fan = HandFan.new()
 	fan.card_pressed.connect(func(i): card_pressed.emit(i))
-	fan.card_sacrificed.connect(func(i): card_sacrificed.emit(i))
 	fan.card_dropped.connect(func(i, p): card_dropped.emit(i, p))
 	bottom_box.add_child(fan)
 	var eb := HBoxContainer.new()
@@ -274,34 +272,16 @@ func _build_bottom() -> void:
 		eb.draw.connect(func(): UiCovil.draw_plate(eb, "paper", Vector2(18, 10)))
 		eb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	elif UiSkins.covil():
-		# Bandeja de ferro atrás do sacrifício e do elixir: os frascos ficavam soltos sobre o mundo.
+		# Bandeja de ferro atrás do elixir: os frascos ficavam soltos sobre o mundo.
 		eb.draw.connect(func(): UiCovil.draw_plate(eb, "soft", Vector2(14, 8)))
 		eb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	eb.add_theme_constant_override("separation", 12)
 	# A bandeja do elixir é sólida: o clique nela não pode cair no mundo atrás (rodada 09/11/2026).
 	eb.mouse_filter = Control.MOUSE_FILTER_STOP
 	elixir_tray = eb
-	sac_zone = Button.new()
-	sac_zone.text = "UI_SACRIFICE"
-	sac_zone.tooltip_text = "UI_TIP_SACRIFICE"
-	sac_zone.focus_mode = Control.FOCUS_NONE
-	sac_zone.custom_minimum_size = Vector2(170, 44)
-	sac_zone.add_theme_font_size_override("font_size", 15)
-	sac_zone.add_theme_color_override("font_color", UiKit.BAD.lightened(0.3))
-	if UiSkins.diario():
-		sac_zone.set_meta("no_frame", true)
-		sac_zone.material = UiDiario.material("tape", {"button": true, "tint": Color(0.66, 0.15, 0.1, 0.95), "shadow": 4.0, "seed": 0.4})
-		for ck in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-			sac_zone.add_theme_color_override(ck, Color(1.0, 0.95, 0.88))
-	elif UiSkins.covil():
-		# Botão de sacrifício: aro de bronze puxado para o vermelho (é o altar).
-		sac_zone.material = UiCovil.material("button", UiCovil.BRONZE.lerp(UiKit.BAD, 0.5), Color(0.17, 0.1, 0.1, 0.97), Color(0.08, 0.04, 0.045, 0.97))
-	sac_zone.pressed.connect(func():
-		if selected >= 0:
-			card_sacrificed.emit(selected))
-	eb.add_child(sac_zone)
 	elixir_bar = ElixirBar.new()
-	elixir_bar.custom_minimum_size = Vector2(560, 22)
+	# Sem o botão de sacrifício (11/11/2026), a barra ocupa a bandeja toda: mais gomos cabem quando o máximo passa de 20.
+	elixir_bar.custom_minimum_size = Vector2(740, 22)
 	elixir_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	elixir_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	eb.add_child(elixir_bar)
@@ -438,6 +418,10 @@ func _build_offer() -> void:
 	v.add_child(offer_scroll)
 	v.add_child(offer_skip)
 	offer_layer.add_child(v)
+	ledger = ShopLedger.new()
+	ledger.hud = self
+	ledger.chosen.connect(choose_offer)
+	offer_layer.add_child(ledger)
 	offer_layer.visible = false
 	add_child(offer_layer)
 	# O mapa em tela cheia cobre a mão e os painéis, mas fica sob ofertas e pausa.
@@ -665,7 +649,7 @@ func show_pause(on: bool) -> void:
 		var cv := VBoxContainer.new()
 		cv.add_theme_constant_override("separation", 0)
 		var art := TextureRect.new()
-		art.texture = CardArt.textures.get(ci.def.id)
+		art.texture = UiDiario.hand_art(ci.def.id)
 		art.custom_minimum_size = Vector2(112, 50)
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -755,6 +739,8 @@ func _hints() -> void:
 	for loc in sim.road.locations:
 		if loc["type"] == "shrine" and loc["state"] == SimRoad.LocState.ACTIVE and h.distance_to(loc["pos"]) < 45.0:
 			hint("shrine")
+		if loc["type"] == "helper" and loc["state"] == SimRoad.LocState.ACTIVE and h.distance_to(loc["pos"]) < 45.0 and sim.road.is_on_route(loc):
+			hint("helper")
 	for ci in sim.hand:
 		if ci and ci.def.category == "route":
 			hint("route")
@@ -791,7 +777,6 @@ func refresh(delta: float, fps: float) -> void:
 	var over := sim.phase == K.Phase.OVER
 	fan.selected = selected
 	fan.pad = pad
-	fan.sac_rect = sac_zone.get_global_rect()
 	fan.mouse_filter = Control.MOUSE_FILTER_IGNORE if hold_offers else Control.MOUSE_FILTER_STOP
 	fan.modulate.a = lerpf(fan.modulate.a, 0.35 if hold_offers else 1.0, clampf(delta * 8.0, 0.0, 1.0))
 	fan.refresh(delta)
@@ -804,9 +789,6 @@ func refresh(delta: float, fps: float) -> void:
 	elixir_bar.value = sim.elixir
 	elixir_bar.cost = sim.card_cost(sel) if sel and sim.offers.is_empty() else 0
 	(elixir_badge.get_node("N") as Label).text = str(int(sim.elixir))
-	sac_zone.disabled = selected < 0 or sim.offers.size() > 0
-	var sac_v := snappedf(sim.elixir_max * float(sim.R["sacrifice_elixir_frac"]), 0.1)
-	sac_zone.text = tr("UI_SACRIFICE").format({"n": int(sac_v) if is_equal_approx(sac_v, roundf(sac_v)) else sac_v}) if sim.sacrifice_ready() else tr("UI_SACRIFICE_CD")
 	_refresh_top()
 	_refresh_left()
 	info_label.visible = Settings.v["show_fps"]
@@ -974,55 +956,54 @@ func _refresh_contest() -> void:
 	var txt := tr("UI_CONTEST_" + str(c["type"])).format({
 		"p": int(p) if c["type"] != "bridge" and c["type"] != "fountain" else int(p),
 		"g": int(g), "s": int(ceil(float(c["window"]) - float(c["t"])))})
-	var staged := c.has("stages")
-	if staged:
-		txt = tr("UI_CONTEST_STAGE").format({"a": int(c.get("stage", 0)) + 1, "b": int(c["stages"])}) + " · " + txt
-	contest_stages.visible = staged
-	if staged:
-		contest_stages.queue_redraw()
+	# Disputa difícil (11/11/2026): alcançar os 3 marcos também dá uma relíquia.
+	if c.has("li") and sim.road.locations[int(c["li"])].get("hard", false):
+		txt = tr("UI_CONTEST_HARD") + " · " + txt
+	contest_stages.visible = true
+	contest_stages.queue_redraw()
 	if txt != contest_text:
 		contest_text = txt
 		Tips.set_text(contest_label, txt)
 
 
+## Barra única da disputa (12/11/2026): enche até o 3º marco; cada marco é um círculo na barra (cheio e verde = alcançado,
+## anel dourado = o próximo). À direita, o tempo que resta.
 func _draw_contest_stages() -> void:
 	var c := sim.contest
-	if not c.has("stages"):
+	if not c.has("marks"):
 		return
-	var n := int(c["stages"])
-	var stage := int(c.get("stage", 0))
-	var won := int(c.get("won", 0))
+	var marks: Array = c["marks"]
+	var goal := maxf(float(c.get("goal", 1.0)), 0.001)
+	var reached := int(c.get("won", 0))
 	var font := ThemeDB.fallback_font
 	var ci := contest_stages
 	var h := ci.size.y
-	var x := 0.0
-	# Marcadores: círculo cheio = vencida; anel dourado = atual; vazio = por vir.
-	for i in n:
-		var ctr := Vector2(x + h * 0.5, h * 0.5)
-		var r := h * 0.46
-		if i < won:
-			ci.draw_circle(ctr, r, UiKit.GOOD)
-			ci.draw_string(font, ctr + Vector2(-5, 6), "✓", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.05, 0.1, 0.05))
-		elif i == stage:
-			ci.draw_circle(ctr, r, Color(0.2, 0.15, 0.05))
-			ci.draw_arc(ctr, r, 0, TAU, 28, UiKit.GOLD, 3.0, true)
-			ci.draw_string(font, ctr + Vector2(-4, 6), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UiKit.GOLD)
-		else:
-			ci.draw_arc(ctr, r, 0, TAU, 28, Color(0.6, 0.55, 0.5, 0.7), 2.0, true)
-			ci.draw_string(font, ctr + Vector2(-4, 6), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.6, 0.55, 0.5, 0.8))
-		x += h + 8.0
-	# Barra da etapa atual e o tempo que resta nela.
+	var r := h * 0.46
 	var left := maxf(float(c.get("window", 0.0)) - float(c.get("t", 0.0)), 0.0)
 	var ttxt := "%d s" % int(ceil(left))
 	var tw := font.get_string_size(ttxt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
-	var bx := x + 6.0
-	var bw := ci.size.x - bx - tw - 12.0
-	var br := Rect2(bx, h * 0.5 - 7.0, maxf(bw, 40.0), 14.0)
-	var f := clampf(float(c.get("progress", 0.0)) / maxf(float(c.get("goal", 1.0)), 0.001), 0.0, 1.0)
+	var bx := r + 2.0
+	var bw := maxf(ci.size.x - bx - tw - 14.0 - r, 40.0)
+	var br := Rect2(bx, h * 0.5 - 7.0, bw, 14.0)
+	var f := clampf(float(c.get("progress", 0.0)) / goal, 0.0, 1.0)
 	ci.draw_rect(br, Color(0, 0, 0, 0.6))
 	ci.draw_rect(Rect2(br.position, Vector2(br.size.x * f, br.size.y)), UiKit.GOLD)
 	ci.draw_rect(br, Color(1, 0.9, 0.6, 0.5), false, 1.0)
-	ci.draw_string(font, Vector2(br.end.x + 8.0, h * 0.5 + 6.0), ttxt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, UiKit.BAD if left <= 5.0 else UiKit.TEXT)
+	if marks.size() > 1:
+		for i in marks.size():
+			var ctr := Vector2(bx + bw * clampf(float(marks[i]) / goal, 0.0, 1.0), h * 0.5)
+			if i < reached:
+				ci.draw_circle(ctr, r, UiKit.GOOD)
+				ci.draw_string(font, ctr + Vector2(-5, 6), "✓", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.05, 0.1, 0.05))
+			elif i == reached:
+				ci.draw_circle(ctr, r, Color(0.2, 0.15, 0.05))
+				ci.draw_arc(ctr, r, 0, TAU, 28, UiKit.GOLD, 3.0, true)
+				ci.draw_string(font, ctr + Vector2(-4, 6), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, UiKit.GOLD)
+			else:
+				ci.draw_circle(ctr, r, Color(0.1, 0.08, 0.08, 0.85))
+				ci.draw_arc(ctr, r, 0, TAU, 28, Color(0.6, 0.55, 0.5, 0.7), 2.0, true)
+				ci.draw_string(font, ctr + Vector2(-4, 6), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.6, 0.55, 0.5, 0.8))
+	ci.draw_string(font, Vector2(br.end.x + r + 8.0, h * 0.5 + 6.0), ttxt, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, UiKit.BAD if left <= 5.0 else UiKit.TEXT)
 
 
 func _refresh_relics() -> void:
@@ -1043,16 +1024,25 @@ func handle_events(evs: Array) -> void:
 	for e in evs:
 		match int(e[0]):
 			K.Ev.CONTEST:
-				if int(e[4]) == 0 and sim.contest.size() > 0:
+				var code := int(e[4])
+				if code == 0 and sim.contest.size() > 0:
 					# Chegou no local: o objetivo bate grande no meio e voa para o painel da disputa no topo.
 					var c := sim.contest
 					var f := {"g": int(c["goal"]), "s": int(ceil(float(c["window"])))}
 					var dock := Vector2(get_viewport_rect().size.x * 0.5, duel.position.y + duel.size.y + 26.0)
 					banner.show_banner(tr("UI_GOAL_" + str(c["type"])).format(f), tr("UI_GOALSUB_" + str(c["type"])).format(f), UiKit.GOLD, dock)
-				elif int(e[4]) > 0:
+				elif code >= 3 and code <= 5:
+					banner.show_banner(tr("UI_BANNER_MARK").format({"n": code - 2}), "", Color(0.55, 1.0, 0.55), Vector2(-1, -1), 0.5)
+				elif code == 1:
 					banner.show_banner(tr("UI_BANNER_WON"), tr("UI_CONTEST_WON"), Color(0.55, 1.0, 0.55), Vector2(-1, -1), 0.8)
-				elif int(e[4]) < 0:
-					banner.show_banner(tr("UI_BANNER_LOST"), tr("UI_CONTEST_LOST"), Color(1.0, 0.45, 0.4), Vector2(-1, -1), 0.6)
+				elif code >= 11:
+					banner.show_banner(tr("UI_BANNER_PARTIAL").format({"n": code - 10}), "", UiKit.GOLD, Vector2(-1, -1), 0.7)
+				elif code < 0:
+					var lost_sub := tr("UI_CONTEST_LOST")
+					var lloc: Dictionary = sim.road.locations[int(e[3])] if int(e[3]) < sim.road.locations.size() else {}
+					if lloc.get("type", "") == "helper":
+						lost_sub = tr("UI_HELPER_LOST")
+					banner.show_banner(tr("UI_BANNER_LOST"), lost_sub, Color(1.0, 0.45, 0.4), Vector2(-1, -1), 0.6)
 			K.Ev.ACT_START:
 				banner.show_banner(tr("UI_ACT_OF").format({"n": int(e[3]) + 1, "m": sim.acts()}), "", UiKit.GOLD, Vector2(-1, -1), 1.0)
 
@@ -1060,10 +1050,23 @@ func handle_events(evs: Array) -> void:
 func _refresh_offer() -> void:
 	var on := sim.offers.size() > 0 and not hold_offers
 	offer_layer.visible = on
+	var shop_ui: bool = on and (sim.offers[0]["source"] == "shop" or sim.offers[0]["source"] == "shop_pick")
+	# Saiu da loja: o cursor do livro não pode virar a carta selecionada da mão.
+	if ledger.visible and not shop_ui:
+		selected = -1
+	ledger.visible = shop_ui
 	if not on:
 		offer_sig = ""
 		return
 	var o: Dictionary = sim.offers[0]
+	# Loja e escolha da carta do serviço: o livro-caixa desenha tudo (sem a caixa de ofertas comum).
+	(offer_layer.get_node("Box") as Control).visible = not shop_ui
+	offer_rays.visible = not shop_ui
+	if shop_ui:
+		offer_sig = ""
+		offer_obj = null
+		ledger.sync(sim, o)
+		return
 	var sig := TranslationServer.get_locale() + str(o)
 	if sig != offer_sig:
 		offer_sig = sig
@@ -1077,6 +1080,36 @@ func _refresh_offer() -> void:
 		# A grade guarda a altura de cada linha em base_y; a carta só sobe a partir dela.
 		var base: float = slot.get_meta("base_y", slot.position.y)
 		slot.position.y = lerpf(slot.position.y, base - (14.0 if hot else 0.0), 0.25)
+
+
+## Escolha de oferta pelo teclado, controle ou livro-caixa. Na loja, o livro confere antes: sem ouro ele avisa
+## (linha treme, ouro pisca) e nada vai ao Sim. `reset` solta o cursor depois (controle, fora da loja).
+func choose_offer(k: int, reset := false) -> void:
+	if sim == null or sim.offers.is_empty():
+		return
+	var shop_ui: bool = sim.offers[0]["source"] == "shop" or sim.offers[0]["source"] == "shop_pick"
+	if shop_ui and not ledger.before_choose(k):
+		return
+	offer_chosen.emit(k)
+	if reset and not shop_ui:
+		selected = -1
+
+
+## Pontos da tela para o teste com o mouse escolher a opção k (SKIP: sair/voltar). Vazio: a opção não está à vista.
+func offer_click_points(k: int) -> Array:
+	if ledger.is_visible_in_tree():
+		return ledger.click_points(k)
+	if k == Sim.SKIP:
+		return [offer_skip.get_global_transform() * (offer_skip.size * 0.5)]
+	if k < offer_slots.size():
+		var c: Control = offer_slots[k].get_meta("card", null)
+		if c:
+			return [c.get_global_transform() * (c.size * 0.5)]
+	return []
+
+
+func offer_ready() -> bool:
+	return ledger.is_visible_in_tree() or (offer_slots.size() > 0 and offer_skip.is_visible_in_tree())
 
 
 ## Carta só de texto (relíquia, opção de evento): título e descrição numa moldura.
@@ -1101,12 +1134,12 @@ func _text_card(title: String, body: String, w: float, edge: Color) -> PanelCont
 func _offer_heading(o: Dictionary) -> String:
 	if o["source"] == "location":
 		return tr("UI_OFFER_LOC_" + str(o["loc"]))
-	if o["source"] == "shop":
-		return tr("UI_OFFER_SHOP").format({"g": int(sim.gold)})
-	if o["source"] == "shop_pick":
-		return tr("UI_OFFER_SHOP_PICK_" + str(o["what"]))
+	if o["source"] == "relic" and o.get("from", "") == "helper":
+		return tr("UI_OFFER_RELIC_HELPER")
 	if o["source"] == "relic":
 		return tr("UI_OFFER_RELIC").format({"a": int(o.get("act", 0)) + 1})
+	if o["source"] == "act_card":
+		return tr("UI_OFFER_ACT_CARD").format({"a": int(o.get("act", 0)) + 1})
 	if o["source"] == "event":
 		return tr("EVT_" + str(o["event"])) if o.has("event") else tr("UI_OFFER_EVENT_STEP")
 	return tr({"level": "UI_OFFER_LEVEL", "shrine": "UI_OFFER_SHRINE", "contract": "UI_OFFER_CONTRACT"}[o["source"]])
@@ -1121,8 +1154,6 @@ func _inst_level(uid: int) -> int:
 
 func _build_offer_options(o: Dictionary) -> void:
 	offer_title.text = _offer_heading(o)
-	var shop: bool = o["source"] == "shop"
-	# A loja não tem subtítulo: ela não depende mais da disputa (sem desconto por vitória).
 	offer_sub.visible = o["source"] == "location" or o.has("event")
 	if UiSkins.diario():
 		offer_sub.get_parent().visible = offer_sub.visible
@@ -1131,28 +1162,17 @@ func _build_offer_options(o: Dictionary) -> void:
 		offer_sub.add_theme_color_override("font_color", UiKit.TEXT)
 	elif offer_sub.visible:
 		var won: bool = o["won"]
-		offer_sub.text = tr("UI_OFFER_WON" if won else "UI_OFFER_LOST")
-		offer_sub.add_theme_color_override("font_color", UiKit.GOOD if won else UiKit.BAD)
-	offer_skip.text = tr("UI_SHOP_LEAVE") if shop else tr("UI_OFFER_SKIP")
-	offer_keys.text = tr("UI_SHOP_KEYS") if shop else tr("UI_OFFER_KEYS")
+		offer_sub.text = tr("UI_OFFER_MARK").format({"a": int(o.get("mark", 3))}) if o.has("mark") else tr("UI_OFFER_WON" if won else "UI_OFFER_LOST")
+		offer_sub.add_theme_color_override("font_color", UiKit.GOOD if won else UiKit.GOLD)
+	offer_skip.text = tr("UI_OFFER_SKIP")
+	offer_keys.text = tr("UI_OFFER_KEYS")
 	UiKit.clear(offer_box)
 	offer_slots.clear()
 	var opts: Array = o["options"]
-	# Remover "qualquer carta" mostra o deck inteiro: cartas menores, em linhas. A loja fica numa linha só.
+	# Remover "qualquer carta" mostra o deck inteiro: cartas menores, em linhas. (A loja é o ShopLedger.)
 	var w := (240.0 if UiSkins.covil() else 220.0) if opts.size() <= 4 else 150.0
 	var cols := mini(opts.size(), 4 if w > 200.0 else 7)
 	var vs := get_viewport_rect().size
-	if shop:
-		# Duas linhas: cartas em cima, serviços (subir nível, modificador, remover) embaixo. A largura da carta
-		# sai da altura e da largura úteis da tela; o que sobrar de altura vira rolagem (_fit_offer).
-		var n_cards := 0
-		for it in opts:
-			if str(it["item"]["kind"]) == "card":
-				n_cards += 1
-		var n_serv := opts.size() - n_cards
-		cols = maxi(maxi(n_cards, n_serv), 1)
-		var per_row := (vs.y - 280.0) / (2.0 if n_cards > 0 and n_serv > 0 else 1.0)
-		w = minf(clampf((per_row - 120.0) * 168.0 / 246.0, 96.0, 180.0), (vs.x - 120.0 - 22.0 * (cols - 1)) / cols)
 	# Subir de nível mostra a carta antes e depois (duas cartas por opção): no máximo 3 por linha e cartas menores.
 	var any_up := false
 	for it in opts:
@@ -1161,17 +1181,10 @@ func _build_offer_options(o: Dictionary) -> void:
 			any_up = true
 	if any_up:
 		cols = mini(cols, 3)
-		w = minf(w, floorf(((vs.x - 140.0 - 22.0 * (cols - 1)) / cols - 14.0) / 1.94))
-		w = maxf(w, 96.0)
-	var shop_scale := minf(1.0, w / 180.0) if shop else 1.0
+		w = minf(maxf(w, 200.0), floorf(((vs.x - 140.0 - 22.0 * (cols - 1)) / cols - 14.0)))
 	var rows: Array = []
 	for k in opts.size():
 		var op: Dictionary = opts[k]
-		# Item da loja: desenha o que ele dá, com o preço em cima.
-		var price := -1
-		if op["kind"] == "buy":
-			price = int(op["price"])
-			op = op["item"]
 		var slot := VBoxContainer.new()
 		slot.add_theme_constant_override("separation", 6)
 		var head := UiKit.label(18 if w > 200.0 else 14, UiKit.GOLD)
@@ -1188,9 +1201,11 @@ func _build_offer_options(o: Dictionary) -> void:
 		match str(op["kind"]):
 			"card":
 				cd = sim.data.card(op["id"])
+				# Ofertas podem vir já melhoradas (rodada 11/11/2026): o nível vem na opção.
+				lv = int(op.get("level", 1))
 				head.text = tr("UI_OPT_NEW").format({"r": tr("RARITY_" + K.RARITIES[cd.rarity])})
 				head.add_theme_color_override("font_color", UiKit.RARITY_COLORS[cd.rarity].lightened(0.4))
-				cp = UiKit.card(cd, cd.cost, [], key, w)
+				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
 			"mod":
 				cd = sim.data.card(str(op["card"]))
 				lv = _inst_level(int(op["uid"]))
@@ -1198,7 +1213,7 @@ func _build_offer_options(o: Dictionary) -> void:
 				head.text = tr("UI_OPT_MOD_HEAD").format({"mod": tr("MOD_" + str(op["mod"]))})
 				# Barato já mostra o custo novo na carta (gema azul-água).
 				var mc := cd.cost_at(lv) - (1 if str(op["mod"]) == "cheap" else 0)
-				cp = UiKit.card(cd, maxi(mc, 1), [tr("MOD_" + str(op["mod"]))], key, w, lv)
+				cp = UiKit.card(cd, maxi(mc, 0), [tr("MOD_" + str(op["mod"]))], key, w, lv)
 				Tips.set_text(foot, "[[%s]]: %s" % [op["mod"], tr("MODDESC_" + str(op["mod"]))])
 			"upgrade":
 				cd = sim.data.card(str(op["card"]))
@@ -1206,27 +1221,12 @@ func _build_offer_options(o: Dictionary) -> void:
 				head.text = tr("UI_OPT_UP_HEAD").format({"a": lv - 1, "b": lv})
 				head.add_theme_color_override("font_color", UiKit.GOOD)
 				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
-				# Antes -> depois: a carta no nível atual (menor) ao lado da do próximo nível, com uma seta.
-				var bw := floorf(w * 0.78)
-				var before := UiKit.card(cd, cd.cost_at(lv - 1), [], "", bw, lv - 1)
-				UiKit.ignore_mouse(before)
-				before.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				before.modulate = Color(1, 1, 1, 0.85)
-				var arrow := UiKit.label(int(clampf(w * 0.18, 20.0, 34.0)), UiKit.GOOD, 4)
-				arrow.text = "→"
-				arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				var pair := HBoxContainer.new()
-				pair.alignment = BoxContainer.ALIGNMENT_CENTER
-				pair.add_theme_constant_override("separation", 6)
-				pair.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				pair.add_child(before)
-				pair.add_child(arrow)
-				pair.add_child(cp)
-				pair_node = pair
-				var ch := UiKit.level_changes(cd, lv - 1, lv)
+				# Só o "depois" em tamanho cheio; o que mudou vem em linhas embaixo (Opção A, 12/11/2026).
+				var ch := UiKit.level_changes(cd, lv - 1, lv).replace(" · ", "\n")
 				if lv >= 3 and cd.n3.size() > 0:
 					ch += ("
 " if ch != "" else "") + tr("UI_OPT_UP_N3")
+				foot.add_theme_font_size_override("normal_font_size", 18)
 				Tips.set_text(foot, ch)
 			"remove":
 				cd = sim.data.card(str(op["card"]))
@@ -1238,19 +1238,19 @@ func _build_offer_options(o: Dictionary) -> void:
 				if w > 200.0:
 					Tips.set_text(foot, tr("UI_OPT_REMOVE").format({"card": UiKit.card_name(cd, lv)}))
 			"pick":
-				head.text = tr("UI_OPT_BUY_" + str(op["what"]).to_upper()) if price >= 0 else tr("UI_OPT_PICK_HEAD")
+				head.text = tr("UI_OPT_PICK_HEAD")
 				cp = UiKit.panel(UiKit.BG, UiKit.GOLD, 14)
 				cp.custom_minimum_size = Vector2(w, 246.0 * w / 168.0)
 				var pv := VBoxContainer.new()
 				pv.alignment = BoxContainer.ALIGNMENT_CENTER
 				pv.add_theme_constant_override("separation", 12)
-				var pt := UiKit.title(maxi(roundi(30.0 * shop_scale), 16), UiKit.GOLD)
+				var pt := UiKit.title(30, UiKit.GOLD)
 				pt.text = tr("UI_PICK_" + str(op["what"]))
 				pt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 				pt.custom_minimum_size = Vector2(w - 20.0, 0)
 				pt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				pv.add_child(pt)
-				pv.add_child(Tips.label(tr("UI_OPT_BUY_" + str(op["what"]).to_upper() + "_D") if price >= 0 else tr("UI_PICKD_" + str(op["what"])), maxi(roundi(16.0 * shop_scale), 11), UiKit.TEXT, w - 30.0, true))
+				pv.add_child(Tips.label(tr("UI_PICKD_" + str(op["what"])), 16, UiKit.TEXT, w - 30.0, true))
 				UiKit.ignore_mouse(pv)
 				cp.add_child(pv)
 			"relic":
@@ -1272,17 +1272,6 @@ func _build_offer_options(o: Dictionary) -> void:
 				lv = int(op.get("level", 1))
 				head.text = tr("UI_OPT_" + str(op["kind"]).to_upper() + "_HEAD")
 				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
-		if price >= 0:
-			var ok := sim.can_afford(opts[k])
-			# Preço numa linha, descrição noutra (com quebra): o rótulo não alarga a coluna.
-			# Carta, escolha de carta e modificador já se descrevem sozinhos (ou têm nota embaixo): só o preço no rótulo.
-			var desc := "" if str(op["kind"]) in ["card", "pick", "mod"] else "
-" + head.text
-			head.text = tr("UI_SHOP_PRICE").format({"p": price}) + desc
-			head.add_theme_color_override("font_color", UiKit.GOLD if ok else UiKit.BAD)
-			if not ok:
-				cp.modulate = cp.modulate * Color(0.55, 0.55, 0.55)
-				Tips.set_text(foot, tr("UI_SHOP_POOR"))
 		if cd:
 			var tl := lv
 			var tm := mids
@@ -1297,10 +1286,6 @@ func _build_offer_options(o: Dictionary) -> void:
 		if UiSkins.diario():
 			head.custom_minimum_size = Vector2(0, 0)
 			head.autowrap_mode = TextServer.AUTOWRAP_OFF
-			if shop:
-				head.add_theme_font_size_override("font_size", 14 if w >= 130.0 else 12)
-				head.custom_minimum_size = Vector2(maxf(w - 12.0, 40.0), 0)
-				head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			head.add_theme_font_override("font", UiDiario.font("type"))
 			slot.add_child(UiDiario.tape_wrap(head, UiDiario.MASK, -2.0 + k * 1.3))
 			slot.add_child(pair_node if pair_node else cp)
@@ -1316,7 +1301,7 @@ func _build_offer_options(o: Dictionary) -> void:
 		slot.set_meta("card", pair_node if pair_node else cp)
 		slot.set_meta("special", lv > 1 or mids.size() > 0 or str(op["kind"]) in ["upgrade", "mod"])
 		slot.set_meta("fx_col", Color(0.55, 1.0, 0.55) if str(op["kind"]) == "upgrade" else (CardFx.MOD_COLOR.get(mids[0], UiKit.GOLD).lightened(0.3) if mids.size() > 0 else UiKit.GOLD))
-		var row_i := (0 if str(op["kind"]) == "card" else 1) if shop else k / cols
+		var row_i := k / cols
 		while rows.size() <= row_i:
 			var row := HBoxContainer.new()
 			row.alignment = BoxContainer.ALIGNMENT_CENTER

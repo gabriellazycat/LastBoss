@@ -1,0 +1,8 @@
+{
+ "paths": [
+  "rules.ring.min",
+  "rules.sim.dt",
+  "rules.phase1_target_s",
+  "rules.goals"
+ ]
+}

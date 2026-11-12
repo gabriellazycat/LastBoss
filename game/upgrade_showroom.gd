@@ -91,7 +91,7 @@ func _row(id: String, big: bool) -> Control:
 	row.add_theme_constant_override("separation", 26)
 	for s in STATES:
 		var names: Array = s[2].map(func(m): return TranslationServer.translate("MOD_" + m))
-		var cost := maxi(d.cost_at(s[1]) - (1 if s[2].has("cheap") else 0), 1)
+		var cost := maxi(d.cost_at(s[1]) - (1 if s[2].has("cheap") else 0), 0)
 		var col := VBoxContainer.new()
 		col.add_theme_constant_override("separation", 0)
 		var card: Control

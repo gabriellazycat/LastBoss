@@ -77,15 +77,17 @@ FX = {
     "dark_fury": {"cond": "part_destroyed", "heal": 0.20, "damage": 0.50, "duration": 10.0},
     "dark_pact": {"cond": "none", "draw": 2},
 }
-# Ataques com intervalo diferente de 1 s (golpe = dps * intervalo).
+# Regra (11/11/2026): intervalo de ataque baixo e dano por golpe baixo, com o mesmo DPS (golpe = dps * intervalo).
+# Só os lentos, com animação de golpe, têm intervalo maior.
+DEFAULT_INTERVAL = 0.25
 ATTACK_INTERVAL = {"ogre": 2.0}
 
 # Unidades auxiliares que não são cartas (decisões em ARQUITETURA.md).
 AUX = [
-    {"id": "bat", "archetype": "swarm", "tags": ["pack"], "hp": 30, "dps": 5, "speed": 5.0, "range": 0.8, "fly": True},
-    {"id": "rat", "archetype": "swarm", "tags": ["pack"], "hp": 25, "dps": 4, "speed": 5.5, "range": 0.8},
-    {"id": "skeleton", "archetype": "chaser", "tags": ["undead"], "hp": 60, "dps": 6, "speed": 3.0, "range": 1.0},
-    {"id": "spectre", "archetype": "chaser", "tags": ["undead", "shadow"], "hp": 40, "dps": 10, "speed": 4.5, "range": 1.0},
+    {"id": "bat", "archetype": "swarm", "tags": ["pack"], "hp": 30, "dps": 5, "attack_interval": DEFAULT_INTERVAL, "speed": 5.0, "range": 0.8, "fly": True},
+    {"id": "rat", "archetype": "swarm", "tags": ["pack"], "hp": 25, "dps": 4, "attack_interval": DEFAULT_INTERVAL, "speed": 5.5, "range": 0.8},
+    {"id": "skeleton", "archetype": "chaser", "tags": ["undead"], "hp": 60, "dps": 6, "attack_interval": DEFAULT_INTERVAL, "speed": 3.0, "range": 1.0},
+    {"id": "spectre", "archetype": "chaser", "tags": ["undead", "shadow"], "hp": 40, "dps": 10, "attack_interval": DEFAULT_INTERVAL, "speed": 4.5, "range": 1.0},
 ]
 
 
@@ -125,7 +127,7 @@ def main():
             "archetype": ARCH.get(r["Arquétipo"], "") if r["Arquétipo"] != "—" else "",
             "rarity": RARITY[r["Raridade"]], "cost": num(r["Elixir"]), "count": count,
             "xp_parts": units, "hp": num(r["Vida/unid."]), "dps": num(r["DPS/unid."]),
-            "attack_interval": ATTACK_INTERVAL.get(cid, 1.0), "speed": num(r["Vel. (m/s)"]),
+            "attack_interval": ATTACK_INTERVAL.get(cid, DEFAULT_INTERVAL), "speed": num(r["Vel. (m/s)"]),
             "range": num(r["Alcance (m)"]), "fx": fx,
         }
         cards.append(c)
@@ -275,7 +277,7 @@ def main():
 
     modifiers = [
         {"id": "veteran", "p": {"extra_units": 1}, "applies": ["monster", "swarm"]},
-        {"id": "cheap", "p": {"cost": -1, "min_cost": 1}, "applies": ["any"]},
+        {"id": "cheap", "p": {"cost": -1, "min_cost": 0}, "applies": ["any"]},
         {"id": "explosive", "p": {"damage": 40, "radius": 2.0}, "applies": ["monster", "swarm", "structure"]},
         {"id": "cursed", "p": {"curses": 1}, "applies": ["monster", "swarm", "structure"]},
         {"id": "shadowy", "p": {"no_xp": True}, "applies": ["monster", "swarm", "structure"]},

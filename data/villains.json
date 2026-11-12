@@ -38,8 +38,8 @@
     "devour"
    ],
    "rules": {
-    "hero_hp_mult": 0.812,
-    "infestation": 0.2
+    "hero_hp_mult": 2.4,
+    "infestation": 0.1
    }
   },
   {

@@ -295,21 +295,11 @@ static func card_params(d: CardDef, level := 1, mark := false, mids: Array = [])
 			p[k + "_pct"] = int(round(x * 100.0))
 			x = int(round(x)) if is_equal_approx(x, round(x)) or absf(x) >= 20.0 else snappedf(x, 0.1)
 		p[k] = x
-	# Veterano: +1 unidade; no feitiço, dano e duração maiores (como a simulação aplica).
+	# Veterano: +1 unidade (só monstro e enxame).
 	var vet_keys: Array = []
-	if mids.has("veteran"):
-		if d.is_unit:
-			p["count"] = int(p["count"]) + 1
-			vet_keys.append("count")
-		elif d.is_spell:
-			var se := 0.2
-			if Tips.data and Tips.data.modifiers.has("veteran"):
-				se = float(Tips.data.modifiers["veteran"]["p"].get("spell_effect", 0.2))
-			for k in ["damage", "duration", "dps"]:
-				if p.has(k) and typeof(p[k]) in [TYPE_INT, TYPE_FLOAT]:
-					var x := float(p[k]) * (1.0 + se)
-					p[k] = int(round(x)) if absf(x) >= 20.0 or is_equal_approx(x, round(x)) else snappedf(x, 0.1)
-					vet_keys.append(k)
+	if mids.has("veteran") and d.is_unit:
+		p["count"] = int(p["count"]) + 1
+		vet_keys.append("count")
 	if mark:
 		for k in vet_keys:
 			p[k] = "[color=%s]%s▲[/color]" % [UP_COLOR, str(p[k])]
@@ -474,7 +464,7 @@ static func mini_card(d: CardDef, cost: int, mods: Array, key := "", w := 116.0,
 	var art := TextureRect.new()
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture = CardArt.textures.get(d.id)
+	art.texture = UiDiario.hand_art(d.id)
 	art.set_anchors_preset(Control.PRESET_FULL_RECT)
 	over.add_child(art)
 	var gs := clampf(30.0 * k, 18.0, 30.0)
@@ -530,7 +520,7 @@ static func card(d: CardDef, cost: int, mods: Array, key := "", w := 168.0, leve
 	var art := TextureRect.new()
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture = CardArt.textures.get(d.id)
+	art.texture = UiDiario.hand_art(d.id)
 	art.set_anchors_preset(Control.PRESET_FULL_RECT)
 	over.add_child(art)
 	var grad := Gradient.new()

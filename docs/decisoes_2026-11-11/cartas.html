@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartas: estilo 2D e marcas</title>
+<!-- Decisão 11/11/2026: (1) qual estilo 2D substitui o retrato 3D das cartas; (2) como mostrar nível e
+     modificadores sem o carimbo grande. Página solta (abre direto do disco). Todas as ilustrações são o mesmo
+     desenho SVG (ART abaixo) com 5 tratamentos de CSS/filtro, para a comparação ser justa. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,600;1,400&family=Alegreya+Sans:wght@500;700;800&family=IM+Fell+English+SC&family=IM+Fell+English:ital@1&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{
+  --desk:#221b16; --desk2:#2c231c; --cream:#efe5cc; --cream2:#cfc2a4; --muted:#a8987c; --line:#4a3c30;
+  --table:#22302c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--desk);color:var(--cream);font-family:"Alegreya",Georgia,serif}
+body{background:radial-gradient(1400px 700px at 30% -10%,#3a2e24 0,transparent 70%),var(--desk)}
+main{max-width:1820px;margin:0 auto;padding:36px 28px 80px}
+h1{font-family:"IM Fell English SC",Georgia,serif;font-weight:400;font-size:40px;margin:0 0 6px;letter-spacing:.02em}
+h2{font-family:"IM Fell English SC",Georgia,serif;font-weight:400;font-size:30px;margin:0 0 4px}
+h3{font-family:"IM Fell English SC",Georgia,serif;font-weight:400;font-size:24px;margin:0;color:#fff3da}
+p{margin:0 0 8px;line-height:1.45}
+.lede{color:var(--cream2);max-width:1100px;font-size:17px}
+.note{color:var(--muted);font-size:14.5px;max-width:1100px}
+.note b,.lede b{color:var(--cream)}
+section{margin-top:44px;padding-top:26px;border-top:1px solid var(--line)}
+.row{margin:34px 0 0}
+.rowhead{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.num{font-family:"IM Fell English SC",Georgia,serif;font-size:22px;width:34px;height:34px;border-radius:50%;
+  border:1.5px solid var(--cream2);display:inline-grid;place-items:center;color:var(--cream2);flex:none}
+.cap{color:var(--cream2);font-size:15.5px;max-width:1150px;margin:2px 0 14px 52px}
+.cap i{color:var(--muted);font-style:normal}
+.grid{display:flex;flex-wrap:wrap;gap:22px 26px;margin-left:52px}
+.hand{margin:18px 0 0 52px;padding:22px 26px 18px;border-radius:12px;display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;
+  background:radial-gradient(900px 200px at 50% 0,#33463f 0,transparent 80%),linear-gradient(#24332e,#1a2522);
+  box-shadow:inset 0 2px 14px rgba(0,0,0,.55)}
+.hand .lbl{color:#9fb5ac;font-size:13px;letter-spacing:.12em;text-transform:uppercase;width:100%;margin:-8px 0 8px;font-family:"Alegreya Sans",sans-serif}
+.slot{position:relative;flex:none}
+.slot>.card{position:absolute;left:0;top:0}
+.hand .slot:nth-child(2){transform:rotate(-3deg) translateY(4px)}
+.hand .slot:nth-child(3){transform:rotate(-1deg)}
+.hand .slot:nth-child(5){transform:rotate(1.2deg)}
+.hand .slot:nth-child(6){transform:rotate(3deg) translateY(4px)}
+.vcap{width:100%;font-size:13.5px;color:var(--cream2);margin-top:8px;line-height:1.3}
+.vcap b{color:#fff3da;font-weight:600}
+.cell{display:flex;flex-direction:column}
+.cell .vcap{max-width:222px}
+.toggle{display:inline-flex;gap:8px;align-items:center;margin:10px 0 0;color:var(--cream2);font-size:15px;cursor:pointer;user-select:none}
+.toggle input{accent-color:#c9a25a;width:17px;height:17px}
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin:12px 0 0;font-family:"Alegreya Sans",sans-serif;font-size:15px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.pick{margin-top:40px;padding:18px 22px;border:1px dashed var(--line);border-radius:10px;color:var(--cream2);max-width:1150px}
+.pick b{color:#fff3da}
+
+/* ============================== CARTA: estrutura comum (desenhada a 300 px) ============================== */
+.card{position:relative;width:300px;height:420px;transform-origin:0 0;--sw:2}
+.card.compact{height:340px}
+.art{position:absolute;left:14px;top:14px;width:272px;height:219px;overflow:hidden;z-index:1}
+.compact .art{height:252px}
+.art svg{display:block;width:100%;height:100%}
+.gem{position:absolute;left:-11px;top:-11px;width:54px;height:54px;display:grid;place-items:center;font-size:28px;z-index:4;line-height:1}
+.compact .gem{width:64px;height:64px;font-size:36px;left:-14px;top:-14px}
+.name{position:absolute;left:22px;right:22px;top:211px;height:42px;display:grid;place-items:center;z-index:3;text-align:center;font-size:21px;line-height:1;padding:0 8px}
+.name span{display:block}
+.compact .name{top:270px;left:8px;right:8px;height:58px;font-size:29px}
+.name.long{font-size:18px}.compact .name.long{font-size:25px;line-height:.98}
+.type{position:absolute;top:262px;left:0;right:0;text-align:center;font-size:13px;letter-spacing:.22em;text-transform:uppercase;z-index:2}
+.rules{position:absolute;top:284px;left:24px;right:24px;bottom:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;font-size:18.5px;line-height:1.24;z-index:2}
+.compact .type,.compact .rules{display:none}
+.rules b{font-weight:700}
+/* --- arte: classes de tom (t1..t4, tp, tm), sombra cel (cs), brilho (hl), linhas (l, lt, lb, lc), tinta (dk) */
+.art .s{stroke:var(--ln);stroke-width:var(--sw);stroke-linejoin:round}
+.art .l{fill:none;stroke:var(--ln);stroke-width:var(--sw);stroke-linecap:round;stroke-linejoin:round}
+.art .lt{stroke-width:calc(var(--sw) * .6)}
+.art .lb{stroke-width:calc(var(--sw) * 1.6)}
+.art .lc{fill:none;stroke:var(--lcc);stroke-width:calc(var(--sw) * 1.1);stroke-linecap:round;stroke-linejoin:round}
+.art .dk{fill:var(--ln);stroke:none}
+.art .cs,.art .hl{stroke:none}
+.art .gnd{stroke:none;fill:var(--gnd)}
+.art .t1{fill:var(--t1)}.art .t2{fill:var(--t2)}.art .t3{fill:var(--t3)}.art .t4{fill:var(--t4)}.art .tp{fill:var(--tp)}.art .tm{fill:var(--tm)}
+.art .cs{fill:rgba(30,14,40,.24)}.art .hl{fill:rgba(255,255,255,.5)}
+.art .sky{fill:var(--sky)}
+
+/* ---------- 1 · Nanquim limpo */
+.s1{--ln:var(--ink);--sw:2;background:#efe5cc;
+  background-image:radial-gradient(120% 80% at 30% 10%,rgba(255,250,235,.7),transparent 60%),radial-gradient(90% 60% at 80% 100%,rgba(160,130,90,.18),transparent 70%);
+  border:1.5px solid #6a4a30;border-radius:4px;box-shadow:inset 0 0 0 5px #efe5cc,inset 0 0 0 6.2px rgba(90,58,34,.45),0 3px 10px rgba(0,0,0,.45)}
+.s1 .art{border:1.5px solid var(--ink);background:#f5eedc}
+.s1 .art .sky{fill:#f5eedc}
+.s1 .art .t1{fill:url(#hatch)}.s1 .art .t2{fill:#e4d8bc}.s1 .art .tp{fill:#f7f0de}.s1 .art .tm{fill:url(#hatchL)}
+.s1 .art .t3,.s1 .art .t4{fill:var(--acc)}
+.s1 .art .cs{fill:url(#hatchD);opacity:.6}.s1 .art .hl{display:none}.s1 .art .gnd{display:none}
+.s1 .art .lc{stroke:var(--acc)}
+.s1 .art .ghost{opacity:.28;transform:translate(.8px,.7px) rotate(.4deg)}
+.s1 .gem{border:2px solid var(--ink);border-radius:50%;background:#f3ead4;color:var(--ink);font-family:"IM Fell English SC",Georgia,serif;
+  box-shadow:0 0 0 3px #efe5cc,0 0 0 4px rgba(90,58,34,.4)}
+.s1 .name{font-family:"IM Fell English SC",Georgia,serif;color:var(--ink);background:#f1e8d0;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}
+.s1 .type{font-family:"Special Elite",monospace;color:var(--ink);opacity:.8;letter-spacing:.14em}
+.s1 .rules{color:#3a2a1e}
+.s1 .tape{position:absolute;top:-9px;left:50%;width:84px;height:22px;margin-left:-42px;transform:rotate(-3deg);z-index:5;
+  background:linear-gradient(90deg,rgba(236,226,190,.55),rgba(246,238,206,.75),rgba(236,226,190,.55));box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.compact.s1 .tape{width:110px;height:28px;margin-left:-55px;top:-12px}
+
+/* ---------- 2 · Traço + cor chapada */
+.s2{--ln:#2e2119;--sw:1.6;background:#f4ecd9;border:3px solid var(--kc);border-radius:10px;
+  box-shadow:inset 0 0 0 3px #f4ecd9,inset 0 0 0 4px rgba(46,33,25,.18),0 3px 10px rgba(0,0,0,.45)}
+.s2 .art{border-radius:6px;border:1.5px solid #2e2119}
+.s2 .art .cs,.s2 .art .hl{display:none}
+.s2 .gem{border-radius:50%;background:var(--elx);color:#fff;font-family:"Alegreya Sans",sans-serif;font-weight:800;border:3px solid #f4ecd9;box-shadow:0 0 0 1.5px #2e2119,0 2px 4px rgba(0,0,0,.3)}
+.s2 .name{background:var(--kc);color:#fff8ea;font-family:"Alegreya Sans",sans-serif;font-weight:800;border-radius:5px;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.s2 .type{font-family:"Alegreya Sans",sans-serif;font-weight:700;color:var(--kc)}
+.s2 .rules{font-family:"Alegreya Sans",sans-serif;font-weight:500;color:#2b2420}
+
+/* ---------- 3 · Cartoon grosso */
+.s3{--ln:#1a1210;--sw:3.3;background:#fff3d6;border:5px solid #1a1210;border-radius:18px;box-shadow:0 7px 0 #1a1210,0 9px 14px rgba(0,0,0,.4)}
+.s3 .art{left:12px;top:12px;width:266px;border:4px solid #1a1210;border-radius:11px}
+.s3 .art .sky{fill:var(--sky3)}
+.s3 .art .lt{stroke-width:2}
+.s3 .art .lc{stroke-width:3.2}
+.s3 .gem{border-radius:50%;background:var(--elx3);color:#fff;font-family:"Alegreya Sans",sans-serif;font-weight:800;border:4px solid #1a1210;
+  text-shadow:0 2px 0 #1a1210;box-shadow:inset 0 -6px 0 rgba(0,0,0,.2),inset 0 4px 0 rgba(255,255,255,.3)}
+.s3 .name{background:var(--kc3);border:4px solid #1a1210;border-radius:12px;color:#fff;font-family:"Alegreya Sans",sans-serif;font-weight:800;
+  text-shadow:-1.5px -1.5px 0 #1a1210,1.5px -1.5px 0 #1a1210,-1.5px 1.5px 0 #1a1210,1.5px 1.5px 0 #1a1210,0 3px 0 #1a1210;box-shadow:inset 0 -5px 0 rgba(0,0,0,.18)}
+.s3 .type{font-family:"Alegreya Sans",sans-serif;font-weight:800;color:#1a1210}
+.s3 .rules{font-family:"Alegreya Sans",sans-serif;font-weight:700;color:#1a1210}
+
+/* ---------- 4 · Xilogravura */
+.s4{--ln:#15100c;--sw:2.3;background:#ede1c3;border:3px solid #15100c;border-radius:2px;
+  background-image:radial-gradient(100% 70% at 50% 0,rgba(255,250,230,.5),transparent 70%);
+  box-shadow:inset 0 0 0 5px #ede1c3,inset 0 0 0 7px #15100c,0 3px 10px rgba(0,0,0,.45)}
+.s4 .art{left:16px;top:16px;width:268px;border:3px solid #15100c}
+.s4 .art .sky{fill:url(#gouge)}
+.s4 .art .t1{fill:url(#carve)}.s4 .art .t2,.s4 .art .tp{fill:#efe3c6}.s4 .art .tm{fill:url(#carve2)}
+.s4 .art .t3,.s4 .art .t4{fill:#b8321f}.s4 .art .cs{fill:#15100c}.s4 .art .hl{fill:#efe3c6}.s4 .art .gnd{display:none}
+.s4 .art .lc{stroke:#b8321f}
+.s4 .gem{border-radius:50%;background:#15100c;color:#efe3c6;font-family:"IM Fell English SC",Georgia,serif;box-shadow:0 0 0 3px #ede1c3,0 0 0 5.5px #b8321f}
+.s4 .name{background:#15100c;color:#efe3c6;font-family:"IM Fell English SC",Georgia,serif;letter-spacing:.03em;
+  clip-path:polygon(0 8%,3% 0,22% 4%,40% 0,61% 5%,80% 0,97% 3%,100% 12%,99% 88%,96% 100%,74% 95%,52% 100%,31% 95%,12% 100%,1% 93%)}
+.s4 .type{font-family:"IM Fell English",Georgia,serif;font-style:italic;text-transform:none;letter-spacing:.06em;font-size:16px;color:#b8321f;top:258px}
+.s4 .rules{color:#15100c}
+
+/* ---------- 5 · Aquarela solta */
+.s5{--ln:#5a3a22;--sw:1.15;background:#fbf6ea;border:1px solid rgba(90,58,34,.5);border-radius:6px;
+  background-image:radial-gradient(70% 50% at 20% 0,rgba(255,255,255,.8),transparent 70%),radial-gradient(60% 40% at 90% 100%,rgba(190,160,120,.16),transparent 70%);
+  box-shadow:0 3px 10px rgba(0,0,0,.45)}
+.s5 .art{border-radius:3px;height:192px}
+.compact.s5 .art{height:250px}
+.s5 .art .sky{fill:#fbf6ea}
+.s5 .art .blob{fill:var(--sky5);opacity:.55}
+.s5 .art .wash *{stroke:none!important}
+.s5 .art .wash .l,.s5 .art .wash .lc,.s5 .art .wash .dk{display:none}
+.s5 .art .wash{opacity:.9}
+.s5 .art .wash .cs{fill:rgba(70,30,90,.22)}.s5 .art .wash .hl{fill:rgba(255,255,255,.45)}
+.s5 .art .inkl .t1,.s5 .art .inkl .t2,.s5 .art .inkl .t3,.s5 .art .inkl .t4,.s5 .art .inkl .tp,.s5 .art .inkl .tm,.s5 .art .inkl .gnd{fill:none}
+.s5 .art .inkl .cs,.s5 .art .inkl .hl,.s5 .art .inkl .gnd{display:none}
+.s5 .art .inkl .lc{stroke:var(--lcc);opacity:.85}
+.s5 .gem{background:radial-gradient(circle at 40% 35%,rgba(170,110,235,.55),rgba(120,60,200,.75) 60%,rgba(110,50,190,.35) 75%,transparent 77%);
+  border-radius:46% 54% 50% 50% / 52% 46% 54% 48%;color:#3b2050;font-family:"IM Fell English SC",Georgia,serif}
+.s5 .name{font-family:"IM Fell English",Georgia,serif;font-style:italic;color:#4a2c18;font-size:23px;
+  background:radial-gradient(closest-side,var(--kcw) 0,var(--kcw) 62%,transparent 100%)}
+.compact.s5 .name{font-size:31px}
+.s5 .name.long{font-size:20px}.compact.s5 .name.long{font-size:27px}
+.s5 .type{font-family:"IM Fell English",Georgia,serif;font-style:italic;text-transform:none;letter-spacing:.08em;font-size:15.5px;color:#7a5a3e;top:259px}
+.s5 .rules{color:#4a3424}
+
+/* ============================== marcas de nível e modificador ============================== */
+.seals{position:absolute;right:20px;top:158px;display:flex;flex-direction:row-reverse;gap:2px;z-index:5}
+.compact .seals{top:198px;right:14px;gap:0}
+.seal{width:46px;height:46px;filter:drop-shadow(0 1.5px 1px rgba(0,0,0,.45))}
+.compact .seal{width:64px;height:64px}
+.ribbons{position:absolute;right:18px;top:-14px;display:flex;flex-direction:row-reverse;gap:4px;z-index:5}
+.compact .ribbons{right:14px;top:-18px}
+.ribbon{width:30px;height:84px;position:relative;filter:drop-shadow(1px 2px 1.5px rgba(0,0,0,.4))}
+.compact .ribbon{width:42px;height:116px}
+.ribbon i{position:absolute;inset:0;clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);
+  background:linear-gradient(90deg,rgba(0,0,0,.18),transparent 30%,rgba(255,255,255,.18) 55%,rgba(0,0,0,.12)),var(--mc)}
+.ribbon i::before{content:"";position:absolute;left:0;right:0;top:0;height:14px;background:rgba(0,0,0,.35)}
+.ribbon svg{position:absolute;left:50%;bottom:17%;transform:translateX(-50%);width:22px;height:22px}
+.compact .ribbon svg{width:30px;height:30px}
+.modline{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-family:"Alegreya Sans",sans-serif;font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+.modline span{display:inline-flex;align-items:center;gap:4px}
+.modline svg{width:15px;height:15px}
+.pips{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;gap:2px}
+.pips svg{width:24px;height:24px}
+.s2 .name.haspips{padding-right:30px}
+.compact .name.haspips{padding-right:64px}
+/* nível como borda sutil (opcional) */
+.lv2.tint{box-shadow:inset 0 0 0 3px #f4ecd9,inset 0 0 0 4px rgba(46,33,25,.18),0 0 0 2.5px #9fb3c6,0 3px 10px rgba(0,0,0,.45)}
+.lv3.tint{box-shadow:inset 0 0 0 3px #f4ecd9,inset 0 0 0 4px rgba(46,33,25,.18),0 0 0 2.5px #e0ac2a,0 0 12px 2px rgba(224,172,42,.45),0 3px 10px rgba(0,0,0,.45)}
+.cheapgem .gem{background:#14a6b3}
+</style>
+</head>
+<body>
+<!-- padrões e filtros compartilhados (unidades do viewBox da arte: 124 x 100) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <pattern id="hatch" width="3.2" height="3.2" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><rect width="3.2" height="3.2" fill="#ddd0b2"/><path d="M0 0V3.2" stroke="#4a3626" stroke-width=".8" opacity=".7"/></pattern>
+  <pattern id="hatchL" width="3.4" height="3.4" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)"><rect width="3.4" height="3.4" fill="#e6dbc0"/><path d="M0 0V3.4" stroke="#4a3626" stroke-width=".55" opacity=".5"/></pattern>
+  <pattern id="hatchD" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(-50)"><path d="M0 0V2.2" stroke="#2a1a10" stroke-width=".7"/></pattern>
+  <pattern id="carve" width="2.5" height="2.5" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)"><rect width="2.5" height="2.5" fill="#15100c"/><path d="M-.2 1.25H2.7" stroke="#efe3c6" stroke-width=".5"/></pattern>
+  <pattern id="carve2" width="3.4" height="3.4" patternUnits="userSpaceOnUse" patternTransform="rotate(18)"><rect width="3.4" height="3.4" fill="#15100c"/><path d="M-.2 1.7H3.6" stroke="#efe3c6" stroke-width=".9"/></pattern>
+  <pattern id="gouge" width="22" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-4)"><rect width="22" height="6" fill="#efe3c6"/><path d="M2 3 Q7 2.4 12 3" stroke="#15100c" stroke-width=".55" fill="none" opacity=".55"/></pattern>
+  <filter id="wob" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter>
+  <filter id="wobS" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="5"/><feDisplacementMap in="SourceGraphic" scale="1.3"/></filter>
+  <filter id="rough" x="-6%" y="-6%" width="112%" height="112%"><feTurbulence type="fractalNoise" baseFrequency=".5" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.3" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".07" numOctaves="1" seed="4" result="m"/><feDisplacementMap in="d" in2="m" scale="1.6"/></filter>
+  <filter id="wash" x="-12%" y="-12%" width="124%" height="124%">
+   <feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="3" seed="7" result="n"/>
+   <feDisplacementMap in="SourceGraphic" in2="n" scale="6.5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+   <feGaussianBlur in="d" stdDeviation=".55" result="b"/>
+   <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="2" result="g"/>
+   <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.5 0 0 0 -.2" result="ga"/>
+   <feComposite in="b" in2="ga" operator="in" result="grain"/>
+   <feMorphology in="b" operator="erode" radius=".6" result="er"/>
+   <feComposite in="b" in2="er" operator="out" result="edge"/>
+   <feMerge><feMergeNode in="grain"/><feMergeNode in="edge"/></feMerge>
+  </filter>
+  <filter id="sealf" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="2" seed="11"/><feDisplacementMap in="SourceGraphic" scale="3"/></filter>
+ </defs>
+</svg>
+
+<main>
+ <h1>Cartas: estilo 2D e marcas de nível</h1>
+ <p class="lede">Duas decisões para as cartas da mão. <b>1)</b> Qual estilo 2D entra no lugar do retrato 3D (cinco estilos, as mesmas cinco cartas, desenho idêntico; muda só o tratamento). <b>2)</b> Como mostrar nível e modificador sem o carimbo grande: o nível fica só no “+” do nome, e há três jeitos de marcar os modificadores.</p>
+ <p class="note">Cada estilo aparece em dois tamanhos: a <b>carta grande</b> (300 px, a do mouse em cima / zoom) e a <b>carta na mão</b> (150 px, compacta: arte, nome e custo, sem texto, como no jogo hoje), sobre um fundo escuro parecido com a arena. Textos e custos vêm de <code>data/cards*.json</code> e <code>locale/strings.csv</code>. <b>Ponte Quebrada saiu do jogo</b> (DECISOES.md, rodada do mapa de rotas); entrou aqui porque foi pedida, com o texto e o custo do último print (Rota, 3, “Fecha um ramo da próxima bifurcação.”).</p>
+
+ <section id="estilos">
+  <h2>1 · Cinco estilos 2D</h2>
+  <p class="note">Linhas = estilos, colunas = cartas. O desenho de cada carta é um único conjunto de formas SVG; cada estilo só troca traço, preenchimento, sombra e moldura.</p>
+  <div id="styles"></div>
+ </section>
+
+ <section id="marcas">
+  <h2>2 · Nível e modificadores sem carimbo</h2>
+  <p class="note">Mesma carta (Rei dos Ratos), no estilo 2 (traço + cor chapada), para isolar só a marca. <b>Nível = “+” no nome</b> nos três sistemas (Rei dos Ratos+ é nível 2, Rei dos Ratos++ é nível 3). O Barato também muda o número da gema (6 → 5) e pinta a gema de verde-água, porque isso é o efeito, não a marca. Passe o mouse num selo, fita ou palavra para ver o nome e o efeito.</p>
+  <div class="legend" id="legend"></div>
+  <label class="toggle"><input type="checkbox" id="tintAll"> Opção: borda fina por nível (aço no +, ouro no ++) também em A e C (no B ela já vem ligada)</label>
+  <div id="systems"></div>
+ </section>
+
+ <div class="pick" id="pick"></div>
+</main>
+
+<script>
+/* ============================== dados das cartas ============================== */
+const KIND={
+  mon:{kc:"#8e1a10",kc3:"#e2483a",ink:"#4a120b",acc:"#9c1c10",kcw:"rgba(200,60,40,.24)"},
+  swa:{kc:"#a8460c",kc3:"#f28a2a",ink:"#5e2c08",acc:"#b0480c",kcw:"rgba(225,130,50,.26)"},
+  rou:{kc:"#1d4f80",kc3:"#3b92dc",ink:"#1d3a6b",acc:"#b07a12",kcw:"rgba(60,130,200,.24)"},
+  spl:{kc:"#5a2fa0",kc3:"#9a5cf0",ink:"#3a2580",acc:"#6e36c4",kcw:"rgba(130,80,210,.24)"},
+};
+const CARDS=[
+ {id:"rat_horde",name:"Horda de Ratos",cost:2,type:"Enxame",kind:"swa",text:"8 ratos rápidos e frágeis.",
+  pal:{t1:"#a39280",t2:"#e8a597",t3:"#d23a2c",t4:"#d23a2c",tp:"#f6eedb",tm:"#8a8478",lcc:"#a8460c",gnd:"#d3bf94",sky:"#efe2c6",sky3:"#ffe6a8",sky5:"#e8c98e"}},
+ {id:"rat_king",name:"Rei dos Ratos",cost:6,type:"Monstro",kind:"mon",text:"<b>Bando</b> próximo causa +50% de dano; ao morrer libera 6 ratos.",
+  pal:{t1:"#9c8b7a",t2:"#7b3f9f",t3:"#e5ae2c",t4:"#c8322a",tp:"#e8a597",tm:"#8a8478",lcc:"#7b3f9f",gnd:"#cdb98f",sky:"#e9e0ee",sky3:"#e6d2ff",sky5:"#c9b0de"}},
+ {id:"goblin_dynamiter",name:"Goblin Dinamiteiro",cost:3,type:"Monstro",kind:"mon",text:"Corre até o herói e explode: 180 de dano de <b>Fogo</b>.",
+  pal:{t1:"#87ae4c",t2:"#8c5c34",t3:"#d04a2e",t4:"#f6c431",tp:"#f6eedb",tm:"#8a8478",lcc:"#e8901c",gnd:"#cbb68a",sky:"#f3e5c6",sky3:"#ffdca0",sky5:"#ecc68c"}},
+ {id:"broken_bridge",name:"Ponte Quebrada",cost:3,type:"Rota",kind:"rou",text:"Fecha um ramo da próxima bifurcação.",
+  pal:{t1:"#b47c44",t2:"#4f90ba",t3:"#c9a25a",t4:"#c9a25a",tp:"#f6eedb",tm:"#a39c8e",lcc:"#1d4f80",gnd:"#cbb68a",sky:"#dcebf2",sky3:"#bfe4ff",sky5:"#a9cde0"}},
+ {id:"weakness_curse",name:"Maldição da Fraqueza",cost:2,type:"Feitiço",kind:"spl",text:"O herói causa 30% menos dano por 6 s.",
+  pal:{t1:"#7748c4",t2:"#c49c46",t3:"#a675f4",t4:"#6c4632",tp:"#f6eedb",tm:"#c6ced5",lcc:"#7748c4",gnd:"#cbb68a",sky:"#e6dff2",sky3:"#dccaff",sky5:"#c7b4e6"}},
+];
+
+/* ============================== desenhos (viewBox -12 0 124 100) ============================== */
+const ground=(y=96,a=-12,b=112)=>`<path class="gnd" d="M${a} ${y} H${b} V100 H${a}Z"/><path class="l lt" d="M${a} ${y} H${b}"/>`+
+  Array.from({length:Math.floor((b-a)/6)},(_,i)=>`<path class="l lt" d="M${a+4+i*6} ${y} l-3 3.5" opacity=".6"/>`).join("");
+const rat=(x,y,s,f=1)=>`<g transform="translate(${x} ${y}) scale(${s*f} ${s})">
+ <path class="l" d="M2 24 Q-20 30 -14 40 Q-6 48 -26 52"/>
+ <path class="s t1" d="M0 20 Q2 2 26 2 Q44 2 52 14 Q60 16 66 22 Q56 28 44 28 Q30 34 10 30 Q0 28 0 20Z"/>
+ <path class="cs" d="M2 22 Q20 30 44 24 Q56 24 64 21.5 Q56 28 44 28 Q30 34 10 30 Q1 28 2 22Z"/>
+ <path class="hl" d="M12 9 Q24 3 38 5 Q26 7 15 12Z"/>
+ <path class="l lt" d="M12 7 l-2 -3 M19 4 l-1 -3 M27 3 l1 -3 M35 4 l2 -3"/>
+ <circle class="s t2" cx="45" cy="7" r="6"/><circle class="l lt" cx="45" cy="7.5" r="3"/>
+ <circle class="s t3" cx="55.5" cy="15" r="2"/><circle class="dk" cx="66" cy="22" r="1.7"/>
+ <path class="l" d="M14 30 l-3 7 l-3 1 M38 29 l2 8 l3 1"/>
+ <path class="l lt" d="M64 22 l10 -4 M64 23 l10 2"/></g>`;
+
+const ART={
+rat_horde:()=>`${ground(96)}<path class="l lt" d="M2 18 q6 -6 12 0 M10 10 q6 -6 12 0" opacity=".5"/>
+ ${rat(64,14,.42)}${rat(26,30,.68)}${rat(110,42,.62,-1)}${rat(-6,58,.92)}${rat(44,68,.84)}`,
+
+rat_king:()=>`${ground(97)}
+ <path class="l" d="M24 90 Q4 92 8 78 Q12 66 2 60"/>
+ <path class="s t2" d="M31 57 Q15 62 13 80 Q11 92 18 97 L42 97 Q30 82 37 62Z"/>
+ <path class="s t1" d="M22 97 Q14 72 30 56 Q40 70 70 70 Q84 80 80 97Z"/>
+ <path class="cs" d="M60 72 Q78 76 80 97 L64 97 Q66 84 60 72Z"/>
+ <path class="l lt" d="M30 70 Q40 84 36 97 M58 72 Q64 84 62 97"/>
+ <path class="s t1" d="M34 58 Q34 36 52 34 Q70 34 74 46 Q86 48 92 56 Q82 62 70 60 Q60 68 46 66 Q34 64 34 58Z"/>
+ <path class="cs" d="M36 58 Q52 66 70 58 Q82 60 91 56.5 Q82 62 70 60 Q60 68 46 66 Q35 64 36 58Z"/>
+ <path class="hl" d="M42 46 Q48 39 58 38 Q50 42 45 48Z"/>
+ <circle class="s tp" cx="44" cy="35" r="7"/><circle class="s tp" cx="63" cy="34" r="7"/>
+ <circle class="l lt" cx="44" cy="35.5" r="3.4"/><circle class="l lt" cx="63" cy="34.5" r="3.4"/>
+ <path class="s t3" d="M40 31 L41 16 L47.5 24 L53 11 L58.5 24 L65 16 L66 31Z"/><path class="hl" d="M43 29 L43.5 21 L46 25Z"/>
+ <circle class="s t4" cx="53" cy="23.5" r="2.2"/>
+ <circle class="s t4" cx="72" cy="49.5" r="2.4"/><circle class="dk" cx="91.5" cy="56" r="1.9"/>
+ <path class="l lt" d="M90 56 l9 -3 M90 57 l9 2"/>
+ <path class="l lb" d="M76 66 L95 31"/><circle class="s t3" cx="96.5" cy="27.5" r="4.5"/><path class="hl" d="M94.5 25.5 q1.5 -1.5 3 -.8 q-2 .4 -2.4 2Z"/>
+ <circle class="s t1" cx="77" cy="64" r="4.2"/>
+ ${rat(-10,78,.4)}${rat(112,82,.38,-1)}`,
+
+goblin_dynamiter:()=>`${ground(96)}
+ <path class="s t2" d="M30 96 Q28 70 36 62 H64 Q72 70 70 96Z"/>
+ <path class="cs" d="M58 63 H64 Q72 70 70 96 H60 Q63 78 58 63Z"/>
+ <path class="l lt" d="M40 66 L44 96 M60 66 L56 96 M36 78 H64"/>
+ <path class="s t1" d="M31 32 L8 20 L24 40Z M69 32 L92 20 L76 40Z"/>
+ <path class="l lt" d="M14 24 L24 34 M86 24 L76 34"/>
+ <path class="s t1" d="M30 40 Q30 18 50 18 Q70 18 70 40 Q70 58 50 62 Q30 58 30 40Z"/>
+ <path class="cs" d="M62 23 Q70 30 70 40 Q70 58 50 62 Q64 52 62 23Z"/>
+ <path class="hl" d="M35 31 Q37 22 46 20.5 Q40 25 38 33Z"/>
+ <circle class="s tp" cx="41" cy="36" r="5"/><circle class="s tp" cx="59" cy="36" r="5"/>
+ <circle class="dk" cx="42" cy="37" r="2"/><circle class="dk" cx="58" cy="37" r="2"/>
+ <path class="l" d="M36 29 L46 31 M64 29 L54 31"/><path class="l" d="M48 42 q2 3 4 0"/>
+ <path class="s tp" d="M38 48 Q50 58 62 48 Q50 52 38 48Z"/><path class="l lt" d="M42 50 v3 M47 51 v3 M53 51 v3 M58 50 v3"/>
+ <path class="l" d="M66 64 L76 58"/>
+ <path class="s t3" d="M71 55 L90 44 L93.5 50 L74.5 61Z"/><path class="s t3" d="M74 61 L93 50 L96 55.5 L77 66.5Z"/>
+ <path class="cs" d="M75 63 L94 52 L96 55.5 L77 66.5Z"/>
+ <path class="l lt" d="M79 50.5 l3 5.5 M84 47.6 l3 5.5"/>
+ <path class="l" d="M92 46 Q98 38 94 31"/>
+ <path class="s t4" d="M94 20.5 l2 5.5 l5.5 -1.5 l-3.2 4.4 l4.4 3 l-5.5 .9 l.2 5.4 l-3.4 -4.2 l-4.2 3.3 l1 -5.4 l-5.3 -1.8 l5.2 -2.1 l-1.6 -5.2z"/>
+ <path class="lc" d="M94 16 v-5 M103 22 l4 -3 M85 22 l-4 -3 M105 33 l5 1"/>`,
+
+broken_bridge:()=>{
+ let left="";for(let i=0;i<5;i++){const x=22+i*5.1,y=46+i*.5;left+=`<path class="s t1" d="M${x} ${y} h4.6 v4 h-4.6z"/>`;}
+ let lad="";for(let i=1;i<=5;i++){const t=i*6/37,y=46+i*6.2,xl=79-11*t,xr=87-9*t;lad+=`<path class="s t1" d="M${(xl-1).toFixed(1)} ${(y-1.7).toFixed(1)} L${(xr+1).toFixed(1)} ${(y-1.3).toFixed(1)} L${(xr+1).toFixed(1)} ${(y+1.8).toFixed(1)} L${(xl-1).toFixed(1)} ${(y+1.4).toFixed(1)}Z"/>`;}
+ return `<path class="l lt" d="M28 16 q4 -4 8 0 q4 -4 8 0 M50 9 q3 -3 6 0 q3 -3 6 0" opacity=".75"/>
+ <path class="s t2" d="M18 87 Q50 83 82 87 L84 100 L16 100Z"/>
+ <path class="hl" d="M32 89 q7 -1.6 14 0 q-7 1.1 -14 0Z M56 93 q6 -1.4 12 0 q-6 1 -12 0Z"/>
+ <path class="l lt" d="M28 93 q4 -2 8 0 q4 2 8 0 M52 96.5 q4 -2 8 0 q4 2 8 0"/>
+ <path class="s tm" d="M-12 46 L24 46 L28 54 L22 66 L27 80 L22 100 L-12 100Z"/>
+ <path class="cs" d="M24 46 L28 54 L22 66 L27 80 L22 100 L13 100 L18 80 L13 66 L19 54Z"/>
+ <path class="s tm" d="M112 46 L82 46 L77 56 L82 68 L77 82 L81 100 L112 100Z"/>
+ <path class="cs" d="M82 46 L77 56 L82 68 L77 82 L81 100 L92 100 L88 82 L92 68 L87 56Z"/>
+ <path class="l lt" d="M-4 60 l8 4 M2 76 l6 -3 M98 62 l8 3 M94 82 l8 -2 M-8 46 l2 -4 M0 46 l2 -3 M102 46 l2 -4 M108 46 l-1 -3"/>
+ <path class="s t1" d="M14.5 27 h5.5 v20 h-5.5z"/><path class="s t1" d="M84 27 h5.5 v20 h-5.5z"/>
+ <path class="l" d="M17 29 Q30 38 43 40"/><path class="l lt" d="M43 40 l3.5 2 M43 40 l4 -.4 M43 40 l2 3.4"/>
+ <path class="l lt" d="M20 48 Q34 51 48 49"/>
+ ${left}<path class="s t1" d="M47.5 48.5 h4.4 l-1.2 1.6 l1.8 1 l-1.8 1.6 h-3.2z"/>
+ <path class="s t1" transform="translate(57 61) rotate(35)" d="M-2.6 -2 h5.2 v4 h-5.2z"/>
+ <path class="s t1" transform="translate(49 72) rotate(-52)" d="M-2.6 -2 h5.2 v4 h-5.2z"/>
+ <path class="s t1" transform="translate(61 79) rotate(80)" d="M-2 -1.6 h4 v3.2 h-4z"/>
+ <path class="l lt" d="M57 54 v-4 M49 65 v-4 M61 72 v-3" opacity=".7"/>
+ <path class="l" d="M80 46 Q73 62 69 83"/><path class="l" d="M87 46 Q82 63 78 84"/>
+ ${lad}<path class="l" d="M86.5 29 Q89 40 87 47"/>`},
+
+weakness_curse:()=>`${ground(96)}
+ <path class="lc" d="M4 46 v20 M-2 60 l6 7 l6 -7"/><path class="lc" d="M96 52 v20 M90 66 l6 7 l6 -7"/>
+ <path class="s t4" d="M57.5 35 h6 v13 h-6z"/><path class="l lt" d="M57.5 39 l6 -1.5 M57.5 43 l6 -1.5"/>
+ <circle class="s t3" cx="60.5" cy="32.5" r="3.4"/>
+ <path class="s tm" d="M57.5 52 L63.8 52 L63.6 66 L61.4 68.4 L62.4 70.6 L59.6 69.6 L57.6 71.4Z"/>
+ <path class="cs" d="M60.8 52 L63.8 52 L63.6 66 L61.4 68.4Z"/><path class="l lt" d="M60.6 54 V65"/>
+ <path class="s t2" d="M46 48 Q60.5 45.5 75 48 L75 52.5 Q60.5 50 46 52.5Z"/>
+ <g transform="translate(42 84) rotate(-64)"><path class="s tm" d="M-3 -10 L-1.2 -12 L.6 -9.8 L2 -11.6 L3.1 -10 L3.3 2 L0 9.5 L-3.2 2Z"/><path class="cs" d="M0 -10 L3.1 -10 L3.3 2 L0 9.5Z"/></g>
+ <path class="s tm" d="M66 73 l3.4 1 l-2.4 2.4z"/><path class="s tm" d="M54 75 l-2.8 1.6 l2.8 1.2z"/>
+ <path class="l lt" d="M52 66 l-4 3 M68 64 l4 2 M60 76 v4" opacity=".75"/>
+ <path class="s t1" d="M18 28 Q14 14 30 13 Q36 2 52 6 Q66 0 76 11 Q94 10 90 26 Q84 36 68 32 Q54 40 40 33 Q24 38 18 28Z"/>
+ <path class="cs" d="M18 26 Q30 30 40 27 Q54 34 68 27 Q82 30 90 24 Q86 36 68 33 Q54 41 40 34 Q24 39 18 26Z"/>
+ <path class="hl" d="M27 19 Q33 10 44 10 Q36 13 30 21Z"/>
+ <path class="dk" d="M35 17 L46 21.5 L44 25 L35 21Z"/><path class="dk" d="M68 17 L57 21.5 L59 25 L68 21Z"/>
+ <path class="lc" d="M34 35 Q27 47 37 53 Q45 58 41 66"/><path class="lc" d="M76 31 Q84 44 74 52"/>
+ <path class="lc" d="M52 37 Q50 42 56 44 Q64 46 66 40"/>`,
+};
+
+/* ============================== montagem da carta ============================== */
+function artSvg(id,st,compact){
+  const a=ART[id](),par=compact?"xMidYMid slice":"xMidYMid meet";
+  let g=`<rect class="sky" x="-14" y="-2" width="128" height="104"/>`;
+  if(st===1) g+=`<g filter="url(#wob)"><g class="ghost">${a}</g>${a}</g>`;
+  else if(st===2) g+=`<g filter="url(#wobS)">${a}</g>`;
+  else if(st===3) g+=`<g filter="url(#wobS)">${a}</g>`;
+  else if(st===4) g+=`<g filter="url(#rough)">${a}</g>`;
+  else g+=`<path class="blob" filter="url(#wash)" d="M-6 30 Q10 6 44 10 Q80 2 104 22 Q118 50 100 78 Q70 98 30 92 Q-4 88 -8 62Z"/>`+
+          `<g class="wash" filter="url(#wash)" transform="translate(1.4 1)">${a}</g><g class="inkl" filter="url(#wob)">${a}</g>`;
+  return `<svg viewBox="-12 0 124 100" preserveAspectRatio="${par}">${g}</svg>`;
+}
+const MODS={
+  veteran:{n:"Veterano",c:"#3d70bf",d:"+1 unidade por carta jogada"},
+  cheap:{n:"Barato",c:"#14a6b3",d:"-1 de custo de Elixir"},
+  explosive:{n:"Explosivo",c:"#e67029",d:"A unidade explode ao morrer"},
+  cursed:{n:"Amaldiçoado",c:"#8033a8",d:"O dano aplica Maldição"},
+  shadowy:{n:"Sombrio",c:"#2b2933",d:"Não conta para a recompensa de queda"},
+};
+function glyph(m,col="#fff6e4"){
+  const p={
+   veteran:`<path d="M-6 0 L0 -5 L6 0 M-6 5.5 L0 .5 L6 5.5" fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+   cheap:`<circle r="6" fill="none" stroke="${col}" stroke-width="2"/><path d="M-3.2 0 H3.2" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/>`,
+   explosive:`<path d="M0 -7.5 L2 -2.6 L7.2 -3.2 L3.6 .6 L6.2 5.2 L1 3.2 L-1.4 7.4 L-2 2.6 L-7.2 3.2 L-3.6 -.6 L-6.2 -5 L-1 -3Z" fill="${col}"/>`,
+   cursed:`<path d="M-7 0 Q0 -6.5 7 0 Q0 6.5 -7 0Z" fill="none" stroke="${col}" stroke-width="1.8"/><circle r="2.3" fill="${col}"/>`,
+   shadowy:`<path d="M2.5 -6.5 A6.6 6.6 0 1 0 2.5 6.5 A5 5 0 1 1 2.5 -6.5Z" fill="${col}"/>`,
+  }[m];
+  return `<svg viewBox="-9 -9 18 18" aria-hidden="true">${p}</svg>`;
+}
+function seal(m){
+  const c=MODS[m].c;
+  return `<svg class="seal" viewBox="-20 -20 40 40"><title>${MODS[m].n}: ${MODS[m].d}</title>
+   <g filter="url(#sealf)"><circle r="17" fill="${c}"/><circle r="17" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="2"/>
+   <circle r="12.5" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.2"/></g>
+   <ellipse cx="-6" cy="-8" rx="6" ry="3" fill="rgba(255,255,255,.22)" transform="rotate(-30 -6 -8)"/>
+   <g transform="scale(1.35)">${glyph(m).replace(/<\/?svg[^>]*>/g,"")}</g></svg>`;
+}
+/* opts: compact, st, level, mods[], sys ('A'|'B'|'C'|null), tint */
+function card(c,o){
+  const st=o.st,k=KIND[c.kind],lvl=o.level||1,mods=o.mods||[],plus="+".repeat(lvl-1);
+  const cost=mods.includes("cheap")?Math.max(1,c.cost-1):c.cost;
+  const vars=Object.entries({...c.pal,kc:k.kc,kc3:k.kc3,ink:k.ink,acc:k.acc,kcw:k.kcw,elx:"#7b45c9",elx3:"#a254f2"}).map(([a,b])=>`--${a}:${b}`).join(";");
+  const nm=c.name+plus, long=nm.length>15;
+  let extra="",rulesTop="",pips="";
+  if(o.sys==="A"&&mods.length) extra=`<div class="seals">${mods.map(seal).join("")}</div>`;
+  if(o.sys==="B"&&mods.length) extra=`<div class="ribbons">${mods.map(m=>`<div class="ribbon" style="--mc:${MODS[m].c}" title="${MODS[m].n}: ${MODS[m].d}"><i></i>${glyph(m)}</div>`).join("")}</div>`;
+  if(o.sys==="C"&&mods.length){
+    rulesTop=`<div class="modline">${mods.map(m=>`<span style="color:${MODS[m].c}" title="${MODS[m].d}">${glyph(m,MODS[m].c)}${MODS[m].n}</span>`).join("")}</div>`;
+    if(o.compact) pips=`<div class="pips">${mods.map(m=>`<span title="${MODS[m].n}">${glyph(m,MODS[m].c==="#2b2933"?"#fff":"#fff")}</span>`).join("")}</div>`;
+  }
+  if(pips) pips=pips.replace(/<span title="([^"]+)">/g,(s,n)=>{const m=Object.keys(MODS).find(x=>MODS[x].n===n);return `<span title="${n}" style="display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:${MODS[m].c};box-shadow:0 0 0 2px #fff8ea">`;});
+  const cls=["card","s"+st,o.compact?"compact":"","lv"+lvl,o.tint&&lvl>1?"tint":"",mods.includes("cheap")?"cheapgem":"",o.sys?"sys"+o.sys:""].join(" ");
+  return `<div class="${cls}" style="${vars};transform:scale(${o.scale})">
+   ${st===1?'<div class="tape"></div>':""}
+   <div class="art">${artSvg(c.id,st,o.compact)}</div>
+   <div class="gem"><span>${cost}</span></div>
+   <div class="name${long?" long":""}${pips?" haspips":""}"><span>${nm}</span>${pips}</div>
+   <div class="type">${c.type}</div>
+   <div class="rules">${rulesTop}<div>${c.text}</div></div>${extra}</div>`;
+}
+function slot(c,o){const w=300*o.scale,h=(o.compact?340:420)*o.scale;return `<div class="slot" style="width:${w}px;height:${h}px">${card(c,o)}</div>`;}
+
+/* ============================== seção 1 ============================== */
+const STYLES=[
+ {n:"Nanquim limpo",cap:"O esboço antigo refinado: traço sépia tremido com linha-fantasma, sombra só em hachura, cor só no detalhe (olho, coroa, faísca), moldura de papel com fita. <i>Na mão: a silhueta lê bem, mas tudo bege — as cartas se diferenciam só pela cor do traço, e de longe se confundem.</i>"},
+ {n:"Traço + cor chapada",cap:"O mesmo traço, mais 2 a 3 cores chapadas por carta e nenhuma sombra; a faixa do nome leva a cor do tipo. <i>Na mão: o melhor equilíbrio — a cor dominante separa as cartas de relance e o traço ainda é “Diário”.</i>"},
+ {n:"Cartoon de contorno grosso",cap:"Contorno preto grosso, cores fortes e uma sombra cel (um tom só, sem degradê); moldura arredondada com sombra dura. <i>Na mão: o mais legível no tamanho mínimo, mas é o que mais foge do papel e da tinta (lembra jogo de celular).</i>"},
+ {n:"Xilogravura",cap:"Massas pretas com cortes claros (hachura “entalhada”), papel creme e uma só cor de carimbo (vermelho). <i>Na mão: forte e com muita personalidade; o risco é o preto engolir detalhe pequeno (olhos, dentes) e as cartas ficarem parecidas entre si.</i>"},
+ {n:"Aquarela solta",cap:"Manchas de aguada que vazam além do traço marrom fino, com granulação de papel. Parente 2D do “v2 aguada” atual. <i>Na mão: bonito na grande, mas o contraste baixo some sobre a arena escura em 150 px.</i>"},
+];
+document.getElementById("styles").innerHTML=STYLES.map((s,i)=>{
+  const st=i+1;
+  return `<div class="row"><div class="rowhead"><span class="num">${st}</span><h3>${s.n}</h3></div>
+   <p class="cap">${s.cap}</p>
+   <div class="grid">${CARDS.map(c=>slot(c,{st,scale:1})).join("")}</div>
+   <div class="hand"><div class="lbl">Na mão · 150 px</div>${CARDS.map(c=>slot(c,{st,scale:.5,compact:true})).join("")}</div></div>`;
+}).join("");
+
+/* ============================== seção 2 ============================== */
+const KING=CARDS[1];
+const VARS=[
+ {t:"Base",level:1,mods:[]},
+ {t:"Nível 2",d:"só o “+” no nome",level:2,mods:[]},
+ {t:"Nível 3",d:"“++” no nome",level:3,mods:[]},
+ {t:"Veterano",level:1,mods:["veteran"]},
+ {t:"Barato",d:"custo 6 → 5",level:1,mods:["cheap"]},
+ {t:"Explosivo",level:1,mods:["explosive"]},
+ {t:"Nível 3 + 2 modificadores",d:"Veterano e Explosivo",level:3,mods:["veteran","explosive"]},
+];
+const SYS=[
+ {k:"A",n:"Selos de cera",cap:"Um selo redondo por modificador no canto de baixo da arte, cor + ícone (passe o mouse para o nome). Ocupa só um canto, não a carta inteira. <i>Na mão: cada selo fica com ~30 px; a cor lê bem, o ícone dá para distinguir. Com 2 ou mais selos começa a cobrir a arte.</i>"},
+ {k:"B",n:"Fitas de marcador",cap:"Uma fita de marcador de livro por modificador, pendurada na borda de cima (fora da arte, só encosta no canto), com ícone na ponta. Inclui a borda fina por nível: aço no +, ouro no ++. <i>Na mão: a marca mais visível das três, porque sai da silhueta da carta; não cobre nada importante. Bem “Diário”.</i>"},
+ {k:"C",n:"Palavra-chave no texto",cap:"Nada sobre a arte: uma linha colorida com glifo acima das regras, que já diz o nome do modificador. <i>Na carta grande é o mais limpo e o mais claro. Na mão (que não tem texto) precisa de um complemento: aqui, bolinhas com o glifo no fim da faixa do nome.</i>"},
+];
+document.getElementById("legend").innerHTML=Object.entries(MODS).map(([m,v])=>`<span title="${v.d}"><span style="display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:${v.c};box-shadow:0 0 0 1px rgba(239,229,204,.35)">${glyph(m).replace('<svg','<svg width="15" height="15"')}</span>${v.n} <small style="color:var(--muted)">— ${v.d}</small></span>`).join("");
+function renderSystems(){
+  const tintAll=document.getElementById("tintAll").checked;
+  document.getElementById("systems").innerHTML=SYS.map(s=>{
+    const tint=s.k==="B"||tintAll;
+    return `<div class="row"><div class="rowhead"><span class="num">${s.k}</span><h3>${s.n}</h3></div><p class="cap">${s.cap}</p>
+     <div class="grid" style="gap:22px 18px">${VARS.map(v=>`<div class="cell">${slot(KING,{st:2,scale:.74,level:v.level,mods:v.mods,sys:s.k,tint})}<div class="vcap"><b>${v.t}</b>${v.d?" · "+v.d:""}</div></div>`).join("")}</div>
+     <div class="hand"><div class="lbl">Na mão · 150 px</div>${VARS.map(v=>slot(KING,{st:2,scale:.5,compact:true,level:v.level,mods:v.mods,sys:s.k,tint})).join("")}</div></div>`;
+  }).join("");
+}
+document.getElementById("tintAll").addEventListener("change",renderSystems);
+renderSystems();
+
+document.getElementById("pick").innerHTML=`<b>Minha leitura:</b> para a mão, o <b>estilo 2 (traço + cor chapada)</b> é o que lê melhor sem perder o Diário: a cor dominante de cada carta separa as cartas de relance a 150 px, coisa que o nanquim puro e a aquarela não fazem sobre a arena escura, e ele não grita como o cartoon. Para as marcas, <b>B (fitas)</b> na mão + a <b>linha do C</b> na carta grande se completam: a fita diz “tem modificador e qual cor” sem tocar na arte, e a palavra explica o efeito quando você olha de perto.`;
+</script>
+</body>
+</html>

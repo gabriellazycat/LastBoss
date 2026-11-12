@@ -86,7 +86,9 @@ func _chaos(sim: Sim, rng: RandomNumberGenerator) -> void:
 	var i := rng.randi_range(-1, sim.hand.size())
 	match rng.randi_range(0, 9):
 		0:
-			sim.sacrifice(i)
+			# Relíquia qualquer (o sacrifício da mão saiu em 11/11/2026): exercita os fx e o empilhamento.
+			if rng.randf() < 0.05:
+				sim.gain_relic(sim.data.relic_ids[rng.randi_range(0, sim.data.relic_ids.size() - 1)])
 		1:
 			sim.teleport(rng.randi_range(-2, 7))
 		_:

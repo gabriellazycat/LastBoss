@@ -1,0 +1,6 @@
+{
+ "id": "random",
+ "kind": "random",
+ "think_interval": 0.5,
+ "play_chance": 0.6
+}

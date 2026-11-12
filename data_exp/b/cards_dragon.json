@@ -1,0 +1,556 @@
+{
+ "cards": [
+  {
+   "id": "spark",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "",
+   "rarity": "common",
+   "cost": 1,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "damage": 40,
+    "radius": 3.0,
+    "burn_dps": 10,
+    "burn_s": 3.0
+   },
+   "lvl": [
+    "damage"
+   ],
+   "n3": {
+    "burn_dps": 20,
+    "burn_s": 4.0
+   },
+   "model": "burn_village",
+   "family": "fire",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "igniter",
+     "mark_payoff",
+     "echo_worthy"
+    ],
+    "aim": "hero",
+    "needs_hit": true,
+    "value": [
+     {
+      "if": {
+       "hero_soaked": 0.5
+      },
+      "combo": true,
+      "add": 1.0
+     }
+    ]
+   }
+  },
+  {
+   "id": "kobold_scavengers",
+   "category": "field",
+   "type": "swarm",
+   "tags": [],
+   "archetype": "swarm",
+   "rarity": "common",
+   "cost": 2,
+   "count": 4,
+   "xp_parts": 4,
+   "hp": 35,
+   "dps": 4,
+   "attack_interval": 0.25,
+   "speed": 5.5,
+   "range": 0.8,
+   "fx": {
+    "gold_per_hit": 1
+   },
+   "lvl": [
+    "count"
+   ],
+   "n3": {
+    "gold_per_hit": 2
+   },
+   "family": "greed",
+   "owner": "dragon"
+  },
+  {
+   "id": "molten_gold",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 2,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "gold_cost": 10,
+    "gold_max": 30,
+    "fire_per_gold": 6,
+    "radius": 3.0,
+    "slow": 3.0
+   },
+   "lvl": [
+    "fire_per_gold"
+   ],
+   "n3": {
+    "fire_per_gold": 8
+   },
+   "model": "gold_bait",
+   "family": "greed",
+   "owner": "dragon",
+   "ai": {
+    "aim": "cluster",
+    "needs_hit": true,
+    "needs": {
+     "gold_above": 10
+    },
+    "value": [
+     {
+      "if": {
+       "hero_soaked": 0.5
+      },
+      "combo": true,
+      "add": 0.8
+     },
+     {
+      "per": "gold",
+      "div": 15,
+      "cap": 2,
+      "add": 1.0
+     }
+    ]
+   }
+  },
+  {
+   "id": "trap_chest",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 220,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 3,
+   "fx": {
+    "boom": 150,
+    "boom_radius": 2.5,
+    "gold": 15
+   },
+   "lvl": [
+    "boom",
+    "hp"
+   ],
+   "n3": {
+    "boom": 250,
+    "gold": 25
+   },
+   "family": "greed",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "bait_target"
+    ]
+   },
+   "on_death": [
+    {
+     "op": "damage",
+     "damage": "boom",
+     "radius": "boom_radius",
+     "boom": true
+    },
+    {
+     "op": "gold",
+     "amount": "gold"
+    }
+   ]
+  },
+  {
+   "id": "treasure_guard",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "tank",
+   "rarity": "uncommon",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 900,
+   "dps": 28,
+   "attack_interval": 1.5,
+   "speed": 2.5,
+   "range": 1.5,
+   "fx": {
+    "hp_per_gold": 5,
+    "hp_cap": 600,
+    "taunt": 6.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "hp_per_gold": 8,
+    "hp_cap": 900
+   },
+   "family": "greed",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "big"
+    ]
+   }
+  },
+  {
+   "id": "furnace",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "fire",
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "uncommon",
+   "cost": 4,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 350,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "duration": 15.0,
+    "radius": 5.0,
+    "fire_bonus": 0.3
+   },
+   "lvl": [
+    "hp",
+    "duration"
+   ],
+   "n3": {
+    "fire_bonus": 0.5
+   },
+   "family": "fire",
+   "owner": "dragon",
+   "ai": {
+    "value": [
+     {
+      "if": {
+       "hand_has": "igniter"
+      },
+      "combo": true,
+      "add": 0.8
+     }
+    ]
+   }
+  },
+  {
+   "id": "dragon_vault",
+   "category": "lair",
+   "type": "lair",
+   "tags": [],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 3,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "gold_mult": 1.0,
+    "duration": 30.0
+   },
+   "lvl": [
+    "duration"
+   ],
+   "n3": {
+    "gold_mult": 1.5
+   },
+   "model": "gold_bait",
+   "family": "greed",
+   "owner": "dragon",
+   "ai": {
+    "value": [
+     {
+      "add": 1.0
+     }
+    ]
+   },
+   "ops": [
+    {
+     "op": "temp",
+     "kind": "gold_mult",
+     "value": "gold_mult",
+     "duration": "duration"
+    }
+   ]
+  },
+  {
+   "id": "blood_tax",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 0,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "gold_cost": 20,
+    "discount": 3,
+    "returns": true
+   },
+   "lvl": [],
+   "n3": {
+    "discount": 5
+   },
+   "model": "gold_bait",
+   "family": "greed",
+   "owner": "dragon",
+   "ai": {
+    "wait_for": {
+     "if": {
+      "hand_has": "big"
+     },
+     "add": 1.0
+    }
+   },
+   "ops": [
+    {
+     "op": "pay_gold",
+     "amount": "gold_cost"
+    }
+   ]
+  },
+  {
+   "id": "ember_rain",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 6,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "radius": 5.0,
+    "duration": 8.0,
+    "dps": 30,
+    "oil_fire_dps": 20,
+    "oil_fire_s": 5.0
+   },
+   "lvl": [
+    "dps"
+   ],
+   "n3": {
+    "dps": 45
+   },
+   "model": "boiling_oil",
+   "family": "fire",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "igniter"
+    ],
+    "aim": "cluster",
+    "needs_hit": true,
+    "lingers": true,
+    "value": [
+     {
+      "if": {
+       "hero_soaked": 0.5
+      },
+      "combo": true,
+      "add": 1.0
+     }
+    ]
+   },
+   "ops": [
+    {
+     "op": "zone",
+     "kind": "fire",
+     "radius": "radius",
+     "duration": "duration",
+     "dps": "dps"
+    }
+   ]
+  },
+  {
+   "id": "gold_avalanche",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "rare",
+   "cost": 9,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "gold_cost": 30,
+    "gold_mult": 3.0,
+    "cap": 900,
+    "radius": 4.0,
+    "stun": 2.0
+   },
+   "lvl": [
+    "gold_mult"
+   ],
+   "n3": {
+    "stun": 3.0
+   },
+   "model": "gold_bait",
+   "family": "greed",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "aim": "cluster",
+    "needs_hit": true,
+    "needs": {
+     "gold_above": 30
+    },
+    "value": [
+     {
+      "per": "gold",
+      "div": 30,
+      "cap": 2,
+      "add": 1.0
+     }
+    ]
+   }
+  },
+  {
+   "id": "eruption",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "",
+   "rarity": "legendary",
+   "cost": 10,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "damage": 400,
+    "radius": 3.0,
+    "fire_dps": 25,
+    "fire_s": 10.0
+   },
+   "lvl": [
+    "damage"
+   ],
+   "n3": {
+    "fire_dps": 40
+   },
+   "model": "boiling_oil",
+   "family": "fire",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "aim": "soaked",
+    "needs": {
+     "hero_soaked": 0.5
+    },
+    "needs_hit": false
+   }
+  },
+  {
+   "id": "elder_dragon",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "shooter",
+   "rarity": "legendary",
+   "cost": 12,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 3000,
+   "dps": 120,
+   "attack_interval": 0.25,
+   "speed": 3.0,
+   "range": 6.0,
+   "fx": {
+    "breath_dps": 120,
+    "rain_dps": 30,
+    "rain_radius": 5.0,
+    "rain_s": 8.0
+   },
+   "lvl": [
+    "hp",
+    "dps",
+    "breath_dps"
+   ],
+   "n3": {
+    "rain_dps": 50
+   },
+   "family": "fire",
+   "owner": "dragon",
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "value": [
+     {
+      "if": {
+       "contest_active": true
+      },
+      "add": 1.0
+     }
+    ]
+   },
+   "fly": true
+  }
+ ]
+}

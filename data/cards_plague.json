@@ -14,7 +14,7 @@
    "xp_parts": 1,
    "hp": 90,
    "dps": 6,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 4.0,
    "range": 1.0,
    "fx": {
@@ -83,7 +83,7 @@
    "xp_parts": 5,
    "hp": 30,
    "dps": 5,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 5.0,
    "range": 0.8,
    "fx": {},
@@ -137,7 +137,7 @@
    "xp_parts": 3,
    "hp": 150,
    "dps": 14,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 6.2,
    "range": 1.2,
    "fx": {
@@ -169,7 +169,7 @@
    "xp_parts": 1,
    "hp": 600,
    "dps": 8,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 2.2,
    "range": 1.2,
    "fx": {
@@ -200,7 +200,7 @@
    "xp_parts": 1,
    "hp": 160,
    "dps": 4,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 3.0,
    "range": 1.2,
    "fx": {
@@ -261,7 +261,7 @@
    "xp_parts": 1,
    "hp": 700,
    "dps": 20,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 5.0,
    "range": 1.3,
    "fx": {
@@ -405,7 +405,7 @@
    "xp_parts": 30,
    "hp": 22,
    "dps": 4,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 5.6,
    "range": 0.8,
    "fx": {},
@@ -464,7 +464,7 @@
    "xp_parts": 1,
    "hp": 2500,
    "dps": 80,
-   "attack_interval": 1.0,
+   "attack_interval": 0.25,
    "speed": 3.5,
    "range": 1.6,
    "fx": {

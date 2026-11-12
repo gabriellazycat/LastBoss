@@ -34,6 +34,7 @@ const TYPES := {
 static var _fonts := {}
 static var _mats := {}
 static var _tex := {}
+static var _painted := {}
 static var _hatch := {}
 
 
@@ -444,6 +445,30 @@ static func card_tex(id: String) -> Texture2D:
 	return _tex[id]
 
 
+## Cartas com a arte pintada nova (aquarela + nanquim, docs/arte_cartas): a lista fica em data/card_art.json,
+## atualizada a cada vilão concluído. Essas usam assets/cards/<id>.png também na mão das outras peles, no lugar
+## do retrato 3D (decisão do designer, 11/11/2026).
+static func painted(id: String) -> bool:
+	if _painted.is_empty():
+		_painted["_"] = true
+		var path := "res://data/card_art.json"
+		if FileAccess.file_exists(path):
+			var j = JSON.parse_string(FileAccess.get_file_as_string(path))
+			if typeof(j) == TYPE_DICTIONARY:
+				for cid in j.get("painted", []):
+					_painted[str(cid)] = true
+	return _painted.has(id) and id != "_"
+
+
+## Arte da carta para a mão, o HUD e a coleção: a pintada, quando existe; senão, o retrato 3D.
+static func hand_art(id: String) -> Texture2D:
+	if painted(id):
+		var t := card_tex(id)
+		if t != null:
+			return t
+	return CardArt.textures.get(id)
+
+
 static func type_spec(d: CardDef) -> Array:
 	return TYPES.get(d.type, TYPES["monster"])
 
@@ -484,8 +509,13 @@ static func _name_label(nm: String, size: float, col: Color, room: float, lines 
 	return l
 
 
-## Carta grande: faixa de fita com nome e custo, desenho, tipo entre traços e o texto numa etiqueta clara.
+## Carta grande no molde único (game/card_mold.gd): moldura A com a fita dobrada do nome, arte, tipo e texto.
 static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, level: int) -> PanelContainer:
+	return CardMold.build(d, cost, UiKit.mod_ids_of(mods), key, w, roundf(w * 1.4), false, level)
+
+
+## Carta grande do desenho antigo (faixa de fita no topo e etiqueta de texto). Fora de uso desde 12/11/2026.
+static func _legacy_card(d: CardDef, cost: int, mods: Array, key: String, w: float, level: int) -> PanelContainer:
 	var k := w / 168.0
 	var spec := type_spec(d)
 	var p := PanelContainer.new()
@@ -520,9 +550,9 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 	var art := TextureRect.new()
 	art.texture = card_tex(d.id)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED if painted(d.id) else TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	art.custom_minimum_size = Vector2(w, roundf(w * 0.62))
+	art.custom_minimum_size = Vector2(w, roundf(w * (0.8 if painted(d.id) else 0.62)))
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(art)
 	var tl := Label.new()
@@ -607,8 +637,13 @@ static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, leve
 	return p
 
 
-## Carta compacta (mão em leque, esteira): faixa com nome e custo e o desenho embaixo.
-static func mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float, h: float, named: bool, level: int) -> PanelContainer:
+## Carta compacta (mão em leque, esteira) no molde único: fita com o nome, custo e a arte.
+static func mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float, h: float, _named: bool, level: int) -> PanelContainer:
+	return CardMold.build(d, cost, UiKit.mod_ids_of(mods), key, w, h, true, level)
+
+
+## Carta compacta do desenho antigo. Fora de uso desde 12/11/2026.
+static func _legacy_mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float, h: float, named: bool, level: int) -> PanelContainer:
 	var k := w / 116.0
 	var spec := type_spec(d)
 	var p := PanelContainer.new()
@@ -625,7 +660,7 @@ static func mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float,
 	var art := TextureRect.new()
 	art.texture = card_tex(d.id)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED if painted(d.id) else TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	art.position = Vector2(3.0 * k, band + 2.0 * k)
 	art.size = Vector2(w - 6.0 * k, h - band - (14.0 if key != "" else 5.0) * k)
@@ -679,6 +714,9 @@ static func _key_tag(key: String, k: float) -> Control:
 
 ## Estado da carta da mão: selecionada acende a borda.
 static func card_state(p: Control, selected: bool, playable: bool) -> void:
+	if p.has_meta("mold"):
+		CardMold.set_hot(p, selected)
+		return
 	var m := p.material as ShaderMaterial
 	if m == null:
 		return

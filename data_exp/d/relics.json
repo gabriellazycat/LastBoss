@@ -1,0 +1,356 @@
+{
+ "_note": "Relíquias (rodada 11/11/2026): empilham (a mesma pode vir de novo e os fx somam), menos as \"unique\". weight = peso no sorteio (padrão 1). fx \"pickup_*\" valem uma vez, ao pegar. Elixir: elixir_max soma ao máximo; elixir_regen é fração a mais de regeneração (2,8 s ÷ (1 + soma)).",
+ "relics": [
+  {
+   "id": "bone_crown",
+   "rarity": "common",
+   "bot_value": 3.0,
+   "fx": {
+    "death_elixir_every": 10
+   },
+   "owner": "lich",
+   "unique": true
+  },
+  {
+   "id": "lair_tithe",
+   "rarity": "common",
+   "bot_value": 1.5,
+   "fx": {
+    "gold": 0.3
+   },
+   "owner": "dragon"
+  },
+  {
+   "id": "black_mortar",
+   "rarity": "common",
+   "bot_value": 2.0,
+   "fx": {
+    "structure": 0.5
+   },
+   "owner": "common"
+  },
+  {
+   "id": "victory_horn",
+   "rarity": "common",
+   "bot_value": 2.0,
+   "fx": {
+    "contest_elixir": 2
+   },
+   "owner": "common"
+  },
+  {
+   "id": "cracked_hourglass",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "contest_window": 0.3
+   },
+   "owner": "common"
+  },
+  {
+   "id": "jailer_chains",
+   "rarity": "uncommon",
+   "bot_value": 2.0,
+   "fx": {
+    "cc": 0.5
+   },
+   "owner": "common"
+  },
+  {
+   "id": "watchful_eye",
+   "rarity": "uncommon",
+   "bot_value": 3.0,
+   "fx": {
+    "free_after_ability": 3.0
+   },
+   "owner": "common"
+  },
+  {
+   "id": "pack_howl",
+   "rarity": "uncommon",
+   "bot_value": 2.0,
+   "fx": {
+    "pack_min": 5,
+    "pack_dmg": 0.25
+   },
+   "owner": "plague",
+   "unique": true
+  },
+  {
+   "id": "merchant_purse",
+   "rarity": "uncommon",
+   "bot_value": 1.5,
+   "fx": {
+    "shop_cards": 1,
+    "shop_price": -0.15
+   },
+   "owner": "dragon"
+  },
+  {
+   "id": "overflowing_chalice",
+   "rarity": "rare",
+   "bot_value": 2.5,
+   "fx": {
+    "act_full_elixir": 1
+   },
+   "owner": "common",
+   "unique": true
+  },
+  {
+   "id": "shortcut_stone",
+   "rarity": "rare",
+   "bot_value": 2.5,
+   "fx": {
+    "contest_first_discount": 2
+   },
+   "owner": "common"
+  },
+  {
+   "id": "profane_earth",
+   "rarity": "rare",
+   "bot_value": 2.5,
+   "fx": {
+    "loc_raise": 0.25
+   },
+   "owner": "common"
+  },
+  {
+   "id": "bad_blood",
+   "rarity": "rare",
+   "bot_value": 3.0,
+   "fx": {
+    "fall_mod_offer": 1
+   },
+   "owner": "common",
+   "unique": true
+  },
+  {
+   "id": "heavy_grimoire",
+   "rarity": "rare",
+   "bot_value": 2.0,
+   "fx": {
+    "hand": 1,
+    "elixir_max": -1
+   },
+   "owner": "common"
+  },
+  {
+   "id": "elixir_flask",
+   "rarity": "common",
+   "bot_value": 4.5,
+   "fx": {
+    "elixir_max": 2,
+    "elixir_regen": 0.15
+   },
+   "owner": "common",
+   "weight": 2.5
+  },
+  {
+   "id": "quick_spring",
+   "rarity": "common",
+   "bot_value": 4.5,
+   "fx": {
+    "elixir_max": 1,
+    "elixir_regen": 0.4
+   },
+   "owner": "common",
+   "weight": 2.5
+  },
+  {
+   "id": "deep_cauldron",
+   "rarity": "uncommon",
+   "bot_value": 4.5,
+   "fx": {
+    "elixir_max": 3,
+    "elixir_regen": 0.25
+   },
+   "owner": "common",
+   "weight": 2.5
+  },
+  {
+   "id": "rushing_tide",
+   "rarity": "uncommon",
+   "bot_value": 4.5,
+   "fx": {
+    "elixir_max": 1,
+    "elixir_regen": 0.6
+   },
+   "owner": "common",
+   "weight": 2.5
+  },
+  {
+   "id": "victory_mark",
+   "rarity": "rare",
+   "bot_value": 4.5,
+   "fx": {
+    "contest_max_gain": 1,
+    "contest_max_cap": 4
+   },
+   "owner": "common",
+   "unique": true,
+   "weight": 2.5
+  },
+  {
+   "id": "heart_of_well",
+   "rarity": "rare",
+   "bot_value": 4.5,
+   "fx": {
+    "elixir_max": 4,
+    "elixir_regen": 0.3
+   },
+   "owner": "common",
+   "weight": 2.5
+  },
+  {
+   "id": "eternal_fountain",
+   "rarity": "legendary",
+   "bot_value": 5.5,
+   "fx": {
+    "elixir_max": 3,
+    "elixir_regen": 0.6
+   },
+   "owner": "common",
+   "weight": 2.5
+  },
+  {
+   "id": "living_vault",
+   "rarity": "uncommon",
+   "bot_value": 3.5,
+   "fx": {
+    "shop_max_gain": 100,
+    "shop_max_cap": 4
+   },
+   "owner": "dragon",
+   "unique": true,
+   "weight": 2.5
+  },
+  {
+   "id": "hand_pocket",
+   "rarity": "rare",
+   "bot_value": 3.0,
+   "fx": {
+    "hand": 1
+   },
+   "owner": "common"
+  },
+  {
+   "id": "opening_gambit",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "hero_first_free": 1
+   },
+   "owner": "common",
+   "unique": true
+  },
+  {
+   "id": "act_hoard",
+   "rarity": "uncommon",
+   "bot_value": 1.5,
+   "fx": {
+    "act_gold": 80
+   },
+   "owner": "dragon"
+  },
+  {
+   "id": "twin_litter",
+   "rarity": "rare",
+   "bot_value": 3.0,
+   "fx": {
+    "pack_extra": 1
+   },
+   "owner": "plague"
+  },
+  {
+   "id": "phylactery",
+   "rarity": "legendary",
+   "bot_value": 3.5,
+   "fx": {
+    "revive_once": 1
+   },
+   "owner": "lich",
+   "unique": true
+  },
+  {
+   "id": "greedy_seal",
+   "rarity": "rare",
+   "bot_value": 2.0,
+   "fx": {
+    "relic_options": 1
+   },
+   "owner": "common"
+  },
+  {
+   "id": "grave_call",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "skeleton_return": 0.25
+   },
+   "owner": "common"
+  },
+  {
+   "id": "lucky_coin",
+   "rarity": "rare",
+   "bot_value": 3.0,
+   "fx": {
+    "free_play_chance": 0.2
+   },
+   "owner": "common"
+  },
+  {
+   "id": "war_drum",
+   "rarity": "common",
+   "bot_value": 2.5,
+   "fx": {
+    "contest_enter_elixir": 3
+   },
+   "owner": "common"
+  },
+  {
+   "id": "forge_hammer",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "pickup_upgrade": 3
+   },
+   "owner": "common"
+  },
+  {
+   "id": "tinker_file",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "pickup_discount": 2
+   },
+   "owner": "common"
+  },
+  {
+   "id": "blood_tithe",
+   "rarity": "common",
+   "bot_value": 2.0,
+   "fx": {
+    "pickup_hero_dmg": 0.1
+   },
+   "owner": "common"
+  },
+  {
+   "id": "tar_pit",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "hero_slow": 0.25
+   },
+   "owner": "common"
+  },
+  {
+   "id": "stamp_ink",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "pickup_mods": 2
+   },
+   "owner": "common"
+  }
+ ]
+}

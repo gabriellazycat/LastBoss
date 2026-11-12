@@ -1,0 +1,49 @@
+<main>
+ <h1>Moldura A real (a da v4) e os upgrades</h1>
+ <p class="lede">Agora é a <b>mesma moldura da cartas_v4</b>, sem redesenhar: borda de ouro com cantoneiras de pena, janela da arte, <b>fita colorida pelo tipo com as pontas dobradas para trás</b> cruzando a base da arte, tipo · raridade e texto no papel. As <b>fitas de marcador</b> penduradas no canto direito são os modificadores (como na v4). Nível = nome com <b>+</b> e brilho da moldura. O jogo ainda não foi alterado.</p>
+ <p class="note">Os números dos upgrades são ilustrativos. Passe o mouse nas cartas.</p>
+ <div id="rows"></div>
+ <div class="pick" id="pick"></div>
+</main>
+<script>
+function bindTilt(){document.querySelectorAll(".card").forEach(el=>{el.addEventListener("mousemove",e=>{const b=el.getBoundingClientRect();el.style.setProperty("--mx",(((e.clientX-b.left)/b.width)*2-1).toFixed(3));el.style.setProperty("--my",(((e.clientY-b.top)/b.height)*2-1).toFixed(3));});el.addEventListener("mouseleave",()=>{el.style.setProperty("--mx",0);el.style.setProperty("--my",0);});});}
+KIND.structure={c:"#7a5a2a",t:"Estrutura"};
+const K=CARDS[1],T={id:"bone_totem",name:"Totem de Ossos",cost:3,kind:"structure",rar:"rare",text:"Esqueletos próximos recuperam vida com o tempo."},
+ B={id:"shadow_bolt",name:"Raio Sombrio",cost:2,kind:"spell",rar:"common",text:"Dispara um raio que causa dano ao herói e o <b>enfraquece</b>."};
+const TXT={veteran:'<span class="add"><span class="up">+1 ▲</span> unidade por carta jogada</span>',cheap:"",explosive:'<span class="add">Ao morrer <b>explode</b>: +40 de dano em 2 m</span>',cursed:'<span class="add">O dano aplica <b>Maldição</b></span>',shadowy:'<span class="add">Não conta para a queda do herói</span>'};
+function fxHtml(m){if(!m)return"";let h='<div class="fxw '+m+'">';
+ if(m==="explosive"||m==="cheap")for(let i=0;i<10;i++)h+='<i style="left:'+((i*29+13)%250)+'px;top:'+(150+((i*53)%100))+'px;width:'+(3+(i%3)*2)+'px;height:'+(3+(i%3)*2)+'px;animation-delay:'+(-i*.3)+'s"></i>';
+ if(m==="shadowy")for(let i=0;i<5;i++)h+='<i style="left:'+(i*55)+'px;top:'+(160+(i%3)*28)+'px;width:70px;height:46px;animation-delay:'+(-i)+'s"></i>';
+ if(m==="cursed")for(let i=0;i<7;i++)h+='<span class="drip" style="left:'+(12+i*38)+'px;animation-delay:'+(-i*.4)+'s"></span>';
+ return h+"</div>";}
+function X(c,o){o=Object.assign({v:"A",scale:1},o);const mods=o.mods||[],lvl=o.level||1;
+ const c2=Object.assign({},c);let old=0;
+ if(mods.includes("cheap")){old=c.cost;c2.cost=c.cost-1;}
+ c2.text=c.text+mods.filter(m=>TXT[m]).map(m=>TXT[m]).join("");
+ if(mods.includes("veteran")&&c.id==="rat_king")c2.text=c2.text.replace("libera 6",'libera <span class="up">7 ▲</span>');
+ o.img=c.img;o.level=lvl;
+ let h=slot(c2,o);
+ h=h.replace('<svg class="frame"',fxHtml(mods[0])+'<svg class="frame"');
+ h=h.replace('class="card ','class="card '+(lvl>1?"lv"+lvl+" ":"")+(mods[0]?"m-"+mods[0]+" ":""));
+ if(old)h=h.replace('<div class="gem">','<div class="gem cheapg"><span class="old">'+old+'</span>');
+ return h;}
+K.img="rat_king.png";T.img="bone_totem.png";B.img="shadow_bolt.png";
+const cell=(h,cap)=>'<div class="cell">'+h+'<div class="vcap">'+cap+'</div></div>';
+const SM={scale:.5,compact:true},G={scale:320/300};
+const mk=(c,o)=>X(c,Object.assign({},G,o));
+document.getElementById("rows").innerHTML=
+'<section><h2>1 · A carta, grande e na mão</h2><div class="quad" style="margin-top:14px">'+
+ cell(mk(K,{}),"<b>Rei dos Ratos</b> · Rara · fita vermelha dobrada")+
+ '<div><div class="hand"><div class="lbl">Na mão · 150 px</div>'+[T,B,K,T,B].map(c=>X(c,SM)).join("")+'</div></div></div></section>'+
+'<section><h2>2 · Níveis</h2><div class="quad" style="margin-top:14px">'+
+ cell(mk(K,{}),"<b>Nível 1</b>")+cell(mk(K,{level:2}),"<b>Nível 2</b> · nome com <b>+</b>, moldura em aço com brilho azul")+cell(mk(K,{level:3}),"<b>Nível 3</b> · nome com <b>++</b>, moldura dourada pulsando")+'</div></section>'+
+'<section><h2>3 · Modificadores (fita de marcador no canto + papel + efeito na arte)</h2><div class="quad" style="margin-top:14px">'+
+ ["cheap","veteran","explosive","cursed","shadowy"].map((m,i)=>cell(mk(K,{mods:[m]}),["<b>Barato</b> · papel verde-água, gema azul-água, custo antigo riscado","<b>Veterano</b> · papel azul-marinho, +1 unidade","<b>Explosivo</b> · papel chamuscado, brasas","<b>Amaldiçoado</b> · papel roxo, tinta escorrendo","<b>Sombrio</b> · papel carvão, fumaça"][i])).join("")+'</div></section>'+
+'<section><h2>4 · Combos</h2><div class="quad" style="margin-top:14px">'+
+ cell(mk(K,{level:2,mods:["veteran"]}),"<b>N2 + Veterano</b>")+cell(mk(K,{level:3,mods:["explosive","cursed"]}),"<b>N3 + Explosivo + Amaldiçoado</b> · duas fitas; papel do primeiro")+cell(mk(K,{level:3,mods:["cheap","veteran"]}),"<b>N3 + Barato + Veterano</b>")+'</div></section>'+
+'<section><h2>5 · Tipos e raridades</h2><div class="quad" style="margin-top:14px">'+
+ cell(mk(K,{}),"<b>Monstro</b> · Rara")+cell(mk(B,{}),"<b>Feitiço</b> · Comum (moldura simples)")+cell(mk(T,{}),"<b>Estrutura</b> · Rara")+cell(mk(Object.assign({},CARDS[4],{img:"elder_dragon.png"}),{}),"<b>Lendária</b> · ouro brilhante")+'</div></section>'+
+'<section><h2>6 · Na mão com todos os upgrades</h2><div class="hand"><div class="lbl">150 px</div>'+[{},{level:2},{level:3},{mods:["cheap"]},{mods:["veteran"]},{mods:["explosive"]},{mods:["cursed"]},{mods:["shadowy"]},{level:3,mods:["explosive","cursed"]}].map(o=>X(K,Object.assign({},SM,o))).join("")+'</div></section>';
+bindTilt();
+document.getElementById("pick").innerHTML="<b>Confira:</b> a moldura e a fita dobrada agora são as da v4? Os marcadores no canto e o nível com + (e brilho) servem? Na mão aparece só a fita com o nome (compacta), como na v4.";
+</script></body></html>

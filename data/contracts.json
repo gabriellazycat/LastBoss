@@ -57,19 +57,6 @@
    "owner": "common"
   },
   {
-   "id": "empty_hand",
-   "goal": {
-    "kind": "sacrifice",
-    "amount": 3
-   },
-   "reward": {
-    "kind": "card",
-    "category": "lair"
-   },
-   "deadline": 60,
-   "owner": "common"
-  },
-  {
    "id": "evil_architecture",
    "goal": {
     "kind": "structures",

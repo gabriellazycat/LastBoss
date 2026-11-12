@@ -34,19 +34,24 @@ static func _st(sim: Sim) -> Dictionary:
 
 ## Acúmulos de Peste no herói hh.
 static func peste_of(sim: Sim, hh: SimHero) -> int:
+	return int(floorf(peste_f(sim, hh) + 0.001))
+
+
+## Acúmulos fracionados: golpes rápidos (intervalo < 1 s) rendem fração de acúmulo, para o ritmo por segundo não mudar.
+static func peste_f(sim: Sim, hh: SimHero) -> float:
 	if not sim.cstate.has("plague"):
-		return 0
+		return 0.0
 	var pe: Dictionary = sim.cstate["plague"]["peste"]
 	if not pe.has(str(hh.pidx)):
-		return 0
-	return int(pe[str(hh.pidx)][0])
+		return 0.0
+	return float(pe[str(hh.pidx)][0])
 
 
-static func add_peste(sim: Sim, hh: SimHero, n: int) -> void:
+static func add_peste(sim: Sim, hh: SimHero, n: float) -> void:
 	var st := _st(sim)
 	var key := str(hh.pidx)
-	var e: Array = st["peste"].get(key, [0, 0.0])
-	e[0] = mini(int(st["cfg"][0]), int(e[0]) + n)
+	var e: Array = st["peste"].get(key, [0.0, 0.0])
+	e[0] = minf(float(st["cfg"][0]), float(e[0]) + n)
 	e[1] = sim.t
 	st["peste"][key] = e
 
@@ -116,6 +121,7 @@ static func _devour(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> void:
 	var frac := float(n) / float(need)
 	U.hp[beast] = minf(U.max_hp[beast], U.hp[beast] + k.d.fxv("heal", k.lv) * frac)
 	U.dmg[beast] *= 1.0 + k.d.fxv("dmg_bonus", k.lv) * frac
+	U.flags[beast] |= K.F_DEVOURED
 
 # ================================================================ ganchos (C6)
 # Chamados pelo Sim para os 4 donos, sempre. Só reaja às suas cartas/unidades (data.cards[sim.units.def[i]].owner) ou
@@ -240,7 +246,7 @@ static func unit_hit_mult(sim: Sim, i: int) -> float:
 	if not c.fx.has("peste_dmg"):
 		return 1.0
 	var hh: SimHero = sim.hit_hero if sim.hit_hero else sim.hero
-	return 1.0 + c.fxv("peste_dmg", int(sim.units.lvl[i])) * peste_of(sim, hh)
+	return 1.0 + c.fxv("peste_dmg", int(sim.units.lvl[i])) * peste_f(sim, hh)
 
 
 ## Depois do golpe da unidade i no herói (real = dano que entrou).
@@ -252,16 +258,17 @@ static func on_unit_hit(sim: Sim, i: int, real: float) -> void:
 	var c: CardDef = sim.data.cards[U.def[i]]
 	var hh: SimHero = sim.hit_hero if sim.hit_hero else sim.hero
 	if real > 0.0:
-		var n := int(c.fxv("peste", int(U.lvl[i])))
+		var n := float(int(c.fxv("peste", int(U.lvl[i]))))
 		if sim.t < float(st.get("bubo_t", -1.0)):
-			n += 1
+			n += 1.0
 		if (U.tags[i] & K.TAG_PACK) and sim.t < float(st.get("bite_t", -1.0)):
 			var dx: float = U.px[i] - float(st["bite_x"])
 			var dy: float = U.py[i] - float(st["bite_y"])
 			if dx * dx + dy * dy <= pow(float(st["bite_r"]), 2):
-				n += int(st["bite_n"])
-		if n > 0:
-			add_peste(sim, hh, n)
+				n += float(int(st["bite_n"]))
+		if n > 0.0:
+			# Golpe rápido = fração de acúmulo (a taxa por segundo é a do golpe de 1 s).
+			add_peste(sim, hh, n * minf(1.0, U.atk_int[i]))
 		if sim.t < float(st.get("hunt_t", -1.0)) and is_beast(c):
 			U.hp[i] = minf(U.max_hp[i], U.hp[i] + real * float(st["hunt_steal"]))
 	if c.id == "war_boar" and U.timer2[i] <= 0.0:
@@ -284,7 +291,7 @@ static func hero_damage_bonus(sim: Sim, hh: SimHero, tags: int, kind: int) -> fl
 	var key := str(hh.pidx)
 	if not pe.has(key):
 		return 0.0
-	return float(int(pe[key][0])) * float(st["cfg"][1])
+	return float(pe[key][0]) * float(st["cfg"][1])
 
 
 ## Unidade i vai morrer (cause = K.Death.*); os dados dela ainda estão em sim.units.

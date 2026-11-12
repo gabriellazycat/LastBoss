@@ -1,0 +1,170 @@
+<style>
+.vCr .name{top:250px!important;height:38px!important;left:30px!important;right:30px!important;font-size:23px!important;color:#fff6e2!important;text-shadow:0 1px 0 rgba(0,0,0,.55),0 0 6px rgba(0,0,0,.35)!important;z-index:8}
+.vCr .panel{top:262px!important}.vCr .type{top:296px!important}.vCr .rules{top:318px!important}
+.vCr .panel{background:linear-gradient(rgba(250,243,226,.78),rgba(246,236,214,.92))!important}
+.m-veteran .panel{background:linear-gradient(rgba(70,92,150,.82),rgba(28,42,90,.94))!important}.m-cursed .panel{background:linear-gradient(rgba(100,60,130,.82),rgba(36,12,52,.94))!important}
+.m-shadowy .panel{background:linear-gradient(rgba(70,70,80,.82),rgba(12,12,16,.94))!important}.m-cheap .panel{background:linear-gradient(rgba(200,243,232,.8),rgba(127,205,191,.94))!important}
+.m-explosive .panel{background:linear-gradient(rgba(241,200,138,.8),rgba(166,93,40,.94))!important}
+.sweep{position:absolute;inset:0;border-radius:10px;overflow:hidden;pointer-events:none;z-index:12}
+.sweep:after{content:"";position:absolute;top:-20%;bottom:-20%;width:70px;left:-90px;transform:rotate(18deg);background:linear-gradient(90deg,transparent,rgba(255,236,170,.6),rgba(180,240,255,.45),rgba(255,170,230,.4),transparent);animation:sw 3.4s ease-in-out infinite}
+@keyframes sw{0%{left:-90px}65%,100%{left:360px}}
+.card.lv2{box-shadow:0 8px 18px rgba(0,0,0,.55),0 0 0 2px #cfe0f2,0 0 34px 6px rgba(140,200,255,.7)}
+.card.lv3{box-shadow:0 8px 18px rgba(0,0,0,.55),0 0 0 2px #f2cf6a,0 0 44px 10px rgba(255,200,70,.85)}
+.m-veteran .rules,.m-cursed .rules,.m-shadowy .rules,.m-veteran .type,.m-cursed .type,.m-shadowy .type{color:#f1e8d6!important}
+.m-veteran .rules b,.m-cursed .rules b,.m-shadowy .rules b{color:#ffd98a!important}
+.rules .add{display:block;font-size:14px;color:#6e5038}.rules .up{color:#1f7a2b;font-weight:700}.m-veteran .up,.m-cursed .up,.m-shadowy .up{color:#7dffa0}
+.old{position:absolute;left:58px;top:8px;z-index:11;font-family:"IM Fell English SC",serif;font-size:18px;color:#fff;text-decoration:line-through;text-shadow:0 1px 3px #000}
+.quad{gap:34px 44px}
+</style>
+<main>
+ <h1>Arte cheia · carta com os mesmos efeitos</h1>
+ <p class="lede">A arte ocupa a carta toda (como na <b>C da v4</b>) e a moldura, a fita, o nível e os efeitos são os que você aprovou. Duas opções de arte cheia, e depois a opção 2 com todos os upgrades.</p>
+ <div id="rows"></div>
+</main>
+<script>
+
+function bindTilt(){document.querySelectorAll(".card").forEach(el=>{el.addEventListener("mousemove",e=>{const b=el.getBoundingClientRect();el.style.setProperty("--mx",(((e.clientX-b.left)/b.width)*2-1).toFixed(3));el.style.setProperty("--my",(((e.clientY-b.top)/b.height)*2-1).toFixed(3));});el.addEventListener("mouseleave",()=>{el.style.setProperty("--mx",0);el.style.setProperty("--my",0);});});}
+KIND.structure={c:"#7a5a2a",t:"Estrutura"};
+const K=CARDS[1];K.img="rat_king.png";
+const TXT={veteran:'<span class="add"><span class="up">+1 ▲</span> unidade por carta jogada</span>',cheap:'',explosive:'<span class="add">Ao morrer <b>explode</b>: +40 de dano</span>',cursed:'<span class="add">O dano aplica <b>Maldição</b></span>',shadowy:'<span class="add">Não conta para a queda do herói</span>'};
+let OID=0;
+const star=(x,y,r,f="#fff",o=.95)=>`<path d="M${x} ${y-r} Q${x} ${y} ${x+r} ${y} Q${x} ${y} ${x} ${y+r} Q${x} ${y} ${x-r} ${y} Q${x} ${y} ${x} ${y-r}Z" fill="${f}" opacity="${o}" filter="url(#bloom)"/>`;
+const rivet=(x,y,r=3)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#dfe8f0" stroke="#2a3440" stroke-width="1.1"/><circle cx="${x-r*.3}" cy="${y-r*.3}" r="${r*.35}" fill="#fff"/>`;
+const flame=(x,y,w,h,j,c1,c2)=>`<path d="M${x-w/2} ${y} C${x-w/2} ${y-h*.4} ${x-w*.2} ${y-h*.55} ${x+j} ${y-h} C${x+w*.2} ${y-h*.55} ${x+w/2} ${y-h*.4} ${x+w/2} ${y}Z" fill="url(#${c1})"/>`;
+function gradDefs(id){return `<defs>
+ <linearGradient id="fl${id}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffe27a"/><stop offset=".5" stop-color="#ff8a1f"/><stop offset="1" stop-color="#c2310c"/></linearGradient>
+ <linearGradient id="cu${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b1a6b"/><stop offset="1" stop-color="#b26ae0"/></linearGradient>
+ <linearGradient id="nv${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a5aa8"/><stop offset="1" stop-color="#15234f"/></linearGradient>
+ <radialGradient id="vg${id}" cx="50%" cy="60%" r="70%"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".7"/></radialGradient></defs>`;}
+function jag(H,seed,amp,base,step){const r=rng(seed);let P=[];const w=300,h=H;
+ for(let t=0;t<=w;t+=step)P.push([t,base+r()*amp]);for(let t=0;t<=h;t+=step)P.push([w-(base+r()*amp),t]);
+ for(let t=w;t>=0;t-=step)P.push([t,h-(base+r()*amp)]);for(let t=h;t>=0;t-=step)P.push([base+r()*amp,t]);
+ return "M"+P.map(p=>f1(p[0])+" "+f1(p[1])).join("L")+"Z";}
+function overlay(kind,va,H,wb,id){let s=gradDefs(id);const r=rng(7+va*13);
+ if(kind==="lv2"&&va===1){
+  s+=`<path d="${rough(3,3,294,H-6,5,.4,8)}" fill="none" stroke="url(#steel)" stroke-width="8" filter="url(#frameInk)"/><path d="${rough(9,9,282,H-18,6,.4,6)}" fill="none" stroke="#e8f4ff" stroke-width="1.6" opacity=".9"/>`;
+  [[12,12],[288,12],[12,H-12],[288,H-12],[150,5],[150,H-5],[5,H/2],[295,H/2]].forEach(p=>s+=rivet(p[0],p[1],3.2));
+  s+=`<rect x="11" y="11" width="278" height="${wb-11}" fill="rgba(110,170,255,.16)"/>`+star(40,40,9)+star(255,150,12)+star(88,205,7)+star(270,60,6)+star(150,30,5,"#cfe8ff")
+   +`<path d="M11 ${wb} L24 ${wb-38} L34 ${wb} Z M289 ${wb} L274 ${wb-46} L262 ${wb} Z M60 ${wb} L68 ${wb-26} L78 ${wb}Z" fill="#dff0ff" opacity=".55"/>`;
+ }
+ if(kind==="lv2"&&va===2){
+  const br=`<path d="M2 44 V10 Q2 2 10 2 H44 V14 H15 V44Z" fill="url(#steel)" stroke="#2a3440" stroke-width="1.4" filter="url(#frameInk)"/>${rivet(9,9,2.8)}`;
+  s+=br+`<g transform="translate(300 0) scale(-1 1)">${br}</g><g transform="translate(0 ${H}) scale(1 -1)">${br}</g><g transform="translate(300 ${H}) scale(-1 -1)">${br}</g>`;
+  s+=`<path d="M3 60 V${H-60} M297 60 V${H-60}" stroke="url(#steel)" stroke-width="6" stroke-linecap="round"/>`;
+  s+=`<g transform="translate(150 ${H-17})"><ellipse rx="26" ry="12" fill="url(#steel)" stroke="#2a3440" stroke-width="1.6"/>${rivet(-20,0,2.4)}${rivet(20,0,2.4)}<text y="5.5" text-anchor="middle" font-family="IM Fell English SC,serif" font-size="16" fill="#1c2733">II</text></g>`;
+  s+=`<rect x="11" y="11" width="278" height="${wb-11}" fill="rgba(110,170,255,.12)"/>`+star(250,40,10)+star(48,160,8);
+ }
+ if(kind==="lv3"&&va===1){
+  s+=`<path d="${rough(2,2,296,H-4,5,.4,8)}" fill="none" stroke="url(#giltShim)" stroke-width="9" filter="url(#frameInk)"/><path d="${rough(10,10,280,H-20,6,.4,6)}" fill="none" stroke="#fff0b0" stroke-width="1.6" opacity=".9"/>`;
+  s+=`<g transform="translate(150 6)"><path d="M-34 14 L-40 -12 L-20 4 L0 -22 L20 4 L40 -12 L34 14Z" fill="url(#giltShim)" stroke="#6a3f06" stroke-width="2" filter="url(#frameInk)"/><circle cx="0" cy="-22" r="4" fill="#e33a3a" stroke="#6a3f06"/><circle cx="-40" cy="-12" r="3.4" fill="#4fb3ff" stroke="#6a3f06"/><circle cx="40" cy="-12" r="3.4" fill="#4fb3ff" stroke="#6a3f06"/></g>`;
+  s+=star(36,38,11,"#fff6c8")+star(262,30,9,"#fff6c8")+star(250,170,13,"#fff6c8")+star(60,200,8,"#fff6c8")+star(150,120,6,"#fff6c8",.7);
+  s+=`<g transform="translate(150 ${H-17})"><ellipse rx="30" ry="12" fill="url(#giltShim)" stroke="#6a3f06" stroke-width="1.6"/><text y="5.5" text-anchor="middle" font-family="IM Fell English SC,serif" font-size="16" fill="#4a2a04">III</text></g>`;
+ }
+ if(kind==="lv3"&&va===2){
+  s+=`<path d="${rough(3,3,294,H-6,5,.4,8)}" fill="none" stroke="url(#giltShim)" stroke-width="6" filter="url(#frameInk)"/>`;
+  [[8,8,1,1],[292,8,-1,1],[8,H-8,1,-1],[292,H-8,-1,-1]].forEach(p=>s+=flourish(p[0],p[1],p[2],p[3],2.1,"url(#giltShim)",2.2));
+  for(let i=0;i<9;i++){const y=60+i*((H-130)/8);[[7,-1],[293,1]].forEach(q=>{s+=`<path d="M${q[0]} ${y} q${q[1]*14} -6 ${q[1]*18} -18 q${-q[1]*14} 2 ${-q[1]*18} 18z" fill="url(#giltShim)" stroke="#6a3f06" stroke-width=".8" opacity=".95"/>`;});}
+  s+=`<g transform="translate(150 4)"><path d="M-44 0 C-26 -10 -10 -8 0 -20 C10 -8 26 -10 44 0 C26 8 10 6 0 12 C-10 6 -26 8 -44 0Z" fill="url(#giltShim)" stroke="#6a3f06" stroke-width="1.6"/><path d="M0 -12 L8 0 L0 8 L-8 0Z" fill="#e33a3a" stroke="#6a3f06"/></g>`;
+  s+=star(40,44,11,"#fff6c8")+star(256,36,9,"#fff6c8")+star(262,190,10,"#fff6c8");
+ }
+ if(kind==="cheap"&&va===1){
+  s+=`<path d="${blobD(236,66,50,3,9,.25)}" fill="#19b5b0" opacity=".35" filter="url(#washBg)"/>`;
+  s+=`<g transform="translate(236 68) rotate(-14)" filter="url(#frameInk)" style="mix-blend-mode:multiply"><circle r="42" fill="rgba(25,181,176,.18)" stroke="#0a7a80" stroke-width="4.5"/><circle r="35" fill="none" stroke="#0a7a80" stroke-width="1.6"/><text y="-13" text-anchor="middle" font-family="IM Fell English SC,serif" font-size="15" fill="#0a7a80" letter-spacing="2">BARATO</text><text y="24" text-anchor="middle" font-family="IM Fell English SC,serif" font-size="42" fill="#0a7a80">−1</text></g>`;
+  s+=splat(236,68,56,26,"#0a7a80",5,1.6,.6);
+  [[38,214,7],[60,230,6],[48,240,8],[252,232,7],[270,214,6],[230,242,5]].forEach(c=>s+=`<circle cx="${c[0]}" cy="${c[1]}" r="${c[2]}" fill="#f0c14b" stroke="#8a5a14" stroke-width="1.4"/><circle cx="${c[0]-c[2]*.3}" cy="${c[1]-c[2]*.3}" r="${c[2]*.3}" fill="#fff6c8"/>`);
+  s+=star(30,70,8,"#d8fff8")+star(210,30,6,"#d8fff8")+star(120,60,5,"#d8fff8");
+ }
+ if(kind==="cheap"&&va===2){
+  s+=`<path d="${rough(16,16,268,wb-22,4,.5,6)}" fill="none" stroke="#0a7a80" stroke-width="2" stroke-dasharray="7 5" opacity=".9"/>`;
+  s+=`<path d="M262 -10 C270 10 250 20 258 36" fill="none" stroke="#7a5a2a" stroke-width="2.4"/>`;
+  s+=`<g transform="translate(258 78) rotate(10)" filter="url(#frameInk)"><path d="M-22 -30 L22 -30 L30 -18 L30 40 L-30 40 L-30 -18Z" fill="#f6edd6" stroke="#0a7a80" stroke-width="3"/><circle cx="0" cy="-21" r="4.4" fill="#2a3a3a"/><text y="-4" text-anchor="middle" font-family="IM Fell English SC,serif" font-size="9" fill="#0a7a80" letter-spacing="1.5">PREÇO</text><text y="30" text-anchor="middle" font-family="IM Fell English SC,serif" font-size="34" fill="#0a7a80">−1</text></g>`;
+  [[40,226,8],[62,238,6],[250,238,7],[28,244,5]].forEach(c=>s+=`<circle cx="${c[0]}" cy="${c[1]}" r="${c[2]}" fill="#f0c14b" stroke="#8a5a14" stroke-width="1.4"/><circle cx="${c[0]-c[2]*.3}" cy="${c[1]-c[2]*.3}" r="${c[2]*.3}" fill="#fff6c8"/>`);
+  s+=star(40,60,8,"#d8fff8")+star(200,40,6,"#d8fff8");
+ }
+ if(kind==="veteran"&&va===1){
+  s+=`<g filter="url(#frameInk)"><path d="M196 -4 L246 -4 L304 58 L304 104Z" fill="url(#nv${id})" stroke="#ffd98a" stroke-width="2.4"/><path d="M204 -4 L240 -4 L304 66 L304 90" fill="none" stroke="#ffd98a" stroke-width="1.2" stroke-dasharray="4 3"/></g>`;
+  s+=`<g transform="translate(262 36) rotate(45)"><path d="M-24 -4 L-12 -12 L0 -4 L12 -12 L24 -4 L24 3 L12 -5 L0 3 L-12 -5 L-24 3Z" fill="#ffd98a"/><path d="M-24 8 L-12 0 L0 8 L12 0 L24 8 L24 15 L12 7 L0 15 L-12 7 L-24 15Z" fill="#ffd98a"/></g>`;
+  s+=`<path d="M11 ${wb-60} L289 ${wb-120} L289 ${wb-96} L11 ${wb-36}Z" fill="rgba(190,215,255,.2)"/>`+star(54,52,10,"#dbe8ff")+star(240,170,9,"#dbe8ff")+star(80,200,6,"#dbe8ff");
+ }
+ if(kind==="veteran"&&va===2){
+  for(let i=0;i<3;i++)s+=`<path transform="translate(246 ${24+i*17})" d="M0 0 L16 -11 L32 0 L32 8 L16 -3 L0 8Z" fill="#ffd98a" stroke="#6a4a10" stroke-width="1.2" filter="url(#frameInk)"/>`;
+  s+=`<path d="M232 14 L284 14 L284 92 L258 76 L232 92Z" fill="url(#nv${id})" opacity=".92" stroke="#ffd98a" stroke-width="1.8" filter="url(#frameInk)" style="mix-blend-mode:normal"/>`;
+  for(let i=0;i<3;i++)s+=`<path transform="translate(244 ${26+i*15})" d="M0 0 L14 -9 L28 0 L28 7 L14 -2 L0 7Z" fill="#ffd98a" stroke="#6a4a10" stroke-width="1"/>`;
+  s+=`<rect x="11" y="11" width="278" height="${wb-11}" fill="rgba(40,70,150,.2)"/>`+star(50,60,10,"#dbe8ff")+star(150,40,6,"#dbe8ff")+star(250,190,9,"#dbe8ff");
+ }
+ if(kind==="explosive"&&va===1){
+  for(let i=0;i<16;i++){const x=16+i*17.5+(r()-.5)*8,h=34+r()*58;s+=`<g filter="url(#washBg)" opacity=".95">${flame(x,wb-4,26+r()*14,h,(r()-.5)*10,"fl"+id)}</g>`;}
+  s+=`<g filter="url(#bloom)" fill="#ffd27a">${(()=>{let p="";for(let i=0;i<46;i++){const x=r()*290+5,y=r()*(wb-20),l=6+r()*12;p+=wedge(x,y,x+l*.38,y-l,1+r()*1.8);}return `<path d="${p}"/>`;})()}</g>`;
+  s+=`<path fill-rule="evenodd" d="M-6 -6 H306 V${H+6} H-6Z ${jag(H,3,13,3,9)}" fill="#1a0c06" opacity=".92" filter="url(#frameInk)"/><path d="${jag(H,3,13,3,9)}" fill="none" stroke="#ff7a1a" stroke-width="2.4" filter="url(#bloom)"/>`;
+  s+=`<rect x="11" y="11" width="278" height="${wb-11}" fill="url(#vg${id})" opacity=".7"/>`;
+ }
+ if(kind==="explosive"&&va===2){
+  s+=`<path d="M14 18 C60 -12 120 26 172 6 S246 -10 262 26" fill="none" stroke="#5a3d22" stroke-width="5" stroke-linecap="round"/><path d="M14 18 C60 -12 120 26 172 6 S246 -10 262 26" fill="none" stroke="#c9a26a" stroke-width="1.6" stroke-dasharray="3 5"/>`;
+  s+=`<circle cx="262" cy="26" r="20" fill="#fff3a0" opacity=".85" filter="url(#bloom)"/>`+sparks(262,26,16,6,34,"#ffb03a",9,2.4)+star(262,26,15,"#fff");
+  const cr=(x,y,n,dx,dy)=>{let d=`M${x} ${y}`;for(let i=0;i<n;i++){x+=dx*(.6+r()*.8);y+=dy*(.6+r()*.8)+(r()-.5)*22;d+=`L${f1(x)} ${f1(y)}`;}return d;};
+  [cr(11,wb-20,6,26,-14),cr(289,wb-60,6,-26,-12),cr(11,60,4,24,16),cr(289,140,5,-22,18)].forEach(d=>s+=`<path d="${d}" fill="none" stroke="#ff7a1a" stroke-width="5" filter="url(#bloom)" opacity=".9"/><path d="${d}" fill="none" stroke="#fff3a0" stroke-width="1.6"/>`);
+  for(let i=0;i<5;i++)s+=`<circle cx="${30+i*60}" cy="${wb-30-i%2*20}" r="${22+r()*10}" fill="rgba(60,40,30,.5)" filter="url(#soft)"/>`;
+  s+=`<rect x="11" y="11" width="278" height="${wb-11}" fill="rgba(255,120,30,.12)"/>`;
+ }
+ if(kind==="cursed"&&va===1){
+  s+=`<path d="M-4 -4 H304 V16 C280 26 270 12 240 22 S190 12 160 24 S110 10 80 22 S30 14 -4 20Z" fill="url(#cu${id})" filter="url(#frameInk)"/>`;
+  for(let i=0;i<10;i++){const x=12+i*30+(r()-.5)*10,l=30+r()*(i%3===0?110:60),w=3.5+r()*2.5;s+=`<path d="M${x-w} 12 L${x-w} ${l} A${w} ${w} 0 0 0 ${x+w} ${l} L${x+w} 12Z" fill="url(#cu${id})" filter="url(#frameInk)"/><circle cx="${x-w*.3}" cy="${l-2}" r="1.6" fill="#f0c7ff" opacity=".7"/>`;}
+  s+=`<g transform="translate(150 ${wb/2+10})" opacity=".5" filter="url(#bloom)" fill="none" stroke="#e6a8ff" stroke-width="2"><circle r="70"/><circle r="58" stroke-dasharray="3 6"/><path d="M0 -70 L61 35 L-61 35Z"/><path d="M0 70 L61 -35 L-61 -35Z"/></g>`;
+  s+=`<rect x="11" y="11" width="278" height="${wb-11}" fill="rgba(110,20,160,.25)"/>`;
+ }
+ if(kind==="cursed"&&va===2){
+  const cr=(x,y,n,dx,dy)=>{let d=`M${x} ${y}`;for(let i=0;i<n;i++){x+=dx*(.6+r()*.8);y+=dy*(.6+r()*.8)+(r()-.5)*26;d+=`L${f1(x)} ${f1(y)}`;}return d;};
+  [cr(150,2,6,6,32),cr(2,120,5,34,12),cr(298,90,5,-34,18),cr(60,H-2,2,10,-30),cr(240,H-2,2,-12,-30)].forEach(d=>s+=`<path d="${d}" fill="none" stroke="#b44bff" stroke-width="6" filter="url(#bloom)" opacity=".9"/><path d="${d}" fill="none" stroke="#f3d0ff" stroke-width="1.6"/>`);
+  s+=`<g transform="translate(250 56)" filter="url(#bloom)"><path d="M-26 0 Q0 -22 26 0 Q0 22 -26 0Z" fill="#2a0a3c" stroke="#e6a8ff" stroke-width="2.4"/><circle r="8" fill="#e6a8ff"/><circle r="3.4" fill="#2a0a3c"/></g>`;
+  for(let i=0;i<4;i++)s+=`<path d="M${40+i*70} ${wb-6} C${20+i*70} ${wb-50} ${70+i*70} ${wb-80} ${44+i*70} ${wb-130}" fill="none" stroke="#d9a0ff" stroke-width="3" opacity=".5" filter="url(#soft2)"/>`;
+  s+=`<rect x="11" y="11" width="278" height="${wb-11}" fill="rgba(90,0,140,.28)"/>`;
+ }
+ if(kind==="shadowy"&&va===1){
+  s+=`<rect x="11" y="11" width="278" height="${wb-11}" fill="url(#vg${id})"/>`;
+  for(let i=0;i<9;i++)s+=`<circle cx="${r()*290+5}" cy="${wb-10-r()*90}" r="${28+r()*30}" fill="rgba(8,8,16,${.5+r()*.3})" filter="url(#soft)"/>`;
+  for(let i=0;i<7;i++){const x=20+i*42;s+=`<path d="M${x} ${wb} C${x-24} ${wb-50} ${x+28} ${wb-90} ${x-6} ${wb-150}" fill="none" stroke="rgba(220,224,245,.5)" stroke-width="3.4" stroke-linecap="round" filter="url(#soft2)"/>`;}
+  s+=`<g filter="url(#bloom)">${[[84,70],[218,110]].map(e=>`<ellipse cx="${e[0]}" cy="${e[1]}" rx="6" ry="3.4" fill="#e8ecff"/><ellipse cx="${e[0]+16}" cy="${e[1]}" rx="6" ry="3.4" fill="#e8ecff"/>`).join("")}</g>`;
+ }
+ if(kind==="shadowy"&&va===2){
+  s+=`<path d="${rough(4,4,292,H-8,3,.6,8)}" fill="none" stroke="#dfe4ff" stroke-width="2.4" opacity=".85" filter="url(#bloom)"/>`;
+  s+=splat(40,40,60,40,"#0a0a10",11,5,.95)+splat(262,wb-30,70,50,"#0a0a10",12,5,.95)+splat(250,40,40,26,"#0a0a10",13,4,.9)+splat(40,wb-40,50,30,"#0a0a10",14,4,.9);
+  s+=`<path d="M11 ${wb} C30 ${wb-60} 70 ${wb-40} 100 ${wb-100} C120 ${wb-60} 150 ${wb-30} 190 ${wb-90} C220 ${wb-50} 250 ${wb-70} 289 ${wb-110} V${wb} Z" fill="#06060a" opacity=".85" filter="url(#washBg)"/>`;
+  s+=`<g filter="url(#bloom)"><path d="M232 20 a22 22 0 1 0 22 28 a17 17 0 1 1 -22 -28Z" fill="#eef0ff"/></g>`;
+ }
+ return s;}
+
+function ribbon(kind,rar){const kc=KIND[kind].c,y=250,hh=38;const gilt=(rar==="rare"||rar==="legendary")?"url(#gilt)":"none";let s="";
+ s+='<path d="M30 '+(y+5)+' L6 '+(y+8)+' L16 '+(y+hh/2+7)+' L6 '+(y+hh+6)+' L30 '+(y+hh+3)+'Z" fill="'+mix(kc,"#000000",.35)+'" filter="url(#frameInk)"/><path d="M270 '+(y+5)+' L294 '+(y+8)+' L284 '+(y+hh/2+7)+' L294 '+(y+hh+6)+' L270 '+(y+hh+3)+'Z" fill="'+mix(kc,"#000000",.35)+'" filter="url(#frameInk)"/>';
+ s+='<path d="M22 '+y+' Q150 '+(y-7)+' 278 '+y+' L278 '+(y+hh)+' Q150 '+(y+hh-7)+' 22 '+(y+hh)+'Z" fill="'+kc+'" filter="url(#gemWash)"/><path d="M22 '+y+' Q150 '+(y-7)+' 278 '+y+' L278 '+(y+hh)+' Q150 '+(y+hh-7)+' 22 '+(y+hh)+'Z" fill="none" stroke="#1e0e06" stroke-width="1.3" filter="url(#frameInk)"/>';
+ s+='<path d="M26 '+(y+3.5)+' Q150 '+(y-3.5)+' 274 '+(y+3.5)+'" fill="none" stroke="#fff2d8" stroke-width="1" opacity=".45"/>';
+ if(gilt!=="none")s+='<path d="M22 '+(y+hh)+' Q150 '+(y+hh-7)+' 278 '+(y+hh)+'" fill="none" stroke="'+gilt+'" stroke-width="1.6"/>';
+ return '<svg class="frame" viewBox="0 0 300 420" width="300" height="420" style="z-index:7">'+s+'</svg>';}
+function Y(c,o){o=Object.assign({v:"C",scale:1},o);const mods=o.mods||[],lvl=o.level||1;
+ const c2=Object.assign({},c);let old=0;
+ if(mods.includes("cheap")){old=c.cost;c2.cost=c.cost-1;}
+ c2.text=c.text+mods.filter(m=>TXT[m]).map(m=>TXT[m]).join("");
+ if(mods.includes("veteran"))c2.text=c2.text.replace("libera 6",'libera <span class="up">7 ▲</span>');
+ o.img=c.img;o.mods=[];o.level=1;
+ let h=slot(c2,o);
+ const wb=310;let ov="";
+ const kinds=[];if(lvl>1)kinds.push("lv"+lvl);mods.forEach(m=>kinds.push(m));
+ kinds.forEach(k=>{const va=(k==="veteran"||k==="explosive")?1:2;ov+='<svg class="ov" viewBox="0 0 300 420" width="300" height="420" style="position:absolute;left:0;top:0;z-index:7;overflow:visible;pointer-events:none">'+overlay(k,va,420,k==="explosive"?252:wb,"y"+(OID++))+'</svg>';});
+ if(o.rib)h=h.replace('<div class="gem">',ribbon(c.kind,c.rar)+'<div class="gem">');
+ h=h.replace('<div class="gem">',ov+'<div class="gem">');
+ h=h.replace('class="card ','class="card '+(o.rib?"vCr ":"")+(lvl>1?"lv"+lvl+" ":"")+(mods[0]?"m-"+mods[0]+" ":""));
+ if(old)h=h.replace('<div class="gem">','<div class="gem cheapg"><span class="old">'+old+'</span>');
+ if(lvl===3)h=h.replace('<div class="shine">','<div class="sweep"></div><div class="shine">');
+ return h;}
+const cell=(h,cap)=>'<div class="cell">'+h+'<div class="vcap">'+cap+'</div></div>';
+const G={scale:320/300},SM={scale:.5,compact:true};
+const mk=(o)=>Y(K,Object.assign({},G,o));
+document.getElementById("rows").innerHTML=
+'<section><h2>1 · Duas opções de arte cheia</h2><div class="quad" style="margin-top:20px">'+
+ cell(mk({}),"<b>Opção 1</b> · como a C da v4: arte até a base, título em nanquim sobre um painel de papel translúcido")+
+ cell(mk({rib:1}),"<b>Opção 2</b> · arte cheia com a <b>fita dobrada</b> do nome por cima e o texto no painel embaixo")+
+ cell(mk({rib:1,level:3,mods:["explosive"]}),"<b>Opção 2</b> com nível 3 + Explosivo (a carta queimada se sobressai)")+'</div></section>'+
+'<section><h2>2 · Opção 2 com os upgrades</h2><div class="quad" style="margin-top:20px">'+
+ [{level:2},{level:3},{mods:["cheap"]},{mods:["veteran"]},{mods:["explosive"]},{mods:["cursed"]},{mods:["shadowy"]}].map((o,i)=>cell(mk(Object.assign({rib:1},o)),["Nível 2","Nível 3","Barato","Veterano","Explosivo","Amaldiçoado (no jogo, as rachaduras são um shader animado)","Sombrio (no jogo, as manchas são um shader animado)"][i])).join("")+'</div></section>'+
+'<section><h2>3 · Na mão a 150 px</h2><div class="hand"><div class="lbl">Opção 1 e opção 2</div>'+[{},{rib:1},{rib:1,level:3},{rib:1,mods:["explosive"]},{rib:1,mods:["cursed"]}].map(o=>Y(K,Object.assign({},SM,o))).join("")+'</div></section>';
+bindTilt();
+</script></body></html>

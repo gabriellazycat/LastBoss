@@ -75,11 +75,6 @@ func play(i: int, x: float, y: float) -> int:
 	return K.Block.OK
 
 
-func sacrifice(i: int) -> bool:
-	queue.append({"k": "sac", "i": i})
-	return true
-
-
 func choose(k: int) -> bool:
 	queue.append({"k": "choose", "o": k})
 	return true
@@ -132,8 +127,6 @@ func _exec(j: Dictionary) -> void:
 	match str(j["k"]):
 		"play":
 			await _do_play(j)
-		"sac":
-			await _do_sac(j)
 		"choose":
 			await _do_choose(j)
 		"route":
@@ -387,25 +380,6 @@ func _why_not(i: int, cid: String, x: float, y: float, wp: Vector2, on_screen: b
 		s.valid_target(s.hand[i], g.x, g.z)]
 
 
-func _do_sac(j: Dictionary) -> void:
-	var s: Sim = m.sim
-	var i := int(j["i"])
-	if s.offers.size() > 0 or i >= s.hand.size() or s.hand[i] == null:
-		return
-	var n0: int = s.stats["sacrifices"]
-	var cp := _card_point(i)
-	_move(_win(cp))
-	await _frames(2)
-	_click(_win(cp), MOUSE_BUTTON_RIGHT)
-	await _frames(3)
-	_unpin()
-	var ok: bool = s.stats["sacrifices"] > n0
-	_count("sacrificar", ok)
-	if not ok and s.sacrifice_ready() and not m.hud.hold_offers and not m.world.cine_active():
-		_find("sacrificar", "botão direito na carta %d não sacrificou" % (i + 1), "sacrifício pronto; carta=%s, livre=%s" % [
-			s.hand[i].def.id if i < s.hand.size() and s.hand[i] else "-", s.sacrifice_free(i)])
-
-
 func _do_choose(j: Dictionary) -> void:
 	var s: Sim = m.sim
 	if s.offers.is_empty():
@@ -425,35 +399,33 @@ func _do_choose(j: Dictionary) -> void:
 	while read_t < want:
 		await m.get_tree().process_frame
 		read_t += get_process_delta_time()
-	var target: Control = m.hud.offer_skip if k == Sim.SKIP else null
-	if k != Sim.SKIP and k < m.hud.offer_slots.size():
-		target = m.hud.offer_slots[k].get_meta("card", null)
-	if target == null:
+	# Loja (livro-caixa, 11/11/2026): a linha do item; no passo do baralho, a carta da lista e depois Confirmar.
+	# Opção fora da área visível da lista: a pessoa gira a roda do mouse sobre ela até a opção aparecer
+	# (entrada real; achado de 11/11: o bot clicava fora da tela).
+	for _w in 12:
+		if s.offers.is_empty() or str(s.offers[0]) != key:
+			break
+		var need := _scroll_need(k)
+		if need == 0:
+			break
+		var sp := _scroll_point()
+		_move(_win(sp))
+		await _frames(1)
+		_mouse(_win(sp), MOUSE_BUTTON_WHEEL_DOWN if need > 0 else MOUSE_BUTTON_WHEEL_UP, true)
+		_mouse(_win(sp), MOUSE_BUTTON_WHEEL_DOWN if need > 0 else MOUSE_BUTTON_WHEEL_UP, false)
+		await _frames(3)
+	var pts: Array = m.hud.offer_click_points(k)
+	if pts.is_empty():
 		_find("oferta", "opção %d da oferta sem controle na tela" % k, "%d opções no Sim" % s.offers[0]["options"].size())
 	else:
-		# Opção fora da área visível da rolagem (escolha de carta do deck com 3 linhas): a pessoa gira a roda do
-		# mouse sobre a lista até a carta aparecer (entrada real; achado de 11/11: o bot clicava fora da tela).
-		var sc: ScrollContainer = m.hud.offer_scroll
-		for _w in 12:
-			if not is_instance_valid(target) or not is_instance_valid(sc) or not sc.is_visible_in_tree():
-				break
-			var tc: Vector2 = target.get_global_transform() * (target.size * 0.5)
-			var vr := sc.get_global_rect()
-			if vr.grow(-8.0).has_point(tc):
-				break
-			var sp: Vector2 = sc.get_global_rect().get_center()
-			_move(_win(sp))
-			await _frames(1)
-			_mouse(_win(sp), MOUSE_BUTTON_WHEEL_DOWN if tc.y > vr.end.y else MOUSE_BUTTON_WHEEL_UP, true)
-			_mouse(_win(sp), MOUSE_BUTTON_WHEEL_DOWN if tc.y > vr.end.y else MOUSE_BUTTON_WHEEL_UP, false)
-			await _frames(3)
 		for attempt in 2:
-			if not is_instance_valid(target):
+			pts = m.hud.offer_click_points(k)
+			if pts.is_empty():
 				break
-			var p: Vector2 = target.get_global_transform() * (target.size * 0.5)
-			_click(_win(p))
-			await _frames(4)
-			if s.offers.is_empty() or str(s.offers[0]) != key or not is_instance_valid(target):
+			for p in pts:
+				_click(_win(p))
+				await _frames(4)
+			if s.offers.is_empty() or str(s.offers[0]) != key:
 				break
 			if attempt == 0:
 				_count("oferta: primeiro clique ignorado (UX)", false)
@@ -465,7 +437,9 @@ func _do_choose(j: Dictionary) -> void:
 		if cause.begins_with("interface"):
 			_find("oferta", "clique na opção %d (%s) não escolheu" % [k, s.offers[0]["source"]], cause)
 		# A pessoa tenta outra coisa: pular, ou a primeira opção que entrar.
-		_click(_win(m.hud.offer_skip.get_global_transform() * (m.hud.offer_skip.size * 0.5)))
+		var sk: Array = m.hud.offer_click_points(Sim.SKIP)
+		if sk.size() > 0:
+			_click(_win(sk[0]))
 		await _frames(4)
 		if s.offers.size() > 0 and str(s.offers[0]) == key:
 			_tap(KEY_1)
@@ -473,7 +447,32 @@ func _do_choose(j: Dictionary) -> void:
 
 
 func _offer_ready() -> bool:
-	return m.hud.offer_slots.size() > 0 and m.hud.offer_skip.is_visible_in_tree()
+	return m.hud.offer_ready()
+
+
+## Rolagem da oferta: -1 para cima, 1 para baixo, 0 já à vista (lista do passo do baralho ou rolagem da oferta comum).
+func _scroll_need(k: int) -> int:
+	if k == Sim.SKIP:
+		return 0
+	if m.hud.ledger.is_visible_in_tree():
+		return m.hud.ledger.scroll_need(k)
+	var sc: ScrollContainer = m.hud.offer_scroll
+	if k >= m.hud.offer_slots.size() or not is_instance_valid(sc) or not sc.is_visible_in_tree():
+		return 0
+	var target: Control = m.hud.offer_slots[k].get_meta("card", null)
+	if target == null:
+		return 0
+	var tc: Vector2 = target.get_global_transform() * (target.size * 0.5)
+	var vr := sc.get_global_rect()
+	if vr.grow(-8.0).has_point(tc):
+		return 0
+	return 1 if tc.y > vr.end.y else -1
+
+
+func _scroll_point() -> Vector2:
+	if m.hud.ledger.is_visible_in_tree():
+		return m.hud.ledger.scroll_point()
+	return m.hud.offer_scroll.get_global_rect().get_center()
 
 
 ## Sem mexer no jogo: a opção seria aceita? (só preço e evento; o resto o Sim aceita).

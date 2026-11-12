@@ -13,7 +13,7 @@ class Ctx:
 	var d: CardDef
 	var lv := 1
 	var smult := 1.0   # Pacto: spell_damage_mult
-	var vet := 1.0     # Veterano em feitiço: efeito maior (dano ou duração)
+	var vet := 1.0     # multiplicador de efeito de feitiço (fixo em 1.0 desde que o Veterano saiu dos feitiços)
 	var curse := 0     # Amaldiçoado em feitiço: 1 maldição nos heróis atingidos
 
 
@@ -23,8 +23,6 @@ static func ctx(sim: Sim, c: Sim.CardInst) -> Ctx:
 	k.d = c.def
 	k.lv = c.level
 	k.smult = float(sim.deck_rules.get("spell_damage_mult", 1.0))
-	if c.def.is_spell and c.has_mod(K.M_VETERAN):
-		k.vet += float(sim.data.modifiers["veteran"]["p"].get("spell_effect", 0.0))
 	k.curse = 1 if c.def.is_spell and c.has_mod(K.M_CURSED) else 0
 	return k
 
@@ -60,6 +58,8 @@ static func spawn_card_units(sim: Sim, k: Ctx, x: float, y: float) -> void:
 	var c := k.c
 	var lv := k.lv
 	var n := d.count_at(lv) + (1 if c.has_mod(K.M_VETERAN) else 0)
+	if d.tags & K.TAG_PACK:
+		n += int(sim.rv("pack_extra"))   # Ninhada Dobrada (relíquia)
 	var hpm := d.mult(lv) if d.scales("hp") else 1.0
 	if d.type == "structure":
 		hpm *= 1.0 + sim.rv("structure")
@@ -111,7 +111,7 @@ static func targets(sim: Sim, target: String, x: float, y: float, r: float) -> A
 		"area":
 			return sim.heroes_near(x, y, r)
 		"nearest":
-			var near: Array = sim.heroes_near(x, y, r) if sim.group_mode() else []
+			var near: Array = sim.heroes_near(x, y, r) if sim.multi_heroes() else []
 			return [near[0]] if near.size() > 0 else [sim.hero]
 	return [sim.hero]
 

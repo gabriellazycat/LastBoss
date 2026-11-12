@@ -6,7 +6,7 @@ signal closed
 signal changed(key: String)
 
 const TABS := ["audio", "video", "game", "controls", "looks"]
-const CONTROLS := ["card", "place", "sacrifice", "cursor", "map", "altar", "zoom", "pause", "speed"]
+const CONTROLS := ["card", "place", "cursor", "map", "altar", "zoom", "pause", "speed"]
 const COL_W := {"CTL_": 230.0, "CTLK_": 320.0, "CTLP_": 160.0}
 
 var tab := "audio"

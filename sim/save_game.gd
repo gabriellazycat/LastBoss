@@ -9,7 +9,7 @@ const PATH := "user://run.save"
 static var current := PATH
 const VERSION := 5                  # 5: vilões no lugar dos Pactos; 4: baralho com descarte (10/11/2026)
 const _V3 := 3                  # 3: run em 3 atos, disputas e relíquias (09/11/2026); 2: estrada em rede de nós
-const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script", "followers", "hit_hero"]
+const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script", "followers", "hit_hero", "helper"]
 const PARTS := ["units", "hero", "road", "arena"]
 
 
@@ -33,7 +33,7 @@ static func _p(path: String) -> String:
 static func _ci(c) -> Variant:
 	if c == null:
 		return null
-	return {"uid": c.uid, "id": c.def.id, "mods": c.mods, "first_mod": c.first_mod, "level": c.level}
+	return {"uid": c.uid, "id": c.def.id, "mods": c.mods, "first_mod": c.first_mod, "level": c.level, "discount": c.discount}
 
 
 static func save(sim: Sim, path := "") -> bool:
@@ -50,6 +50,8 @@ static func save(sim: Sim, path := "") -> bool:
 	for part in PARTS:
 		d["__" + part] = _dump(sim.get(part))
 	d["__followers"] = sim.followers.map(func(h): return _dump(h))
+	if sim.helper != null:
+		d["__helper"] = _dump(sim.helper)   # Herói Ajudante em disputa (11/11/2026): volta igual na retomada
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
 		return false
@@ -93,6 +95,7 @@ static func load_run(data: GameData, path := "") -> Sim:
 		ci.mods = c["mods"]
 		ci.first_mod = int(c.get("first_mod", 0))
 		ci.level = int(c.get("level", 1))
+		ci.discount = int(c.get("discount", 0))
 		by_uid[ci.uid] = ci
 		cards.append(ci)
 	for k in d:
@@ -114,5 +117,14 @@ static func load_run(data: GameData, path := "") -> Sim:
 			fh.set(k, fd[k])
 		fh.H = data.hero_of(sim.party_class(fh.pidx), sim.phase_hp_mult, sim.phase_dmg_mult)
 		sim.followers.append(fh)
+	# Herói Ajudante: refeito com a classe da disputa. Sem ele (save antigo), a disputa termina como falha.
+	if d.has("__helper") and str(sim.contest.get("type", "")) == "helper":
+		var ah := SimHero.new()
+		ah.setup(sim)
+		for k in d["__helper"]:
+			ah.set(k, d["__helper"][k])
+		ah.H = data.hero_of(str(sim.contest.get("cls", "escudeiro")), sim.phase_hp_mult, sim.phase_dmg_mult)
+		ah.AI = ah.H["ai"]
+		sim.helper = ah
 	sim.rebuild_rfx()
 	return sim

@@ -6,7 +6,7 @@ extends RefCounted
 ## O jogador escolhe o ramo (`plan_to`); o herói anda pela rota já decidida, que cresce ligação por ligação.
 ## Coordenadas no plano (x, y); o herói anda no sentido -y.
 
-const LOC_TYPES := ["shop", "tavern", "fountain", "ritual", "shrine", "bridge", "event"]
+const LOC_TYPES := ["shop", "tavern", "fountain", "ritual", "shrine", "bridge", "event", "helper"]
 enum LocState { ACTIVE, USED, DESTROYED, WON }
 
 var nodes: Array = []       # {"row", "lane", "pos", "out": [ligação], "in": [ligação], "loc"}; 0 = início, último = covil
@@ -270,6 +270,7 @@ func _place_locations(rng: RandomNumberGenerator, rules: Dictionary, R: Dictiona
 			best = types
 			if err <= 0.0:
 				break
+	_place_helpers(rng, R, best, members)
 	var L: Dictionary = rules["locations"]
 	for ni in range(1, nodes.size() - 1):
 		var t: String = best[ni]
@@ -278,6 +279,52 @@ func _place_locations(rng: RandomNumberGenerator, rules: Dictionary, R: Dictiona
 		nodes[ni]["loc"] = locations.size()
 		locations.append({"type": t, "pos": nodes[ni]["pos"], "node": ni, "leg": e, "branch": 0, "d": legs[e]["len"][0],
 			"state": LocState.ACTIVE, "r": float(L[t]["radius"]), "t": 0.0, "hp": hp, "max_hp": hp, "entered": false})
+	_mark_hard(rng, R)
+
+
+## Disputa difícil (11/11/2026): `hard_contests` locais de disputa por ato ganham "hard" (caveira no mapa).
+## Vencer as 3 etapas dele dá também 1 de 3 relíquias (Sim._resolve_contest); as metas sobem `hard_goal_mult`.
+## Fileiras diferentes quando dá, para que rotas diferentes tenham a sua.
+func _mark_hard(rng: RandomNumberGenerator, R: Dictionary) -> void:
+	var cand: Array = []
+	for k in locations.size():
+		if locations[k]["type"] in ["tavern", "fountain", "ritual", "shrine", "bridge"]:
+			cand.append(k)
+	var rows_used: Array = []
+	for n in int(R.get("hard_contests", 0)):
+		var pick: Array = cand.filter(func(k): return not rows_used.has(nodes[locations[k]["node"]]["row"]))
+		if pick.is_empty():
+			pick = cand
+		if pick.is_empty():
+			return
+		var k: int = pick[rng.randi_range(0, pick.size() - 1)]
+		cand.erase(k)
+		rows_used.append(nodes[locations[k]["node"]]["row"])
+		locations[k]["hard"] = true
+
+
+## Herói Ajudante (11/11/2026): `helpers` por ato, cada um num nó de uma fileira com 2+ nós (um ramo de
+## bifurcação) entre `helper_rows`. Troca um local comum: Loja e Santuário ficam onde estão (as contas de
+## Santuário e Loja por rota não mudam). Sorteio pelo rng da estrada: a mesma semente dá o mesmo mapa.
+func _place_helpers(rng: RandomNumberGenerator, R: Dictionary, types: Dictionary, members: Array) -> void:
+	var want := int(R.get("helpers", 0))
+	var hr: Array = R.get("helper_rows", [2, 4])
+	for k in want:
+		var cand: Array = []
+		for row in range(maxi(0, int(hr[0])), mini(rows - 1, int(hr[1])) + 1):
+			if members[row].size() < 2 or row == shop_row:
+				continue
+			var has_helper := false
+			for ni in members[row]:
+				has_helper = has_helper or types.get(ni, "") == "helper"
+			if has_helper:
+				continue
+			for ni in members[row]:
+				if not types.get(ni, "") in ["shop", "shrine", "helper"]:
+					cand.append(ni)
+		if cand.is_empty():
+			return
+		types[cand[rng.randi_range(0, cand.size() - 1)]] = "helper"
 
 
 func _weighted(rng: RandomNumberGenerator, w: Dictionary, used: Array) -> String:
