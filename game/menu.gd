@@ -18,6 +18,8 @@ var veil: ColorRect
 var title_box: VBoxContainer
 var main_buttons: VBoxContainer
 var continue_btn: Button
+var new_run_btn: Button
+var title_art: Control
 var deck_screen: Control
 var deck_row: HBoxContainer
 var preview_head: Label
@@ -103,8 +105,7 @@ func _build_title() -> void:
 		# Folha presa com duas fitas; o título a pincel e as opções em fita crepe.
 		var sheet := PanelContainer.new()
 		UiDiario.dress(sheet, "paper", 46.0, {"grime": 0.5, "seed": 0.21, "shadow": 12.0, "rough": 3.0})
-		sheet.rotation_degrees = -1.2
-		sheet.draw.connect(_tapes.bind(sheet))
+		sheet.rotation_degrees = 0.0   # 13/11/2026: folha com moldura dourada, reta e sem fita crepe
 		sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(sheet)
 		sheet.add_child(title_box)
@@ -152,12 +153,19 @@ func _build_title() -> void:
 		var doodle := VBoxContainer.new()
 		doodle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		doodle.alignment = BoxContainer.ALIGNMENT_END
-		var sk := TextureRect.new()
-		sk.texture = UiDiario.card_tex("lord_skull")
-		sk.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		sk.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		sk.custom_minimum_size = Vector2(170, 170)
-		doodle.add_child(sk)
+		# Retrato pintado do vilão da última run (o "eu" da folha); sem ele, a caveira a nanquim.
+		var pt := UiParch.portrait("villain_" + meta.villain) if meta else null
+		if pt != null:
+			title_art = UiParch.framed_art(pt, Vector2(210, 200), "frame_legend")
+			title_art.size_flags_horizontal = Control.SIZE_SHRINK_END
+			doodle.add_child(title_art)
+		else:
+			var sk := TextureRect.new()
+			sk.texture = UiDiario.card_tex("lord_skull")
+			sk.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			sk.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			sk.custom_minimum_size = Vector2(170, 170)
+			doodle.add_child(sk)
 		var me := Label.new()
 		me.text = "UI_TITLE_ME"
 		me.add_theme_font_override("font", UiDiario.font("hand"))
@@ -171,7 +179,7 @@ func _build_title() -> void:
 	else:
 		title_box.add_child(main_buttons)
 	continue_btn = _menu_btn("UI_CONTINUE", func(): continue_run.emit())
-	_menu_btn("UI_NEW_RUN", func(): show_screen("decks"))
+	new_run_btn = _menu_btn("UI_NEW_RUN", func(): show_screen("decks"))
 	_menu_btn("UI_COLLECTION", func(): show_screen("collection"))
 	_menu_btn("UI_COMPENDIUM", func(): show_screen("compendium"))
 	_menu_btn("UI_SETTINGS", func(): show_screen("settings"))
@@ -187,8 +195,8 @@ func _menu_btn(txt: String, cb: Callable) -> Button:
 	b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	b.add_theme_font_size_override("font_size", 24)
 	if UiSkins.diario():
-		b.custom_minimum_size = Vector2(0, 50)
-		UiDiario.menu_button(b, 23, txt == "UI_CONTINUE")
+		b.custom_minimum_size = Vector2(320, 52)
+		UiDiario.menu_button(b, 24, txt == "UI_CONTINUE")
 	elif UiSkins.covil():
 		UiCovil.menu_button(b, 26)
 	b.pressed.connect(cb)
@@ -198,6 +206,9 @@ func _menu_btn(txt: String, cb: Callable) -> Button:
 
 
 func _build_decks() -> void:
+	if UiSkins.diario():
+		_build_villains_parch()
+		return
 	deck_screen = VBoxContainer.new()
 	deck_screen.add_theme_constant_override("separation", 18)
 	add_child(deck_screen)
@@ -257,11 +268,10 @@ func _combo_lines(id: String, size: int, col: Color, w: float, font: Font = null
 
 
 func _fill_decks() -> void:
-	UiKit.clear(deck_row)
 	if UiSkins.diario():
-		_fill_contracts()
-		_fill_preview(_default_villain())
+		_fill_villains_parch()
 		return
+	UiKit.clear(deck_row)
 	for id in data.villain_ids:
 		var p := UiKit.panel(UiKit.BG, UiKit.EDGE, 16)
 		p.custom_minimum_size = Vector2(380, 300)
@@ -395,6 +405,9 @@ func _fill_rare() -> void:
 
 
 func _build_group() -> void:
+	if UiSkins.diario():
+		_build_group_parch()
+		return
 	group_screen = VBoxContainer.new()
 	group_screen.add_theme_constant_override("separation", 18)
 	add_child(group_screen)
@@ -440,6 +453,9 @@ func _build_group() -> void:
 func _fill_group() -> void:
 	if pending_villain == "" or not meta.villains.has(pending_villain):
 		pending_villain = _default_villain()
+	if UiSkins.diario():
+		_fill_group_parch()
+		return
 	group_deck.text = tr("UI_GROUP_VILLAIN").format({"name": tr("DECK_" + pending_villain)})
 	if pending_phase < 0 or not meta.phase_open(pending_phase):
 		pending_phase = _next_phase()
@@ -543,6 +559,9 @@ func show_screen(s: String) -> void:
 	settings.visible = false
 	if s == "title":
 		continue_btn.visible = SaveGame.exists()
+		if UiSkins.diario():
+			# A opção principal é a fita vermelha: Continuar quando há run salva; senão, Nova run.
+			UiDiario.menu_button(new_run_btn, 24, not continue_btn.visible)
 		(continue_btn if continue_btn.visible else main_buttons.get_child(1)).grab_focus.call_deferred()
 	elif s == "decks":
 		_fill_decks()
@@ -696,6 +715,8 @@ func _process_desk(delta: float) -> void:
 	footer.text = VERSION + "   ·   " + tr("UI_MENU_KEYS")
 	footer.position = Vector2(clampf(vs.x * 0.06, 28.0, 120.0), vs.y - 34)
 	footer.add_theme_color_override("font_color", Color(0.85, 0.78, 0.66))
+	# As folhas grandes (vilão, grupo, coleção) cobrem o rodapé em 1280x720: ele só aparece no título.
+	footer.visible = screen == "title"
 
 
 ## Duas tiras de fita crepe nos cantos de cima da folha.
@@ -850,4 +871,434 @@ func _wanted_poster(i: int, n: int, P: Dictionary, mult: float, cls := "escudeir
 		l.text = spec[0]
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(l)
+	return pnl
+
+
+# ---------------------------------------------------------------- telas em pergaminho (rodada de UI 13/11/2026)
+# Escolha do vilão e do grupo de heróis refeitas no kit das cartas (UiParch): uma folha com moldura dourada,
+# lista à esquerda e o detalhe do item em foco à direita; texto corrido em Alegreya Sans de 17-19 (o antigo, em
+# datilografada de 14-15, não se lia em 1280x720). Os botões mantêm os textos-chave (UI_PICK_VILLAIN,
+# UI_START_RUN) que o --menutest procura.
+
+var v_tabs := {}             # id do vilão → botão da lista
+var v_focus := ""            # vilão em foco no detalhe
+var v_art: Control
+var v_name: Label
+var v_status: Label
+var v_rules: VBoxContainer
+var v_combos: VBoxContainer
+var v_pick: Button
+var g_villain_art: Control
+var g_villain_name: Label
+var g_phase_title: Label
+var g_phase_desc: RichTextLabel
+var g_rewards: HBoxContainer
+var g_heroes: HBoxContainer
+var g_legend: VBoxContainer
+var g_count: Label
+
+const P_TEXT_W := 560.0
+const LOCK := ""
+
+
+## Texto com palavras-chave (as mesmas dicas das cartas), em Alegreya Sans a tinta.
+func _rich(text: String, size: int, col := UiParch.INK, w := 0.0, center := false) -> RichTextLabel:
+	var l := Tips.label(text, size, col, w, center)
+	UiParch.style_label(l, "body", size, col)
+	l.add_theme_font_override("bold_font", UiParch.font("bold"))
+	l.add_theme_font_size_override("bold_font_size", size)
+	return l
+
+
+## Folha de pergaminho com moldura dourada, que sobe da mesa como as outras telas.
+func _sheet(margin := 30.0) -> PanelContainer:
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", UiParch.box("gold", margin))
+	p.set_meta("paper", true)
+	return p
+
+
+## Retrato pintado (assets/ui/portraits/); sem ele, o desenho antigo.
+func _art_for(id: String, kind: String) -> Texture2D:
+	var t := UiParch.portrait(kind + "_" + id)
+	if t != null:
+		return t
+	return villain_tex(data, id) if kind == "villain" else UiDiario.card_tex("hero_" + id)
+
+
+func _paper_btn(key: String, w: float, h: float, size := 22) -> Button:
+	var b := Button.new()
+	b.text = key
+	b.custom_minimum_size = Vector2(w, h)
+	UiParch.paper_button(b, size)
+	b.mouse_entered.connect(func(): b.grab_focus())
+	return b
+
+
+func _build_villains_parch() -> void:
+	deck_screen = _sheet(30.0)
+	add_child(deck_screen)
+	var root := VBoxContainer.new()
+	root.add_theme_constant_override("separation", 12)
+	deck_screen.add_child(root)
+	root.add_child(UiParch.ribbon_title(tr("UI_CHOOSE_VILLAIN"), 34))
+	var sub := _rich(tr("UI_CHOOSE_VILLAIN_SUB"), 18, UiParch.INK_SOFT, 1060.0, true)
+	sub.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	root.add_child(sub)
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 26)
+	root.add_child(body)
+	# Lista dos vilões: retrato, nome e situação (liberado, bloqueado, último escolhido).
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 12)
+	list.custom_minimum_size = Vector2(350, 0)
+	body.add_child(list)
+	deck_row = HBoxContainer.new()   # compat: o caminho das outras peles limpa esta linha
+	for id in data.villain_ids:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(350, 118)
+		UiParch.paper_button(b, 20)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 14)
+		row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		row.offset_left = 10
+		row.offset_top = 9
+		row.offset_right = -10
+		row.offset_bottom = -9
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(row)
+		var art := UiParch.framed_art(_art_for(id, "villain"), Vector2(104, 100))
+		art.name = "Art"
+		row.add_child(art)
+		var col := VBoxContainer.new()
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		col.add_theme_constant_override("separation", 2)
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(col)
+		var nm := UiParch.label(tr("DECK_" + id), "title", 23, UiParch.BLOOD)
+		nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(nm)
+		var st := UiParch.label("", "body", 16, UiParch.INK_SOFT)
+		st.name = "Status"
+		st.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(st)
+		b.focus_entered.connect(_focus_villain.bind(id))
+		b.mouse_entered.connect(func(): b.grab_focus())
+		b.pressed.connect(func():
+			if meta.villains.has(id):
+				pending_villain = id
+				show_screen("group"))
+		list.add_child(b)
+		v_tabs[id] = b
+	# Detalhe do vilão em foco.
+	var det := VBoxContainer.new()
+	det.add_theme_constant_override("separation", 10)
+	det.custom_minimum_size = Vector2(880, 0)
+	body.add_child(det)
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 24)
+	det.add_child(top)
+	v_art = Control.new()
+	v_art.custom_minimum_size = Vector2(300, 288)
+	top.add_child(v_art)
+	var info := VBoxContainer.new()
+	info.add_theme_constant_override("separation", 6)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(info)
+	info.add_child(UiParch.label(tr("UI_VILLAIN_TAG"), "italic", 18, UiParch.INK_SOFT))
+	v_name = UiParch.label("", "title", 44, UiParch.BLOOD)
+	info.add_child(v_name)
+	v_status = UiParch.label("", "bold", 17, UiParch.INK_SOFT)
+	info.add_child(v_status)
+	info.add_child(UiParch.divider(P_TEXT_W))
+	v_rules = VBoxContainer.new()
+	v_rules.add_theme_constant_override("separation", 8)
+	info.add_child(v_rules)
+	det.add_child(UiParch.label(tr("UI_VILLAIN_COMBOS"), "title", 22, UiParch.INK))
+	v_combos = VBoxContainer.new()
+	v_combos.add_theme_constant_override("separation", 4)
+	det.add_child(v_combos)
+	det.add_child(UiParch.divider(880))
+	preview_head = UiParch.label("", "title", 21, UiParch.INK)
+	det.add_child(preview_head)
+	preview_row = HBoxContainer.new()
+	preview_row.add_theme_constant_override("separation", 6)
+	det.add_child(preview_row)
+	var btns := HBoxContainer.new()
+	btns.add_theme_constant_override("separation", 16)
+	root.add_child(btns)
+	var back := _paper_btn("UI_BACK", 180, 52)
+	back.pressed.connect(func(): show_screen("title"))
+	btns.add_child(back)
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btns.add_child(gap)
+	v_pick = Button.new()
+	v_pick.text = "UI_PICK_VILLAIN"
+	v_pick.custom_minimum_size = Vector2(400, 60)
+	UiParch.ribbon_button(v_pick, "monster", 26)
+	v_pick.mouse_entered.connect(func(): v_pick.grab_focus())
+	v_pick.pressed.connect(func():
+		pending_villain = v_focus
+		show_screen("group"))
+	btns.add_child(v_pick)
+
+
+func _fill_villains_parch() -> void:
+	for id in v_tabs:
+		var b: Button = v_tabs[id]
+		var open: bool = meta.villains.has(id)
+		var st := b.find_child("Status", true, false) as Label
+		if not open:
+			st.text = LOCK + tr("UI_VILLAIN_LOCKED").format({"n": _phase_unlocking(id)})
+		elif id == meta.villain:
+			st.text = tr("UI_VILLAIN_LAST")
+		else:
+			st.text = tr("UI_VILLAIN_READY")
+		st.add_theme_color_override("font_color", UiParch.INK_SOFT if open else UiParch.BLOOD)
+		(b.find_child("Art", true, false) as Control).modulate = Color.WHITE if open else Color(0.55, 0.52, 0.5)
+	_focus_villain(_default_villain())
+
+
+## Detalhe do vilão: retrato grande, passiva e vida dos heróis, combos, baralho inicial e o botão de escolher.
+func _focus_villain(id: String) -> void:
+	if v_focus == id and v_art.get_child_count() > 0:
+		return
+	v_focus = id
+	for k in v_tabs:
+		var on: bool = k == id
+		(v_tabs[k] as Button).add_theme_stylebox_override("normal", UiParch.button_box("hover" if on else "normal"))
+	var open: bool = meta.villains.has(id)
+	for c in v_art.get_children():
+		c.queue_free()
+	var art := UiParch.framed_art(_art_for(id, "villain"), v_art.custom_minimum_size, "frame_legend")
+	art.modulate = Color.WHITE if open else Color(0.6, 0.57, 0.55)
+	v_art.add_child(art)
+	v_name.text = tr("DECK_" + id)
+	v_status.text = tr("UI_VILLAIN_READY") if open else LOCK + tr("UI_VILLAIN_LOCKED").format({"n": _phase_unlocking(id)})
+	v_status.add_theme_color_override("font_color", UiParch.GOOD if open else UiParch.BLOOD)
+	UiKit.clear(v_rules)
+	var lines: PackedStringArray = UiKit.deck_rules_text(data, id).split("\n", false)
+	for i in lines.size():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var mark := UiParch.label("◆", "bold", 15, UiParch.GOLD)
+		mark.custom_minimum_size = Vector2(16, 0)
+		mark.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		mark.offset_top = 0
+		row.add_child(mark)
+		row.add_child(_rich(lines[i].trim_prefix("• "), 19, UiParch.INK, P_TEXT_W - 30.0))
+		v_rules.add_child(row)
+	UiKit.clear(v_combos)
+	for i in 3:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var n := UiParch.label(str(i + 1), "heavy", 18, UiParch.BLOOD)
+		n.custom_minimum_size = Vector2(18, 0)
+		row.add_child(n)
+		row.add_child(_rich(tr("VCOMBO_%s_%d" % [id, i + 1]), 17, UiParch.INK, 840.0))
+		v_combos.add_child(row)
+	_fill_preview(id)
+	v_pick.disabled = not open
+	v_pick.text = "UI_PICK_VILLAIN" if open else LOCK + tr("UI_VILLAIN_LOCKED").format({"n": _phase_unlocking(id)})
+
+
+# ---- grupo de heróis
+
+func _build_group_parch() -> void:
+	group_screen = _sheet(30.0)
+	add_child(group_screen)
+	var root := VBoxContainer.new()
+	root.add_theme_constant_override("separation", 12)
+	group_screen.add_child(root)
+	root.add_child(UiParch.ribbon_title(tr("UI_CHOOSE_GROUP"), 34))
+	# Fases da campanha em abas; a escolhida na fita vermelha.
+	phase_row = HBoxContainer.new()
+	phase_row.add_theme_constant_override("separation", 8)
+	phase_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	root.add_child(phase_row)
+	# Cartão da fase: nome, descrição e recompensas; à direita, o vilão escolhido.
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", UiParch.box("ink", 16.0))
+	card.set_meta("paper", true)
+	root.add_child(card)
+	var ch := HBoxContainer.new()
+	ch.add_theme_constant_override("separation", 20)
+	card.add_child(ch)
+	var pc := VBoxContainer.new()
+	pc.add_theme_constant_override("separation", 6)
+	pc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ch.add_child(pc)
+	g_phase_title = UiParch.label("", "title", 32, UiParch.BLOOD)
+	pc.add_child(g_phase_title)
+	g_phase_desc = _rich("", 19, UiParch.INK, 960.0)
+	pc.add_child(g_phase_desc)
+	g_rewards = HBoxContainer.new()
+	g_rewards.add_theme_constant_override("separation", 10)
+	pc.add_child(g_rewards)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 4)
+	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	ch.add_child(vb)
+	var vt := UiParch.label(tr("UI_GROUP_VS"), "italic", 16, UiParch.INK_SOFT)
+	vt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(vt)
+	g_villain_art = Control.new()
+	g_villain_art.custom_minimum_size = Vector2(124, 100)
+	g_villain_art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vb.add_child(g_villain_art)
+	g_villain_name = UiParch.label("", "title", 20, UiParch.BLOOD)
+	g_villain_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(g_villain_name)
+	# A fila de heróis.
+	var qh := HBoxContainer.new()
+	qh.add_theme_constant_override("separation", 14)
+	root.add_child(qh)
+	g_count = UiParch.label("", "title", 24, UiParch.INK)
+	g_count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	qh.add_child(g_count)
+	var qs := _rich(tr("UI_CHOOSE_GROUP_SUB"), 17, UiParch.INK_SOFT, 900.0)
+	qs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	qh.add_child(qs)
+	g_heroes = HBoxContainer.new()
+	g_heroes.add_theme_constant_override("separation", 10)
+	g_heroes.alignment = BoxContainer.ALIGNMENT_CENTER
+	root.add_child(g_heroes)
+	# Legenda das classes que aparecem nesta fase (o que cada uma faz).
+	g_legend = VBoxContainer.new()
+	g_legend.add_theme_constant_override("separation", 6)
+	root.add_child(g_legend)
+	var btns := HBoxContainer.new()
+	btns.add_theme_constant_override("separation", 16)
+	root.add_child(btns)
+	var back := _paper_btn("UI_BACK", 180, 52)
+	back.pressed.connect(func(): show_screen("decks"))
+	btns.add_child(back)
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btns.add_child(gap)
+	var go := Button.new()
+	go.name = "Go"
+	go.text = "UI_START_RUN"
+	go.custom_minimum_size = Vector2(400, 62)
+	UiParch.ribbon_button(go, "monster", 28)
+	go.mouse_entered.connect(func(): go.grab_focus())
+	go.pressed.connect(func():
+		meta.villain = pending_villain
+		meta.save()
+		deck_chosen.emit(pending_villain))
+	btns.add_child(go)
+
+
+func _fill_group_parch() -> void:
+	if pending_phase < 0 or not meta.phase_open(pending_phase):
+		pending_phase = _next_phase()
+	# Abas das fases.
+	UiKit.clear(phase_row)
+	for ph in data.phases:
+		var k := int(ph["id"])
+		var won: bool = meta.phases_won.has(k)
+		var gift: bool = str(ph.get("unlock_villain", "")) != "" or ph.get("rare_choice", false)
+		var label := tr("UI_PHASE_TUTORIAL") if ph.get("tutorial", false) else tr("UI_PHASE").format({"n": k})
+		var b := _paper_btn(label + ("  ✓" if won else ("  ★" if gift else "")), 150, 46, 20)
+		b.disabled = not meta.phase_open(k)
+		if k == pending_phase:
+			UiParch.ribbon_button(b, "monster", 20)
+		if b.disabled:
+			b.text = LOCK + b.text
+			b.tooltip_text = tr("UI_PHASE_LOCKED")
+		b.pressed.connect(func():
+			pending_phase = k
+			_fill_group())
+		phase_row.add_child(b)
+	var ph: Dictionary = data.phase(pending_phase)
+	g_phase_title.text = tr(str(ph["key"]))
+	Tips.set_text(g_phase_desc, tr("PHASED_%d" % pending_phase))
+	UiKit.clear(g_rewards)
+	var chips: Array = []
+	if str(ph.get("unlock_villain", "")) != "":
+		chips.append(tr("UI_PHASE_UNLOCKS_V").format({"p": tr("DECK_" + str(ph["unlock_villain"]))}))
+	if int(ph.get("reward_souls", 0)) > 0:
+		chips.append(tr("UI_PHASE_SOULS").format({"n": int(ph["reward_souls"])}))
+	if ph.get("rare_choice", false):
+		chips.append(tr("UI_PHASE_RARE"))
+	if meta.phases_won.has(pending_phase):
+		chips.append("✓ " + tr("UI_PHASE_WON"))
+	for t in chips:
+		var chip := PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(UiParch.GOLD, 0.16)
+		sb.border_color = Color(UiParch.GOLD, 0.8)
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(12)
+		sb.content_margin_left = 12
+		sb.content_margin_right = 12
+		sb.content_margin_top = 3
+		sb.content_margin_bottom = 4
+		chip.add_theme_stylebox_override("panel", sb)
+		chip.add_child(UiParch.label(("" if t.begins_with("✓") else "★ ") + t, "bold", 16, UiParch.INK))
+		g_rewards.add_child(chip)
+	# Vilão escolhido.
+	for c in g_villain_art.get_children():
+		c.queue_free()
+	g_villain_art.add_child(UiParch.framed_art(_art_for(pending_villain, "villain"), g_villain_art.custom_minimum_size))
+	g_villain_name.text = tr("DECK_" + pending_villain)
+	# Fila.
+	var P: Dictionary = data.rules["party"]
+	var party: Array = ph.get("party", [])
+	var n := party.size()
+	g_count.text = tr("UI_GROUP_QUEUE").format({"n": n})
+	var mult := float(data.villain(pending_villain)["rules"].get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0)) \
+			* float(ph.get("villain_hp", {}).get(pending_villain, 1.0))
+	UiKit.clear(g_heroes)
+	var cw := clampf(floorf((1240.0 - 10.0 * (n - 1)) / maxf(n, 1)), 150.0, 200.0)
+	for i in n:
+		g_heroes.add_child(_hero_card(i, P, mult, str(party[i]), cw))
+	UiKit.clear(g_legend)
+	var seen: Array = []
+	for cls in party:
+		if seen.has(cls):
+			continue
+		seen.append(cls)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		row.alignment = BoxContainer.ALIGNMENT_BEGIN
+		var nm := UiParch.label(tr("HERO_" + str(cls)), "title", 20, UiParch.BLOOD)
+		nm.custom_minimum_size = Vector2(130, 0)
+		nm.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(nm)
+		row.add_child(_rich(tr("HEROD_" + str(cls)), 18, UiParch.INK, 1080.0))
+		g_legend.add_child(row)
+	if ph.get("group", false):
+		g_legend.add_child(_rich("★ " + tr("UI_GROUP_TOGETHER"), 18, UiParch.BLOOD, 1220.0))
+
+
+## Carta de um herói da fila: ordem, retrato, classe, vida, golpe e habilidades.
+func _hero_card(i: int, P: Dictionary, mult: float, cls: String, w: float) -> PanelContainer:
+	var pnl := PanelContainer.new()
+	pnl.add_theme_stylebox_override("panel", UiParch.box("ink", 10.0))
+	pnl.set_meta("paper", true)
+	pnl.custom_minimum_size = Vector2(w, 0)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 3)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pnl.add_child(v)
+	var ord := UiParch.label(tr("UI_HERO_ORD").format({"k": i + 1}), "heavy", 16, UiParch.INK_SOFT)
+	ord.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(ord)
+	var art := UiParch.framed_art(_art_for(cls, "hero"), Vector2(w - 20.0, roundf((w - 20.0) * 0.8)))
+	v.add_child(art)
+	var cl := UiParch.label(tr("HERO_" + cls), "title", 21, UiParch.BLOOD)
+	cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(cl)
+	var H := data.hero_of(cls)
+	var hp := int(round(float(H["hp"]) * pow(float(P["step"]), i) * mult))
+	var dm := int(round(float(H["damage"]) * pow(float(P["step"]), i)))
+	for spec in [[tr("UI_GROUP_HP").format({"n": hp}), UiParch.HP], [tr("UI_GROUP_DMG").format({"n": dm}), UiParch.INK],
+			[tr("UI_GROUP_SKILL0") if i == 0 else (tr("UI_GROUP_SKILL1") if i == 1 else tr("UI_GROUP_SKILLS").format({"n": i})), UiParch.INK_SOFT]]:
+		var l := UiParch.label(spec[0], "bold", 17, spec[1])
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(l)
+	Tips.attach(pnl, func(): return [Tips.entry(tr("HERO_" + cls), tr("HEROD_" + cls))])
 	return pnl

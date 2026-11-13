@@ -1,0 +1,113 @@
+[
+ {
+  "id": "gold_bait",
+  "pt": "Isca de Ouro",
+  "en": "Gold Bait",
+  "type": "route",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "target": "point",
+   "max_detour": 30.0
+  }
+ },
+ {
+  "id": "burn_village",
+  "pt": "Incêndio",
+  "en": "Wildfire",
+  "type": "route",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "target": "location",
+   "dps": 40.0,
+   "duration": 10.0
+  }
+ },
+ {
+  "id": "soul_collector",
+  "pt": "Coletor de Almas",
+  "en": "Soul Collector",
+  "type": "lair",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "elixir_regen": 0.4,
+   "duration": 30.0
+  }
+ },
+ {
+  "id": "forbidden_library",
+  "pt": "Biblioteca Proibida",
+  "en": "Forbidden Library",
+  "type": "lair",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "hand": 1,
+   "duration": 40.0
+  }
+ },
+ {
+  "id": "dark_forge",
+  "pt": "Forja Sombria",
+  "en": "Dark Forge",
+  "type": "lair",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "monster_hp": 0.25,
+   "duration": 30.0
+  }
+ },
+ {
+  "id": "rabid_rats",
+  "pt": "Ratos Raivosos",
+  "en": "Rabid Rats",
+  "type": "swarm",
+  "villain": "base",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "swarm",
+  "fx": {
+   "pack_bonus": 0.04,
+   "pack_cap": 1.0
+  }
+ },
+ {
+  "id": "pack_call",
+  "pt": "Chamado do Bando",
+  "en": "Pack Call",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "",
+  "fx": {
+   "duration": 6.0,
+   "damage": 0.5,
+   "speed": 0.5
+  }
+ },
+ {
+  "id": "oil_splash",
+  "pt": "Balde de Óleo",
+  "en": "Oil Bucket",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "",
+  "fx": {
+   "soaked": 10.0
+  }
+ }
+]

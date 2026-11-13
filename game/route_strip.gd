@@ -108,6 +108,9 @@ func _draw() -> void:
 	var road := sim.road
 	var pulse := 0.5 + 0.5 * sin(t * 6.0)
 	var hp := _hero_point()
+	# Pele Diário (13/11/2026): as cores e traços do mapa pergaminho (tinta, caminho feito em vermelho).
+	var parch := UiSkins.diario()
+	var c_out := Color(Minimap.INK, 0.9) if parch else Color(0.04, 0.02, 0.06, 0.85)
 	for e in road.legs.size():
 		var g: Dictionary = road.legs[e]
 		if g["closed"] == 0:
@@ -116,23 +119,30 @@ func _draw() -> void:
 		var pa := _node_point(a)
 		var pb := _node_point(g["b"])
 		var col := ROAD
+		var past := Minimap.HERO_COL if parch else PAST
 		if g["chosen"] == 0:
-			col = PAST if pb.y >= hp.y else ROAD
+			col = past if pb.y >= hp.y else (Color(Minimap.INK, 0.75) if parch else ROAD)
 		elif road.plan.get(a, -1) == e and road.on_route_node(a):
-			col = PLAN
+			col = Color("c08a2e") if parch else PLAN
 		elif road.nodes[a]["out"].size() > 1 and road.plan.has(a):
-			col = Color(0.4, 0.36, 0.32)
+			col = Color(Minimap.INK, 0.28) if parch else Color(0.4, 0.36, 0.32)
+		elif parch:
+			col = Color(Minimap.INK, 0.6)
 		# Contorno escuro: a estrada desenhada lê como um mapa, não como uma linha solta.
-		draw_line(pa, pb, Color(0.04, 0.02, 0.06, 0.85), 7.0)
-		draw_line(pa, pb, col, 4.0)
+		if parch:
+			draw_line(pa, pb, Color(Minimap.F1, 0.9), 6.0, true)
+			draw_line(pa, pb, col, 3.0, true)
+		else:
+			draw_line(pa, pb, c_out, 7.0)
+			draw_line(pa, pb, col, 4.0)
 		if g["chosen"] == 0 and pa.y >= hp.y and pb.y < hp.y:
-			draw_line(pa, hp, PAST, 4.0)
+			draw_line(pa, hp, past, 3.0 if parch else 4.0, parch)
 	# Próxima bifurcação sem escolha: distância até ela; com o herói esperando, as opções pulsam.
 	var fork := road.next_fork_node()
 	if fork >= 0:
 		var fp := _node_point(fork)
 		var d := maxf(road.s_of_node(fork) - sim.hero.s, 0.0) if road.s_of_node(fork) >= 0.0 else 0.0
-		_text(fp.y, tr("UI_ROUTE_CHOOSE") if sim.route_wait else tr("UI_STRIP_FORK").format({"m": int(d)}), Color(0.6, 0.92, 1.0), 13)
+		_text(fp.y, tr("UI_ROUTE_CHOOSE") if sim.route_wait else tr("UI_STRIP_FORK").format({"m": int(d)}), Minimap.ACC if parch else Color(0.6, 0.92, 1.0), 13)
 		for e in road.nodes[fork]["out"]:
 			var op := _node_point(road.legs[e]["b"])
 			var k := 1.0 if sim.route_wait else 0.5
@@ -150,8 +160,10 @@ func _draw() -> void:
 			c = c.darkened(0.6)
 		if target == "location" and sim._burn_targets().has(i):
 			draw_circle(p, 11.0 + 2.0 * pulse, Color(1.0, 0.55, 0.2, 0.3 + 0.3 * pulse))
-		draw_circle(p, rr + 1.5, Color(0, 0, 0, 0.8))
+		draw_circle(p, rr + 1.5, c_out)
 		draw_circle(p, rr, c)
+		if parch and active and not _behind(loc):
+			draw_circle(p + Vector2(-rr * 0.3, -rr * 0.3), rr * 0.3, Color(1, 1, 1, 0.45))
 		if loc.get("burn", false) and active:
 			draw_arc(p, rr + 2.5, 0, TAU, 18, Color(1.0, 0.45, 0.1), 1.5)
 		if loc["state"] == SimRoad.LocState.DESTROYED:
@@ -162,23 +174,26 @@ func _draw() -> void:
 	# Covil e progresso.
 	var lp := _lair_point()
 	var is_lair: bool = sim.act + 1 >= sim.acts()
-	draw_circle(lp, 12.5, Color(0, 0, 0, 0.8))
+	draw_circle(lp, 12.5, c_out)
 	if not is_lair:
 		# Portão de passagem: dois pilares e uma verga, em vez do círculo do covil.
-		var gc := UiKit.GOLD if UiSkins.covil() else Color(0.95, 0.8, 0.5)
+		var gc := UiKit.GOLD if UiSkins.covil() else (Color("f0cf7a") if parch else Color(0.95, 0.8, 0.5))
 		draw_rect(Rect2(lp + Vector2(-9, -8), Vector2(4, 16)), gc)
 		draw_rect(Rect2(lp + Vector2(5, -8), Vector2(4, 16)), gc)
 		draw_rect(Rect2(lp + Vector2(-10, -10), Vector2(20, 4)), gc)
 	elif UiSkins.covil():
 		UiCovil.draw_rarity(self, lp, 12.0, UiKit.GOLD)
+	elif parch:
+		draw_circle(lp, 11.0, Minimap.ACC)
+		draw_arc(lp, 11.5, 0, TAU, 24, Color("f0cf7a"), 2.0, true)
 	else:
 		draw_circle(lp, 11.0, Color(0.8, 0.2, 0.9))
 		draw_arc(lp, 12.0, 0, TAU, 24, Color(0.95, 0.75, 1.0), 1.5)
-	_text(lp.y, "%d%%" % int(_progress() * 100.0), Color(0.95, 0.75, 1.0), 13)
+	_text(lp.y, "%d%%" % int(_progress() * 100.0), Minimap.INK if parch else Color(0.95, 0.75, 1.0), 13)
 	# Herói.
-	draw_circle(hp, 8.0, Color(0, 0, 0, 0.8))
-	draw_circle(hp, 6.5, Minimap.HERO_COL if UiSkins.covil() else Color(0.45, 0.72, 1.0))
-	draw_arc(hp, 9.5, 0, TAU, 24, Color(1, 1, 1, 0.85), 2.0)
+	draw_circle(hp, 8.0, c_out)
+	draw_circle(hp, 6.5, Minimap.HERO_COL if (UiSkins.covil() or parch) else Color(0.45, 0.72, 1.0))
+	draw_arc(hp, 9.5, 0, TAU, 24, Color("f0cf7a") if parch else Color(1, 1, 1, 0.85), 2.0, true)
 	# Nome do local sob o mouse.
 	if hover_loc >= 0:
 		var loc: Dictionary = road.locations[hover_loc]
@@ -186,9 +201,9 @@ func _draw() -> void:
 		var s := road.s_of_node(int(loc["node"]))
 		if loc["state"] == SimRoad.LocState.ACTIVE and s >= 0.0 and s > sim.hero.s:
 			txt = tr("UI_STRIP_DIST").format({"name": txt, "m": int(s - sim.hero.s)})
-		_text(_loc_point(loc).y, txt, UiKit.TEXT, 14)
+		_text(_loc_point(loc).y, txt, Minimap.INK if parch else UiKit.TEXT, 14)
 	elif hover_lair:
-		_text(lp.y + 18.0, tr("UI_STRIP_LAIR" if is_lair else "UI_STRIP_ACT_END").format({"n": sim.act + 1, "m": int(maxf(road.total_length() - sim.hero.s, 0.0))}), UiKit.TEXT, 14)
+		_text(lp.y + 18.0, tr("UI_STRIP_LAIR" if is_lair else "UI_STRIP_ACT_END").format({"n": sim.act + 1, "m": int(maxf(road.total_length() - sim.hero.s, 0.0))}), Minimap.INK if parch else UiKit.TEXT, 14)
 
 
 func _progress() -> float:
@@ -202,6 +217,22 @@ func _text(y: float, s: String, col: Color, fs: int) -> void:
 		font = UiCovil.font("bold")
 		fs = roundi(fs * UiCovil.TEXT_SCALE)
 	var at := Vector2(size.x + LABEL_GAP, clampf(y, fs * 0.5, size.y - fs * 0.5) + fs * 0.35)
+	if UiSkins.diario():
+		# Etiqueta de papel com traço de tinta (o rótulo solto em azul não lia sobre o chão).
+		font = UiParch.font("bold")
+		fs += 1
+		var tw2 := font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var tag := StyleBoxFlat.new()
+		tag.bg_color = Color(Minimap.BG, 0.96)
+		tag.border_color = Color(Minimap.INK, 0.8)
+		tag.set_border_width_all(1)
+		tag.set_corner_radius_all(4)
+		tag.anti_aliasing = true
+		tag.shadow_color = Color(0, 0, 0, 0.3)
+		tag.shadow_size = 3
+		draw_style_box(tag, Rect2(at + Vector2(-7, -fs * 0.98), Vector2(tw2 + 14, fs * 1.42)))
+		draw_string(font, at, s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+		return
 	if UiSkins.covil():
 		var tw := font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var pill := StyleBoxFlat.new()

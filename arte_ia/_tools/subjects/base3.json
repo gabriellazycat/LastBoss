@@ -1,0 +1,34 @@
+{
+ "gold_bait": {
+  "subject": "A dirt road winds toward a single open wooden chest overflowing with gold coins, placed in the middle of the path. A lone steel-armored knight on the road turns off toward it, his right hand reaching out for the coins and his left hand at his side. Behind the chest, a faint trail of golden dust drifts up into the air, and one dead tree stands at the roadside.",
+  "bg": "slate"
+ },
+ "burn_village": {
+  "subject": "A small wooden village cottage with a thatched roof stands in the center, its whole roof and walls engulfed in tall orange flames. Thick black smoke rises from the burning roof, and glowing embers drift upward behind the house. A single wooden cart stands beside the cottage, one wheel resting against its wall.",
+  "bg": "teal"
+ },
+ "soul_collector": {
+  "subject": "A tall dark stone altar tower with a single large round iron basin on top, filled with swirling pale cyan-green ghostly light. Three pale translucent ghostly wisps rise from the ground and stream into the basin. Thin wisps of cold smoke curl up behind the tower.",
+  "bg": "rose"
+ },
+ "forbidden_library": {
+  "subject": "A single huge old black-bound book lies open on a stone lectern in the center, its pages glowing with a faint violet light. Behind it stands one tall wooden bookshelf packed with dusty books. Slow wisps of violet smoke and a few drifting pale pages rise behind the lectern.",
+  "bg": "ochre"
+ },
+ "dark_forge": {
+  "subject": "A squat black iron forge furnace with a wide glowing orange mouth stands in the center, and one heavy iron anvil rests in front of it with a half-finished red-hot sword lying on top. Bright orange sparks fly up from the furnace, and a thin column of dark smoke rises from the chimney behind it.",
+  "bg": "sand"
+ },
+ "rabid_rats": {
+  "subject": "Five grey rats with pink ears, pink tails and small red eyes run forward together in a tight group, their jaws open and their teeth bared. The largest rat leads in the center, and two rats run close on each side. Dust kicks up behind their paws, and one cracked stone wall stands in the background.",
+  "bg": "lilac"
+ },
+ "pack_call": {
+  "subject": "Four lean grey wolves with yellow eyes and bristling fur stand together on a rocky ridge, all four with their heads thrown back, howling at the sky. Faint red-orange energy glows along their raised fur and around their eyes. A dark pine tree stands at the edge of the ridge, and pale dust swirls behind the wolves.",
+  "bg": "rose"
+ },
+ "oil_splash": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, bent forward and gasping with his left hand on his knee. Thick dark glossy oil drenches his armor and drips from his shoulders and sword onto the ground, and a single overturned wooden bucket lies behind him with a few drops still falling from its rim. A thin wisp of smoke rises from a small spark near his feet.",
+  "bg": "ochre"
+ }
+}

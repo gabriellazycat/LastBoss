@@ -1,0 +1,90 @@
+[
+ {
+  "id": "barricade",
+  "pt": "Barricada",
+  "en": "Barricade",
+  "type": "structure",
+  "villain": "common",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {}
+ },
+ {
+  "id": "deep_chalice",
+  "pt": "Cálice Profundo",
+  "en": "Deep Chalice",
+  "type": "lair",
+  "villain": "common",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "elixir_max": 4,
+   "duration": 40.0,
+   "elixir": 2
+  }
+ },
+ {
+  "id": "dark_sacrifice",
+  "pt": "Sacrifício Sombrio",
+  "en": "Dark Sacrifice",
+  "type": "spell",
+  "villain": "common",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {
+   "pick_radius": 5.0,
+   "refund_frac": 0.5,
+   "refund_cap": 4
+  }
+ },
+ {
+  "id": "war_banner",
+  "pt": "Estandarte de Guerra",
+  "en": "War Banner",
+  "type": "structure",
+  "villain": "common",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "duration": 15.0,
+   "radius": 7.0,
+   "dmg": 0.25,
+   "hp": 0.25
+  }
+ },
+ {
+  "id": "cave_troll",
+  "pt": "Troll das Cavernas",
+  "en": "Cave Troll",
+  "type": "monster",
+  "villain": "common",
+  "tags": [],
+  "archetype": "tank",
+  "fx": {
+   "regen": 0.02,
+   "projectile": true
+  }
+ },
+ {
+  "id": "ruin_titan",
+  "pt": "Titã da Ruína",
+  "en": "Ruin Titan",
+  "type": "monster",
+  "villain": "common",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "tank",
+  "fx": {
+   "stomp_radius": 4.0,
+   "stomp_stun": 1.5,
+   "stomp_cd": 6.0
+  }
+ }
+]

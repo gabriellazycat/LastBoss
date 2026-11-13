@@ -1,0 +1,174 @@
+[
+ {
+  "id": "spark",
+  "pt": "Faísca",
+  "en": "Spark",
+  "type": "spell",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "",
+  "fx": {
+   "damage": 40,
+   "radius": 3.0,
+   "burn_dps": 10,
+   "burn_s": 3.0
+  }
+ },
+ {
+  "id": "kobold_scavengers",
+  "pt": "Kobolds Catadores",
+  "en": "Kobold Scavengers",
+  "type": "swarm",
+  "villain": "dragon",
+  "tags": [],
+  "archetype": "swarm",
+  "fx": {
+   "gold_per_hit": 1
+  }
+ },
+ {
+  "id": "molten_gold",
+  "pt": "Ouro Derretido",
+  "en": "Molten Gold",
+  "type": "spell",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "",
+  "fx": {
+   "gold_cost": 10,
+   "gold_max": 30,
+   "fire_per_gold": 6,
+   "radius": 3.0,
+   "slow": 3.0
+  }
+ },
+ {
+  "id": "trap_chest",
+  "pt": "Baú Armadilha",
+  "en": "Trap Chest",
+  "type": "structure",
+  "villain": "dragon",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "boom": 150,
+   "boom_radius": 2.5,
+   "gold": 15
+  }
+ },
+ {
+  "id": "treasure_guard",
+  "pt": "Guarda do Tesouro",
+  "en": "Treasure Guard",
+  "type": "monster",
+  "villain": "dragon",
+  "tags": [],
+  "archetype": "tank",
+  "fx": {
+   "hp_per_gold": 5,
+   "hp_cap": 600,
+   "taunt": 6.0
+  }
+ },
+ {
+  "id": "furnace",
+  "pt": "Fornalha",
+  "en": "Furnace",
+  "type": "structure",
+  "villain": "dragon",
+  "tags": [
+   "fire",
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "duration": 15.0,
+   "radius": 5.0,
+   "fire_bonus": 0.3
+  }
+ },
+ {
+  "id": "dragon_vault",
+  "pt": "Cofre do Dragão",
+  "en": "Dragon Vault",
+  "type": "lair",
+  "villain": "dragon",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "gold_mult": 1.0,
+   "duration": 30.0
+  }
+ },
+ {
+  "id": "blood_tax",
+  "pt": "Imposto de Sangue",
+  "en": "Blood Tax",
+  "type": "spell",
+  "villain": "dragon",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "gold_cost": 20,
+   "discount": 3,
+   "returns": true
+  }
+ },
+ {
+  "id": "ember_rain",
+  "pt": "Chuva de Brasas",
+  "en": "Ember Rain",
+  "type": "spell",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "",
+  "fx": {
+   "radius": 5.0,
+   "duration": 8.0,
+   "dps": 30,
+   "oil_fire_dps": 20,
+   "oil_fire_s": 5.0
+  }
+ },
+ {
+  "id": "gold_avalanche",
+  "pt": "Avalanche de Ouro",
+  "en": "Gold Avalanche",
+  "type": "spell",
+  "villain": "dragon",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "gold_cost": 30,
+   "gold_mult": 3.0,
+   "cap": 900,
+   "radius": 4.0,
+   "stun": 2.0
+  }
+ },
+ {
+  "id": "eruption",
+  "pt": "Erupção",
+  "en": "Eruption",
+  "type": "spell",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "",
+  "fx": {
+   "damage": 400,
+   "radius": 3.0,
+   "fire_dps": 25,
+   "fire_s": 10.0
+  }
+ }
+]

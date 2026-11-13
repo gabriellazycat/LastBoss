@@ -1,0 +1,93 @@
+[
+ {
+  "id": "corpse_blast",
+  "pt": "Explosão de Cadáver",
+  "en": "Corpse Blast",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "undead"
+  ],
+  "archetype": "",
+  "fx": {
+   "pick_radius": 4.0,
+   "radius": 3.0,
+   "hp_mult": 3.5,
+   "min_damage": 130,
+   "raise": 3
+  }
+ },
+ {
+  "id": "soul_harvest",
+  "pt": "Colheita de Almas",
+  "en": "Soul Harvest",
+  "type": "spell",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "duration": 10.0,
+   "elixir": 0.5
+  }
+ },
+ {
+  "id": "arcane_spark",
+  "pt": "Faísca Arcana",
+  "en": "Arcane Spark",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {
+   "radius": 2.0,
+   "damage": 45,
+   "per_spell": 45,
+   "window": 6.0
+  }
+ },
+ {
+  "id": "shadow_echo",
+  "pt": "Eco Sombrio",
+  "en": "Shadow Echo",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {}
+ },
+ {
+  "id": "acolyte",
+  "pt": "Acólitos",
+  "en": "Acolytes",
+  "type": "monster",
+  "villain": "base",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "shooter",
+  "fx": {
+   "projectile": true,
+   "retreat": 4.0,
+   "echo_shot": true
+  }
+ },
+ {
+  "id": "shadow_mark",
+  "pt": "Marca Sombria",
+  "en": "Shadow Mark",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {
+   "duration": 7.0,
+   "bonus": 0.4
+  }
+ }
+]

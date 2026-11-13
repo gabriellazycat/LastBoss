@@ -6,3 +6,11 @@ __pycache__/
 *.translation
 tools/art/out/
 .claude/
+
+# arte_ia: brutos de geração por carta (regeneráveis, ~450 MB); entram só ferramentas, finais, pranchas e backup
+arte_ia/*/
+!arte_ia/_tools/
+!arte_ia/final/
+!arte_ia/final_piloto/
+!arte_ia/pranchas/
+!arte_ia/_backup_assets_cards/

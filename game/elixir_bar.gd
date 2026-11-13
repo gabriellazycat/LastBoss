@@ -25,8 +25,14 @@ func _draw() -> void:
 	var fs := clampi(int(h * 0.85), 12, 22)
 	var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var tp := Vector2(size.x - label_w + (label_w - tw) * 0.5 + 4.0, h * 0.5 + fs * 0.35)
-	draw_string_outline(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0.05, 0.03, 0.08, 0.9))
-	draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.97, 0.9, 1.0))
+	if UiSkins.diario():
+		# Na bandeja de papel: número a tinta, na letra da interface (13/11/2026).
+		var pf := UiParch.font("bold")
+		var pw := pf.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2).x
+		draw_string(pf, Vector2(size.x - label_w + (label_w - pw) * 0.5 + 4.0, tp.y), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2, UiParch.ELIXIR_DEEP)
+	else:
+		draw_string_outline(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0.05, 0.03, 0.08, 0.9))
+		draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.97, 0.9, 1.0))
 	for i in n:
 		var r := Rect2(i * (w + gap), 0, w, h)
 		var f := clampf(value - i, 0.0, 1.0)

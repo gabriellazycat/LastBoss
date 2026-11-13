@@ -421,6 +421,11 @@ func _pile_head(key: String) -> Label:
 	var l := UiKit.label(13, UiKit.MUTED, 3)
 	l.text = key
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UiSkins.diario():
+		# Sobre o chão: creme com contorno (o cinza a tinta sumia na grama e na terra).
+		UiParch.style_label(l, "title", 17, UiParch.CREAM)
+		l.add_theme_constant_override("outline_size", 5)
+		l.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.03, 0.85))
 	add_child(l)
 	return l
 
@@ -506,7 +511,30 @@ func _draw_pile(pile: Control) -> void:
 		_draw_back(pile, Rect2(base - Vector2(i, i) * 2.4, DECK_BACK), tint)
 
 
+static var _back_frame: StyleBoxTexture = null
+
+
 func _draw_back(ci: CanvasItem, r: Rect2, tint: Color) -> void:
+	if UiSkins.diario():
+		# Verso no desenho das cartas (13/11/2026): fundo na cor do monte, moldura dourada do molde e losango de ouro.
+		if _back_frame == null:
+			_back_frame = StyleBoxTexture.new()
+			_back_frame.texture = UiParch.tex("frame_gold")
+			for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+				_back_frame.set_texture_margin(side, 34.0)
+			_back_frame.draw_center = false
+		ci.draw_rect(Rect2(r.position + Vector2(2, 3), r.size), Color(0, 0, 0, 0.3))
+		ci.draw_rect(r, tint.darkened(0.35))
+		ci.draw_rect(r.grow(-2.0), tint)
+		ci.draw_set_transform(r.position, 0.0, Vector2(0.4, 0.4))
+		ci.draw_style_box(_back_frame, Rect2(Vector2.ZERO, r.size / 0.4))
+		ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		var cc := r.get_center()
+		var ss := 12.0
+		ci.draw_colored_polygon(PackedVector2Array([cc + Vector2(0, -ss), cc + Vector2(ss * 0.7, 0), cc + Vector2(0, ss), cc + Vector2(-ss * 0.7, 0)]), UiParch.GOLD)
+		ci.draw_colored_polygon(PackedVector2Array([cc + Vector2(0, -ss * 0.5), cc + Vector2(ss * 0.35, 0), cc + Vector2(0, ss * 0.5), cc + Vector2(-ss * 0.35, 0)]), UiParch.GOLD_LIGHT)
+		ci.draw_rect(r, Color(0.1, 0.05, 0.04), false, 1.0)
+		return
 	ci.draw_rect(Rect2(r.position + Vector2(2, 3), r.size), Color(0, 0, 0, 0.25))
 	ci.draw_rect(r, tint.darkened(0.3))
 	ci.draw_rect(r.grow(-4.0), tint)

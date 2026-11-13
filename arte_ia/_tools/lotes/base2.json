@@ -1,0 +1,127 @@
+[
+ {
+  "id": "web",
+  "pt": "Teia",
+  "en": "Web",
+  "type": "spell",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "radius": 3.0,
+   "duration": 4.0,
+   "slow": 0.5
+  }
+ },
+ {
+  "id": "mimic",
+  "pt": "Mímico",
+  "en": "Mimic",
+  "type": "structure",
+  "villain": "base",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "lure_radius": 10.0,
+   "bite": 120,
+   "curses": 2,
+   "bait_r": 5.0,
+   "bait_mult": 2.0
+  }
+ },
+ {
+  "id": "boiling_oil",
+  "pt": "Óleo Fervente",
+  "en": "Boiling Oil",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "",
+  "fx": {
+   "radius": 3.0,
+   "duration": 8.0,
+   "dps": 10,
+   "soaked": 6.0
+  }
+ },
+ {
+  "id": "ghost",
+  "pt": "Fantasma",
+  "en": "Ghost",
+  "type": "monster",
+  "villain": "base",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "chaser",
+  "fx": {
+   "phase": true,
+   "fear": 2.0,
+   "fear_cooldown": 6.0
+  }
+ },
+ {
+  "id": "gargoyle_tower",
+  "pt": "Torre de Gárgula",
+  "en": "Gargoyle Tower",
+  "type": "structure",
+  "villain": "base",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "stone_radius": 3.0,
+   "projectile": true,
+   "stone_s": 3.0,
+   "stone_cd": 5.0
+  }
+ },
+ {
+  "id": "werewolf",
+  "pt": "Lobisomem",
+  "en": "Werewolf",
+  "type": "monster",
+  "villain": "base",
+  "tags": [],
+  "archetype": "chaser",
+  "fx": {
+   "speed_bonus": 1.0,
+   "hp_threshold": 0.5,
+   "beast": true
+  }
+ },
+ {
+  "id": "scrap_golem",
+  "pt": "Golem de Sucata",
+  "en": "Scrap Golem",
+  "type": "monster",
+  "villain": "base",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "tank",
+  "fx": {
+   "absorb_radius": 5.0,
+   "absorb_hp": 40,
+   "hp_cap": 1500
+  }
+ },
+ {
+  "id": "soul_feast",
+  "pt": "Banquete de Almas",
+  "en": "Soul Feast",
+  "type": "spell",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "radius": 4.0,
+   "bonus_per_card": 1
+  }
+ }
+]

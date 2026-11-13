@@ -1,0 +1,34 @@
+{
+ "war_boar": {
+  "subject": "A massive wild boar with coarse dark brown bristles, two long curved ivory tusks and a scarred armored hide, charging straight toward us with its head lowered. Its four legs drive into the ground, and a studded leather collar circles its thick neck. A broken wooden fence post leans behind it, and a cloud of dust kicks up from its hooves.",
+  "bg": "sand"
+ },
+ "hunt_instinct": {
+  "subject": "Three lean grey wolves with yellow eyes and bristling fur run side by side in a tight line, their mouths open and their ears pinned back, each wolf lunging forward with all four legs stretched. Thin wisps of sickly green smoke curl off their shoulders and glowing yellow eyes burn brighter than before. A single bare dead tree stands behind them, and dust rises from their paws.",
+  "bg": "rose"
+ },
+ "devour": {
+  "subject": "A huge bloated grey-green beast with a wide jaw full of broken teeth crouches low over the ground, its two thick forelegs planted in front of it and its head tilted back as it swallows. Three small grey rats with pink ears and pink tails sit in a row at its feet, facing the open jaw. A thin curl of sickly green smoke rises behind its shoulders.",
+  "bg": "lilac"
+ },
+ "bubonic_plague": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, thrown off his feet and falling backwards with his right hand still gripping the sword and his left arm flung out to the side. Dark boils and green-black patches spread across his armor and sickly green smoke rolls around his body. One grey rat with a pink tail sits on a rock behind him.",
+  "bg": "ochre"
+ },
+ "rat_tide": {
+  "subject": "Five grey rats with pink ears, pink tails and small red eyes race forward side by side across the ground, their mouths open and their front paws reaching toward us. The biggest rat runs in the center with its head held high. A crumbling stone wall stands behind them, and a low wave of dust rolls up from their feet.",
+  "bg": "teal"
+ },
+ "mother_nest": {
+  "subject": "A large round nest woven from dry sticks, gnawed bones and scraps of cloth sits on the ground, with one huge grey rat with pink ears, a pink tail and small red eyes lying across its top. Four small grey rat pups with pink ears and tails crawl out of the nest toward us. Sickly green smoke seeps from the nest and rises behind it.",
+  "bg": "lilac"
+ },
+ "alpha_beast": {
+  "subject": "An enormous grey wolf with a thick mane of bristling fur, yellow eyes and a scarred muzzle, standing on a rock with its four legs braced and its head raised in a howl. Two lean grey wolves with yellow eyes stand on the ground below it, looking up at it. Pale dust drifts behind the rock.",
+  "bg": "rose"
+ },
+ "endless_swarm": {
+  "subject": "Six grey rats with pink ears, pink tails and small red eyes pour out of one round dark burrow in the ground, each rat leaping forward with its front paws stretched. More rats emerge from the burrow mouth behind the first six. A pale haze of dust and sickly green smoke rises behind the burrow.",
+  "bg": "teal"
+ }
+}

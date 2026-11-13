@@ -1,0 +1,674 @@
+[
+ {
+  "id": "rat_brute",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Ratazana",
+  "en": "Brute Rat",
+  "art": true
+ },
+ {
+  "id": "infected_bite",
+  "type": "spell",
+  "villain": "plague",
+  "pt": "Mordida Infectada",
+  "en": "Infected Bite",
+  "art": true
+ },
+ {
+  "id": "bat_cloud",
+  "type": "swarm",
+  "villain": "plague",
+  "pt": "Nuvem de Morcegos",
+  "en": "Bat Cloud",
+  "art": true
+ },
+ {
+  "id": "rat_trap",
+  "type": "structure",
+  "villain": "plague",
+  "pt": "Ratoeira Viva",
+  "en": "Living Rat Trap",
+  "art": true
+ },
+ {
+  "id": "wolf_pack",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Matilha de Lobos",
+  "en": "Wolf Pack",
+  "art": true
+ },
+ {
+  "id": "brood_mother",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Mãe da Ninhada",
+  "en": "Brood Mother",
+  "art": true
+ },
+ {
+  "id": "corrupt_piper",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Flautista Corrompido",
+  "en": "Corrupt Piper",
+  "art": true
+ },
+ {
+  "id": "sewer_flood",
+  "type": "structure",
+  "villain": "plague",
+  "pt": "Esgoto Transbordante",
+  "en": "Overflowing Sewer",
+  "art": true
+ },
+ {
+  "id": "war_boar",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Javali de Guerra",
+  "en": "War Boar",
+  "art": true
+ },
+ {
+  "id": "hunt_instinct",
+  "type": "spell",
+  "villain": "plague",
+  "pt": "Instinto de Caça",
+  "en": "Hunting Instinct",
+  "art": true
+ },
+ {
+  "id": "devour",
+  "type": "spell",
+  "villain": "plague",
+  "pt": "Devorar",
+  "en": "Devour",
+  "art": true
+ },
+ {
+  "id": "bubonic_plague",
+  "type": "spell",
+  "villain": "plague",
+  "pt": "Praga Bubônica",
+  "en": "Bubonic Plague",
+  "art": true
+ },
+ {
+  "id": "rat_tide",
+  "type": "swarm",
+  "villain": "plague",
+  "pt": "Maré de Ratos",
+  "en": "Rat Tide",
+  "art": true
+ },
+ {
+  "id": "mother_nest",
+  "type": "spell",
+  "villain": "plague",
+  "pt": "Ninho-Mãe",
+  "en": "Mother Nest",
+  "art": true
+ },
+ {
+  "id": "alpha_beast",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Besta Alfa",
+  "en": "Alpha Beast",
+  "art": true
+ },
+ {
+  "id": "endless_swarm",
+  "type": "spell",
+  "villain": "plague",
+  "pt": "Enxame Sem Fim",
+  "en": "Endless Swarm",
+  "art": true
+ },
+ {
+  "id": "spark",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Faísca",
+  "en": "Spark",
+  "art": true
+ },
+ {
+  "id": "kobold_scavengers",
+  "type": "swarm",
+  "villain": "dragon",
+  "pt": "Kobolds Catadores",
+  "en": "Kobold Scavengers",
+  "art": true
+ },
+ {
+  "id": "molten_gold",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Ouro Derretido",
+  "en": "Molten Gold",
+  "art": true
+ },
+ {
+  "id": "trap_chest",
+  "type": "structure",
+  "villain": "dragon",
+  "pt": "Baú Armadilha",
+  "en": "Trap Chest",
+  "art": true
+ },
+ {
+  "id": "treasure_guard",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Guarda do Tesouro",
+  "en": "Treasure Guard",
+  "art": true
+ },
+ {
+  "id": "furnace",
+  "type": "structure",
+  "villain": "dragon",
+  "pt": "Fornalha",
+  "en": "Furnace",
+  "art": true
+ },
+ {
+  "id": "dragon_vault",
+  "type": "lair",
+  "villain": "dragon",
+  "pt": "Cofre do Dragão",
+  "en": "Dragon Vault",
+  "art": true
+ },
+ {
+  "id": "blood_tax",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Imposto de Sangue",
+  "en": "Blood Tax",
+  "art": true
+ },
+ {
+  "id": "ember_rain",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Chuva de Brasas",
+  "en": "Ember Rain",
+  "art": true
+ },
+ {
+  "id": "gold_avalanche",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Avalanche de Ouro",
+  "en": "Gold Avalanche",
+  "art": true
+ },
+ {
+  "id": "eruption",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Erupção",
+  "en": "Eruption",
+  "art": true
+ },
+ {
+  "id": "elder_dragon",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Dragão Ancião",
+  "en": "Elder Dragon",
+  "art": true
+ },
+ {
+  "id": "raised_servant",
+  "type": "monster",
+  "villain": "lich",
+  "pt": "Servo Reanimado",
+  "en": "Raised Servant",
+  "art": true
+ },
+ {
+  "id": "life_drain",
+  "type": "spell",
+  "villain": "lich",
+  "pt": "Dreno de Vida",
+  "en": "Life Drain",
+  "art": true
+ },
+ {
+  "id": "profane_ritual",
+  "type": "spell",
+  "villain": "lich",
+  "pt": "Ritual Profano",
+  "en": "Profane Ritual",
+  "art": true
+ },
+ {
+  "id": "death_knight",
+  "type": "monster",
+  "villain": "lich",
+  "pt": "Cavaleiro da Morte",
+  "en": "Death Knight",
+  "art": true
+ },
+ {
+  "id": "open_grave",
+  "type": "spell",
+  "villain": "lich",
+  "pt": "Túmulo Aberto",
+  "en": "Open Grave",
+  "art": true
+ },
+ {
+  "id": "soul_storm",
+  "type": "spell",
+  "villain": "lich",
+  "pt": "Tempestade de Almas",
+  "en": "Soul Storm",
+  "art": true
+ },
+ {
+  "id": "bone_colossus",
+  "type": "monster",
+  "villain": "lich",
+  "pt": "Colosso de Ossos",
+  "en": "Bone Colossus",
+  "art": true
+ },
+ {
+  "id": "arcane_apocalypse",
+  "type": "spell",
+  "villain": "lich",
+  "pt": "Apocalipse Arcano",
+  "en": "Arcane Apocalypse",
+  "art": true
+ },
+ {
+  "id": "barricade",
+  "type": "structure",
+  "villain": "common",
+  "pt": "Barricada",
+  "en": "Barricade",
+  "art": true
+ },
+ {
+  "id": "weakness_curse",
+  "type": "spell",
+  "villain": "common",
+  "pt": "Maldição da Fraqueza",
+  "en": "Curse of Weakness",
+  "art": true
+ },
+ {
+  "id": "deep_chalice",
+  "type": "lair",
+  "villain": "common",
+  "pt": "Cálice Profundo",
+  "en": "Deep Chalice",
+  "art": true
+ },
+ {
+  "id": "dark_sacrifice",
+  "type": "spell",
+  "villain": "common",
+  "pt": "Sacrifício Sombrio",
+  "en": "Dark Sacrifice",
+  "art": true
+ },
+ {
+  "id": "war_banner",
+  "type": "structure",
+  "villain": "common",
+  "pt": "Estandarte de Guerra",
+  "en": "War Banner",
+  "art": true
+ },
+ {
+  "id": "cave_troll",
+  "type": "monster",
+  "villain": "common",
+  "pt": "Troll das Cavernas",
+  "en": "Cave Troll",
+  "art": true
+ },
+ {
+  "id": "ruin_titan",
+  "type": "monster",
+  "villain": "common",
+  "pt": "Titã da Ruína",
+  "en": "Ruin Titan",
+  "art": true
+ },
+ {
+  "id": "rat_horde",
+  "type": "swarm",
+  "villain": "base",
+  "pt": "Horda de Ratos",
+  "en": "Rat Horde",
+  "art": true
+ },
+ {
+  "id": "skeleton_archers",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Esqueletos Arqueiros",
+  "en": "Skeleton Archers",
+  "art": true
+ },
+ {
+  "id": "goblin_dynamiter",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Goblin Dinamiteiro",
+  "en": "Goblin Dynamiter",
+  "art": true
+ },
+ {
+  "id": "slime",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Slime",
+  "en": "Slime",
+  "art": true
+ },
+ {
+  "id": "shadow_bolt",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Raio Sombrio",
+  "en": "Shadow Bolt",
+  "art": true
+ },
+ {
+  "id": "bat_nest",
+  "type": "structure",
+  "villain": "base",
+  "pt": "Ninho de Morcegos",
+  "en": "Bat Nest",
+  "art": true
+ },
+ {
+  "id": "rat_king",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Rei dos Ratos",
+  "en": "Rat King",
+  "art": true
+ },
+ {
+  "id": "bone_totem",
+  "type": "structure",
+  "villain": "base",
+  "pt": "Totem de Ossos",
+  "en": "Bone Totem",
+  "art": true
+ },
+ {
+  "id": "cultists",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Cultistas",
+  "en": "Cultists",
+  "art": true
+ },
+ {
+  "id": "ogre",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Ogro",
+  "en": "Ogre",
+  "art": true
+ },
+ {
+  "id": "web",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Teia",
+  "en": "Web",
+  "art": true
+ },
+ {
+  "id": "mimic",
+  "type": "structure",
+  "villain": "base",
+  "pt": "Mímico",
+  "en": "Mimic",
+  "art": true
+ },
+ {
+  "id": "boiling_oil",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Óleo Fervente",
+  "en": "Boiling Oil",
+  "art": true
+ },
+ {
+  "id": "ghost",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Fantasma",
+  "en": "Ghost",
+  "art": true
+ },
+ {
+  "id": "gargoyle_tower",
+  "type": "structure",
+  "villain": "base",
+  "pt": "Torre de Gárgula",
+  "en": "Gargoyle Tower",
+  "art": true
+ },
+ {
+  "id": "werewolf",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Lobisomem",
+  "en": "Werewolf",
+  "art": true
+ },
+ {
+  "id": "scrap_golem",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Golem de Sucata",
+  "en": "Scrap Golem",
+  "art": true
+ },
+ {
+  "id": "soul_feast",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Banquete de Almas",
+  "en": "Soul Feast",
+  "art": true
+ },
+ {
+  "id": "gold_bait",
+  "type": "route",
+  "villain": "base",
+  "pt": "Isca de Ouro",
+  "en": "Gold Bait",
+  "art": true
+ },
+ {
+  "id": "burn_village",
+  "type": "route",
+  "villain": "base",
+  "pt": "Incêndio",
+  "en": "Wildfire",
+  "art": true
+ },
+ {
+  "id": "soul_collector",
+  "type": "lair",
+  "villain": "base",
+  "pt": "Coletor de Almas",
+  "en": "Soul Collector",
+  "art": true
+ },
+ {
+  "id": "forbidden_library",
+  "type": "lair",
+  "villain": "base",
+  "pt": "Biblioteca Proibida",
+  "en": "Forbidden Library",
+  "art": true
+ },
+ {
+  "id": "dark_forge",
+  "type": "lair",
+  "villain": "base",
+  "pt": "Forja Sombria",
+  "en": "Dark Forge",
+  "art": true
+ },
+ {
+  "id": "rabid_rats",
+  "type": "swarm",
+  "villain": "base",
+  "pt": "Ratos Raivosos",
+  "en": "Rabid Rats",
+  "art": true
+ },
+ {
+  "id": "pack_call",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Chamado do Bando",
+  "en": "Pack Call",
+  "art": true
+ },
+ {
+  "id": "rat_burrow",
+  "type": "structure",
+  "villain": "base",
+  "pt": "Toca de Ratos",
+  "en": "Rat Burrow",
+  "art": true
+ },
+ {
+  "id": "oil_splash",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Balde de Óleo",
+  "en": "Oil Bucket",
+  "art": true
+ },
+ {
+  "id": "torch",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Tocha",
+  "en": "Torch",
+  "art": true
+ },
+ {
+  "id": "fire_imp",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Diabretes de Fogo",
+  "en": "Fire Imps",
+  "art": true
+ },
+ {
+  "id": "tar_net",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Rede de Piche",
+  "en": "Tar Net",
+  "art": true
+ },
+ {
+  "id": "gold_merc",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Mercenário Goblin",
+  "en": "Goblin Mercenary",
+  "art": true
+ },
+ {
+  "id": "toll",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Pedágio",
+  "en": "Toll",
+  "art": true
+ },
+ {
+  "id": "cursed_coins",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Moedas Amaldiçoadas",
+  "en": "Cursed Coins",
+  "art": true
+ },
+ {
+  "id": "bone_legion",
+  "type": "swarm",
+  "villain": "base",
+  "pt": "Legião de Ossos",
+  "en": "Bone Legion",
+  "art": true
+ },
+ {
+  "id": "ghoul",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Carniçal",
+  "en": "Ghoul",
+  "art": true
+ },
+ {
+  "id": "corpse_blast",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Explosão de Cadáver",
+  "en": "Corpse Blast",
+  "art": true
+ },
+ {
+  "id": "soul_harvest",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Colheita de Almas",
+  "en": "Soul Harvest",
+  "art": true
+ },
+ {
+  "id": "arcane_spark",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Faísca Arcana",
+  "en": "Arcane Spark",
+  "art": true
+ },
+ {
+  "id": "shadow_echo",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Eco Sombrio",
+  "en": "Shadow Echo",
+  "art": true
+ },
+ {
+  "id": "acolyte",
+  "type": "monster",
+  "villain": "base",
+  "pt": "Acólitos",
+  "en": "Acolytes",
+  "art": true
+ },
+ {
+  "id": "shadow_mark",
+  "type": "spell",
+  "villain": "base",
+  "pt": "Marca Sombria",
+  "en": "Shadow Mark",
+  "art": true
+ }
+]

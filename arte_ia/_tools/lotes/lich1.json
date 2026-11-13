@@ -1,0 +1,116 @@
+[
+ {
+  "id": "raised_servant",
+  "pt": "Servo Reanimado",
+  "en": "Raised Servant",
+  "type": "monster",
+  "villain": "lich",
+  "tags": [
+   "undead"
+  ],
+  "archetype": "chaser",
+  "fx": {
+   "death_count": 2
+  }
+ },
+ {
+  "id": "life_drain",
+  "pt": "Dreno de Vida",
+  "en": "Life Drain",
+  "type": "spell",
+  "villain": "lich",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {
+   "damage": 90,
+   "radius": 2.0,
+   "heal": 60,
+   "heal_radius": 4.0
+  }
+ },
+ {
+  "id": "profane_ritual",
+  "pt": "Ritual Profano",
+  "en": "Profane Ritual",
+  "type": "spell",
+  "villain": "lich",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {
+   "discount": 1,
+   "bonus": 0.3,
+   "charges": 3,
+   "pick_radius": 5.0
+  }
+ },
+ {
+  "id": "open_grave",
+  "pt": "Túmulo Aberto",
+  "en": "Open Grave",
+  "type": "spell",
+  "villain": "lich",
+  "tags": [
+   "undead"
+  ],
+  "archetype": "",
+  "fx": {
+   "returns": true,
+   "deaths": 2,
+   "window": 10.0,
+   "raise": 2
+  }
+ },
+ {
+  "id": "soul_storm",
+  "pt": "Tempestade de Almas",
+  "en": "Soul Storm",
+  "type": "spell",
+  "villain": "lich",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {
+   "damage": 60,
+   "radius": 5.0,
+   "window": 30.0,
+   "cap": 20
+  }
+ },
+ {
+  "id": "bone_colossus",
+  "pt": "Colosso de Ossos",
+  "en": "Bone Colossus",
+  "type": "monster",
+  "villain": "lich",
+  "tags": [
+   "undead"
+  ],
+  "archetype": "tank",
+  "fx": {
+   "absorb_radius": 6.0,
+   "absorb_hp": 40,
+   "hp_cap": 6000,
+   "death_skeletons": 10
+  }
+ },
+ {
+  "id": "arcane_apocalypse",
+  "pt": "Apocalipse Arcano",
+  "en": "Arcane Apocalypse",
+  "type": "spell",
+  "villain": "lich",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {
+   "window": 15.0,
+   "max_spells": 6
+  }
+ }
+]

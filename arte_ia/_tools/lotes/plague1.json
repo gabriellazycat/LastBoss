@@ -1,0 +1,124 @@
+[
+ {
+  "id": "rat_brute",
+  "pt": "Ratazana",
+  "en": "Brute Rat",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "chaser",
+  "fx": {
+   "peste": 1,
+   "peste_max": 15,
+   "peste_taken": 0.03,
+   "peste_secs": 8.0
+  }
+ },
+ {
+  "id": "infected_bite",
+  "pt": "Mordida Infectada",
+  "en": "Infected Bite",
+  "type": "spell",
+  "villain": "plague",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "",
+  "fx": {
+   "duration": 6.0,
+   "radius": 6.0,
+   "extra": 1
+  }
+ },
+ {
+  "id": "bat_cloud",
+  "pt": "Nuvem de Morcegos",
+  "en": "Bat Cloud",
+  "type": "swarm",
+  "villain": "plague",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "swarm",
+  "fx": {}
+ },
+ {
+  "id": "rat_trap",
+  "pt": "Ratoeira Viva",
+  "en": "Living Rat Trap",
+  "type": "structure",
+  "villain": "plague",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "root": 1.5,
+   "rats": 4,
+   "trigger": 1.0
+  }
+ },
+ {
+  "id": "wolf_pack",
+  "pt": "Matilha de Lobos",
+  "en": "Wolf Pack",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "chaser",
+  "fx": {
+   "beast": true,
+   "peste_dmg": 0.1
+  }
+ },
+ {
+  "id": "brood_mother",
+  "pt": "Mãe da Ninhada",
+  "en": "Brood Mother",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "tank",
+  "fx": {
+   "spawn_unit": "rat",
+   "spawn_n": 2,
+   "spawn_interval": 4.0,
+   "death_spawn": "rat",
+   "death_spawn_n": 6
+  }
+ },
+ {
+  "id": "corrupt_piper",
+  "pt": "Flautista Corrompido",
+  "en": "Corrupt Piper",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "support",
+  "fx": {
+   "aura_radius": 6.0,
+   "atk_speed": 0.4
+  }
+ },
+ {
+  "id": "sewer_flood",
+  "pt": "Esgoto Transbordante",
+  "en": "Overflowing Sewer",
+  "type": "structure",
+  "villain": "plague",
+  "tags": [
+   "pack",
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "spawn": "rat",
+   "spawn_interval": 1.0,
+   "spawn_duration": 15.0
+  }
+ }
+]

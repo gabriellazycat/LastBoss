@@ -37,7 +37,7 @@ var contest_text := ""
 var contest_stages: Control           # marcadores e barra das etapas da disputa
 var hold_offers := false             # cena da morte do herói: a recompensa e as cartas esperam
 var banner: BigBanner                  # letreiro grande: objetivo do local, resultado, ato (rodada 09/11/2026)
-var relic_row: HBoxContainer          # relíquias do covil ganhas na run
+var relic_row: BoxContainer           # relíquias do covil ganhas na run (Diário: coluna de etiquetas à direita)
 var curse_label: Label
 # Esquerda: run e contrato.
 var run_panel: PanelContainer
@@ -147,6 +147,8 @@ func _build_top() -> void:
 	if UiSkins.covil():
 		hn.add_theme_font_override("font", UiCovil.font("title"))
 		hn.add_theme_font_size_override("font_size", 16)
+	elif UiSkins.diario():
+		UiParch.style_label(hn, "title", 21, UiParch.BLOOD)
 	hname.add_child(hn)
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -157,6 +159,11 @@ func _build_top() -> void:
 	hv.add_child(hname)
 	hero_hp = UiKit.bar(UiKit.HERO_HP, 340, 22)
 	hero_hp_label = UiKit.label(15, Color.WHITE, 3)
+	if UiSkins.diario():
+		# Número claro sobre a barra escura (a tinta automática do papel o deixava ilegível).
+		UiParch.style_label(hero_hp_label, "bold", 16, UiParch.CREAM)
+		hero_hp_label.add_theme_constant_override("outline_size", 4)
+		hero_hp_label.add_theme_color_override("font_outline_color", Color(0.1, 0.03, 0.02, 0.9))
 	hero_hp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hero_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -285,7 +292,7 @@ func _build_bottom() -> void:
 	elixir_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	elixir_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	eb.add_child(elixir_bar)
-	elixir_badge = UiKit.badge(UiKit.ELIXIR, 26, 52)
+	elixir_badge = UiKit.badge(UiKit.ELIXIR, 30 if UiSkins.diario() else 26, 62 if UiSkins.diario() else 52)
 	eb.add_child(elixir_badge)
 	# Ouro da run (lojas), ao lado do elixir.
 	gold_label = UiKit.label(20, UiKit.GOLD, 4)
@@ -355,7 +362,7 @@ func _build_messages() -> void:
 	banner = BigBanner.new()
 	add_child(banner)
 	# Relíquias do covil ganhas na run, em fila no canto de baixo à direita.
-	relic_row = HBoxContainer.new()
+	relic_row = VBoxContainer.new() if UiSkins.diario() else HBoxContainer.new()
 	relic_row.add_theme_constant_override("separation", 6)
 	relic_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(relic_row)
@@ -579,7 +586,11 @@ func _layout() -> void:
 	contest_panel.size = contest_panel.get_combined_minimum_size()
 	contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, duel.position.y + duel.size.y + 8)
 	learn_panel.position = Vector2((vs.x - learn_panel.size.x) * 0.5, duel.position.y + duel.size.y + (contest_panel.size.y + 16.0 if contest_panel.visible else 26))
-	relic_row.position = Vector2(vs.x - relic_row.size.x - m, tool_row.position.y + tool_row.size.y + 8)
+	relic_row.size = relic_row.get_combined_minimum_size()
+	var rel_y := tool_row.position.y + tool_row.size.y + 8
+	if parts_panel.visible and UiSkins.diario():
+		rel_y = parts_panel.position.y + parts_panel.size.y + 8
+	relic_row.position = Vector2(vs.x - relic_row.size.x - m, rel_y)
 	hint_panel.position = Vector2((vs.x - hint_panel.size.x) * 0.5, below + 6)
 	for layer in [offer_layer, pause_layer, result_layer]:
 		# O escurecimento cobre a tela inteira (pela âncora ele ficava com tamanho zero e não aparecia).
@@ -1011,10 +1022,31 @@ func _refresh_relics() -> void:
 		return
 	UiKit.clear(relic_row)
 	for id in sim.relics:
+		var rid: String = id
+		if UiSkins.diario():
+			# Etiqueta de papel com o losango dourado (antes: texto vermelho solto que passava por cima do herói).
+			var tag := PanelContainer.new()
+			var sb := UiParch.box("ink", 0.0)
+			sb.content_margin_left = 10
+			sb.content_margin_right = 12
+			sb.content_margin_top = 3
+			sb.content_margin_bottom = 4
+			tag.add_theme_stylebox_override("panel", sb)
+			tag.set_meta("paper", true)
+			tag.size_flags_horizontal = Control.SIZE_SHRINK_END
+			tag.mouse_filter = Control.MOUSE_FILTER_STOP
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row.add_child(UiParch.label("◆", "bold", 13, UiParch.GOLD))
+			row.add_child(UiParch.label(tr("REL_" + rid), "bold", 15, UiParch.INK))
+			tag.add_child(row)
+			Tips.attach(tag, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
+			relic_row.add_child(tag)
+			continue
 		var b := UiKit.label(14, UiKit.GOLD, 3)
 		b.text = "◆ " + tr("REL_" + str(id))
 		b.mouse_filter = Control.MOUSE_FILTER_STOP
-		var rid: String = id
 		Tips.attach(b, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
 		relic_row.add_child(b)
 
@@ -1125,7 +1157,15 @@ func _text_card(title: String, body: String, w: float, edge: Color) -> PanelCont
 	pt.custom_minimum_size = Vector2(w - 30.0, 0)
 	pt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pv.add_child(pt)
-	pv.add_child(Tips.label(body, 16, UiKit.TEXT, w - 30.0, true))
+	var bl := Tips.label(body, 16, UiKit.TEXT, w - 30.0, true)
+	if UiSkins.diario():
+		# 13/11/2026: título em Fell SC na cor da raridade, filete dourado e texto maior (lia pequeno no centro da carta).
+		UiParch.style_label(pt, "title", 27, edge.darkened(0.25) if edge.get_luminance() > 0.35 else edge)
+		UiParch.style_label(bl, "body", 19, UiParch.INK)
+		var dv := UiParch.divider(w * 0.55)
+		dv.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		pv.add_child(dv)
+	pv.add_child(bl)
 	UiKit.ignore_mouse(pv)
 	cp.add_child(pv)
 	return cp

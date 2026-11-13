@@ -1,0 +1,34 @@
+{
+ "rat_horde": {
+  "subject": "Five grey rats with pink ears, pink tails and small red eyes run side by side toward us across bare ground, their heads low and their mouths open. Each rat has four legs planted mid-stride and one long pink tail trailing behind it. A round dark burrow hole in a mossy bank stands behind them, and a low cloud of dust rises from their paws.",
+  "bg": "lilac"
+ },
+ "skeleton_archers": {
+  "subject": "Yellowed human skeletons with dark empty eye sockets and rusty scraps of armor, three of them standing in a row, each drawing a wooden shortbow with his left hand and pulling the string back with his right hand. The nearest skeleton is large in the frame in side view, an arrow aimed ahead of him. A broken stone wall stands behind the row, and thin wisps of grey dust drift up behind them.",
+  "bg": "teal"
+ },
+ "slime": {
+  "subject": "A single large translucent green slime sits on the ground like a glossy dome with a smooth rounded top and a wide flat base. Two small pale bubbles float inside its body and a small puddle spreads from its edge on the left. A mossy boulder stands behind it, and a few faint droplets spray up behind the slime.",
+  "bg": "rose"
+ },
+ "shadow_bolt": {
+  "subject": "Seen from behind, a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, slipping and falling backwards with his right hand gripping the sword and his left arm flung out to the side. A thick spear of swirling dark purple shadow energy strikes him squarely between the shoulders and bursts into a ring of violet sparks. A weathered stone pillar stands in the distance ahead of him.",
+  "bg": "sand"
+ },
+ "bat_nest": {
+  "subject": "A hollow dead tree with a dark round opening in its trunk stands large in the frame, with three small black bats with leathery wings and pale pink ears streaming out of the opening. Each bat has both wings spread wide. A few bare branches reach up from the top of the trunk, and wisps of dust swirl behind the tree.",
+  "bg": "ochre"
+ },
+ "bone_totem": {
+  "subject": "A tall totem pole built from stacked yellowed bones rises from the ground, topped by one large horned skull with dark empty eye sockets glowing with cold cyan-green ghostly light. Two leg bones cross at its middle like a plain X. A circle of packed dirt surrounds its base, and thin wisps of pale smoke curl up behind the pole.",
+  "bg": "rose"
+ },
+ "cultists": {
+  "subject": "Three hooded cultists in dark maroon robes with their faces in shadow stand shoulder to shoulder facing us, the center one holding a single curved dagger raised in his right hand while the other two clasp their hands in front of their chests. A low flat altar stone stands behind them, and thin wisps of dark violet smoke rise from the ground at their feet.",
+  "bg": "sand"
+ },
+ "ogre": {
+  "subject": "A huge broad-shouldered ogre with thick grey-green skin, a heavy brow, small tusks and a scarred leather vest strides toward us, holding one huge wooden club over his right shoulder with his right hand while his left fist hangs at his side. His feet are large and bare, and each step kicks up a cloud of dust. A single leaning wooden fence post stands behind him.",
+  "bg": "lilac"
+ }
+}

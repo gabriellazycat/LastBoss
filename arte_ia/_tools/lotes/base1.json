@@ -1,0 +1,132 @@
+[
+ {
+  "id": "rat_horde",
+  "pt": "Horda de Ratos",
+  "en": "Rat Horde",
+  "type": "swarm",
+  "villain": "base",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "swarm",
+  "fx": {}
+ },
+ {
+  "id": "skeleton_archers",
+  "pt": "Esqueletos Arqueiros",
+  "en": "Skeleton Archers",
+  "type": "monster",
+  "villain": "base",
+  "tags": [
+   "undead"
+  ],
+  "archetype": "shooter",
+  "fx": {
+   "retreat": 4.0,
+   "projectile": true
+  }
+ },
+ {
+  "id": "slime",
+  "pt": "Slime",
+  "en": "Slime",
+  "type": "monster",
+  "villain": "base",
+  "tags": [],
+  "archetype": "tank",
+  "fx": {
+   "split": [
+    {
+     "hp": 140,
+     "dps": 6,
+     "n": 2
+    },
+    {
+     "hp": 60,
+     "dps": 3,
+     "n": 2
+    }
+   ],
+   "beast": true
+  }
+ },
+ {
+  "id": "shadow_bolt",
+  "pt": "Raio Sombrio",
+  "en": "Shadow Bolt",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "fx": {
+   "damage": 140,
+   "length": 10.0,
+   "width": 1.5,
+   "pierce_shield": true
+  }
+ },
+ {
+  "id": "bat_nest",
+  "pt": "Ninho de Morcegos",
+  "en": "Bat Nest",
+  "type": "structure",
+  "villain": "base",
+  "tags": [
+   "pack",
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "spawn": "bat",
+   "spawn_interval": 3.0,
+   "spawn_duration": 15.0
+  }
+ },
+ {
+  "id": "bone_totem",
+  "pt": "Totem de Ossos",
+  "en": "Bone Totem",
+  "type": "structure",
+  "villain": "base",
+  "tags": [
+   "undead",
+   "construct"
+  ],
+  "archetype": "structure",
+  "fx": {
+   "duration": 20.0,
+   "radius": 8.0,
+   "revive": "skeleton"
+  }
+ },
+ {
+  "id": "cultists",
+  "pt": "Cultistas",
+  "en": "Cultists",
+  "type": "monster",
+  "villain": "base",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "shooter",
+  "fx": {
+   "spell_discount": 1,
+   "spell_min_cost": 1,
+   "projectile": true
+  }
+ },
+ {
+  "id": "ogre",
+  "pt": "Ogro",
+  "en": "Ogre",
+  "type": "monster",
+  "villain": "base",
+  "tags": [],
+  "archetype": "tank",
+  "fx": {
+   "knockback": 4.0
+  }
+ }
+]

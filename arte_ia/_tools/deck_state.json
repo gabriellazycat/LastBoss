@@ -1,0 +1,344 @@
+{
+ "rat_king": {
+  "seed": 1000,
+  "file": "krea2anime__poster__t2i__s1000__grain90.png",
+  "master": true
+ },
+ "elder_dragon": {
+  "seed": 1001,
+  "file": "krea2anime__deck__t2i__s1001__grain90.png",
+  "piloto": "texto"
+ },
+ "death_knight": {
+  "seed": 1001,
+  "file": "krea2anime__deck__t2i__s1001__grain90.png",
+  "piloto": "texto"
+ },
+ "goblin_dynamiter": {
+  "seed": 1001,
+  "file": "krea2anime__deck__t2i__s1001__grain90.png",
+  "piloto": "texto"
+ },
+ "rat_burrow": {
+  "seed": 1001,
+  "file": "krea2anime__deck__ref__s1001__grain90.png",
+  "piloto": "ref"
+ },
+ "weakness_curse": {
+  "seed": 1001,
+  "file": "krea2anime__deck__ref__s1001__grain90.png",
+  "piloto": "ref"
+ },
+ "rat_brute": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "infected_bite": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "bat_cloud": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "rat_trap": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "wolf_pack": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "brood_mother": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "corrupt_piper": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "sewer_flood": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "war_boar": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "hunt_instinct": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "devour": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "bubonic_plague": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "rat_tide": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "mother_nest": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "alpha_beast": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "endless_swarm": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "spark": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "kobold_scavengers": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "molten_gold": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "trap_chest": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "treasure_guard": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "furnace": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "dragon_vault": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "blood_tax": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "ember_rain": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "gold_avalanche": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "eruption": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "raised_servant": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "life_drain": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "profane_ritual": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "open_grave": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "soul_storm": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "bone_colossus": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "arcane_apocalypse": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "barricade": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "deep_chalice": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "dark_sacrifice": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "war_banner": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "cave_troll": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "ruin_titan": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "rat_horde": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "skeleton_archers": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "slime": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "shadow_bolt": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "bat_nest": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "bone_totem": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "cultists": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "ogre": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "web": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "mimic": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "boiling_oil": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "ghost": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "gargoyle_tower": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "werewolf": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "scrap_golem": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "soul_feast": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "gold_bait": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "burn_village": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "soul_collector": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "forbidden_library": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "dark_forge": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "rabid_rats": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "pack_call": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "oil_splash": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "torch": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "fire_imp": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "tar_net": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "gold_merc": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "toll": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "cursed_coins": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "bone_legion": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "ghoul": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "corpse_blast": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "soul_harvest": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "arcane_spark": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "shadow_echo": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "acolyte": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ },
+ "shadow_mark": {
+  "seed": 1000,
+  "file": "krea2anime__deck__t2i__s1000__grain90.png"
+ }
+}

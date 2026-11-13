@@ -1,0 +1,34 @@
+{
+ "rat_brute": {
+  "subject": "Three large grey rats with pink ears, pink tails and small red eyes, each the size of a big dog, charge forward side by side with their heads low and their yellowed front teeth showing. The middle rat is slightly ahead of the other two, and all four paws of each rat touch the ground. A single broken wooden barrel lies on its side behind them, and pale dust kicks up from their paws.",
+  "bg": "lilac"
+ },
+ "infected_bite": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, kneeling and bracing on one knee, seen in three-quarter view, his right gauntlet planting the sword tip in the ground and his left hand clamped over his right forearm. Two small red bite marks sit on his forearm, and sickly green smoke rises from them and curls up behind his shoulders. One grey rat with pink ears, a pink tail and small red eyes scurries away across the ground at his side.",
+  "bg": "ochre"
+ },
+ "bat_cloud": {
+  "subject": "Five small black bats with leathery wings and pale pink ears flutter toward us in a loose arc, each with both wings fully spread. The largest bat flies in the center, and two smaller bats flank it on each side. A single bare dead tree stands behind them, and a few dark feathery wisps trail from their wingtips.",
+  "bg": "sand"
+ },
+ "rat_trap": {
+  "subject": "A large rusted iron box trap with a heavy spring-loaded door standing wide open on top and a worn wooden base. Four grey rats with pink ears, pink tails and small red eyes crouch around the trap, two on each side, all facing its dark open doorway. A single crooked wooden post stands behind it, and thin sickly green smoke seeps from the doorway.",
+  "bg": "teal"
+ },
+ "wolf_pack": {
+  "subject": "Three lean grey wolves with yellow eyes and bristling fur run toward us across open ground, the tallest wolf in front and the other two close behind on either side. Each wolf has its mouth slightly open and its ears pinned back. A single leaning wooden fence post stands behind them, and a low cloud of dust rises from their paws.",
+  "bg": "rose"
+ },
+ "brood_mother": {
+  "subject": "A huge bloated brood mother rat the size of a cow, with pale mottled grey fur, a swollen belly, small red eyes and a long pink tail curled on the ground beside her. She rears up slightly on her front paws and faces us with her head lowered. Three small grey rats with pink ears, pink tails and small red eyes huddle at her front paws, and a single dark burrow mouth opens in the earth mound behind her.",
+  "bg": "teal"
+ },
+ "corrupt_piper": {
+  "subject": "A gaunt human piper in a long mud-stained green coat and a wide drooping hat, standing upright with a thin wooden pipe raised to his lips in both hands. His skin is pale and sickly, and thin sickly green smoke drifts from the end of the pipe. Three grey rats with pink ears, pink tails and small red eyes sit upright at his feet, all facing him. A single crooked street lantern stands behind him.",
+  "bg": "ochre"
+ },
+ "sewer_flood": {
+  "subject": "A wide round stone sewer tunnel mouth set in a brick wall, pouring a thick stream of murky green water onto the ground in front of it. Four grey rats with pink ears, pink tails and small red eyes swim and scramble out on the current, two on each side of the stream. Sickly green smoke rises from the water and drifts up behind the arch, and a single iron grate hangs open above the tunnel mouth.",
+  "bg": "rose"
+ }
+}

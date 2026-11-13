@@ -1006,3 +1006,12 @@ UI_OFFER_MARK,Marco {a} de 3 alcançado,Mark {a} of 3 reached
 UI_BANNER_MARK,Marco {n}!,Mark {n}!
 UI_BANNER_PARTIAL,{n} de 3 marcos,{n} of 3 marks
 UI_HELPER_LOST,O ajudante foi embora sem nada,The helper left with nothing
+UI_VILLAIN_READY,Liberado · pronto para a run,Unlocked · ready for a run
+UI_VILLAIN_LAST,Último escolhido,Last picked
+UI_GROUP_VS,o seu vilão,your villain
+UI_GROUP_QUEUE,A fila: {n} heróis,The queue: {n} heroes
+UI_HERO_ORD,{k}º da fila,#{k} in line
+UI_PHASE_TUTORIAL,Tutorial,Tutorial
+UI_GROUP_TOGETHER,"Nesta fase os heróis andam juntos: quem chega levanta o caído (uma vez cada).","In this stage the heroes travel together: whoever arrives raises the fallen (once each)."
+UI_GROUP_SKILL0,Sem habilidades,No skills
+UI_GROUP_SKILL1,1 habilidade,1 skill

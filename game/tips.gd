@@ -370,6 +370,10 @@ func _make_box(e: Dictionary, level: int, passive := false) -> PanelContainer:
 		head.add_child(e["icon"])
 	var t := UiKit.label(17, KW_COLOR if e["kw"] != "" else UiKit.GOLD, 3)
 	t.text = e["title"]
+	if UiSkins.diario():
+		# Dica no papel das cartas: título em Fell SC, como o nome das cartas (13/11/2026).
+		t.add_theme_font_override("font", UiParch.font("title"))
+		t.add_theme_font_size_override("font_size", 21)
 	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(t)
@@ -381,7 +385,7 @@ func _make_box(e: Dictionary, level: int, passive := false) -> PanelContainer:
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.meta_underlined = false
 	body.custom_minimum_size = Vector2(BOX_W, 0)
-	body.add_theme_font_size_override("normal_font_size", 15)
+	body.add_theme_font_size_override("normal_font_size", 15)   # 13/11/2026: em 16+ o --tiptest falha (a palavra-chave cai na 2ª linha e a caixa do ícone fecha no GRACE antes da varredura)
 	body.add_theme_color_override("default_color", Color(0.92, 0.9, 0.98))
 	body.text = rich(e["body"], level + 1 < MAX_DEPTH and not passive, e["kw"])
 	if passive or not "[url=" in body.text:

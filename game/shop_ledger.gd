@@ -12,13 +12,13 @@ signal chosen(k: int)
 
 const W := 1920.0
 const H := 1080.0
-const BLUE := Color("2a2a6a")
+const BLUE := Color("5c4630")          # 13/11/2026: a tinta do mapa/cartas no lugar do azul de caderno
 const INK := Color("2a2018")
 const WAX := Color("8e2f27")
 const RED := Color("b3342a")
 const BROWN := Color("6b3a10")
-const LOG_INK := Color("1d2a6a")
-const NOTE_INK := Color("3a2a6a")
+const LOG_INK := Color("3a2916")
+const NOTE_INK := Color("3a2916")
 const LP := Vector2(66, 50)          # página esquerda (estoque, registro, ouro)
 const LS := Vector2(1070, 928)
 const RP := Vector2(1136, 50)        # página direita (serviços, relíquia, anotação, lacre)
@@ -67,6 +67,7 @@ var list_clip: Control
 var desc_l: RichTextLabel
 var desc_r: RichTextLabel
 var desc_sig := ""
+var pick_cards: Array = []            # antes/depois do passo do baralho: as cartas de verdade (molde), não desenho
 
 
 func _init() -> void:
@@ -75,7 +76,7 @@ func _init() -> void:
 	focus_mode = Control.FOCUS_NONE
 	f_hand = UiDiario.font("hand")
 	f_type = UiDiario.font("type")
-	f_disp = _font("MarcellusSC-Regular.ttf")
+	f_disp = UiParch.font("title")   # a Fell SC dos nomes das cartas (era Marcellus SC)
 	f_body = _font("AlegreyaSans-Bold.ttf")
 	f_med = _font("AlegreyaSans-Medium.ttf")
 	note = _rtl()
@@ -666,8 +667,10 @@ func _sync_pick_children(of: Dictionary) -> void:
 	var on := mode == "pick"
 	list_clip.visible = on
 	var pr := _pick_sel() if on else {}
-	desc_l.visible = on and not pr.is_empty()
-	desc_r.visible = desc_l.visible
+	desc_l.visible = false   # o texto agora vem na própria carta (molde)
+	desc_r.visible = false
+	for pc in pick_cards:
+		pc.visible = on and not pr.is_empty()
 	if not on:
 		return
 	var lr := _pick_list_rect()
@@ -682,6 +685,36 @@ func _sync_pick_children(of: Dictionary) -> void:
 	var up: bool = str(of.get("what", "")) == "upgrade"
 	var cd: CardDef = pr["cd"]
 	var lv: int = pr["lv"]
+	# Antes → depois com as cartas de verdade (o mesmo molde da mão e das ofertas; rodada de UI 13/11/2026). O desenho
+	# antigo era uma carta falsa com uma sombra deslocada embaixo, que parecia outra carta por trás.
+	for pc in pick_cards:
+		pc.queue_free()
+	pick_cards.clear()
+	var max_lv := int(sim.data.rules["card_levels"]["max"])
+	var names: Array = (pr["mods"] as Array).map(func(m): return tr("MOD_" + str(m)))
+	for after in [false, true]:
+		var nl: int = mini(lv + 1, max_lv) if after and up else lv
+		var cost := maxi(cd.cost_at(nl) - (1 if (pr["mods"] as Array).has("cheap") else 0), 0)
+		var cr := _card_rect(after)
+		var cw := cr.size.x * k
+		var card := UiKit.card(cd, cost, names, "", cw, nl)
+		card.position = o + cr.position * k + Vector2(0, maxf(0.0, (cr.size.y * k - card.size.y) * 0.5))
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if after and not up:
+			# Tirar carta: o "depois" é a carta riscada, apagada.
+			card.modulate = Color(0.5, 0.47, 0.45)
+			var x := Control.new()
+			x.size = card.size
+			x.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			x.draw.connect(func():
+				var g := Rect2(Vector2.ZERO, x.size).grow(-x.size.x * 0.12)
+				x.draw_line(g.position, g.end, Color(RED, 0.9), 8.0, true)
+				x.draw_line(Vector2(g.end.x, g.position.y), Vector2(g.position.x, g.end.y), Color(RED, 0.9), 8.0, true))
+			card.add_child(x)
+		add_child(card)
+		pick_cards.append(card)
+	if UiSkins.diario():
+		return
 	for after in [false, true]:
 		var l: RichTextLabel = desc_r if after else desc_l
 		var cr := _card_rect(after)
@@ -828,12 +861,8 @@ func _draw_book() -> void:
 		var pos: Vector2 = pg[0]
 		var sz: Vector2 = pg[1]
 		var r := Rect2(pos, sz)
-		_hgrad(r, [0.0, 0.09, 0.91, 1.0], [Color("d6bd84"), Color("e4cf9a"), Color("e4cf9a"), Color("cfb479")])
-		# Pauta azul a cada 43 px.
-		var y := pos.y + 41.0
-		while y < r.end.y:
-			draw_line(Vector2(pos.x, y + 1), Vector2(r.end.x, y + 1), Color(0.27, 0.35, 0.55, 0.22), 2.0)
-			y += 43.0
+		# Página = o papel creme das cartas com a moldura dourada (13/11/2026; antes, caderno pautado de azul).
+		draw_style_box(UiParch.box("gold", 0.0), r)
 		# Sombra da lombada e das bordas.
 		var left: bool = pg[2]
 		var sx := r.end.x if left else pos.x
@@ -842,14 +871,7 @@ func _draw_book() -> void:
 			PackedColorArray([Color(0.31, 0.2, 0.08, 0.55), Color(0.31, 0.2, 0.08, 0.0), Color(0.31, 0.2, 0.08, 0.0), Color(0.31, 0.2, 0.08, 0.55)]))
 		_vgrad(Rect2(pos, Vector2(sz.x, 40)), Color(0.47, 0.31, 0.12, 0.3), Color(0.47, 0.31, 0.12, 0.0))
 		_vgrad(Rect2(pos + Vector2(0, sz.y - 40), Vector2(sz.x, 40)), Color(0.47, 0.31, 0.12, 0.0), Color(0.47, 0.31, 0.12, 0.3))
-		# Margem vermelha dupla.
-		var mx := pos.x + 34.0 if left else r.end.x - 34.0
-		for dx in [0.0, 4.0]:
-			draw_line(Vector2(mx + dx, pos.y), Vector2(mx + dx, r.end.y), Color(0.75, 0.24, 0.2, 0.55), 2.0)
-	# Manchas de café.
-	for st in [[LP + Vector2(905, 805), 105.0, 1.0], [LP + Vector2(105, 95), 75.0, 0.7]]:
-		draw_arc(st[0], st[1], 0.0, TAU, 72, Color(0.43, 0.24, 0.08, 0.22 * float(st[2])), 12.0, true)
-		draw_arc(st[0] + Vector2(3, 2), float(st[1]) - 9.0, 0.4, 4.6, 48, Color(0.43, 0.24, 0.08, 0.1 * float(st[2])), 5.0, true)
+	pass
 
 
 func _draw_left() -> void:
@@ -904,6 +926,20 @@ func _draw_left() -> void:
 	_txt(dr.position + Vector2(18, 32), dtxt, f_body, 24, BLUE)
 
 
+static var _thumb_sb: StyleBoxTexture = null
+
+
+## Moldura dourada das cartas, para as miniaturas da loja.
+static func _thumb_frame() -> StyleBoxTexture:
+	if _thumb_sb == null:
+		_thumb_sb = StyleBoxTexture.new()
+		_thumb_sb.texture = UiParch.tex("frame_gold")
+		for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+			_thumb_sb.set_texture_margin(side, 34.0)
+		_thumb_sb.draw_center = false
+	return _thumb_sb
+
+
 ## Contorno tracejado de pílula (os chips do ouro e do baralho).
 func _chip(r: Rect2, col: Color) -> void:
 	var rad := r.size.y * 0.5
@@ -937,31 +973,29 @@ func _draw_card_row(r: Dictionary, hot: bool) -> void:
 	if hot and not sold:
 		_hot_band(Rect2(rr.position + Vector2(10, 0), rr.size - Vector2(10, 0)))
 	draw_line(Vector2(rr.position.x, rr.end.y), rr.end, Color(0.24, 0.16, 0.08, 0.4), 2.0)
-	# Esboço colado: papel, fita, desenho e custo. Sem nome, sem preço.
+	# Miniatura da carta (13/11/2026): a arte com a moldura dourada e a gema roxa de custo das cartas
+	# (antes: esboço colado com fita crepe e custo em mancha de sangue). Sem nome, sem preço.
 	var skh := minf(152.0, rr.size.y - 24.0)
 	var skw := skh * 250.0 / 152.0
 	var c := Vector2(rr.position.x + 40 + skw * 0.5, rr.get_center().y)
-	var rot := deg_to_rad(0.0 if hot and not sold else float(r["rot"]))
-	_L(c, rot, 1.06 if hot and not sold else 1.0)
+	var rot := 0.0
+	var sc := 1.06 if hot and not sold else 1.0
+	_L(c, rot, sc)
 	var pr := Rect2(-skw * 0.5, -skh * 0.5, skw, skh)
-	draw_rect(Rect2(pr.position + Vector2(3, 6), pr.size), Color(0, 0, 0, 0.3))
-	draw_rect(pr, Color("f7efd8"))
-	draw_rect(pr, Color(0.24, 0.16, 0.08, 0.4), false, 1.0)
-	var ar := Rect2(pr.position + Vector2(10, 10), pr.size - Vector2(20, 28))
-	draw_rect(ar, Color("f1e2b8"))
-	draw_rect(ar.grow(-ar.size.y * 0.12), Color(1.0, 0.97, 0.86, 0.6))
-	draw_rect(ar, Color(0.24, 0.16, 0.08, 0.25), false, 1.0)
+	_rrect(Rect2(pr.position + Vector2(2, 6), pr.size), Color(0, 0, 0, 0.3), 8)
+	draw_rect(pr, Color("f3e6c4"))
 	var cd: CardDef = r["cd"]
 	var tex := UiDiario.card_tex(cd.id)
 	var dim := Color(0.62, 0.6, 0.58) if sold else Color.WHITE
 	if tex:
-		_art_fit(self, tex, ar, dim, UiDiario.painted(cd.id))
-	draw_set_transform_matrix(Transform2D(rot, o + c * k) * Transform2D(deg_to_rad(-3.0), Vector2(0, pr.position.y) * k).scaled_local(Vector2(k, k)))
-	draw_rect(Rect2(-45, -14, 90, 28), Color(0.84, 0.77, 0.55, 0.85))
-	_L(c, rot, 1.06 if hot and not sold else 1.0)
-	var gem := Rect2(pr.end.x - 36, pr.position.y - 12, 50, 50)
-	UiDiario.draw_badge(self, gem, UiDiario.BLOOD, "crystal", float(cd.id.hash() % 7))
-	_txt_in(c, rot, (gem.position + Vector2(0, 34)) * (1.06 if hot and not sold else 1.0), str(cd.cost_at(int(r["lv"]))), f_type, 24, Color(1.0, 0.95, 0.88), HORIZONTAL_ALIGNMENT_CENTER, 50)
+		_art_fit(self, tex, pr.grow(-3), dim, UiDiario.painted(cd.id))
+	_L(c, rot, sc * 0.6)
+	draw_style_box(_thumb_frame(), Rect2(pr.position / 0.6, pr.size / 0.6))
+	_L(c, rot, sc)
+	var gem := Rect2(pr.position + Vector2(-18, -20), Vector2(46, 53))
+	var rar: String = CardMold.RAR_NAMES[clampi(cd.rarity, 0, 3)]
+	draw_texture_rect(UiParch.tex("gem_%s_purple" % rar) if UiParch.tex("gem_%s_purple" % rar) else UiParch.tex("gem_common_purple"), gem, false)
+	_txt_in(c, rot, (gem.position + Vector2(0, 40)) * sc, str(cd.cost_at(int(r["lv"]))), UiDiario.font("fell"), 24, Color(1.0, 0.95, 0.88), HORIZONTAL_ALIGNMENT_CENTER, 46)
 	if sold:
 		_L(c, rot)
 		draw_rect(pr, Color(0.3, 0.27, 0.24, 0.3))
@@ -1205,8 +1239,7 @@ func _draw_pick() -> void:
 	var up: bool = str(of.get("what", "")) == "upgrade"
 	var P := PICK
 	_rrect(Rect2(P.position + Vector2(0, 20), P.size), Color(0, 0, 0, 0.6), 16)
-	_vgrad(P.grow(-4), Color("efe0ba"), Color("dcc994"))
-	_rrect(P, Color.TRANSPARENT, 12, 6.0, Color("3a2c1d"), false)
+	draw_style_box(UiParch.box("gold", 0.0), P)   # 13/11/2026: a folha com moldura dourada das outras telas
 	# Cabeçalho: nome do serviço, o que escolher, ouro antes → depois e baralho.
 	var what := str(of.get("what", "upgrade"))
 	var title := tr("UI_PICK_" + what)
@@ -1235,7 +1268,7 @@ func _draw_pick() -> void:
 		for after in [false, true]:
 			var cr := _card_rect(after)
 			_txt(Vector2(cr.position.x, cr.position.y - 18), tr("UI_LEDGER_AFTER" if after else "UI_LEDGER_BEFORE"), f_hand, 30, NOTE_INK, HORIZONTAL_ALIGNMENT_CENTER, cr.size.x)
-			_deck_card(cr, cd, mini(lv + 1, max_lv) if after and up else lv, pr["mods"], after and not up)
+			pass   # a carta é um filho (pick_cards), posta em _sync_pick_children
 		_txt(Vector2(ax + aw * 0.5 - 40, _card_rect(false).get_center().y + 26), "→", f_disp, 80, WAX, HORIZONTAL_ALIGNMENT_CENTER, 80)
 		_txt(Vector2(ax, P.end.y - 22 - 62 - 40), tr("UI_LEDGER_CAP_" + what), f_hand, 32, NOTE_INK, HORIZONTAL_ALIGNMENT_CENTER, aw)
 	# Rodapé: dica e botões.
@@ -1246,10 +1279,15 @@ func _draw_pick() -> void:
 		var br := _btn_rect(i)
 		var ok := i == 1
 		var hot := btn_hot == i
-		_rrect(br, Color("2a2018") if ok else Color("efe0ba"), 8, 3.0, Color("b99a55") if ok else Color("3a2c1d"))
-		if hot:
-			_rrect(br.grow(3), Color.TRANSPARENT, 10, 3.0, RED, false)
-		_txt(Vector2(br.position.x, br.position.y + 42), tr("UI_LEDGER_CONFIRM" if ok else "UI_LEDGER_BACK"), f_disp, 30, Color("ffd978") if ok else INK, HORIZONTAL_ALIGNMENT_CENTER, br.size.x)
+		# Confirmar = a fita vermelha das cartas; Voltar = botão de papel (os mesmos dos menus).
+		if ok:
+			var rb := UiParch.ribbon_box("monster", false)
+			if hot:
+				rb.modulate_color = Color(1.12, 1.08, 1.04)
+			draw_style_box(rb, br.grow_individual(18, 6, 18, 8))
+		else:
+			draw_style_box(UiParch.button_box("hover" if hot else "normal"), br)
+		_txt(Vector2(br.position.x, br.position.y + 42), tr("UI_LEDGER_CONFIRM" if ok else "UI_LEDGER_BACK"), f_disp, 30, UiParch.CREAM if ok else (UiParch.BLOOD if hot else INK), HORIZONTAL_ALIGNMENT_CENTER, br.size.x)
 
 
 ## Desenha a arte da carta: a pintada preenche a caixa (recorta o excesso, sem faixas claras dos lados);
@@ -1320,10 +1358,10 @@ func _draw_pick_list() -> void:
 		var cd: CardDef = pr["cd"]
 		var lv: int = pr["lv"]
 		var by0 := (ROW_H - 36.0) * 0.5
-		UiDiario.draw_badge(list_clip, Rect2(r.position + Vector2(10, by0), Vector2(36, 36)), UiDiario.BLOOD, "crystal", float(i))
+		list_clip.draw_texture_rect(UiParch.tex("gem_common_purple"), Rect2(r.position + Vector2(12, by0 - 3), Vector2(33, 40)), false, Color(1, 1, 1, a))
 		var cost := maxi(cd.cost_at(lv) - (1 if (pr["mods"] as Array).has("cheap") else 0), 0)
 		var tc := Color("f3e6c4") if sel else Color(INK, a)
-		_lt(Vector2(r.position.x + 10, y + by0 + 27), str(maxi(cost, 0)), f_type, 20, Color(1, 0.95, 0.88, a), HORIZONTAL_ALIGNMENT_CENTER, 36)
+		_lt(Vector2(r.position.x + 11, y + by0 + 29), str(maxi(cost, 0)), UiDiario.font("fell"), 20, Color(1, 0.95, 0.88, a), HORIZONTAL_ALIGNMENT_CENTER, 36)
 		# Miniatura do desenho.
 		var th := Rect2(r.position.x + 56, y + 7, 56, ROW_H - 14)
 		list_clip.draw_rect(th, Color(0.97, 0.94, 0.85, a))

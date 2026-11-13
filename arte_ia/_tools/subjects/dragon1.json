@@ -1,0 +1,46 @@
+{
+ "spark": {
+  "subject": "Seen from behind in silhouette, a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, stands with his sword held low in his right gauntlet and his left arm flung out to the side. A single bright orange spark bursts on his left shoulder plate and throws a small fan of glowing embers across his back. A dark cave mouth opens ahead of him with a thin trail of smoke wisps rising from it.",
+  "bg": "teal"
+ },
+ "kobold_scavengers": {
+  "subject": "Four small red-scaled kobolds with lizard snouts, tiny horns and ragged leather aprons trot together in a row, each carrying one gold coin clutched in both hands against his chest. The front kobold looks over his shoulder toward the others, and all four tails sweep the ground behind them. A low heap of rocky rubble stands to one side, and a few puffs of dust rise behind their feet.",
+  "bg": "teal"
+ },
+ "molten_gold": {
+  "subject": "A lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, crouching low behind a plain round wooden shield with an iron rim held in his left arm, his sword pointing down in his right gauntlet. A thick glowing orange stream of liquid gold pours over the top of his shield and spreads in a shining puddle around his boots. Orange fire and glowing embers drift up behind him from the molten pool.",
+  "bg": "slate"
+ },
+ "trap_chest": {
+  "subject": "A large iron-banded wooden treasure chest with its lid slightly open stands in the center of a stone floor, a single glowing orange crack of light showing along the opening. Four small red-scaled kobolds with lizard snouts, tiny horns and ragged leather aprons crouch around it at a distance, each peeking at the chest with a hand raised. A few gold coins lie in front of the chest, and thin wisps of smoke curl up behind it.",
+  "bg": "lilac"
+ },
+ "treasure_guard": {
+  "subject": "A broad, heavy human guard in thick dull-gold plate armor with a full closed helmet and a crimson plume stands planted with his feet apart. He holds one tall tower shield in his left gauntlet and one short heavy mace in his right gauntlet raised to his chest. A single glittering mound of gold coins rises behind him, and a little golden dust drifts up from the mound.",
+  "bg": "slate"
+ },
+ "furnace": {
+  "subject": "A squat round stone furnace with a wide open mouth glows bright orange inside, a short black iron chimney on top and a pair of iron tongs hanging on its side. Two small red-scaled kobolds with lizard snouts, tiny horns and ragged leather aprons stand beside it, the left one pushing a shovel of coals into the mouth and the right one holding a leather bellows. Orange sparks and glowing embers rise behind the furnace in a thin stream.",
+  "bg": "lilac"
+ },
+ "dragon_vault": {
+  "subject": "A huge round vault door of thick dark iron with a heavy iron wheel in the middle stands swung open, revealing a deep glittering hoard of gold coins and goblets inside. A huge ancient red dragon with cracked crimson scales, a pale yellow belly, long curved horns and a ragged frill rests its chin on the top of the doorway, one yellow eye half open, both forelegs hanging over the edge. A few gold coins roll across the stone floor in front of the door, and faint golden dust floats behind it.",
+  "bg": "teal"
+ },
+ "blood_tax": {
+  "subject": "A huge ancient red dragon with cracked crimson scales, a pale yellow belly, long curved horns and a ragged frill leans down with its head lowered and one clawed forefoot extended, palm up, toward the viewer. A single large gold coin balances on its claw, and one drop of dark red blood falls from the coin. A small iron-bound coin chest stands behind it with embers drifting up beside it.",
+  "bg": "teal"
+ },
+ "ember_rain": {
+  "subject": "A lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, dropping to both knees with his sword planted point-down in front of him in his right gauntlet and his left hand on his helmet. Glowing orange embers fall around him in a loose shower, and a few settle and smolder on his shoulders. Dark clouds of smoke boil in a column behind him.",
+  "bg": "teal"
+ },
+ "gold_avalanche": {
+  "subject": "A lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, spinning around in surprise with his sword in his right gauntlet and his left arm thrown up. A heavy wave of shining gold coins crashes down over his legs and knocks his boots off the ground. A small cloud of golden dust rises behind him from the slope of coins.",
+  "bg": "slate"
+ },
+ "eruption": {
+  "subject": "A lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, bent forward and gasping, his sword hanging in his right gauntlet and his left hand braced on his knee. A broad pillar of orange fire and glowing embers erupts from a cracked red-hot split in the ground behind him and lights up his armor. Chunks of black rock fly up beside the pillar.",
+  "bg": "teal"
+ }
+}

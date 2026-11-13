@@ -1,0 +1,116 @@
+[
+ {
+  "id": "torch",
+  "pt": "Tocha",
+  "en": "Torch",
+  "type": "spell",
+  "villain": "base",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "",
+  "fx": {
+   "damage": 95,
+   "radius": 2.5,
+   "burn_s": 5.0,
+   "burn_dps": 35
+  }
+ },
+ {
+  "id": "fire_imp",
+  "pt": "Diabretes de Fogo",
+  "en": "Fire Imps",
+  "type": "monster",
+  "villain": "base",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "chaser",
+  "fx": {}
+ },
+ {
+  "id": "tar_net",
+  "pt": "Rede de Piche",
+  "en": "Tar Net",
+  "type": "spell",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "radius": 3.0,
+   "duration": 4.0,
+   "root": 1.5,
+   "soaked": 8.0
+  }
+ },
+ {
+  "id": "gold_merc",
+  "pt": "Mercenário Goblin",
+  "en": "Goblin Mercenary",
+  "type": "monster",
+  "villain": "base",
+  "tags": [],
+  "archetype": "chaser",
+  "fx": {
+   "gold_step": 25,
+   "gold_bonus": 0.15,
+   "gold_cap": 0.9
+  }
+ },
+ {
+  "id": "toll",
+  "pt": "Pedágio",
+  "en": "Toll",
+  "type": "spell",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "gold_cost": 30,
+   "elixir": 3
+  }
+ },
+ {
+  "id": "cursed_coins",
+  "pt": "Moedas Amaldiçoadas",
+  "en": "Cursed Coins",
+  "type": "spell",
+  "villain": "base",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "radius": 2.5,
+   "stop": 2.0,
+   "curses": 2,
+   "gold": 15
+  }
+ },
+ {
+  "id": "bone_legion",
+  "pt": "Legião de Ossos",
+  "en": "Bone Legion",
+  "type": "swarm",
+  "villain": "base",
+  "tags": [
+   "undead"
+  ],
+  "archetype": "swarm",
+  "fx": {}
+ },
+ {
+  "id": "ghoul",
+  "pt": "Carniçal",
+  "en": "Ghoul",
+  "type": "monster",
+  "villain": "base",
+  "tags": [
+   "undead"
+  ],
+  "archetype": "chaser",
+  "fx": {
+   "death_stack": 0.2,
+   "stack_max": 10,
+   "stack_radius": 6.0
+  }
+ }
+]

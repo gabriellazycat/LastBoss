@@ -1,0 +1,117 @@
+[
+ {
+  "id": "war_boar",
+  "pt": "Javali de Guerra",
+  "en": "War Boar",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "chaser",
+  "fx": {
+   "beast": true,
+   "push": 5.0,
+   "stun": 1.0,
+   "cd": 8.0
+  }
+ },
+ {
+  "id": "hunt_instinct",
+  "pt": "Instinto de Caça",
+  "en": "Hunting Instinct",
+  "type": "spell",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "duration": 8.0,
+   "speed": 0.6,
+   "steal": 0.2
+  }
+ },
+ {
+  "id": "devour",
+  "pt": "Devorar",
+  "en": "Devour",
+  "type": "spell",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "returns": true,
+   "sacrifice": 3,
+   "heal": 200,
+   "dmg_bonus": 0.25
+  }
+ },
+ {
+  "id": "bubonic_plague",
+  "pt": "Praga Bubônica",
+  "en": "Bubonic Plague",
+  "type": "spell",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "duration": 10.0,
+   "per_stack": 15
+  }
+ },
+ {
+  "id": "rat_tide",
+  "pt": "Maré de Ratos",
+  "en": "Rat Tide",
+  "type": "swarm",
+  "villain": "plague",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "swarm",
+  "fx": {}
+ },
+ {
+  "id": "mother_nest",
+  "pt": "Ninho-Mãe",
+  "en": "Mother Nest",
+  "type": "spell",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "",
+  "fx": {
+   "duration": 12.0,
+   "radius": 10.0
+  }
+ },
+ {
+  "id": "alpha_beast",
+  "pt": "Besta Alfa",
+  "en": "Alpha Beast",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "chaser",
+  "fx": {
+   "beast": true,
+   "pack_bonus": 0.02,
+   "pack_cap": 3.0,
+   "peste_dmg": 0.05,
+   "rally_s": 6.0,
+   "rally_dmg": 0.5,
+   "rally_speed": 0.5
+  }
+ },
+ {
+  "id": "endless_swarm",
+  "pt": "Enxame Sem Fim",
+  "en": "Endless Swarm",
+  "type": "spell",
+  "villain": "plague",
+  "tags": [
+   "pack"
+  ],
+  "archetype": "",
+  "fx": {
+   "summon_n": 12,
+   "duration": 20.0
+  }
+ }
+]

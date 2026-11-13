@@ -1,0 +1,34 @@
+{
+ "torch": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, stepping back with sword raised in defense, seen from the front with his one sword in his right gauntlet and his left arm held out for balance. One burning wooden torch lies on the ground at his feet, and orange flames lick up his tabard and across his chest. Dust and a few orange sparks drift up behind his shoulders.",
+  "bg": "teal"
+ },
+ "fire_imp": {
+  "subject": "Three small fire imps with glowing orange-red skin, short black horns and thin pointed tails charge forward in a line across bare ground, each one leaning forward with both clawed hands reaching ahead. Small flames flicker along their shoulders and backs. A single charred tree stump stands behind them, and a few embers rise in the air behind the group.",
+  "bg": "slate"
+ },
+ "tar_net": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, lying on his back propped on one elbow, seen from a three-quarter side view. His right gauntlet grips his one sword and his left boot is stuck in a wide black sticky puddle of tar. A large black net of thick tar-soaked mesh sags over his legs and chest. A few thin wisps of dark smoke rise from the tar behind him.",
+  "bg": "sand"
+ },
+ "gold_merc": {
+  "subject": "a small wiry goblin with olive-green skin, long pointed ears, a narrow sharp-featured face, a dented leather cap and patched brown rags, striding forward in a side view. He holds one short curved dagger in his right hand with the blade pointing forward, and his left hand carries one fat leather coin pouch held up at chest height. A small wooden signpost leans at the roadside behind him, and a low trail of dust rises behind his heels.",
+  "bg": "lilac"
+ },
+ "toll": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, frozen mid-stride, looking down at his feet, seen from behind in a three-quarter view. His right gauntlet holds his one sword pointing down, and his left hand holds out one open palm with a few gold coins resting in it toward a thick wooden toll barrier bar across the road ahead. A small stone toll booth stands beside the barrier, and a thin trail of dust drifts behind him.",
+  "bg": "rose"
+ },
+ "cursed_coins": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, swinging his sword wildly at the air in a three-quarter view with his one sword in his right gauntlet raised high and his left hand stretched out toward the ground. Five tarnished gold coins with dark purple glow hover in a loose arc around his legs. A thin veil of dark purple smoke rises from the coins behind him.",
+  "bg": "ochre"
+ },
+ "bone_legion": {
+  "subject": "Five yellowed human skeletons with dark empty eye sockets and rusty scraps of armor march forward side by side in a wide shallow line, each one holding one rusty short sword in his right hand and one round wooden shield on his left arm. Their jaws hang slightly open and their ribs show clearly. A single leaning gravestone stands behind them, and pale dust rises from their footsteps.",
+  "bg": "teal"
+ },
+ "ghoul": {
+  "subject": "A gaunt grey-skinned ghoul with sunken cheeks, long black claws and torn burial rags hunches forward on bare ground in a side view, with both clawed hands hanging low in front of his chest and his mouth slightly open. His ribs and spine show under tight pale skin. A freshly dug open grave with a mound of earth lies behind him, and a few wisps of cold mist drift up behind his back.",
+  "bg": "ochre"
+ }
+}

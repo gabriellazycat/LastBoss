@@ -127,14 +127,27 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 			sb.shadow_color = Color(1.0, 0.78, 0.27, 0.92)
 			sb.shadow_size = int(24.0 * sx)
 			sb.shadow_offset = Vector2.ZERO
-	p.add_theme_stylebox_override("panel", sb)
+	# O fundo colorido (cor do papel do modificador) e a sombra/brilho do nível ficam num Panel do tamanho exato da carta.
+	# Antes eram o estilo do próprio PanelContainer: quando um contêiner esticava a carta (oferta com o rótulo de cima
+	# mais largo que ela, loja), o fundo esticava junto e aparecia ao lado da carta como "outra carta de outra cor por
+	# trás" (bug relatado em 12/11/2026, rodada de UI 13/11/2026). A raiz agora não desenha nada e não estica.
+	p.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	p.custom_minimum_size = Vector2(w, h)
 	p.size = p.custom_minimum_size
+	p.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	p.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	p.set_meta("mold", true)
 	var holder := Control.new()
 	holder.custom_minimum_size = Vector2(w, h)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(holder)
+	var base := Panel.new()
+	base.name = "Base"
+	base.add_theme_stylebox_override("panel", sb)
+	base.position = Vector2.ZERO
+	base.size = Vector2(w, h)
+	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(base)
 	var full := Vector2(300.0, DH)
 
 	# --- atrás da carta: raios girando (só carta grande, nível 2 e 3)
@@ -253,8 +266,9 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 
 	# --- atalho do teclado
 	if key != "":
-		var kt := UiDiario._key_tag(key, 1.0)
-		kt.position = Vector2(36, DH - 24.0) if not compact else Vector2(36, 334.0)
+		var kt := UiDiario._key_tag(key, 1.0 if not compact else 2.2)
+		# Na mão o atalho ia em cima da fita e cobria a 1ª letra do nome ("◆Rei dos Ratos"): agora no canto de cima à direita.
+		kt.position = Vector2(36, DH - 24.0) if not compact else Vector2(300.0 - 50.0, 12.0)
 		body.add_child(kt)
 
 	# --- por cima do recorte: borda de brasa da Explosiva, gema de custo e brilho do nível
@@ -312,7 +326,8 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 	shine.color = Color(1, 1, 1, 0.38)
 	shine.visible = false
 	hot.add_child(shine)
-	hot.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hot.position = Vector2.ZERO
+	hot.size = Vector2(w, h)
 	hot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hot.visible = false
 	holder.add_child(hot)

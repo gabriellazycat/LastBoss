@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card Art Lab</title>
+<style>
+:root{--bg:#1d1a17;--panel:#2a2622;--ink:#ece4d6;--mute:#a59a8a;--line:#3d3730;--acc:#d9a441;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,sans-serif}
+header{position:sticky;top:0;z-index:5;background:rgba(29,26,23,.95);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+h1{font-size:16px;margin:0 8px 0 0;letter-spacing:.02em}
+.grp{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.grp b{color:var(--mute);font-weight:500;margin-right:4px}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:99px;padding:3px 10px;cursor:pointer;font:inherit}
+.chip.on{border-color:var(--acc);color:var(--acc)}
+input[type=search]{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 8px}
+main{padding:12px 16px 60px}
+section{margin:18px 0 28px}
+section h2{font-size:15px;margin:0 0 8px;display:flex;gap:10px;align-items:baseline}
+section h2 small{color:var(--mute);font-weight:400}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:zoom-in;position:relative}
+figure img{display:block;width:100%;aspect-ratio:556/534;object-fit:cover;background:#000}
+figcaption{padding:6px 8px;font-size:12px;color:var(--mute);display:flex;justify-content:space-between;gap:6px}
+figcaption span:first-child{color:var(--ink)}
+.star{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);border:0;color:#fff;border-radius:99px;width:28px;height:28px;cursor:pointer;font-size:15px}
+.star.on{color:var(--acc)}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;z-index:10;padding:16px;gap:16px}
+#lb.open{display:flex}
+#lb img{max-width:min(70vw,1100px);max-height:calc(100vh - 32px);object-fit:contain;margin:auto}
+#lb aside{width:min(360px,30vw);overflow:auto;background:var(--panel);border-radius:8px;padding:12px;font-size:13px}
+#lb aside pre{white-space:pre-wrap;font:12px/1.5 ui-monospace,Consolas,monospace;color:var(--ink)}
+#lb .nav{position:absolute;top:50%;background:rgba(255,255,255,.1);border:0;color:#fff;font-size:28px;width:44px;height:64px;cursor:pointer}
+#favs{white-space:pre-wrap;font:12px ui-monospace,Consolas,monospace;color:var(--acc)}
+@media (max-width:760px){#lb{flex-direction:column}#lb img{max-width:100%;max-height:60vh}#lb aside{width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Card Art Lab</h1>
+  <div class="grp" id="fModel"><b>model</b></div>
+  <div class="grp" id="fMode"><b>mode</b></div>
+  <input type="search" id="q" placeholder="card id / name">
+  <button class="chip" id="onlyFav">★ only</button>
+  <span id="count" style="color:var(--mute)"></span>
+</header>
+<main id="main"></main>
+<p style="padding:0 16px" id="favs"></p>
+<div id="lb"><button class="nav" id="prev" style="left:8px">‹</button><img id="lbImg" alt=""><aside id="lbMeta"></aside><button class="nav" id="next" style="right:8px">›</button></div>
+<script>
+let DATA = {cards: []}, flat = [], visible = [], cur = -1;
+const st = {model: new Set(), mode: new Set(), q: '', fav: false};
+const favKey = 'arte_ia_favs';
+let favs = new Set(); try { favs = new Set(JSON.parse(localStorage.getItem(favKey) || '[]')); } catch (e) {}
+const saveFavs = () => { try { localStorage.setItem(favKey, JSON.stringify([...favs])); } catch (e) {} showFavs(); };
+const modeKey = m => String(m || '').replace(/^i2i\d+/, 'i2i');
+function chips(el, vals, set) {
+  vals.forEach(v => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = v;
+    b.onclick = () => { set.has(v) ? set.delete(v) : set.add(v); b.classList.toggle('on'); render(); }; el.appendChild(b); });
+}
+function showFavs() { document.getElementById('favs').textContent = favs.size ? 'Favorites (send me this list):\n' + [...favs].sort().join('\n') : ''; }
+function render() {
+  const main = document.getElementById('main'); main.innerHTML = ''; visible = [];
+  DATA.cards.forEach(c => {
+    if (st.q && !(c.id + ' ' + c.name).toLowerCase().includes(st.q)) return;
+    const imgs = c.images.filter(i => (!st.model.size || st.model.has(i.model)) && (!st.mode.size || st.mode.has(modeKey(i.mode))) && (!st.fav || favs.has(i.file)));
+    if (!imgs.length) return;
+    const s = document.createElement('section');
+    s.innerHTML = `<h2>${c.name} <small>${c.id} · ${imgs.length}</small></h2><div class="grid"></div>`;
+    const g = s.querySelector('.grid');
+    imgs.forEach(i => {
+      const k = visible.push(i) - 1;
+      const f = document.createElement('figure');
+      f.innerHTML = `<img loading="lazy" src="${i.thumb}" alt=""><button class="star ${favs.has(i.file) ? 'on' : ''}" title="favorite">★</button>
+        <figcaption><span>${i.model}</span><span>${i.mode}${i.seed !== '' ? ' · s' + i.seed : ''}</span></figcaption>`;
+      f.onclick = () => open_(k);
+      f.querySelector('.star').onclick = ev => { ev.stopPropagation(); favs.has(i.file) ? favs.delete(i.file) : favs.add(i.file); ev.target.classList.toggle('on'); saveFavs(); };
+      g.appendChild(f);
+    });
+    main.appendChild(s);
+  });
+  document.getElementById('count').textContent = visible.length + ' images';
+}
+function open_(k) {
+  cur = (k + visible.length) % visible.length; const i = visible[cur];
+  document.getElementById('lbImg').src = i.file;
+  const rows = ['model', 'unet', 'style', 'mode', 'seed', 'denoise', 'w', 'h', 'seconds', 'post', 'created'].filter(x => i[x] !== undefined && i[x] !== '')
+    .map(x => `<div><b>${x}</b>: ${i[x]}</div>`).join('');
+  document.getElementById('lbMeta').innerHTML = `<div><b>${i.file}</b></div>${rows}<pre>${(i.prompt || '').replace(/</g, '&lt;')}</pre>`;
+  document.getElementById('lb').classList.add('open');
+}
+const lb = document.getElementById('lb');
+lb.onclick = e => { if (e.target === lb || e.target.id === 'lbImg') lb.classList.remove('open'); };
+document.getElementById('prev').onclick = e => { e.stopPropagation(); open_(cur - 1); };
+document.getElementById('next').onclick = e => { e.stopPropagation(); open_(cur + 1); };
+document.addEventListener('keydown', e => { if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') lb.classList.remove('open'); if (e.key === 'ArrowLeft') open_(cur - 1); if (e.key === 'ArrowRight') open_(cur + 1); });
+document.getElementById('q').oninput = e => { st.q = e.target.value.toLowerCase(); render(); };
+document.getElementById('onlyFav').onclick = e => { st.fav = !st.fav; e.target.classList.toggle('on'); render(); };
+fetch('gallery.json?' + Date.now()).then(r => r.json()).then(d => {
+  DATA = d; flat = d.cards.flatMap(c => c.images);
+  chips(document.getElementById('fModel'), [...new Set(flat.map(i => i.model))], st.model);
+  chips(document.getElementById('fMode'), [...new Set(flat.map(i => modeKey(i.mode)))], st.mode);
+  render(); showFavs();
+});
+</script>
+</body>
+</html>

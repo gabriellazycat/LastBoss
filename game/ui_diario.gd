@@ -45,8 +45,13 @@ static var _hatch := {}
 static func font(kind: String) -> Font:
 	if _fonts.has(kind):
 		return _fonts[kind]
-	var file: String = {"type": "SpecialElite-Regular.ttf", "hand": "PatrickHand-Regular.ttf", "marker": "PermanentMarker-Regular.ttf",
-		"fell": "IMFellEnglishSC-Regular.ttf", "fell_it": "IMFellEnglish-Italic.ttf"}.get(kind, "PatrickHand-Regular.ttf")
+	# Rodada de UI 13/11/2026: as letras das cartas e do mapa no lugar da datilografada e da caneta (legibilidade).
+	# "type" e "hand" viraram Alegreya Sans (negrito / médio); "marker" virou a IM Fell SC dos nomes das cartas.
+	if kind == "marker":
+		_fonts[kind] = UiParch.font("title")
+		return _fonts[kind]
+	var file: String = {"type": "AlegreyaSans-Bold.ttf", "hand": "AlegreyaSans-Medium.ttf",
+		"fell": "IMFellEnglishSC-Regular.ttf", "fell_it": "IMFellEnglish-Italic.ttf"}.get(kind, "AlegreyaSans-Medium.ttf")
 	var fv := FontVariation.new()
 	fv.base_font = load(F + file)
 	fv.fallbacks = [load(F + "AlegreyaSans-Bold.ttf")]
@@ -89,9 +94,12 @@ static func box(margin: float, shadow := 7.0, state := 9) -> StyleBoxTexture:
 	return sb
 
 
+## Papel com moldura do kit das cartas (UiParch). `kind`/`opts`/`unique` ficam pela compatibilidade: o papel sujo do
+## shader saiu na rodada de UI de 13/11/2026. "contract" e painéis grandes levam a moldura dourada; o resto, o traço fino.
 static func dress(c: Control, kind: String, margin := 12.0, opts := {}, unique := false) -> void:
-	c.add_theme_stylebox_override("panel", box(margin, float(opts.get("shadow", 7.0))))
-	c.material = material(kind, opts, unique)
+	var gold := kind in ["contract", "paper", "lined"] and margin >= 18.0
+	c.add_theme_stylebox_override("panel", UiParch.box("gold" if gold else "ink", margin))
+	c.material = null
 	c.set_meta("paper", true)
 
 
@@ -112,8 +120,6 @@ static func button_material(i := 0, tint := MASK) -> ShaderMaterial:
 
 
 static func on_node_added(n: Node) -> void:
-	if n is Button and n.material == null and not n.has_meta("no_frame"):
-		(n as Button).material = button_material(n.get_instance_id())
 	if n is Label or n is RichTextLabel:
 		_inkify.call_deferred(n)
 
@@ -152,23 +158,20 @@ static func ink_of(c: Color) -> Color:
 static func fill_theme(t: Theme) -> void:
 	t.default_font = font("hand")
 	t.default_font_size = 22
-	var states := {"normal": 9, "hover": 10, "pressed": 11, "disabled": 12, "focus": 13}
-	for st in states:
-		var sb := box(10.0, 4.0, states[st])
-		sb.content_margin_left = 22
-		sb.content_margin_right = 22
-		sb.content_margin_top = 8
-		sb.content_margin_bottom = 7
-		t.set_stylebox(st, "Button", sb)
-		var ob := box(8.0, 4.0, states[st])
-		ob.content_margin_left = 16
-		t.set_stylebox(st, "OptionButton", ob)
-	t.set_font("font", "Button", font("type"))
-	t.set_font("font", "OptionButton", font("type"))
-	t.set_font_size("font_size", "Button", 20)
-	for k in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color"]:
+	# Botões (13/11/2026): papel com traço fino; dourado no mouse; afunda ao apertar (UiParch.button_box).
+	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
+		t.set_stylebox(st, "Button", UiParch.button_box(st))
+		t.set_stylebox(st, "OptionButton", UiParch.button_box(st, Vector4(16, 6, 16, 7)))
+	t.set_stylebox("hover_pressed", "Button", UiParch.button_box("pressed"))
+	t.set_font("font", "Button", UiParch.font("title"))
+	t.set_font("font", "OptionButton", font("hand"))
+	t.set_font_size("font_size", "Button", 21)
+	for k in ["font_color", "font_focus_color", "font_pressed_color"]:
 		t.set_color(k, "Button", INK)
 		t.set_color(k, "OptionButton", INK)
+	for k in ["font_hover_color", "font_hover_pressed_color"]:
+		t.set_color(k, "Button", UiParch.BLOOD)
+		t.set_color(k, "OptionButton", UiParch.BLOOD)
 	t.set_color("font_disabled_color", "Button", Color(0.4, 0.37, 0.33))
 	t.set_constant("outline_size", "Button", 0)
 	t.set_color("font_color", "Label", INK)
@@ -187,13 +190,14 @@ static func fill_theme(t: Theme) -> void:
 		s.set_content_margin_all(m)
 		s.anti_aliasing = true
 		return s
-	var pap := Color(0.9, 0.86, 0.76)
-	t.set_stylebox("panel", "PopupMenu", flat.call(pap, INK, 2, 6))
+	t.set_stylebox("panel", "PopupMenu", UiParch.box("ink", 8.0))
 	t.set_stylebox("hover", "PopupMenu", flat.call(Color(0.89, 0.8, 0.55), INK, 0, 4))
 	t.set_color("font_color", "PopupMenu", INK)
 	t.set_color("font_hover_color", "PopupMenu", BLOOD)
 	t.set_font("font", "PopupMenu", font("type"))
-	t.set_stylebox("panel", "TooltipPanel", flat.call(pap, INK, 1, 8))
+	var tip := UiParch.box("ink", 10.0)
+	t.set_stylebox("panel", "TooltipPanel", tip)
+	t.set_font("font", "TooltipLabel", font("hand"))
 	t.set_color("font_color", "TooltipLabel", INK)
 	var track: StyleBoxFlat = flat.call(INK, INK, 0, 0)
 	track.content_margin_top = 1
@@ -201,8 +205,8 @@ static func fill_theme(t: Theme) -> void:
 	t.set_stylebox("slider", "HSlider", track)
 	t.set_stylebox("grabber_area", "HSlider", track)
 	t.set_stylebox("grabber_area_highlight", "HSlider", track)
-	t.set_icon("grabber", "HSlider", _blot_icon(22, BLOOD))
-	t.set_icon("grabber_highlight", "HSlider", _blot_icon(24, BLOOD.lightened(0.15)))
+	t.set_icon("grabber", "HSlider", _gem_icon(22, UiParch.BLOOD))
+	t.set_icon("grabber_highlight", "HSlider", _gem_icon(24, UiParch.BLOOD.lightened(0.15)))
 	t.set_icon("checked", "CheckBox", _check_icon(true))
 	t.set_icon("unchecked", "CheckBox", _check_icon(false))
 	t.set_icon("checked", "CheckButton", _check_icon(true))
@@ -214,6 +218,22 @@ static func fill_theme(t: Theme) -> void:
 	t.set_stylebox("grabber_highlight", "VScrollBar", flat.call(Color(0.25, 0.2, 0.15, 0.8), Color(0, 0, 0, 0), 0, 3))
 	t.set_stylebox("grabber_pressed", "VScrollBar", flat.call(BLOOD, Color(0, 0, 0, 0), 0, 3))
 	t.set_stylebox("separator", "HSeparator", flat.call(Color(0.12, 0.1, 0.08, 0.5), Color(0, 0, 0, 0), 0, 0))
+
+
+## Pegador de slider: losango vermelho com aro dourado (o losango do filete das cartas).
+static func _gem_icon(n: int, col: Color) -> ImageTexture:
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var c := (n - 1) * 0.5
+	for y in n:
+		for x in n:
+			var d := absf(x - c) + absf(y - c)
+			if d <= c:
+				var rim := clampf((d - (c - 3.0)) / 1.5, 0.0, 1.0)
+				var a := clampf(c - d + 0.5, 0.0, 1.0)
+				var body := col.lightened(0.25 * (1.0 - (x + y) / (2.0 * n)))
+				var px := body.lerp(UiParch.GOLD, rim)
+				img.set_pixel(x, y, Color(px.r, px.g, px.b, a))
+	return ImageTexture.create_from_image(img)
 
 
 ## Mancha de tinta (pegador de slider).
@@ -251,13 +271,13 @@ static func _check_icon(on: bool) -> ImageTexture:
 
 static func label(l: Label, size: int, _outline: int) -> void:
 	l.add_theme_font_override("font", font("hand"))
-	l.add_theme_font_size_override("font_size", roundi(size * 1.18))
+	l.add_theme_font_size_override("font_size", roundi(size * 1.06))
 	l.add_theme_constant_override("outline_size", 0)
 
 
 static func title(l: Label, size: int, col: Color) -> void:
-	l.add_theme_font_override("font", font("marker") if size >= 30 else font("type"))
-	l.add_theme_font_size_override("font_size", size if size >= 30 else roundi(size * 1.05))
+	l.add_theme_font_override("font", UiParch.font("title") if size >= 24 else font("type"))
+	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", ink_of(col) if col.get_luminance() > 0.42 else col)
 	l.add_theme_constant_override("outline_size", 0)
 	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
@@ -265,38 +285,36 @@ static func title(l: Label, size: int, col: Color) -> void:
 
 ## Título solto sobre o mundo (sem papel embaixo): fita vermelha atrás do texto.
 static func tape_title(l: Label, tint := TYPES["monster"][0]) -> PanelContainer:
+	# Desde 13/11/2026: a fita dobrada vermelha do nome das cartas, com o título em Fell SC creme.
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", box(0.0, 4.0))
-	(p.get_theme_stylebox("panel") as StyleBoxTexture).content_margin_left = 26
-	(p.get_theme_stylebox("panel") as StyleBoxTexture).content_margin_right = 26
-	(p.get_theme_stylebox("panel") as StyleBoxTexture).content_margin_top = 4
-	(p.get_theme_stylebox("panel") as StyleBoxTexture).content_margin_bottom = 2
-	p.material = material("tape", {"tint": Color(tint.r, tint.g, tint.b, 0.95), "shadow": 4.0, "seed": 0.3})
+	p.add_theme_stylebox_override("panel", UiParch.ribbon_box("monster", false, Vector4(56, 2, 56, 12)))
 	p.set_meta("tape", true)
 	l.set_meta("no_ink", true)
-	l.add_theme_color_override("font_color", Color(1.0, 0.96, 0.9))
-	l.add_theme_constant_override("outline_size", 0)
+	l.add_theme_font_override("font", UiParch.font("title"))
+	l.add_theme_color_override("font_color", UiParch.CREAM)
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.35))
+	l.add_theme_constant_override("outline_size", 3)
 	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	p.add_child(l)
 	p.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	p.rotation_degrees = -1.2
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return p
 
 
 ## Rótulo numa tira de fita crepe (texto a tinta): legendas sobre o mundo, cabeçalhos das ofertas.
 static func tape_wrap(c: Control, tint := MASK, rot := -1.5) -> PanelContainer:
+	# Desde 13/11/2026: etiqueta de papel com traço fino (sem fita crepe torta).
 	var p := PanelContainer.new()
-	var sb := box(0.0, 3.0)
+	var sb := UiParch.box("ink", 0.0)
 	sb.content_margin_left = 16
 	sb.content_margin_right = 16
-	sb.content_margin_top = 3
-	sb.content_margin_bottom = 2
+	sb.content_margin_top = 4
+	sb.content_margin_bottom = 5
 	p.add_theme_stylebox_override("panel", sb)
-	p.material = material("tape", {"tint": tint, "shadow": 3.0, "seed": randf()})
 	p.set_meta("paper", true)
 	p.add_child(c)
 	p.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	p.rotation_degrees = rot
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return p
 
@@ -304,15 +322,13 @@ static func tape_wrap(c: Control, tint := MASK, rot := -1.5) -> PanelContainer:
 ## Bilhete: etiqueta de papel claro em volta de um texto (efeito de melhoria, preço).
 static func note_wrap(c: Control) -> PanelContainer:
 	var p := PanelContainer.new()
-	var sb := box(6.0, 4.0)
-	sb.content_margin_left = 10
-	sb.content_margin_right = 10
+	var sb := UiParch.box("ink", 6.0)
+	sb.content_margin_left = 12
+	sb.content_margin_right = 12
 	p.add_theme_stylebox_override("panel", sb)
-	p.material = material("patch", {"grime": 0.2, "shadow": 4.0, "seed": randf(), "rough": 1.4})
 	p.set_meta("paper", true)
 	p.add_child(c)
 	p.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	p.rotation_degrees = randf_range(-1.5, 1.5)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return p
 
@@ -321,20 +337,8 @@ static func note_wrap(c: Control) -> PanelContainer:
 
 ## Barra a lápis: contorno tremido e enchimento hachurado na cor.
 static func bar(col: Color, w: float, h: float) -> ProgressBar:
-	var b := ProgressBar.new()
-	b.custom_minimum_size = Vector2(w, h)
-	b.show_percentage = false
-	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.material = material("slot", {"shadow": 0.0, "rough": 0.8})
-	b.add_theme_stylebox_override("background", box(0.0, 0.0))
-	var fs := StyleBoxTexture.new()
-	fs.texture = _hatch_tex(col)
-	fs.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-	fs.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
-	fs.set_expand_margin_all(-2.5 if h >= 10 else -1.5)
-	fs.set_content_margin_all(0)
-	b.add_theme_stylebox_override("fill", fs)
-	return b
+	# Desde 13/11/2026: trilho escuro com aro dourado (UiParch.bar), no lugar do lápis hachurado.
+	return UiParch.bar(col, w, h)
 
 
 ## Hachura de lápis: traços inclinados na cor sobre um fundo da mesma cor mais claro (32 px: o shader ignora).
@@ -360,14 +364,26 @@ static func badge(col: Color, size: int, w: float, shape: String) -> PanelContai
 	g.custom_minimum_size = Vector2(w, w)
 	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sd := randf() * 10.0
-	g.draw.connect(func(): draw_badge(g, Rect2(Vector2.ZERO, g.size), col, shape, sd))
+	# Elixir (13/11/2026): a mesma gema roxa do custo das cartas, com o número em Fell creme e contorno roxo.
+	var gem := shape == "crystal" and col.b > col.r
+	if gem:
+		# Desenhada pelo próprio painel (o número continua filho "N" direto, como os outros chamam).
+		var gtex := UiParch.tex("gem_common_purple")
+		var gsb := StyleBoxEmpty.new()
+		gsb.content_margin_top = roundf(w * 0.3)
+		g.add_theme_stylebox_override("panel", gsb)
+		g.custom_minimum_size = Vector2(w * 0.92, w * 1.05)
+		g.draw.connect(func(): g.draw_texture_rect(gtex, Rect2(Vector2.ZERO, g.size), false))
+	else:
+		g.draw.connect(func(): draw_badge(g, Rect2(Vector2.ZERO, g.size), col, shape, sd))
 	var l := Label.new()
 	l.name = "N"
 	l.set_meta("no_ink", true)
-	l.add_theme_font_override("font", font("type"))
+	l.add_theme_font_override("font", font("fell") if gem else font("type"))
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", Color(1.0, 0.95, 0.88) if shape != "crest" else INK)
-	l.add_theme_constant_override("outline_size", 0)
+	l.add_theme_constant_override("outline_size", 5 if gem else 0)
+	l.add_theme_color_override("font_outline_color", Color(0.14, 0.03, 0.24))
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -391,10 +407,11 @@ static func draw_badge(ci: CanvasItem, r: Rect2, col: Color, shape: String, sd :
 		"crest":
 			var pts := PackedVector2Array([c + Vector2(-s * 0.82, -s * 0.84), c + Vector2(s * 0.82, -s * 0.84), c + Vector2(s * 0.8, s * 0.1),
 				c + Vector2(0, s * 0.96), c + Vector2(-s * 0.8, s * 0.1)])
-			ci.draw_colored_polygon(pts, Color(0.88, 0.83, 0.72))
+			ci.draw_colored_polygon(pts, UiParch.PARCH)
 			var loop := pts.duplicate()
 			loop.append(pts[0])
-			ci.draw_polyline(loop, INK, maxf(1.5, s * 0.1), true)
+			ci.draw_polyline(loop, UiParch.GOLD, maxf(2.5, s * 0.16), true)
+			ci.draw_polyline(loop, INK, maxf(1.0, s * 0.05), true)
 			ci.draw_line(c + Vector2(-s * 0.5, -s * 0.5), c + Vector2(s * 0.5, -s * 0.5), Color(INK.r, INK.g, INK.b, 0.4), 1.0, true)
 		"sigil":
 			ci.draw_colored_polygon(blob(c, s * 0.95, sd), Color(0.1, 0.08, 0.06))
@@ -411,27 +428,8 @@ static func draw_badge(ci: CanvasItem, r: Rect2, col: Color, shape: String, sd :
 
 ## Gota de tinta do Elixir: contorno, enchida de baixo para cima conforme `f`.
 static func draw_pip(ci: CanvasItem, r: Rect2, f: float, col: Color, _t: float) -> void:
-	var c := r.get_center() + Vector2(0, r.size.y * 0.08)
-	var s := minf(r.size.x * 0.5, r.size.y * 0.5) * 0.92
-	var pts := PackedVector2Array()
-	for i in 24:
-		var a := TAU * i / 24.0
-		var rr := s * (1.0 if sin(a) > -0.2 else 1.0 - (-sin(a) - 0.2) * 0.0)
-		var p := c + Vector2(cos(a), sin(a)) * rr
-		if sin(a) < -0.3:
-			p.x = lerpf(p.x, c.x, (-sin(a) - 0.3) / 0.7 * 0.75)
-			p.y = c.y - s - (-sin(a) - 0.3) / 0.7 * s * 0.55
-		pts.append(p)
-	if f > 0.0:
-		var ink := col if f >= 1.0 else col.lerp(Color(0.85, 0.8, 0.7), 0.45)
-		var top := c.y + s - (s * 2.5) * clampf(f, 0.0, 1.0)
-		var fill := PackedVector2Array()
-		for p in pts:
-			fill.append(Vector2(p.x, maxf(p.y, top)))
-		ci.draw_colored_polygon(fill, ink)
-	var loop := pts.duplicate()
-	loop.append(pts[0])
-	ci.draw_polyline(loop, Color(col.r * 0.55, col.g * 0.55, col.b * 0.55), 1.6, true)
+	# Desde 13/11/2026: a gota da gema de custo das cartas (roxa com aro dourado).
+	UiParch.draw_drop(ci, r, f, col)
 
 
 # ---------------------------------------------------------------- cartas
@@ -728,6 +726,8 @@ static func card_state(p: Control, selected: bool, playable: bool) -> void:
 
 
 static func set_hot(c: Control, on: bool) -> void:
+	# Painel em foco (contrato do vilão, cartaz do herói): sobe um pouco e clareia.
+	c.self_modulate = Color(1.06, 1.03, 0.96) if on else Color.WHITE
 	var m := c.material as ShaderMaterial
 	if m:
 		m.set_shader_parameter("hot", 1.0 if on else 0.0)
@@ -737,31 +737,17 @@ static func set_hot(c: Control, on: bool) -> void:
 
 ## Botão de menu: fita crepe datilografada; a primeira opção pode ser vermelha.
 static func menu_button(b: Button, size: int, red := false) -> void:
-	b.set_meta("no_frame", true)
-	b.material = material("tape", {"button": true, "seed": randf(), "tint": Color(0.66, 0.15, 0.1, 0.95) if red else MASK, "shadow": 4.0})
-	b.add_theme_font_override("font", font("type"))
-	b.add_theme_font_size_override("font_size", size)
-	var c := Color(1.0, 0.96, 0.9) if red else INK
-	for k in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color", "font_hover_pressed_color"]:
-		b.add_theme_color_override(k, c)
-	b.rotation_degrees = randf_range(-1.6, 1.6)
+	# Desde 13/11/2026: a opção principal é a fita vermelha das cartas; as outras, papel com traço fino.
+	if red:
+		UiParch.ribbon_button(b, "monster", size)
+	else:
+		UiParch.paper_button(b, size)
 
 
 ## Traço de pincel sob um título.
 static func ornament(w: float) -> Control:
-	var c := Control.new()
-	c.custom_minimum_size = Vector2(w, 16)
+	var c := UiParch.divider(w)
 	c.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	c.draw.connect(func():
-		var pts := PackedVector2Array()
-		var pts2 := PackedVector2Array()
-		for i in 25:
-			var t := float(i) / 24.0
-			pts.append(Vector2(t * c.size.x, 9.0 - sin(t * 3.0) * 3.0 + sin(t * 17.0) * 0.8))
-			pts2.append(Vector2(8.0 + t * (c.size.x - 30.0), 13.0 - sin(t * 2.5 + 1.0) * 2.0))
-		c.draw_polyline(pts, BLOOD, 3.2, true)
-		c.draw_polyline(pts2, Color(BLOOD.r, BLOOD.g, BLOOD.b, 0.7), 1.8, true))
 	return c
 
 
@@ -786,7 +772,5 @@ static func _draw_icon(b: Button, kind: String) -> void:
 
 ## Fundo de um Control que se desenha sozinho (faixa de rota, mapa grande): papel.
 static func draw_plate(c: Control, kind := "paper", grow := Vector2.ZERO) -> void:
-	if c.material == null:
-		c.material = material("paper", {"grime": 0.25, "seed": 0.4, "shadow": 6.0})
-		c.set_meta("paper", true)
-	c.draw_style_box(box(0.0, 6.0), Rect2(-grow, c.size + grow * 2.0))
+	c.set_meta("paper", true)
+	c.draw_style_box(UiParch.box("gold", 0.0), Rect2(-grow, c.size + grow * 2.0))

@@ -1,0 +1,26 @@
+{
+ "corpse_blast": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, stumbling backwards with his sword arm flung wide in his right gauntlet. A single yellowed skeleton with rusty scraps of armor bursts apart in front of him in a ring of pale bone shards and cold cyan-green ghostly light. Dust and small bone fragments fly outward past his shoulders.",
+  "bg": "rose"
+ },
+ "soul_harvest": {
+  "subject": "A single yellowed human skeleton with dark empty eye sockets and rusty scraps of armor, standing upright with both arms hanging at its sides and its head tilted back. Four small pale wisps of cold cyan-green ghostly light rise from its ribcage and curl upward toward a hovering glowing orb above its skull. A leaning wooden grave marker stands behind it, and faint embers of light drift up behind its shoulders.",
+  "bg": "ochre"
+ },
+ "arcane_spark": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, thrown off his feet and arching backwards in mid-air seen from the side. One bright violet bolt of lightning strikes his chest plate and sends a ring of sparks across his armor. A small scorched patch of ground marks where he stood, and thin violet sparks trail behind him.",
+  "bg": "sand"
+ },
+ "shadow_echo": {
+  "subject": "Hooded cultists in dark maroon robes with their faces in shadow, one cultist standing large in front with both hands raised palms-forward before his chest. A second dark translucent copy of the same cultist stands just behind and slightly to the side, making the identical pose in deep violet shadow. A low stone altar stands behind them, and wisps of dark smoke curl up between the two figures.",
+  "bg": "sand"
+ },
+ "acolyte": {
+  "subject": "Three hooded cultists in dark maroon robes with their faces in shadow, standing side by side in a shallow line. Each one holds his right hand out forward with a small ball of dark violet light floating above the open palm, his left hand tucked against his belly. A lone leaning dead tree stands behind them, and thin violet sparks drift up behind their hoods.",
+  "bg": "teal"
+ },
+ "shadow_mark": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, running away with his back to us and his sword held low in his right gauntlet. A glowing dark violet circle is branded on the middle of his back plate, with thin violet smoke rising from it. A crumbling stone archway stands ahead of him, and dust kicks up from his heels.",
+  "bg": "ochre"
+ }
+}

@@ -1,0 +1,31 @@
+{
+ "raised_servant": {
+  "subject": "A single yellowed human skeleton with dark empty eye sockets and rusty scraps of armor, hunched forward and running at the viewer in a low chase. His right bony hand reaches out ahead of him with the fingers spread, his left arm swings back at his side. Pale cyan-green ghostly light glows in his ribcage, and a single leaning gravestone stands behind him with thin wisps of cold smoke trailing from his heels.",
+  "bg": "ochre"
+ },
+ "life_drain": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, lying on his back propped on one elbow, his right gauntlet still gripping the sword hilt with the blade resting across his legs. Thin streams of cold cyan-green ghostly light are pulled out of his chest and rise in a curve up behind him toward a faint hooded shape. A few flecks of pale light drift above his shoulders.",
+  "bg": "rose"
+ },
+ "profane_ritual": {
+  "subject": "Four yellowed human skeletons with dark empty eye sockets and rusty scraps of armor stand in a half circle facing the viewer, each holding one rusty short sword in his right hand with the blade pointing up. Dark violet energy flows down onto their skulls and shoulders from above, and their eye sockets blaze with cold cyan-green ghostly light. A low stone altar with a single black candle stands behind them, and faint violet embers drift upward.",
+  "bg": "sand"
+ },
+ "open_grave": {
+  "subject": "A freshly dug open grave in dark earth with a cracked wooden headstone leaning at its head. Two yellowed human skeletons with dark empty eye sockets and rusty scraps of armor climb out of the hole, the first gripping the grass edge with both bony hands, the second reaching up with his right arm. Cold cyan-green ghostly light glows from deep inside the grave, and a single bare dead tree stands behind it with thin mist rolling away.",
+  "bg": "ochre"
+}
+ ,
+ "soul_storm": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, swinging his sword wildly at the air with his right gauntlet while his left arm stays raised. Five pale translucent ghosts of hooded figures trailing into wisps swirl around him in a ring, each reaching toward him with both hands. Cold cyan-green ghostly light flickers in the swirling air, and a few cyan sparks drift behind him.",
+  "bg": "rose"
+ },
+ "bone_colossus": {
+  "subject": "A towering colossus built from hundreds of yellowed bones, with a broad ribcage, two thick arms made of stacked leg bones and a single huge skull with dark empty eye sockets lit by cold cyan-green ghostly light. He stands facing the viewer with both fists planted on the ground in front of him. Several smaller yellowed human skeletons with rusty scraps of armor are fused into his shoulders, and a single broken stone pillar stands behind him with pale dust rising from his feet.",
+  "bg": "slate"
+ },
+ "arcane_apocalypse": {
+  "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, kneeling and bracing with his right gauntlet planting the sword tip into the ground and his left hand pressed on his raised knee, seen from a three-quarter view. Above him a huge violet vortex of cold cyan-green ghostly light opens in the air, and six glowing orbs of that light fall toward him in a spread. A scorched cracked patch of ground lies beneath him with drifting violet embers behind.",
+  "bg": "teal"
+ }
+}

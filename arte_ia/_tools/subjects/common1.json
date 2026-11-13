@@ -1,0 +1,26 @@
+{
+ "barricade": {
+  "subject": "A sturdy barricade of five thick wooden stakes sharpened to points, leaning outward in a row and lashed together by two iron bands across the middle. One broken wooden cart wheel rests against its left end. A thin trail of dust drifts up behind the stakes, and a single leafless dead tree stands far behind them.",
+  "bg": "teal"
+ },
+ "deep_chalice": {
+  "subject": "A tall dark stone chalice carved into a cavern floor, its wide bowl filled to the brim with glowing amber liquid. Four short stone pillars stand evenly around its base. Warm amber light spills over the rim, and a few soft embers float up behind the bowl.",
+  "bg": "slate"
+ },
+ "dark_sacrifice": {
+  "subject": "Three grey rats with pink ears, pink tails and small red eyes sit in a row on a flat stone altar, each one dissolving at its back into drifting dark violet shadow that rises in thin wisps. A single squat black candle burns at the left end of the altar. Faint motes of violet shadow stream upward behind the rats.",
+  "bg": "sand"
+ },
+ "war_banner": {
+  "subject": "A tall wooden pole planted upright in the ground, flying one large crimson war banner with a ragged swallowtail edge that flaps to the right in the wind. A skull of a horned beast is mounted at the top of the pole. A few sparks and wisps of dust blow behind the banner, and a single broken spear is stuck in the ground at its base.",
+  "bg": "teal"
+ },
+ "cave_troll": {
+  "subject": "A massive grey-green cave troll with a hunched back, thick mossy skin, a heavy jaw and small dark eyes, standing upright on two thick legs. His right hand grips one big gnarled wooden club resting on his shoulder, and his left hand holds one rough boulder raised at his chest, ready to throw. A single stalagmite rises behind him, and a little dust falls from the cave ceiling.",
+  "bg": "lilac"
+ },
+ "ruin_titan": {
+  "subject": "A towering titan built from weathered grey stone blocks and broken pillars, with a rough rectangular head, two glowing amber eyes, two huge block fists and a mossy chest. He lifts his right leg to stomp, his left fist hangs at his side, and cracks spread across the ground beneath his foot. A single ruined archway stands behind him, and clouds of stone dust billow up around his legs.",
+  "bg": "ochre"
+ }
+}

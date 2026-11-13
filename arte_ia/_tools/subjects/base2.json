@@ -1,0 +1,34 @@
+{
+ "web": {
+  "subject": "A lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, seen from the three-quarter front, crouching low behind a plain round wooden shield with an iron rim held in his left arm, his right gauntlet gripping the sword near the ground. Thick white spider silk spreads in a wide round sheet over the ground and clings to his boots and the lower edge of his shield. A few strands of pale silk drift in the air behind him.",
+  "bg": "ochre"
+ },
+ "mimic": {
+  "subject": "A heavy wooden treasure chest with black iron bands and a brass lock, its lid thrown open to show a wide mouth of pointed yellow teeth and a long pink tongue. A few gold coins rest on the lip of the chest, and the chest sits low on the ground facing us. A thin cloud of dust rises behind it, and a single stone doorway stands in the far corner of the room.",
+  "bg": "teal"
+ },
+ "boiling_oil": {
+  "subject": "A lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, dropping to both knees, seen from the side, his right gauntlet holding the sword point down on the ground and his left hand pressed against his shoulder. Dark glossy oil pours down over his helmet and shoulders from above, and thin steam rises from the oil and from the wet ground around him. A black iron cauldron tilts at the very top edge of the scene behind him.",
+  "bg": "sand"
+ },
+ "ghost": {
+  "subject": "A pale translucent ghost of a hooded figure trailing into wisps, floating upright and facing us, both thin arms hanging at its sides with long pale hands open. Its hood is empty and dark except for two small cold cyan-green glowing eyes, and its lower body fades into a long tail of drifting mist. A single bare dead tree stands behind it, and thin wisps of cold cyan-green ghostly light curl in the air.",
+  "bg": "rose"
+ },
+ "gargoyle_tower": {
+  "subject": "A tall round tower of grey weathered stone with a pointed slate roof, and a large stone gargoyle with folded bat-like wings, curved horns and a heavy jaw crouching on a ledge near the top, its right clawed hand lifted and holding one round grey boulder. The gargoyle looks down toward the front, and moss grows on the lower stones of the tower. A few stone chips and a thin cloud of dust fall behind the gargoyle, and one small dark window opens in the wall beneath it.",
+  "bg": "ochre"
+ },
+ "werewolf": {
+  "subject": "A massive werewolf with dark grey-brown fur, a long wolf snout, pointed ears and a broad hunched back, standing on its two powerful hind legs and seen from the three-quarter front. Its right clawed arm is raised high beside its head, its left arm hangs at its side, and its yellow eyes stare ahead with its jaws parted to show long fangs. A full pale moon hangs low behind it, and wisps of dust and torn grass swirl around its feet.",
+  "bg": "teal"
+ },
+ "scrap_golem": {
+  "subject": "A broad squat golem built from rusted iron plates, bent sword blades and old dented helmets welded into a thick body, with two heavy arms and two stout legs and a single glowing orange slit for an eye. It stands facing us, its right fist raised to chest height and its left arm hanging at its side. Tiny orange sparks and thin rust-colored dust drift behind it, and one broken cart wheel leans on the ground beside its left foot.",
+  "bg": "lilac"
+ },
+ "soul_feast": {
+  "subject": "Four yellowed human skeletons with dark empty eye sockets and rusty scraps of armor, standing in a loose half circle facing us, each with both arms raised and open hands lifted toward the sky. Ribbons of cold cyan-green ghostly light spiral down from above and pour into their ribcages, making their bones glow from within. A single cracked gravestone stands behind the middle skeleton, and a few pale wisps rise from the ground.",
+  "bg": "sand"
+ }
+}

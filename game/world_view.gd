@@ -1163,9 +1163,9 @@ func _build_bars() -> void:
 	var q := QuadMesh.new()
 	q.size = Vector2(1.4, 0.16)
 	bar_mm.mesh = q
-	bar_mm.instance_count = 256
+	bar_mm.instance_count = 384     # 3 quadros por barra (aro dourado, trilho, vida): até 128 barras
 	bar_mm.visible_instance_count = 0
-	bar_buf.resize(256 * 16)
+	bar_buf.resize(384 * 16)
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = bar_mm
 	var m := StandardMaterial3D.new()
@@ -1377,7 +1377,7 @@ func _draw_bars(alpha: float) -> void:
 	var buf := bar_buf
 	bar_buf = PackedFloat32Array()
 	for i in U.hi:
-		if n >= 254:
+		if n >= 381:
 			break
 		if U.alive[i] == 0 or U.max_hp[i] < 300.0 or U.hp[i] >= U.max_hp[i]:
 			continue
@@ -1385,12 +1385,16 @@ func _draw_bars(alpha: float) -> void:
 		var x := lerpf(U.ox[i], U.px[i], alpha)
 		var z := lerpf(U.oy[i], U.py[i], alpha)
 		var y := 3.0 if U.arch[i] != K.Arch.STRUCTURE else 3.9
-		for pass_ in 2:
+		# Rodada de UI 13/11/2026: o mesmo desenho das barras da interface (aro dourado, trilho escuro, vida do
+		# vermelho-sangue ao verde-musgo da paleta do pergaminho), no lugar do vermelho→verde neon.
+		for pass_ in 3:
 			var o := n * 16
-			var sx := 1.0 if pass_ == 0 else maxf(f, 0.02)
-			var c := Color(0.05, 0.03, 0.08, 0.85) if pass_ == 0 else Color(0.9, 0.25, 0.25).lerp(Color(0.4, 1.0, 0.45), f)
+			var sx: float = [1.07, 1.0, maxf(f, 0.02)][pass_]
+			var sy: float = [1.5, 1.0, 0.62][pass_]
+			var c: Color = [Color(0.8, 0.58, 0.2, 0.95), Color(0.12, 0.08, 0.05, 0.92),
+				Color(0.62, 0.1, 0.07).lerp(Color(0.42, 0.66, 0.26), f)][pass_]
 			buf[o] = sx; buf[o + 1] = 0.0; buf[o + 2] = 0.0; buf[o + 3] = x
-			buf[o + 4] = 0.0; buf[o + 5] = 1.0 if pass_ == 0 else 0.6; buf[o + 6] = 0.0; buf[o + 7] = y
+			buf[o + 4] = 0.0; buf[o + 5] = sy; buf[o + 6] = 0.0; buf[o + 7] = y
 			buf[o + 8] = 0.0; buf[o + 9] = 0.0; buf[o + 10] = 1.0; buf[o + 11] = z
 			buf[o + 12] = c.r; buf[o + 13] = c.g; buf[o + 14] = c.b; buf[o + 15] = c.a
 			n += 1
