@@ -3,33 +3,26 @@
 Rodada autônoma (Gabriel fora, autonomia total de 12/11). Retomada pela tarefa agendada
 `lastboss-arte-ia-retomar` às 05:10 de 13/11.
 
-## Resultado
+## Resultado (atualizado 13/11, 11:20)
 
-- **49 de 84 cartas** com arte nova da IA estão no jogo, na branch `arte-ia` (worktree
-  `C:\Users\gabri\Desktop\LastBoss-arte-ia`). Main não foi tocada.
-- **35 cartas ainda sem arte nova** (todas do lote `base`): shadow_bolt, bat_nest, bone_totem, cultists, ogre, web,
-  mimic, boiling_oil, ghost, gargoyle_tower, werewolf, scrap_golem, soul_feast, gold_bait, burn_village,
-  soul_collector, forbidden_library, dark_forge, rabid_rats, pack_call, oil_splash, torch, fire_imp, tar_net,
-  gold_merc, toll, cursed_coins, bone_legion, ghoul, corpse_blast, soul_harvest, arcane_spark, shadow_echo, acolyte,
-  shadow_mark. Elas continuam com a arte antiga no jogo.
-- O lote `base` **continua gerando sozinho** (processo `python -I deck.py lote base`, iniciado 02:04 pela sessão
-  anterior); cada carta pronta aparece em `arte_ia/final/`.
-- **Verificação (na worktree):** `--import` 37 s; testes `res://tests/tests.tscn` em 83 s com **falhas: 0**;
-  export Windows em 13 s → `C:\Users\gabri\Desktop\LastBoss-arte-ia\export\LastBoss.exe` (+ `.pck` e o
-  `Jogar com tudo liberado.bat` copiado da pasta principal). Os erros "Cannot open strings.*.translation" do import
-  são da primeira importação de uma pasta nova (os arquivos ainda não existiam); os testes rodaram depois sem falha.
+- **As 84 cartas** têm a arte nova da IA no jogo, na branch `arte-ia` (commit `1e37802`, worktree
+  `C:\Users\gabri\Desktop\LastBoss-arte-ia`). Main não foi tocada. `data/card_art.json`: 84 cartas `painted`.
+- Para revisar: pranchas em `LastBoss\arte_ia\pranchas\` (plague, dragon, lich, common, base), galeria em
+  `http://127.0.0.1:8791/`, cada carta em `LastBoss\arte_ia\final\<id>.png`.
+- **Verificação (na worktree):** `--import` ok; testes `res://tests/tests.tscn` com **falhas: 0**; export Windows →
+  `C:\Users\gabri\Desktop\LastBoss-arte-ia\export\LastBoss.exe` (+ `.pck`).
 - **Não conferido:** o jogo não foi aberto com mouse nem visto em captura; só os testes automáticos.
 
-## Por que não terminou
+## Por que demorou
 
-A GPU está sendo dividida com outro projeto (teste IA→3D das cabeças do dominó, mesma instância do ComfyUI em
-`127.0.0.1:8188`). Cada job 3D troca os modelos de ~13 GB na VRAM (`--lowvram`), e o ritmo das cartas caiu de
-~40 s para **~1 hora por carta** (arquivos de saída às 00:57, 02:04, 03:01, 03:57, 05:08). Nesse ritmo as 35 que faltam
-levariam mais de um dia. Os jobs do dominó não foram cancelados: são outro trabalho dele.
+A GPU ficou dividida com o teste IA→3D das cabeças do dominó (mesmo ComfyUI em `127.0.0.1:8188`): cada carta
+passou de ~40 s para ~1 h. Às 11:00 de 13/11 o Gabriel cancelou o entalhado e pediu foco nas cartas. Parei a
+`fila.sh` e o `img3d.py` do dominó, reiniciei o ComfyUI e a sessão do dominó confirmou a pausa (não manda nada à
+GPU até ele liberar). As últimas 15 cartas saíram em ~40 s cada.
 
 ## Decisões assumidas (sem perguntar)
 
-1. **Integração parcial agora** (49 cartas) em vez de esperar o baralho inteiro: assim há um build para testar.
+1. **Integração parcial primeiro** (49 cartas, commit `6a14326`) e o resto ao terminar (`1e37802`).
 2. **Worktree separada** para a branch `arte-ia`: outra sessão agendada (refazer UI e menus) estava editando os
    arquivos da main no mesmo minuto (`game/hud.gd`, `shop_ledger.gd`...). Copiar PNGs ou trocar de branch na pasta
    da main misturaria os dois trabalhos. A branch `arte-ia` parte do último commit da main (`f3c6038`), então **não
@@ -40,7 +33,7 @@ levariam mais de um dia. Os jobs do dominó não foram cancelados: são outro tr
    fixas não foram mudados.
 5. Não rodei a revisão semanal do task-observer (devida desde 29/10): fora do escopo desta tarefa.
 
-## Como terminar quando a GPU liberar
+## (histórico) Como terminar quando a GPU liberar
 
 ```bash
 cd C:/Users/gabri/Desktop/LastBoss/arte_ia/_tools && python -I deck.py lote base && python -I build_gallery.py
