@@ -18,7 +18,7 @@ Relatório: `LastBoss-arte-ia\docs\ARTE_IA_RELATORIO.md`. Build: `LastBoss-arte-
 - [x] Export em `LastBoss-arte-ia\export\LastBoss.exe`.
 - [x] Commit na branch `arte-ia` e relatório.
 
-Falta só o Gabriel: jogar, revisar as pranchas, pedir refações e decidir o merge na main.
+**13/11 11:26: mesclado na main** (pedido do Gabriel: todas as mudanças e branches na main). Build atual: `LastBoss\export\LastBoss.exe` (o anterior ficou em `export/_anterior_2026-11-13/`). A worktree `LastBoss-arte-ia` ficou obsoleta. Falta só o Gabriel jogar, revisar as pranchas e pedir refações.
 
 ## Como continuar (comandos)
 
