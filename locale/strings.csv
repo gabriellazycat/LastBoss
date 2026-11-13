@@ -190,6 +190,7 @@ SET_music,Música,Music
 SET_sfx,Efeitos sonoros,Sound effects
 SET_fullscreen,Tela cheia,Fullscreen
 SET_vsync,Sincronia vertical (VSync),Vertical sync (VSync)
+SET_paint_look,Mundo pintado (guache),Painted world (gouache)
 SET_quality,Qualidade gráfica,Graphics quality
 SET_max_fps,Limite de FPS,FPS limit
 SET_ui_scale,Tamanho da interface,Interface size

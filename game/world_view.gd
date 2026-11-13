@@ -34,6 +34,10 @@ const ACCENT := {
 const CAM_DIST := 36.0  # também é o mínimo: o zoom só afasta (main.gd limita zoom a >= 0)
 const CAM_PER_UNIT := 0.02
 const CAM_ARENA := 6.0
+## Figuras maiores na tela (13/11/2026, docs/ARTE_UNIFICADA.md): só o desenho, o raio do jogo não muda.
+## Perto das cartas, herói e monstros minúsculos pareciam de outro jogo.
+const FIG_SCALE := 1.2
+const HERO_SCALE := 1.55
 # O chão (terreno, estrada, grama) fica na camada 2: a contraluz não o ilumina.
 const GROUND_LAYER := 2
 
@@ -844,7 +848,7 @@ func _build_units() -> void:
 		var acc: Color = ACCENT.get(c.id, Color(0.8, 0.6, 1.0))
 		acc.a = 0.35 if c.arch == K.Arch.SWARM else 0.55
 		mm_by_def[c.idx] = {"mm": mm, "buf": buf, "cap": cap, "hop": hop, "fly": c.fly, "struct": c.arch == K.Arch.STRUCTURE,
-			"rad": maxf(c.radius, 0.35) * 1.35, "acc": acc, "scl": Looks.scale_of(c.id)}
+			"rad": maxf(c.radius, 0.35) * 1.35, "acc": acc, "scl": Looks.scale_of(c.id) * FIG_SCALE}
 	ring_mm = MultiMesh.new()
 	ring_mm.transform_format = MultiMesh.TRANSFORM_3D
 	ring_mm.use_colors = true
@@ -884,7 +888,7 @@ func _part(parent: Node3D, id: String, pos: Vector3) -> Node3D:
 
 func _build_hero() -> void:
 	hero_root = Node3D.new()
-	hero_root.scale = Vector3.ONE * 1.3
+	hero_root.scale = Vector3.ONE * HERO_SCALE
 	add_child(hero_root)
 	hero_mat = Looks.hero_material(0.05)
 	body = Node3D.new()
@@ -1480,7 +1484,7 @@ func _draw_helper(alpha: float, delta: float) -> void:
 		return
 	if helper_node == null:
 		helper_node = Node3D.new()
-		helper_node.scale = Vector3.ONE * 1.3
+		helper_node.scale = Vector3.ONE * HERO_SCALE
 		add_child(helper_node)
 		var rig := Looks.hero_rig(hero_mat, hh.cls())
 		if rig:
@@ -1504,7 +1508,7 @@ func _draw_followers(alpha: float, delta: float) -> void:
 	for f in sim.followers:
 		if not follower_nodes.has(f):
 			var root := Node3D.new()
-			root.scale = Vector3.ONE * 1.3
+			root.scale = Vector3.ONE * HERO_SCALE
 			add_child(root)
 			var rig := Looks.hero_rig(hero_mat, f.cls())
 			if rig:

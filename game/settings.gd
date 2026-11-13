@@ -6,7 +6,8 @@ const PATH := "user://settings.cfg"
 const FPS_CAPS := [0, 30, 60, 120, 144, 240]
 
 ## 1: direção D vira o padrão (09/11/2026). 2: a interface Diário (papel e fita) vira a padrão.
-const ART_REV := 3
+## 4: o mundo pintado em guache S1 (guache chapado) vira o padrão (13/11/2026).
+const ART_REV := 4
 
 static var v := defaults()
 # Chaves trocadas só nesta execução (--set=...), com o valor que estava salvo: save() grava o salvo, não o da execução.
@@ -26,6 +27,9 @@ static func defaults() -> Dictionary:
 		# Desde a rodada autônoma de 09/11/2026 o padrão é a direção G · Blender v2 (monstros, chefe e cenário
 		# do Blender, heróis KayKit; docs/ARTE_BLENDER.md). A D continua em Configurações → Visual.
 		"look_hud": 6, "look_ground": 10, "look_hero": 5, "look_enemies": 7,
+		# Mundo pintado em guache nos materiais (13/11/2026, docs/MUNDO_PINTADO.md): 0 = desligado, 1..9 = variações
+		# S1-S3, T1-T3, C1-C3 (game/art/paint_look.gd). Escolhida pelo designer em 13/11: S1, guache chapado.
+		"paint_look": 1,
 		# Versão do padrão de arte: quando sobe, quem já tinha configuração salva recebe a direção nova uma vez.
 		"art_rev": ART_REV,
 	}
@@ -48,6 +52,8 @@ static func load_all() -> void:
 		var keys: Array = ["look_hud"]
 		if rev < 3:
 			keys += ["look_ground", "look_hero", "look_enemies"]
+		if rev < 4:
+			keys += ["paint_look"]
 		for k in keys:
 			v[k] = d[k]
 		v["art_rev"] = ART_REV

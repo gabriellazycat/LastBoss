@@ -97,7 +97,15 @@ func _mood(on: bool) -> void:
 		saved.clear()
 
 
-func _mat(col: Color, rough := 0.8, metal := 0.0) -> StandardMaterial3D:
+func _mat(col: Color, rough := 0.8, metal := 0.0) -> Material:
+	# Mundo pintado (Settings "paint_look"): os objetos da mesa também levam o guache dos materiais.
+	if int(Settings.v.get("paint_look", 0)) > 0:
+		var pm := ShaderMaterial.new()
+		pm.shader = preload("res://game/art/paint_std.gdshader")
+		pm.set_shader_parameter("albedo", col)
+		pm.set_shader_parameter("roughness", rough)
+		pm.set_shader_parameter("metallic", metal)
+		return pm
 	var m := StandardMaterial3D.new()
 	m.albedo_color = col
 	m.roughness = rough
@@ -216,7 +224,8 @@ func _candles(at: Vector3, heights: Array, shadows: bool) -> void:
 	dish.height = 0.012
 	_mesh(dish, _mat(Color(0.32, 0.22, 0.12), 0.45, 0.6), at + Vector3(0, 0.006, 0))
 	var wax := _mat(Color(0.92, 0.86, 0.72), 0.6)
-	wax.subsurf_scatter_enabled = false
+	if wax is StandardMaterial3D:
+		(wax as StandardMaterial3D).subsurf_scatter_enabled = false
 	var offs := [Vector3(0, 0, 0), Vector3(0.05, 0, 0.035), Vector3(-0.045, 0, 0.04)]
 	var top_y := 0.0
 	for i in heights.size():

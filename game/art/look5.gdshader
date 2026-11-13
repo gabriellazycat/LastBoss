@@ -6,6 +6,7 @@ shader_type spatial;
 // por instância; senão, a animação procedural dos outros looks (anim.gdshaderinc).
 render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 #include "res://game/art/anim.gdshaderinc"
+#include "res://game/art/paint.gdshaderinc"
 
 uniform float emission_boost = 0.0;
 uniform float flash = 0.0;
@@ -25,6 +26,8 @@ uniform float rim_strength = 0.35;
 uniform vec3 tint : source_color = vec3(1.0);
 
 varying vec4 custom;
+varying vec3 paint_p;
+varying vec3 paint_n;
 varying float glow;
 
 vec3 vat_row(int v, int row) {
@@ -65,6 +68,8 @@ void vertex() {
 	} else {
 		lb_animate(VERTEX, custom, MODEL_MATRIX, TIME);
 	}
+	paint_p = VERTEX;
+	paint_n = NORMAL;
 }
 
 void fragment() {
@@ -72,6 +77,7 @@ void fragment() {
 	if (use_tex && UV.x >= 0.0) {
 		base *= texture(albedo_tex, UV).rgb;
 	}
+	base = paint_albedo(base, paint_p, paint_n, -1, 0.35);
 	float f = clamp(max(custom.x, flash), 0.0, 1.0);
 	ALBEDO = mix(base, vec3(1.0, 0.96, 0.92), f);
 	ROUGHNESS = 0.72;
@@ -79,6 +85,10 @@ void fragment() {
 	// Contorno de céu: fresnel suave, mais forte no alto do modelo (luz que vem de cima).
 	float fr = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
 	float up = clamp((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y * 0.5 + 0.5, 0.0, 1.0);
-	EMISSION = base * (emission_boost + glow * glow_strength) + rim_color * fr * up * rim_strength * 0.25
+	EMISSION = base * (emission_boost + glow * glow_strength) + rim_color * fr * up * rim_strength * (paint_on ? 0.08 : 0.25)
 		+ vec3(1.0, 0.9, 0.85) * f * 1.2;
+}
+
+void light() {
+	PAINT_LIGHT
 }

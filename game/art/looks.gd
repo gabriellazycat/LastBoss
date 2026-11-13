@@ -172,6 +172,9 @@ static func hero_material(emit: float) -> ShaderMaterial:
 		if t:
 			m.set_shader_parameter("use_tex", true)
 			m.set_shader_parameter("albedo_tex", t)
+	# Mundo pintado: aço azulado do cavaleiro das cartas (o modelo KayKit é quase branco e some no guache claro).
+	if int(Settings.v.get("paint_look", 0)) > 0:
+		m.set_shader_parameter("tint", Color(0.66, 0.72, 0.86))
 	return m
 
 

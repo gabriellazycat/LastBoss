@@ -4,13 +4,16 @@ shader_type spatial;
 
 uniform vec3 origin = vec3(0.0);
 uniform vec3 dark : source_color = vec3(0.16, 0.085, 0.045);
-uniform vec3 light : source_color = vec3(0.36, 0.21, 0.11);
+uniform vec3 light_wood : source_color = vec3(0.36, 0.21, 0.11);
 uniform float plank_w = 0.21;
 
 varying vec3 wp;
+varying vec3 paint_p;
+#include "res://game/art/paint.gdshaderinc"
 
 void vertex() {
 	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz - origin;
+	paint_p = wp * 6.0;
 }
 
 float hash(vec2 p) {
@@ -38,7 +41,7 @@ void fragment() {
 	float g = fbm(vec2(p.x * 1.6 + off, v * 6.0 + k * 3.0));
 	float rings = sin((v * 18.0 + g * 6.0 + p.x * 0.6) * 3.14159) * 0.5 + 0.5;
 	float tone = mix(0.25, 0.85, g) * 0.7 + rings * 0.18 + hash(vec2(k, 9.0)) * 0.22;
-	vec3 col = mix(dark, light, clamp(tone, 0.0, 1.0));
+	vec3 col = mix(dark, light_wood, clamp(tone, 0.0, 1.0));
 	// Frestas entre as tábuas e as pontas.
 	float gap = smoothstep(0.0, 0.035, v) * smoothstep(1.0, 0.965, v);
 	col *= mix(0.25, 1.0, gap);
@@ -48,7 +51,11 @@ void fragment() {
 	float scr = smoothstep(0.985, 1.0, vnoise(vec2(p.x * 3.0 + p.y * 40.0, p.y * 3.0)));
 	col = mix(col, col * 1.35, scr * 0.5);
 	col *= 1.0 - smoothstep(0.6, 0.85, fbm(p * 2.2 + 11.0)) * 0.35;
-	ALBEDO = col;
+	ALBEDO = paint_albedo(col, wp * 6.0, vec3(0.0, 1.0, 0.0), 6, 0.5);
 	ROUGHNESS = mix(0.45, 0.8, g);
 	SPECULAR = 0.35;
+}
+
+void light() {
+	PAINT_LIGHT
 }

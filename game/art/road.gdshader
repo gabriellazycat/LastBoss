@@ -27,6 +27,8 @@ uniform vec4 mask_rect = vec4(0.0, 0.0, 1.0, 1.0);
 uniform float mask_dmax = 4.0;
 
 varying vec3 wp;
+varying vec3 paint_p;
+#include "res://game/art/paint.gdshaderinc"
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vnoise(vec2 p) {
@@ -65,6 +67,7 @@ void road_field(vec3 world, out float d, out float edge_a, out float dimv, out f
 
 void vertex() {
 	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	paint_p = wp;
 }
 
 void fragment() {
@@ -85,6 +88,7 @@ void fragment() {
 	// Borda irregular: o ruído recorta a transparência.
 	float e = clamp(ea + (vnoise(wp.xz * 1.3) - 0.5) * 0.7, 0.0, 1.0);
 	c = mix(edge_color * c * 1.4, c, smoothstep(0.2, 0.9, ea));
+	c = paint_albedo(c, wp, vec3(0.0, 1.0, 0.0), 1, 1.2);
 	ALBEDO = c;
 	NORMAL_MAP = texture(nor, uv).rgb;
 	NORMAL_MAP_DEPTH = normal_strength;
@@ -94,4 +98,8 @@ void fragment() {
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 	ALBEDO *= mix(1.0, 0.35, dimv);
 	EMISSION = c * glow;
+}
+
+void light() {
+	PAINT_LIGHT
 }

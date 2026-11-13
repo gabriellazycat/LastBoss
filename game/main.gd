@@ -247,6 +247,7 @@ func _env() -> void:
 	cam.far = 500
 	add_child(cam)
 	cam.position = Vector3(0, 20, 14)
+	PaintLook.apply()
 	var moon := DirectionalLight3D.new()
 	moon.rotation_degrees = Vector3(-52, 30, 0)
 	moon.light_energy = 1.1
@@ -406,7 +407,8 @@ func _on_settings(key: String) -> void:
 	if key in ["quality", "all"]:
 		Settings.apply_quality(world_env, sun, get_viewport())
 	# Variação de arte: o tema, o chão e as malhas são montados na criação, então recarrega a cena.
-	if key.begins_with("look_"):
+	# O guache troca os materiais da mesa do menu na criação: recarrega como os looks.
+	if key.begins_with("look_") or key == "paint_look":
 		get_tree().reload_current_scene.call_deferred()
 
 

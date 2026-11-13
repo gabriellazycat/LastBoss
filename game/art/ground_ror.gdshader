@@ -15,6 +15,8 @@ uniform float bump = 0.6;
 uniform float roughness = 0.9;
 
 varying vec3 wp;
+varying vec3 paint_p;
+#include "res://game/art/paint.gdshaderinc"
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vnoise(vec2 p) {
@@ -37,6 +39,7 @@ float hgt(vec2 p) {
 
 void vertex() {
 	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	paint_p = wp;
 }
 
 void fragment() {
@@ -62,7 +65,12 @@ void fragment() {
 	float hz = hgt(p + vec2(0.0, e)) - hgt(p - vec2(0.0, e));
 	vec3 nw = normalize(vec3(-hx * bump * 3.0, 1.0, -hz * bump * 3.0));
 	NORMAL = normalize((VIEW_MATRIX * vec4(nw, 0.0)).xyz);
-	ALBEDO = col;
+	int pk = dirt > 0.5 ? 1 : (rk > 0.5 ? 2 : 0);
+	ALBEDO = paint_albedo(col, wp, vec3(0.0, 1.0, 0.0), pk, 1.4);
 	ROUGHNESS = roughness;
 	SPECULAR = 0.15;
+}
+
+void light() {
+	PAINT_LIGHT
 }

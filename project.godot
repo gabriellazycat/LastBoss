@@ -22,6 +22,50 @@ locale/fallback="en"
 
 [shader_globals]
 
+paint_on={
+"type": "bool",
+"value": false
+}
+paint_light={
+"type": "int",
+"value": 0
+}
+paint_tex={
+"type": "int",
+"value": 0
+}
+paint_t_grass={
+"type": "sampler2D",
+"value": ""
+}
+paint_t_dirt={
+"type": "sampler2D",
+"value": ""
+}
+paint_t_stone={
+"type": "sampler2D",
+"value": ""
+}
+paint_t_foliage={
+"type": "sampler2D",
+"value": ""
+}
+paint_t_fur={
+"type": "sampler2D",
+"value": ""
+}
+paint_t_metal={
+"type": "sampler2D",
+"value": ""
+}
+paint_t_wood={
+"type": "sampler2D",
+"value": ""
+}
+paint_t_cloth={
+"type": "sampler2D",
+"value": ""
+}
 ui_px={
 "type": "float",
 "value": 1.0
