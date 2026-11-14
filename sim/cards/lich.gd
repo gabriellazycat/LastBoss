@@ -151,6 +151,11 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 				rep.uid = k.c.uid
 				rep.level = int(picked[ix][2])
 				sim._apply(rep, x, y)
+		"eternal_army":
+			# Exército Eterno: os 12 esqueletos vêm das ops; por "duration" s cada morte sua levanta mais 1 (até "raises").
+			var st := _st(sim)
+			st["army_until"] = sim.t + d.fxv("duration", lv) * vet
+			st["army_left"] = int(d.fxv("raises", lv))
 		_:
 			return false
 	return true
@@ -244,6 +249,18 @@ static func on_unit_death(sim: Sim, i: int, cause: int) -> void:
 		sim._villain_on_death(c, x, y)
 		if (cause == K.Death.HERO or cause == K.Death.SELF) and not (U.flags[i] & K.F_REVIVED):
 			sim.dead_by_def[di] += 1
+	# Exército Eterno: cada morte sua levanta um esqueleto enquanto durar (e restarem levantes).
+	if cause == K.Death.HERO and st.has("army_until") and sim.t < float(st["army_until"]) and int(st["army_left"]) > 0:
+		var sk: CardDef = sim.data.card("skeleton")
+		var jn := U.spawn(sk, x, y, 0.0, 0.0, K.F_NO_XP, 0, sim._forge())
+		if jn >= 0:
+			st["army_left"] = int(st["army_left"]) - 1
+	# Dragão de Ossos: cada morte sua por perto cura o dragão (fração da vida máxima).
+	var bd: CardDef = sim.data.card("bone_dragon")
+	for j in U.hi:
+		if U.alive[j] == 1 and j != i and U.def[j] == bd.idx:
+			if Vector2(U.px[j] - x, U.py[j] - y).length() <= bd.fxv("heal_radius", int(U.lvl[j]), 8.0):
+				U.hp[j] = minf(U.max_hp[j], U.hp[j] + U.max_hp[j] * bd.fxv("heal_death", int(U.lvl[j])))
 	# Colosso de Ossos: absorve os mortos por perto como o Golem de Sucata (+vida máxima).
 	if cause == K.Death.HERO and not (U.flags[i] & K.F_REVIVED):
 		var cd: CardDef = sim.data.card("bone_colossus")

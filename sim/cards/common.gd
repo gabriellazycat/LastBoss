@@ -69,14 +69,26 @@ static func on_tick(sim: Sim) -> void:
 	var U := sim.units
 	var bd: CardDef = sim.data.card("war_banner")
 	var td: CardDef = sim.data.card("cave_troll")
+	var hld: CardDef = sim.data.card("fallen_healer")
+	var spd: CardDef = sim.data.card("spike_trap")
 	var has_banner := false
 	var has_troll := false
+	var has_heal := false
+	var has_spike := false
 	for i in U.hi:
 		if U.alive[i] == 1:
 			if U.def[i] == bd.idx:
 				has_banner = true
 			elif U.def[i] == td.idx:
 				has_troll = true
+			elif U.def[i] == hld.idx:
+				has_heal = true
+			elif U.def[i] == spd.idx:
+				has_spike = true
+	if has_heal:
+		_healers(sim, hld)
+	if has_spike:
+		_spikes(sim, spd)
 	if not has_banner and not has_troll and not (sim.cstate.has("common") and sim.cstate["common"]["bn"].size() > 0):
 		return
 	var st := _st(sim)
@@ -104,6 +116,43 @@ static func on_tick(sim: Sim) -> void:
 		for i in U.hi:
 			if U.alive[i] == 1 and U.def[i] == td.idx:
 				U.hp[i] = minf(U.max_hp[i], U.hp[i] + U.max_hp[i] * float(td.fx["regen"]) * sim.dt)
+
+
+## Curandeiro Caído: cura por segundo (fração da vida máxima) os aliados a até aura_radius m (não cura estruturas).
+static func _healers(sim: Sim, hd: CardDef) -> void:
+	var U := sim.units
+	for i in U.hi:
+		if U.alive[i] == 0 or U.def[i] != hd.idx:
+			continue
+		var lv := int(U.lvl[i])
+		var r2 := pow(hd.fxv("aura_radius", lv, 6.0), 2)
+		var rate := hd.fxv("heal", lv) * sim.dt
+		for j in U.hi:
+			if U.alive[j] == 0 or U.arch[j] == K.Arch.STRUCTURE or U.hp[j] >= U.max_hp[j]:
+				continue
+			if Vector2(U.px[j] - U.px[i], U.py[j] - U.py[i]).length_squared() <= r2:
+				U.hp[j] = minf(U.max_hp[j], U.hp[j] + U.max_hp[j] * rate)
+
+
+## Armadilha de Espinhos: o herói que pisa leva dano e fica Preso; a armadilha some.
+static func _spikes(sim: Sim, sd: CardDef) -> void:
+	var U := sim.units
+	for i in U.hi:
+		if U.alive[i] == 0 or U.def[i] != sd.idx:
+			continue
+		var lv := int(U.lvl[i])
+		for hh: SimHero in sim.all_heroes():
+			if hh.hp <= 0.0:
+				continue
+			if Vector2(hh.x - U.px[i], hh.y - U.py[i]).length() <= hh.radius + U.rad[i] + float(sd.fx.get("trigger", 1.0)):
+				sim.hit_hero = hh if hh != sim.hero else null
+				sim.damage_hero(sd.fxv("damage", lv), U.px[i], U.py[i], 0, SimHero.DMG_AREA, sd.id)
+				sim.hit_hero = null
+				hh.root_t = maxf(hh.root_t, sd.fxv("root", lv) * sim.cc_mult())
+				if hh == sim.hero:
+					sim._cc()
+				sim.kill_unit(i, K.Death.EXPIRE)
+				break
 
 
 ## Multiplicador do golpe da unidade i no herói, antes do dano (1.0 = nada).

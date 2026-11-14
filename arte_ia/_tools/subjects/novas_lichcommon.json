@@ -1,0 +1,30 @@
+{
+ "eternal_army": {
+  "subject": "Five yellowed human skeletons with dark empty eye sockets and rusty scraps of armor climb up out of the bare ground in one rough line, each holding one plain rusted sword in its right hand and its left arm hanging at its side. Their bones are painted in warm yellowed ivory, the same warm color as old aged bone. Cold cyan-green ghostly light pours up from the ground around their legs and drifts in the air behind them. One cracked gravestone stands behind them and pale dust drifts up behind the line.",
+  "bg": "ochre"
+ },
+ "bone_dragon": {
+  "subject": "A huge flying dragon made of pale yellowed bones with a long skull-shaped head, both leathery wings spread wide and its long tail curled below it. Its jaws are open and a stream of cold cyan-green ghostly light pours from its mouth toward us. A single broken stone tower stands far below, and wisps of dark smoke trail behind its wings.",
+  "bg": "rose"
+ },
+ "poison_dart": {
+  "subject": "a lone human knight in plain steel armor made of a few large smooth plates with a faded blue tabard and a plain round steel helmet whose whole face opening is one flat solid black shadow, holding a straight steel sword, crouching low behind his shield, his left arm holding a plain round wooden shield with an iron rim in front of his chest and his right hand gripping the sword. One thick dart with a green tip sticks into the edge of the shield, and sickly green smoke curls up from it and drifts behind his shoulders.",
+  "bg": "sand"
+ },
+ "spike_trap": {
+  "subject": "a lone human knight in plain steel armor made of a few large smooth plates with a faded blue tabard and a plain round steel helmet whose whole face opening is one flat solid black shadow, holding a straight steel sword, dropping to both knees, his right hand gripping the sword with its tip on the ground and his left hand pressed flat on the ground. Three large sharp wooden stakes burst up out of the dirt around his legs, and a cloud of brown dust rises behind him.",
+  "bg": "teal"
+ },
+ "goblin_scout": {
+  "subject": "a small wiry goblin with olive-green skin, long pointed ears, a narrow sharp-featured face, a dented leather cap and patched brown rags, sprinting forward in a low crouch with his right hand holding one short crooked dagger out behind him and his left arm swinging forward. A single leaning wooden signpost stands behind him, and a trail of dust kicks up from his feet.",
+  "bg": "rose"
+ },
+ "hired_archer": {
+  "subject": "A lean human archer in a plain brown cloak with a deep hood whose whole face opening is one flat solid black shadow, standing in a side-on stance and drawing one big wooden bow, his left hand holding the bow out in front and his right hand pulling the string back to his shoulder. One large arrow rests on the bow. A single dead tree stands behind him, and a few puffs of dust rise from his boots.",
+  "bg": "lilac"
+ },
+ "crow_flock": {
+  "subject": "Five large black crows in flight in a loose group, each with both wings spread wide and its beak open, swooping toward us. They fly low over one jagged gray rock, and a few black feathers drift in the dusty air behind them.",
+  "bg": "sand"
+ }
+}

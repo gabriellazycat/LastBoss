@@ -89,6 +89,7 @@ TAG_undead,Morto-vivo,Undead
 TAG_fire,Fogo,Fire
 TAG_shadow,Sombra,Shadow
 TAG_construct,Construção,Construct
+TAG_beast,Fera,Beast
 LOC_tavern,Taverna,Tavern
 LOC_fountain,Fonte Sagrada,Holy Fountain
 LOC_ritual,Círculo de Ritual,Ritual Circle
@@ -357,7 +358,7 @@ UPGD_steady_boots,"Imune a empurrões, e a [[slow|Lentidão]] tem só {slow_mult
 UPGD_purifying_blade,Cada golpe remove {remove} [[curse|Maldição]].,Each hit removes {remove} [[curse|Curse]].
 UPGD_reflect_shield,Anula por completo um [[spell|Feitiço]] a cada {cooldown} s.,Fully negates one [[spell|Spell]] every {cooldown} s.
 UPGD_hero_fury,+{per_unit_pct}% de velocidade de ataque para cada inimigo a até {radius} m (no máximo +{cap_pct}%).,+{per_unit_pct}% attack speed for each enemy within {radius} m (up to +{cap_pct}%).
-UPGD_soul_absorb,Cura {heal_pct}% da vida máxima a cada monstro que morre.,Heals {heal_pct}% of max health for every monster that dies.
+UPGD_soul_absorb,Cura {heal_pct}% da vida máxima quando um monstro morre. Recarga de {cooldown} s.,Heals {heal_pct}% of max health when a monster dies. Cooldown of {cooldown} s.
 UPGD_second_wind,"Uma vez por run: quando a vida cai abaixo de {below_pct}%, recupera {heal_pct}% da vida máxima.","Once per run: when health drops below {below_pct}%, recovers {heal_pct}% of max health."
 UPGD_heroic_strike,"A cada {interval} s, um golpe causa {mult}× de dano num alvo grande ({big_hp}+ de vida) ou numa parte do seu corpo.","Every {interval} s, one hit deals {mult}× damage to a big target ({big_hp}+ health) or to one of your body parts."
 UI_HERO_LEARNED,O herói chegou ao nível {n} e aprendeu,The hero reached level {n} and learned
@@ -474,6 +475,15 @@ UI_COMP_MODS,Modificadores,Modifiers
 UI_COMP_LOCS,Locais,Locations
 UI_COMP_HERO,Herói,Hero
 UI_COMP_LOCKED,Bloqueada · {c} Almas,Locked · {c} Souls
+UI_CHALLENGE,"Desafio: {t}","Challenge: {t}"
+UI_UNLOCK_TITLE,Cartas desbloqueadas,Cards unlocked
+UI_UNLOCK_SUB,"Novas na sua coleção: {n}","New in your collection: {n}"
+UI_UNLOCK_GOAL,DESAFIO,CHALLENGE
+UI_UNLOCK_DONE,Cumprido,Done
+UI_UNLOCK_DID,"Você chegou a {v} (meta: {g})","You reached {v} (goal: {g})"
+UI_UNLOCK_FLIP,Virar carta,Flip card
+UI_UNLOCK_CONT,Continuar,Continue
+UI_UNLOCK_NEAR,"Quase lá: {l}","Almost there: {l}"
 UI_COMP_COUNTER,Contra-ataque: {t},Counter: {t}
 UI_COMP_CD,Recarga: {s} s,Cooldown: {s} s
 UI_COMP_PASSIVE,Passiva,Passive
@@ -677,7 +687,7 @@ DECK_cult,Culto,Cult
 DECK_plague,Rainha da Praga,Plague Queen
 DECK_dragon,Dragão Avarento,Greedy Dragon
 DECK_lich,Lich,Lich
-VILLAIN_plague_PASSIVE,Infestação: criatura de [[pack|Bando]] que morre tem 20% de chance de deixar um rato.,Infestation: a [[pack|Pack]] creature that dies has a 20% chance to leave a rat behind.
+VILLAIN_plague_PASSIVE,Infestação: criatura de [[pack|Bando]] que morre tem 20% de chance de deixar um rato; [[beast|Fera]] que morre faz a próxima Fera custar 1 a menos.,Infestation: a [[pack|Pack]] creature that dies has a 20% chance to leave a rat behind; a [[beast|Beast]] that dies makes the next Beast cost 1 less.
 VILLAIN_dragon_PASSIVE,Tesouro do Dragão: começa com 30 de ouro; cada 50 de ouro guardado dá +5% de dano de fogo (até +30%).,Dragon's Hoard: start with 30 gold; every 50 gold kept gives +5% fire damage (up to +30%).
 VILLAIN_lich_PASSIVE,"Colheita: a cada 8 mortes de criaturas suas, o próximo feitiço custa 0.","Harvest: every 8 deaths of your creatures, your next spell costs 0."
 UI_PACT_OF_crypt,Pacto da,Pact of the
@@ -759,9 +769,9 @@ UI_COLLECTION_SUB_V,Cada vilão libera as comuns e incomuns dele. Raras e lendá
 UI_COMP_OWNER_common,Cartas comuns (de todos os vilões),Common cards (all villains)
 VCOMBO_plague_1,Enxame + auras: encha o campo de bichos e multiplique o dano de todos.,Swarm + auras: fill the field with creatures and multiply everyone's damage.
 VCOMBO_plague_2,"Ninhos na disputa: com o herói parado num local, Tocas e Ninhos rendem do começo ao fim.",Nests in the standoff: while the hero is stuck at a place burrows and nests pay off all along.
-VCOMBO_plague_3,Peste + predadores: ratos empilham Peste e as feras batem mais forte em herói empesteado.,Plague + predators: rats stack Plague and the beasts hit harder on a plagued hero.
-VCOMBO_dragon_1,Encharcar + fogo: Balde e Óleo encharcam (fogo x2); Tocha e Dinamiteiro detonam.,Soak + fire: Bucket and Oil soak (fire x2); Torch and Dynamiter detonate.
-VCOMBO_dragon_2,"Motor de ouro: Kobolds, Moedas e Baú enchem o tesouro; Mercenário e a passiva crescem com ele.","Gold engine: Kobolds, Coins and Chest fill the hoard; Mercenary and the passive grow with it."
+VCOMBO_plague_3,"Selvagens: as Feras (lobos, javali, urso, hienas) caçam em Alcateia e se alimentam do Sangue e da Peste. Ratos e morcegos são Bando, não Fera.","Wild: the Beasts (wolves, boar, bear, hyenas) hunt in a Hunting Party and feed on Blood and Plague. Rats and bats are Pack, not Beast."
+VCOMBO_dragon_1,Encharcar + fogo: Balde e Óleo encharcam (fogo x2); Tocha e Dinamiteiro detonam; Cão do Inferno e Salamandra queimam o que passa.,Soak + fire: Bucket and Oil soak (fire x2); Torch and Dynamiter detonate; Hell Hound and Salamander burn whatever passes.
+VCOMBO_dragon_2,"Motor de ouro: Kobolds, Moedas, Baú e Veio de Ouro enchem o tesouro; Mercenário e a passiva crescem com ele.","Gold engine: Kobolds, Coins, Chest and Gold Vein fill the hoard; Mercenary and the passive grow with it."
 VCOMBO_dragon_3,Ouro vira fogo: Ouro Derretido e Avalanche convertem o tesouro em dano; Pedágio vira elixir.,Gold becomes fire: Molten Gold and Avalanche turn the hoard into damage; Toll turns it into elixir.
 VCOMBO_lich_1,Sacrifício que paga: Servos e Legião morrem barato; Banquete e Colheita de Almas viram elixir e dano.,Sacrifice pays: Servants and Legion die cheap; Feast and Soul Harvest become elixir and damage.
 VCOMBO_lich_2,Corrente de feitiços: Faísca Arcana cresce a cada feitiço; Eco repete o último; Acólitos atiram.,Spell chain: Arcane Spark grows with each spell; Echo repeats the last; Acolytes shoot.
@@ -840,17 +850,17 @@ DESC_war_banner,[[structure|Estrutura]] por {duration} s: seus monstros a até {
 DESC_cave_troll,Regenera {regen_pct}% da vida por segundo; arremessa pedras.,Regenerates {regen_pct}% health per second; throws rocks.
 DESC_ruin_titan,O golpe vira um pisão em área que atordoa por {stomp_stun} s (a cada {stomp_cd} s).,Its blow becomes an area stomp that stuns for {stomp_stun} s (every {stomp_cd} s).
 CARD_rat_brute,Ratazana,Brute Rat
-DESC_rat_brute,Gorda e resistente; cada mordida aplica {peste} acúmulo de Peste.,Fat and tough; each bite adds {peste} stack of Plague.
+DESC_rat_brute,"Gorda e resistente; mordendo o herói, aplica {peste} de [[plague|Peste]] por segundo.","Fat and tough; while biting the hero, adds {peste} [[plague|Plague]] per second."
 CARD_infected_bite,Mordida Infectada,Infected Bite
-DESC_infected_bite,"Por {duration} s, toda mordida de [[pack|Bando]] a até {radius} m aplica +{extra} de Peste.","For {duration} s, every [[pack|Pack]] bite within {radius} m adds +{extra} Plague."
-N3_infected_bite,N3: aplica +{extra} acúmulos.,L3: adds +{extra} stacks.
+DESC_infected_bite,"Por {duration} s, o [[pack|Bando]] a até {radius} m aplica +{extra} de [[plague|Peste]] por segundo mordendo.","For {duration} s, [[pack|Pack]] creatures within {radius} m add +{extra} [[plague|Plague]] per second of biting."
+N3_infected_bite,N3: +{extra} de Peste por segundo.,L3: +{extra} Plague per second.
 CARD_bat_cloud,Nuvem de Morcegos,Bat Cloud
 DESC_bat_cloud,Morcegos voadores: passam por cima de bloqueios.,Flying bats: they pass over obstacles.
 N3_bat_cloud,N3: os morcegos [[pierce|atravessam o escudo]].,L3: the bats [[pierce|pierce the shield]].
 CARD_rat_trap,Ratoeira Viva,Living Rat Trap
 DESC_rat_trap,"Armadilha: quando o herói pisa, fica [[root|Preso]] por {root} s e saltam {rats} ratos.","Trap: when the hero steps on it, they are [[root|Rooted]] for {root} s and {rats} rats leap out."
 CARD_wolf_pack,Matilha de Lobos,Wolf Pack
-DESC_wolf_pack,Fera veloz; +{peste_dmg_pct}% de dano por acúmulo de Peste no herói.,Fast Beast; +{peste_dmg_pct}% damage per Plague stack on the hero.
+DESC_wolf_pack,Fera veloz; +{peste_dmg_pct}% de dano por acúmulo de [[plague|Peste]] no herói.,Fast Beast; +{peste_dmg_pct}% damage per [[plague|Plague]] stack on the hero.
 N3_wolf_pack,N3: +{peste_dmg_pct}% de dano por acúmulo de Peste.,L3: +{peste_dmg_pct}% damage per Plague stack.
 CARD_brood_mother,Mãe da Ninhada,Brood Mother
 DESC_brood_mother,Pare {spawn_n} ratos a cada {spawn_interval} s e solta {death_spawn_n} ao morrer.,Births {spawn_n} rats every {spawn_interval} s and releases {death_spawn_n} when it dies.
@@ -868,7 +878,7 @@ CARD_devour,Devorar,Devour
 DESC_devour,Retorna ao baralho. Sacrifica {sacrifice} ratos seus: a Fera mais próxima cura {heal} de vida e causa +{dmg_bonus_pct}% de dano até morrer.,Returns to the deck. Sacrifices {sacrifice} of your rats: the nearest Beast heals {heal} health and deals +{dmg_bonus_pct}% damage until it dies.
 N3_devour,N3: +{dmg_bonus_pct}% de dano.,L3: +{dmg_bonus_pct}% damage.
 CARD_bubonic_plague,Praga Bubônica,Bubonic Plague
-DESC_bubonic_plague,"Por {duration} s, toda mordida aplica Peste; no fim, {per_stack} de dano por acúmulo.","For {duration} s, every bite adds Plague; at the end, {per_stack} damage per stack."
+DESC_bubonic_plague,"Por {duration} s, todo monstro seu aplica +1 de [[plague|Peste]] por segundo atacando; no fim, {per_stack} de dano por acúmulo.","For {duration} s, every monster of yours adds +1 [[plague|Plague]] per second of attacking; at the end, {per_stack} damage per stack."
 N3_bubonic_plague,N3: dura {duration} s.,L3: lasts {duration} s.
 CARD_rat_tide,Maré de Ratos,Rat Tide
 DESC_rat_tide,Solta {count} ratos de uma vez.,Releases {count} rats at once.
@@ -876,15 +886,15 @@ CARD_mother_nest,Ninho-Mãe,Mother Nest
 DESC_mother_nest,"Por {duration} s, suas estruturas de ninho a até {radius} m produzem em dobro.","For {duration} s, your nest structures within {radius} m produce double."
 N3_mother_nest,N3: alcance de {radius} m.,L3: {radius} m range.
 CARD_alpha_beast,Besta Alfa,Alpha Beast
-DESC_alpha_beast,"Fera: +{pack_bonus_pct}% de dano por bicho de [[pack|Bando]] em campo e +{peste_dmg_pct}% por acúmulo de Peste; ao entrar, solta um Chamado do Bando.","Beast: +{pack_bonus_pct}% damage per [[pack|Pack]] creature on the field and +{peste_dmg_pct}% per Plague stack; on entering, casts a Pack Call."
+DESC_alpha_beast,"Fera: +{pack_bonus_pct}% de dano por bicho de [[pack|Bando]] em campo e +{peste_dmg_pct}% por acúmulo de [[plague|Peste]]; ao entrar, solta um Chamado do Bando.","Beast: +{pack_bonus_pct}% damage per [[pack|Pack]] creature on the field and +{peste_dmg_pct}% per [[plague|Plague]] stack; on entering, casts a Pack Call."
 N3_alpha_beast,N3: +{peste_dmg_pct}% por acúmulo de Peste.,L3: +{peste_dmg_pct}% per Plague stack.
 CARD_endless_swarm,Enxame Sem Fim,Endless Swarm
 DESC_endless_swarm,"Invoca {summon_n} ratos; por {duration} s, toda criatura de [[pack|Bando]] que morre renasce uma vez.","Summons {summon_n} rats; for {duration} s, every [[pack|Pack]] creature that dies is reborn once."
 N3_endless_swarm,N3: invoca {summon_n} ratos.,L3: summons {summon_n} rats.
 KW_plague,Peste,Plague
-KWD_plague,Estado do herói: cada mordida da Praga acumula 1; cada acúmulo faz o herói receber +3% de dano (até 15) e some 8 s depois da última mordida.,Hero state: each Plague bite stacks 1; each stack makes the hero take +3% damage (up to 15) and fades 8 s after the last bite.
+KWD_plague,"Estado do herói. Os monstros que aplicam Peste a acumulam aos poucos enquanto atacam (os golpes são rápidos: cada um rende uma fração). Cada acúmulo faz o herói receber +{peste_pct}% de dano, até {peste_max} acúmulos. Some tudo {peste_secs} s depois do último golpe. O selo verde sobre o herói mostra quantos acúmulos ele tem.","Hero state. Monsters that add Plague build it up bit by bit while they attack (hits are fast: each one adds a fraction). Each stack makes the hero take +{peste_pct}% damage, up to {peste_max} stacks. It all fades {peste_secs} s after the last hit. The green badge over the hero shows how many stacks they have."
 KW_beast,Fera,Beast
-KWD_beast,"Tipo de monstro da Praga: predador solitário. As cartas de Fera se alimentam do Bando e da Peste (Devorar, Instinto de Caça).","Plague monster type: a lone predator. Beast cards feed on the Pack and on Plague (Devour, Hunting Instinct)."
+KWD_beast,"Tipo de monstro da Praga: predador selvagem (lobos, javali, urso, hienas...). Ratos e morcegos são Bando, não Fera. As Feras se alimentam da Peste, da Alcateia e do Sangue (Devorar, Instinto de Caça).","Plague monster type: a wild predator (wolves, boar, bear, hyenas...). Rats and bats are Pack, not Beast. Beasts feed on Plague, the Hunting Party and Blood (Devour, Hunting Instinct)."
 UI_OFFER_ACT_CARD,Fim do ato {a}: escolha uma carta (mais chance de rara e de melhorada),End of act {a}: pick a card (better odds of rare and upgraded)
 UI_MAP_SCROLL,"Roda do mouse, arrastar ou setas: rolar o mapa","Mouse wheel, drag or arrows: scroll the map"
 UI_MAP_LEG_DONE,Já percorrido,Travelled
@@ -1013,6 +1023,204 @@ UI_GROUP_VS,o seu vilão,your villain
 UI_GROUP_QUEUE,A fila: {n} heróis,The queue: {n} heroes
 UI_HERO_ORD,{k}º da fila,#{k} in line
 UI_PHASE_TUTORIAL,Tutorial,Tutorial
-UI_GROUP_TOGETHER,"Nesta fase os heróis andam juntos: quem chega levanta o caído (uma vez cada).","In this stage the heroes travel together: whoever arrives raises the fallen (once each)."
+UI_GROUP_TOGETHER,Nesta fase os heróis andam juntos: quem chega levanta o caído (uma vez cada).,In this stage the heroes travel together: whoever arrives raises the fallen (once each).
 UI_GROUP_SKILL0,Sem habilidades,No skills
 UI_GROUP_SKILL1,1 habilidade,1 skill
+CARD_lone_wolf,Lobo Solitário,Lone Wolf
+DESC_lone_wolf,[[beast|Fera]]. Alcateia: +{alcateia_pct}% de dano para cada outra Fera sua em campo (até +{alcateia_cap_pct}%). Ratos e morcegos não contam.,[[beast|Beast]]. Hunting Party: +{alcateia_pct}% damage for each other Beast of yours on the field (up to +{alcateia_cap_pct}%). Rats and bats don't count.
+N3_lone_wolf,N3: Alcateia até +{alcateia_cap_pct}%.,L3: Hunting Party up to +{alcateia_cap_pct}%.
+CARD_hyena_scavenger,Hiena Carniceira,Scavenger Hyena
+DESC_hyena_scavenger,"{count} hienas ([[beast|Fera]]). Sangue: quando uma Fera sua morre, as hienas correm +{blood_speed_pct}% por {blood_s} s.","{count} hyenas ([[beast|Beast]]). Blood: when a Beast of yours dies, the hyenas run +{blood_speed_pct}% faster for {blood_s} s."
+N3_hyena_scavenger,N3: +{blood_speed_pct}% por {blood_s} s.,L3: +{blood_speed_pct}% for {blood_s} s.
+CARD_spitting_viper,Víbora Cuspidora,Spitting Viper
+DESC_spitting_viper,"[[beast|Fera]] que cospe de longe; cuspindo no herói, aplica {peste} de [[plague|Peste]] por segundo.","[[beast|Beast]] that spits from afar; while spitting at the hero, adds {peste} [[plague|Plague]] per second."
+N3_spitting_viper,N3: o cuspe atravessa o escudo.,L3: the spit pierces the shield.
+CARD_plague_carrion,Bicho Infectado,Plagued Critter
+DESC_plague_carrion,[[beast|Fera]]. Corre até o herói e estoura: {explode_damage} de dano e {peste_boom} acúmulos de [[plague|Peste]] de uma vez.,[[beast|Beast]]. Runs at the hero and bursts: {explode_damage} damage and {peste_boom} [[plague|Plague]] stacks at once.
+N3_plague_carrion,N3: {peste_boom} acúmulos de Peste.,L3: {peste_boom} stacks of Plague.
+CARD_brown_bear,Urso Pardo,Brown Bear
+DESC_brown_bear,"[[beast|Fera]]. Caçada: +{hunt_stack_pct}% de dano por segundo golpeando o herói, acumulativo (até +{hunt_cap_pct}%).","[[beast|Beast]]. The Hunt: +{hunt_stack_pct}% damage per second spent hitting the hero, stacking (up to +{hunt_cap_pct}%)."
+N3_brown_bear,N3: teto de +{hunt_cap_pct}%.,L3: cap of +{hunt_cap_pct}%.
+CARD_pack_den,Toca da Matilha,Wolf Den
+DESC_pack_den,Solta um filhote de lobo ([[beast|Fera]]) a cada {spawn_interval} s por {spawn_duration} s. Os filhotes contam para a Alcateia.,Releases a wolf pup ([[beast|Beast]]) every {spawn_interval} s for {spawn_duration} s. Pups count for the Hunting Party.
+N3_pack_den,N3: um filhote a cada {spawn_interval} s.,L3: a pup every {spawn_interval} s.
+CARD_primal_beast,Besta Primordial,Primal Beast
+DESC_primal_beast,"[[beast|Fera]]. +{own_bonus_pct}% de dano por criatura sua em campo, de Bando ou Fera (até +{own_cap_pct}%). Ao morrer, solta {pups} filhotes de lobo.","[[beast|Beast]]. +{own_bonus_pct}% damage for each creature of yours on the field, Pack or Beast (up to +{own_cap_pct}%). On death, releases {pups} wolf pups."
+N3_primal_beast,N3: +{own_bonus_pct}% por criatura e {pups} filhotes.,L3: +{own_bonus_pct}% per creature and {pups} pups.
+CARD_black_pestilence,Pestilência Negra,Black Pestilence
+DESC_black_pestilence,"Todos os heróis recebem [[plague|Peste]] no máximo agora. Por {duration} s, a Peste dói {mult}× mais.","Every hero gets maximum [[plague|Plague]] right now. For {duration} s, Plague hurts {mult}× more."
+N3_black_pestilence,N3: a Peste dói {mult}× mais.,L3: Plague hurts {mult}× more.
+CARD_hell_hound,Cão do Inferno,Hell Hound
+DESC_hell_hound,Cão de [[fire|Fogo]]. Toda mordida queima {burn_hit} por seg. por {burn_s} s (dobra no herói [[soaked|Encharcado]]).,[[fire|Fire]] hound. Every bite burns for {burn_hit} per sec. for {burn_s} s (doubled on a [[soaked|Soaked]] hero).
+N3_hell_hound,N3: queima {burn_hit} por seg.,L3: burns {burn_hit} per sec.
+CARD_ash_salamander,Salamandra de Brasa,Ember Salamander
+DESC_ash_salamander,Criatura de [[fire|Fogo]]. Deixa chamas por onde anda: {trail_dps} por seg. por {trail_s} s.,[[fire|Fire]] creature. Leaves flames where it walks: {trail_dps} per sec. for {trail_s} s.
+N3_ash_salamander,N3: chamas por {trail_s} s.,L3: flames last {trail_s} s.
+CARD_drakeling,Filhote de Dragão,Drakeling
+DESC_drakeling,Dragão pequeno e voador de [[fire|Fogo]]: cospe de longe e queima o alvo ({burn_hit} por seg.).,Small flying [[fire|Fire]] dragon: spits from afar and burns the target ({burn_hit} per sec.).
+N3_drakeling,N3: o sopro atravessa o escudo.,L3: the breath pierces the shield.
+CARD_magma_golem,Golem de Magma,Magma Golem
+DESC_magma_golem,"Gigante de [[fire|Fogo]]. Ao morrer, vira uma poça de lava: {lava_dps} por seg. por {lava_s} s.","[[fire|Fire]] giant. On death, it becomes a lava pool: {lava_dps} per sec. for {lava_s} s."
+N3_magma_golem,N3: lava por {lava_s} s.,L3: lava lasts {lava_s} s.
+CARD_gold_mine,Veio de Ouro,Gold Vein
+DESC_gold_mine,[[structure|Estrutura]] que rende {gold_per_s} de [[gold|Ouro]] por segundo por {duration} s.,[[structure|Structure]] that earns {gold_per_s} [[gold|Gold]] per second for {duration} s.
+N3_gold_mine,N3: {gold_per_s} de ouro por segundo.,L3: {gold_per_s} gold per second.
+CARD_dragon_exchange,Câmbio do Dragão,Dragon's Exchange
+DESC_dragon_exchange,Ganha {gold} de [[gold|Ouro]]. O inverso do Pedágio: o elixir vira ouro.,Gain {gold} [[gold|Gold]]. The opposite of the Toll: elixir becomes gold.
+N3_dragon_exchange,N3: {gold} de ouro.,L3: {gold} gold.
+CARD_ash_phoenix,Fênix das Cinzas,Ash Phoenix
+DESC_ash_phoenix,"Ave de [[fire|Fogo]] voadora: cada cuspe queima {burn_hit} por seg. Ao morrer, renasce uma vez com {rebirth_pct}% da vida.","Flying [[fire|Fire]] bird: every spit burns for {burn_hit} per sec. When it dies, it is reborn once with {rebirth_pct}% health."
+N3_ash_phoenix,N3: renasce com {rebirth_pct}% da vida.,L3: reborn with {rebirth_pct}% health.
+CARD_meteor_storm,Chuva de Meteoros,Meteor Storm
+DESC_meteor_storm,"Por {duration} s, meteoros caem no ponto: {damage} de dano de [[fire|Fogo]] cada, com queimadura. 1 meteoro, +1 a cada {gold_step} de ouro guardado (até {max_meteors}).","For {duration} s, meteors fall on the spot: {damage} [[fire|Fire]] damage each, with burning. 1 meteor, +1 for every {gold_step} gold kept (up to {max_meteors})."
+N3_meteor_storm,N3: até {max_meteors} meteoros.,L3: up to {max_meteors} meteors.
+CARD_eternal_army,Exército Eterno,Eternal Army
+DESC_eternal_army,"Invoca {summon_n} esqueletos. Por {duration} s, cada morte sua levanta mais um esqueleto (até {raises} vezes).","Summons {summon_n} skeletons. For {duration} s, each death of yours raises another skeleton (up to {raises} times)."
+N3_eternal_army,N3: até {raises} esqueletos levantados.,L3: up to {raises} skeletons raised.
+CARD_bone_dragon,Dragão de Ossos,Bone Dragon
+DESC_bone_dragon,Dragão de ossos voador que cospe sombra de longe. Cada morte sua por perto o cura em {heal_death_pct}% da vida.,Flying bone dragon that spits shadow from afar. Each death of yours nearby heals it for {heal_death_pct}% health.
+N3_bone_dragon,N3: o sopro atravessa o escudo.,L3: the breath pierces the shield.
+CARD_poison_dart,Flecha Envenenada,Poison Dart
+DESC_poison_dart,{damage} de dano e veneno de {burn_dps} por seg. por {burn_s} s no herói mais perto.,{damage} damage and poison of {burn_dps} per sec. for {burn_s} s on the nearest hero.
+N3_poison_dart,N3: veneno de {burn_dps} por seg.,L3: poison of {burn_dps} per sec.
+CARD_spike_trap,Armadilha de Espinhos,Spike Trap
+DESC_spike_trap,"[[structure|Armadilha]]: quando o herói pisa, leva {damage} de dano e fica [[root|Preso]] por {root} s. Some depois.","[[structure|Trap]]: when the hero steps on it, they take {damage} damage and are [[root|Rooted]] for {root} s. Then it vanishes."
+N3_spike_trap,N3: [[root|Preso]] por {root} s.,L3: [[root|Rooted]] for {root} s.
+CARD_goblin_scout,Batedor Goblin,Goblin Scout
+DESC_goblin_scout,Goblin rápido e frágil: isca barata que o herói persegue.,"Fast, fragile goblin: a cheap lure the hero chases."
+CARD_hired_archer,Arqueiro de Aluguel,Hired Archer
+DESC_hired_archer,Atira de longe e recua se o herói chega perto.,Shoots from afar and backs away if the hero gets close.
+N3_hired_archer,N3: a flecha atravessa o escudo.,L3: the arrow pierces the shield.
+CARD_crow_flock,Revoada de Corvos,Crow Murder
+DESC_crow_flock,{count} corvos voadores: passam por cima de bloqueios.,{count} flying crows: they pass over blockers.
+N3_crow_flock,N3: atravessam o escudo.,L3: pierce the shield.
+CARD_fallen_healer,Curandeiro Caído,Fallen Healer
+DESC_fallen_healer,Cura {heal_pct}% da vida por segundo dos aliados a até {aura_radius} m (estruturas não).,Heals allies within {aura_radius} m for {heal_pct}% health per second (not structures).
+N3_fallen_healer,N3: cura {heal_pct}% por segundo.,L3: heals {heal_pct}% per second.
+CARD_dark_messenger,Mensageiro Sombrio,Dark Messenger
+DESC_dark_messenger,Compra {draw} carta e devolve {elixir} de [[elixir|elixir]].,Draw {draw} card and refund {elixir} [[elixir|elixir]].
+N3_dark_messenger,N3: compra {draw} cartas.,L3: draws {draw} cards.
+CARD_war_cry,Grito de Guerra,War Cry
+DESC_war_cry,"Por {duration} s, todos os seus monstros correm +{speed_pct}% e causam +{damage_pct}% de dano.","For {duration} s, all your monsters run +{speed_pct}% faster and deal +{damage_pct}% damage."
+N3_war_cry,N3: +{speed_pct}% de velocidade e +{damage_pct}% de dano.,L3: +{speed_pct}% speed and +{damage_pct}% damage.
+CARD_flooded_pit,Fosso Inundado,Flooded Pit
+DESC_flooded_pit,"[[lair|Temporário]]: por {duration} s, os heróis andam {hero_slow_pct}% mais devagar.","[[lair|Temporary]]: for {duration} s, heroes walk {hero_slow_pct}% slower."
+N3_flooded_pit,N3: {hero_slow_pct}% mais devagar.,L3: {hero_slow_pct}% slower.
+CARD_hollow_armor,Armadura Vazia,Hollow Armor
+DESC_hollow_armor,"Devolve {reflect_pct}% do dano que o herói causa a ela. Ao morrer, deixa uma Barricada.","Returns {reflect_pct}% of the damage the hero deals to it. On death, it leaves a Barricade."
+N3_hollow_armor,N3: devolve {reflect_pct}%.,L3: returns {reflect_pct}%.
+REL_deep_cistern,Cisterna Funda,Deep Cistern
+RELD_deep_cistern,+4 de elixir máximo.,+4 max elixir.
+REL_copper_tap,Torneira de Cobre,Copper Tap
+RELD_copper_tap,O elixir enche 30% mais rápido.,Elixir refills 30% faster.
+REL_still_aether,Alambique de Éter,Aether Still
+RELD_still_aether,+3 de elixir máximo e o elixir enche 50% mais rápido.,+3 max elixir and elixir refills 50% faster.
+REL_aether_heart,Coração de Éter,Heart of Aether
+RELD_aether_heart,+5 de elixir máximo e o elixir enche 80% mais rápido.,+5 max elixir and elixir refills 80% faster.
+REL_living_library,Biblioteca Viva,Living Library
+RELD_living_library,"Ao embaralhar o baralho, compra 1 carta a mais.","When the deck is reshuffled, draw 1 extra card."
+UNLOCK_alpha_beast,Tenha 30 ratos em campo ao mesmo tempo,Have 30 rats on the field at once
+UNLOCK_arcane_apocalypse,Jogue 7 feitiços em 20 segundos,Play 7 spells within 20 seconds
+UNLOCK_arcane_spark,Jogue 30 feitiços de Sombra numa mesma fase,Play 30 Shadow spells in a single phase
+UNLOCK_ash_phoenix,Termine uma fase com 1000 de ouro,Finish a phase with 1000 gold
+UNLOCK_bat_cloud,Tenha 12 bichos de Bando em campo ao mesmo tempo,Have 12 Pack creatures on the field at once
+UNLOCK_bat_nest,Tenha 3 estruturas em campo ao mesmo tempo,Have 3 structures on the field at once
+UNLOCK_black_pestilence,Jogue 30 feitiços numa mesma fase,Play 30 spells in a single phase
+UNLOCK_blood_tax,Jogue 5 feitiços em 20 segundos,Play 5 spells within 20 seconds
+UNLOCK_boiling_oil,Mantenha o herói Encharcado por 20 segundos numa mesma fase,Keep the hero Soaked for 20 seconds in a single phase
+UNLOCK_bone_colossus,Faça 550 dos seus monstros morrerem numa mesma fase,Have 550 of your monsters die in a single phase
+UNLOCK_bone_dragon,Faça 700 dos seus monstros morrerem numa mesma fase,Have 700 of your monsters die in a single phase
+UNLOCK_bone_totem,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_brown_bear,Derrote 30 heróis no total,Defeat 30 heroes in total
+UNLOCK_burn_village,Queime o herói por 40 segundos numa mesma fase,Burn the hero for 40 seconds in a single phase
+UNLOCK_cave_troll,Vença a primeira fase,Win the first phase
+UNLOCK_corrupt_piper,Faça 1000 ratos morrerem numa mesma fase,Have 1000 of your rats die in a single phase
+UNLOCK_devour,Vença uma fase jogando só 10 feitiços,Win a phase playing only 10 spells
+UNLOCK_dragon_exchange,Encharque o herói e incendeie-o em até 1 segundo,Soak the hero and set them on fire within 1 second(s)
+UNLOCK_elder_dragon,Tenha 5 monstros de Fogo em campo ao mesmo tempo,Have 5 Fire monsters on the field at once
+UNLOCK_ember_rain,Jogue 25 feitiços numa mesma fase,Play 25 spells in a single phase
+UNLOCK_eruption,Vença uma fase sem jogar estruturas,Win a phase without playing structures
+UNLOCK_eternal_army,Tenha 12 mortos-vivos em campo ao mesmo tempo,Have 12 undead on the field at once
+UNLOCK_fallen_healer,Derrote um herói perdendo no máximo 5 monstros,Defeat a hero while losing at most 5 monsters
+UNLOCK_flooded_pit,Jogue 5 cartas Temporárias numa mesma fase,Play 5 Temporary cards in a single phase
+UNLOCK_forbidden_library,Jogue 30 cartas Temporárias numa mesma fase,Play 30 Temporary cards in a single phase
+UNLOCK_furnace,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_ghost,Tenha 40 esqueletos em campo ao mesmo tempo,Have 40 skeletons on the field at once
+UNLOCK_gold_avalanche,Ganhe 1500 de ouro numa mesma fase,Earn 1500 gold in a single phase
+UNLOCK_gold_bait,Faça o herói parar nas Moedas Malditas 10 vezes numa mesma fase,Make the hero stop at the Cursed Coins 10 times in a single phase
+UNLOCK_hollow_armor,Tenha 15 de Elixir máximo,Reach 15 maximum Elixir
+UNLOCK_hunt_instinct,Jogue 4 feitiços em 20 segundos,Play 4 spells within 20 seconds
+UNLOCK_life_drain,Aplique 5 Maldições no herói numa mesma fase,Put 5 Curses on the hero in a single phase
+UNLOCK_magma_golem,Tenha 10 monstros seus em campo ao mesmo tempo,Have 10 monsters on the field at once
+UNLOCK_meteor_storm,Jogue 15 feitiços de Fogo numa mesma fase,Play 15 Fire spells in a single phase
+UNLOCK_mimic,Jogue 15 estruturas numa mesma fase,Play 15 structures in a single phase
+UNLOCK_molten_gold,Gaste 600 de Elixir numa mesma fase,Spend 600 Elixir in a single phase
+UNLOCK_mother_nest,Tenha 20 bichos de Bando em campo ao jogar um feitiço,Have 20 Pack creatures on the field when you play a spell
+UNLOCK_ogre,Jogue 100 monstros numa mesma fase,Play 100 monsters in a single phase
+UNLOCK_pack_den,Jogue 15 estruturas numa mesma fase,Play 15 structures in a single phase
+UNLOCK_plague_carrion,Tenha 40 monstros seus em campo ao mesmo tempo,Have 40 monsters on the field at once
+UNLOCK_primal_beast,Jogue 100 cartas de Bando numa mesma fase,Play 100 Pack cards in a single phase
+UNLOCK_rat_tide,Use a mesma carta de monstro 40 vezes numa mesma fase,Play the same monster card 40 times in a single phase
+UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo,Stack 5 Plague on the hero at once
+UNLOCK_ruin_titan,Vença a segunda fase,Win the second phase
+UNLOCK_sewer_flood,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_shadow_echo,Jogue 5 feitiços de Sombra em 15 segundos,Play 5 Shadow spells within 15 seconds
+UNLOCK_shadow_mark,Jogue 300 cartas numa mesma fase,Play 300 cards in a single phase
+UNLOCK_slime,Tenha 2 Feras e 8 ratos em campo ao mesmo tempo,Have 2 Beasts and 8 rats on the field at once
+UNLOCK_soul_collector,Cause 2000 de dano ao herói em menos de 4 segundos,Deal 2000 damage to the hero in under 4 seconds
+UNLOCK_soul_feast,Jogue 70 feitiços numa mesma fase,Play 70 spells in a single phase
+UNLOCK_soul_harvest,Vença uma fase sem jogar estruturas,Win a phase without playing structures
+UNLOCK_soul_storm,Acerte o herói com 6 feitiços diferentes numa mesma fase,Hit the hero with 6 different spells in a single phase
+UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos,Soak the hero and set them on fire within 8 second(s)
+UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
+UNLOCK_spitting_viper,Jogue 40 Feras numa mesma fase,Play 40 Beasts in a single phase
+UNLOCK_tar_net,Gaste 450 de ouro numa mesma fase,Spend 450 gold in a single phase
+UI_COL_SUBTITLE,a biblioteca do covil,the lair's library
+UI_COL_COUNT,{a} / {b} cartas,{a} / {b} cards
+UI_COL_HEAD,{a} de {b} cartas · clique numa para ler,{a} of {b} cards · click one to read
+UI_COL_HINT,Clique ou Enter: ler a carta,Click or Enter: read the card
+UI_COL_LOCKED,Bloqueada,Locked
+UI_COL_HOW_UNLOCK,Como liberar,How to unlock
+UI_COL_NUMBERS,Números,Numbers
+UI_COL_WHAT,O que faz,What it does
+UI_COL_WORDS,Palavras da carta,Card keywords
+UI_COL_LEVELS,Como evolui,How it levels up
+UI_COL_LV,Nível {a} → {b},Level {a} → {b}
+UI_COL_LV_SAME,Os números desta carta não mudam com o nível.,This card's numbers don't change with level.
+UI_COL_K_cost,Custo,Cost
+UI_COL_V_cost,{n} de elixir,{n} elixir
+UI_COL_K_hp,Vida,Health
+UI_COL_K_dps,Dano,Damage
+UI_COL_V_dps,{n} por segundo,{n} per second
+UI_COL_V_dps_hit,{n} por segundo (um golpe a cada {s} s),{n} per second (one hit every {s} s)
+UI_COL_K_speed,Velocidade,Speed
+UI_COL_V_speed_slow,{n} · lenta,{n} · slow
+UI_COL_V_speed_mid,{n} · média,{n} · medium
+UI_COL_V_speed_fast,{n} · rápida,{n} · fast
+UI_COL_V_still,não sai do lugar,doesn't move
+UI_COL_K_attack,Ataque,Attack
+UI_COL_V_melee,corpo a corpo,melee
+UI_COL_V_ranged,à distância · alcance {n} m,ranged · {n} m reach
+UI_COL_K_units,Unidades,Units
+UI_COL_V_units,{n} por carta,{n} per card
+UI_COL_K_fly,Voo,Flight
+UI_COL_V_fly,voa,flies
+UI_COL_K_rarity,Raridade,Rarity
+UI_COL_POS,{p} · carta {a} de {b},{p} · card {a} of {b}
+UI_COL_NAV,← → passam as cartas · ↑ ↓ rolam o texto · Esc fecha,← → flip cards · ↑ ↓ scroll · Esc closes
+UI_COL_PREV,‹ Anterior,‹ Previous
+UI_COL_NEXT,Próxima ›,Next ›
+UI_COL_CLOSE,Fechar,Close
+UI_FAIR_TITLE,Feira do Mascate,The Peddler's Fair
+UI_FAIR_SUB,"sem fiado, sem troco","no credit, no change"
+UI_FAIR_SERV,Serviços,Services
+UI_FAIR_BUY,Comprar · {p},Buy · {p}
+UI_FAIR_HINT,ou clique em outra barraca,or click another stall
+UI_FAIR_HINT_PAD,A compra · setas trocam de barraca,A buys · arrows switch stalls
+UI_FAIR_PURSE,Bolsa:,Purse:
+UI_FAIR_PURSE_V,{g} de ouro · {n} cartas,{g} gold · {n} cards
+UI_FAIR_LEAVE,Sair da feira,Leave the fair
+UI_FAIR_RELIC,Relíquia: {r},Relic: {r}
+UI_FAIR_COST,custa {n},costs {n}
+UI_FAIR_pick_upgrade,Subir nível de uma carta,Level up a card
+UI_FAIR_pick_remove,Tirar uma carta do baralho,Remove a card from the deck

@@ -22,7 +22,6 @@ var run_seed := 0
 var dt := 0.05
 var tick := 0
 var t := 0.0
-var soul_absorb_ready := 0.0   # instante em que "Absorver Almas" pode curar de novo
 var ai_period := 4
 var phase: int = K.Phase.ROAD
 var result: int = K.Result.NONE
@@ -81,6 +80,9 @@ var burn_src := "skeleton_archers"
 var rally_until := -100.0       # Chamado do Bando: até quando o bando corre e bate mais
 var rally_dmg := 0.0
 var rally_spd := 0.0
+var warcry_until := -100.0      # Grito de Guerra: todos os seus monstros correm e batem mais
+var warcry_dmg := 0.0
+var warcry_spd := 0.0
 var harvest_until := -100.0     # Colheita de Almas: até quando cada morte sua devolve elixir
 var harvest_elixir := 0.0
 var mark_until := -100.0        # Marca Sombria: até quando feitiços machucam mais o herói
@@ -120,7 +122,8 @@ var ritual_mult := 1.0
 ## kind: elixir_regen (+fração de ganho), monster_hp (+fração de vida ao entrar), hand (+cartas), elixir_max (+máximo),
 ## gold_mult (+fração do ouro ganho). Cópias somam, cada uma com o seu tempo.
 var temps: Array = []
-var act_elixir_base := 10.0     # elixir máximo base (rules.elixir.max; a escada por ato saiu em 11/11/2026)
+var act_elixir_base := 10.0     # elixir máximo base do ato (piso por ato: rules.acts[].elixir.max; sem ele, rules.elixir.max)
+var _elixir_act_seen := -1
 ## Estado livre das cartas por dono (C6): cada arquivo de sim/cards/ guarda o que precisar aqui, numa chave
 ## própria (ex.: cstate["plague"]). Vai no salvamento (só tipos simples: números, textos, Array, Dictionary).
 var cstate: Dictionary = {}
@@ -131,6 +134,7 @@ var tax_cards := 0              # eventos: quantas das próximas cartas custam `
 var tax_add := 0
 var dead_by_def := PackedInt32Array()
 var stats: Dictionary = {}
+var track: UnlockTrack = UnlockTrack.new()   # desafios de desbloqueio (data/unlocks.json)
 var tmp := PackedInt32Array()
 
 
@@ -146,8 +150,6 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 		for k in int(R["party"]["size"]):
 			party.append("escudeiro")
 	phase_hp_mult = float(phase_cfg.get("hp_mult", 1.0))
-	# Ajuste fino por pacto dentro da fase (10/11/2026): cada pacto tem contras diferentes em cada fase.
-	phase_hp_mult *= float(phase_cfg.get("villain_hp", {}).get(d.villain_id(deck), 1.0))
 	phase_dmg_mult = float(phase_cfg.get("damage_mult", 1.0))
 	run_seed = seed_
 	rng.seed = seed_
@@ -175,6 +177,7 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 		"act_t": [], "relics": [], "event_picks": {}, "contests": {},
 		"time_act": [], "spent_act": [], "plays_act": [], "max_cost": 0, "stuck_s": 0.0, "walk_s": 0.0, "contest_s": 0.0}
 	unlocked = unlocked_.duplicate()
+	track.setup(d)
 	var list: Array = (card_list if card_list.size() > 0 else dk["cards"]).duplicate()
 	for i in range(list.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
@@ -249,6 +252,7 @@ func step() -> void:
 	CardsPlague.on_tick(self)
 	CardsDragon.on_tick(self)
 	CardsLich.on_tick(self)
+	track.on_tick(self)
 	if tick % 2 == 0:
 		units.separate()
 	if units.count > stats["units_peak"]:
@@ -318,11 +322,13 @@ func perm_elixir_max() -> float:
 
 ## Segundos por ponto de elixir agora, sem ritual, arena e Temporários (métrica e texto da relíquia).
 func seconds_per_elixir() -> float:
-	return float(R["elixir"]["seconds_per_point"]) / maxf(0.1, 1.0 + rv("elixir_regen"))
+	return float(R["elixir"]["seconds_per_point"]) / maxf(0.1, 1.0 + rv("elixir_regen")) / maxf(0.1, _act_elixir("regen_mult", 1.0))
 
 
 ## Elixir máximo = base + relíquias + eventos do ato + Temporários, no mínimo 3 (sem teto prático).
 func recalc_elixir_max() -> void:
+	act_elixir_base = _act_elixir("max", float(R["elixir"]["max"]))   # piso do ato (13/11/2026)
+	_elixir_act_seen = act
 	elixir_max = clampf(act_elixir_base + rv("elixir_max") + relic_max_gain + act_elixir_bonus + temp_sum("elixir_max"), 3.0, ELIXIR_CAP)
 	elixir = minf(elixir, elixir_max)
 
@@ -365,6 +371,8 @@ func _temps() -> void:
 
 
 func _elixir() -> void:
+	if act != _elixir_act_seen:
+		recalc_elixir_max()   # entrou em outro ato: muda o piso de máximo e de regeneração
 	var rate := 1.0 / seconds_per_elixir()
 	rate *= 1.0 + temp_sum("elixir_regen")
 	rate *= ritual_mult
@@ -864,6 +872,7 @@ func _next_act() -> void:
 		enter_arena()
 		return
 	act += 1
+	recalc_elixir_max()   # piso de elixir do novo ato (maior máximo e regen)
 	act_elixir_bonus = 0.0
 	hero.clear_act_bonus()   # bônus do Herói Ajudante valem só o ato
 	recalc_elixir_max()
@@ -958,9 +967,10 @@ func _relic_pickup(fx: Dictionary) -> void:
 
 ## Piche: o herói marcado anda mais devagar até cair (o seguinte vem normal).
 func hero_speed_mult(h: SimHero) -> float:
+	var m := 1.0
 	if slow_hero >= 0 and h.pidx == slow_hero:
-		return maxf(0.1, 1.0 - rv("hero_slow"))
-	return 1.0
+		m = maxf(0.1, 1.0 - rv("hero_slow"))
+	return maxf(0.1, m * (1.0 - temp_sum("hero_slow")))   # Fosso Inundado (Temporário): todos os heróis mais lentos
 
 
 func _relic_pool() -> Array:
@@ -1021,6 +1031,14 @@ func _offer_relics(source := "act") -> void:
 				if by.has(r2) and by[r2].size() > by[best].size():
 					best = r2
 		pool = by[best]
+		if source == "act":
+			# Uma oferta de fim de ato sempre traz relíquia de elixir (13/11/2026), na raridade sorteada.
+			var elx: Array = pool.filter(func(rid): return data.relics[rid]["fx"].has("elixir_max") or data.relics[rid]["fx"].has("elixir_regen"))
+			if elx.size() > 0:
+				var pick := _pick_relic(elx)
+				pool.erase(pick)
+				opts.append({"kind": "relic", "id": pick})
+				want -= 1
 	for k in want:
 		if pool.is_empty():
 			break
@@ -1300,6 +1318,7 @@ func _finish(r: int) -> void:
 	phase = K.Phase.OVER
 	stats["result"] = K.RESULT_NAMES[r]
 	stats["t_end"] = t
+	stats["gold_end"] = gold
 	stats["hero_level"] = hero.level
 	stats["player_level"] = player_level
 	stats["upgrades"] = hero.upgrade_order.duplicate()
@@ -1339,6 +1358,7 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 	if contest.size() > 0 and contest["type"] in ["bridge", "fountain"]:
 		var pm := float(R["locations"]["bridge"]["shield_mult"]) if contest.get("variant", "") == "shield" else 1.0
 		contest["progress"] += real * pm
+	track.on_hero_damage(self, real)
 	_earn_gold(gain / float(R["gold"]["damage_per_gold"]) * (1.0 + rv("gold")))
 	var dbc: Dictionary = stats["dmg_by_card"]
 	dbc[card_id] = float(dbc.get(card_id, 0.0)) + gain
@@ -1362,7 +1382,7 @@ func _player_next() -> float:
 func unit_hits_hero(i: int) -> void:
 	var di := units.def[i]
 	var c: CardDef = data.cards[di]
-	var amount := units.dmg[i] * (1.0 + units.buff[i])
+	var amount := units.dmg[i] * (1.0 + units.buff[i] + units.rage[i])
 	if (units.tags[i] & K.TAG_PACK) and rv("pack_min") > 0.0 and units.n_pack >= int(rv("pack_min")):
 		amount *= 1.0 + rv("pack_dmg")
 	if c.fx.has("pack_bonus"):
@@ -1370,6 +1390,14 @@ func unit_hits_hero(i: int) -> void:
 		amount *= 1.0 + minf(float(c.fx.get("pack_cap", 1.0)), float(c.fx["pack_bonus"]) * units.n_pack)
 	if (units.tags[i] & K.TAG_PACK) and t < rally_until:
 		amount *= 1.0 + rally_dmg
+	if t < warcry_until:
+		amount *= 1.0 + warcry_dmg
+	if c.fx.has("alcateia"):
+		# Alcateia (Selvagens): mais forte quanto mais Fera sua há em campo (só Fera; Bando não conta).
+		amount *= 1.0 + minf(c.fxv("alcateia_cap", int(units.lvl[i]), 0.45), c.fx["alcateia"] * maxi(0, units.n_beast - 1))
+	if c.fx.has("own_bonus"):
+		# Besta Primordial: +X% por criatura sua em campo (Bando e Fera), até o teto.
+		amount *= 1.0 + minf(c.fxv("own_cap", int(units.lvl[i]), 1.5), c.fxv("own_bonus", int(units.lvl[i])) * maxi(0, units.n_own - 1))
 	if c.fx.has("death_stack"):
 		amount *= 1.0 + float(c.fx["death_stack"]) * units.gen[i]
 	var kind := 0
@@ -1382,6 +1410,18 @@ func unit_hits_hero(i: int) -> void:
 		kind |= SimHero.DMG_PIERCE
 	# Golpe no Herói Ajudante: empurrão, fogo e maldição vão nele, não no herói da vez.
 	var on_helper := helper != null and hit_hero == helper
+	if c.fx.has("burn_hit"):
+		# Cão do Inferno: toda mordida queima (Encharcado dobra, como todo fogo).
+		tg |= K.TAG_FIRE
+		var bdps := c.fxv("burn_hit", lv)
+		var bs := c.fxv("burn_s", lv, 3.0)
+		if on_helper:
+			helper.burn_t = maxf(helper.burn_t, bs)
+			helper.burn_dps = maxf(helper.burn_dps, bdps)
+		else:
+			burn_t = maxf(burn_t, bs)
+			burn_dps = maxf(burn_dps, bdps)
+			burn_src = c.id
 	if c.has_n3(lv, "burn_dps"):
 		tg |= K.TAG_FIRE
 		if on_helper:
@@ -1426,6 +1466,10 @@ func hero_hits_unit(i: int, dmg: float) -> void:
 		if gc.has_n3(int(units.lvl[i]), "reflect"):
 			damage_hero(dmg * float(gc.n3["reflect"]), units.px[i], units.py[i], gc.tags, SimHero.DMG_AREA, gc.id)
 		return
+	var rc: CardDef = data.cards[units.def[i]]
+	if rc.fx.has("reflect"):
+		# Armadura Vazia: devolve parte do golpe ao herói.
+		damage_hero(dmg * rc.fxv("reflect", int(units.lvl[i])), units.px[i], units.py[i], rc.tags, SimHero.DMG_AREA, rc.id)
 	units.hp[i] -= dmg
 	emit(K.Ev.DAMAGE_UNIT, units.px[i], units.py[i], dmg, i)
 	if units.hp[i] <= 0.0:
@@ -1440,6 +1484,7 @@ func kill_unit(i: int, cause: int) -> void:
 	var x := units.px[i]
 	var y := units.py[i]
 	var f := units.flags[i]
+	track.on_unit_death(self, i, cause)
 	CardsCommon.on_unit_death(self, i, cause)
 	CardsPlague.on_unit_death(self, i, cause)
 	CardsDragon.on_unit_death(self, i, cause)
@@ -1451,10 +1496,7 @@ func kill_unit(i: int, cause: int) -> void:
 			stats["kills"] += 1
 		if not (f & K.F_NO_XP):
 			hero_gain_xp(units.xp[i])
-		if hero.has("soul_absorb") and t >= soul_absorb_ready:
-			var SA: Dictionary = hero.upgrades["soul_absorb"]
-			hero.heal(hero.max_hp() * float(SA["heal"]))
-			soul_absorb_ready = t + float(SA.get("cd", 2.0))   # recarga: sem ela o enxame torna o herói imortal
+		hero.soul_absorb_on_kill()
 		if not (f & K.F_REVIVED) and c.id != "spectre":
 			dead_by_def[di] += 1
 		_death_in_contest(x, y, c, f)
@@ -1519,6 +1561,9 @@ func _villain_on_death(c: CardDef, x: float, y: float) -> void:
 	var inf := float(deck_rules.get("infestation", 0.0))
 	if inf > 0.0 and (c.tags & K.TAG_PACK) and rng.randf() < inf:
 		units.spawn(data.card("rat"), x, y, 0.0, 0.0, 0, 0)
+	if c.beast and deck_rules.has("wild_infestation"):
+		# Infestação, parte 2 (Selvagem): Fera que morre faz a próxima Fera custar menos; o Sangue acelera as hienas.
+		CardsPlague.on_beast_death(self, c)
 	var every := int(deck_rules.get("harvest_every", 0))
 	if every > 0 and not harvest_free:
 		harvest_deaths += 1
@@ -1617,6 +1662,9 @@ func kamikaze(i: int) -> void:
 		hit_hero = near_k[k]
 		damage_hero(c.fxv("explode_damage", lv) * splash_mult(k), x, y, units.tags[i], 0, src)
 	hit_hero = null
+	if c.fx.has("peste_boom"):
+		for hh in near_k:
+			CardsPlague.add_peste(self, hh, c.fxv("peste_boom", lv))
 	# Goblin N3: a explosão deixa fogo no chão.
 	if c.has_n3(lv, "fire_dps"):
 		zones.append({"kind": "fire", "x": x, "y": y, "r": c.n3["fire_r"], "t": c.n3["fire_s"], "dps": c.n3["fire_dps"], "src": src})
@@ -1667,6 +1715,7 @@ func hero_gain_xp(_v: float) -> void:
 
 ## O herói da vez caiu: vem o próximo, um nível acima e com uma habilidade a mais, andando de trás.
 func _hero_fell() -> void:
+	track.on_hero_fall(self)
 	var fell := party_idx + 1
 	stats["heroes_fallen"] = fell
 	if hero.pidx == slow_hero:
@@ -1821,6 +1870,7 @@ func _zones() -> void:
 				if ins_c.size() > 0 and not z["applied"]:
 					var hc: SimHero = ins_c[0]
 					z["applied"] = true
+					track.on_coins()
 					hc.root_t = maxf(hc.root_t, float(z["stop"]))
 					hc.add_curse(int(z["curses"]))
 					_earn_gold(float(z["gold"]))
@@ -1952,6 +2002,7 @@ func play(hi_: int, x: float, y: float) -> int:
 	CardsPlague.on_card_played(self, c, x, y)
 	CardsDragon.on_card_played(self, c, x, y)
 	CardsLich.on_card_played(self, c, x, y)
+	track.on_play(self, c)
 	return K.Block.OK
 
 
@@ -2017,6 +2068,9 @@ func _reshuffle() -> void:
 	queue.append_array(list)
 	returned.clear()
 	stats["shuffles"] = int(stats.get("shuffles", 0)) + 1
+	for q in int(rv("draw_on_shuffle")):
+		if hand.size() < HAND_MAX and queue.size() > 0:
+			hand.append(queue.pop_front())
 
 
 ## Mão menor que o tamanho (Biblioteca, carta removida, baralho curto): completa enquanto houver carta.
@@ -2161,7 +2215,19 @@ func _pick_card(filter: Callable, exclude: Array) -> CardDef:
 			cand.append(c)
 	if cand.is_empty():
 		return null
-	return cand[rng.randi_range(0, cand.size() - 1)]
+	# Peso por dono (13/11/2026): carta do vilão pesa mais que carta comum, para o baralho ter a cara dele.
+	var ow: Dictionary = R["offers"].get("owner_weight", {})
+	var wt_own := float(ow.get("villain", 1.0))
+	var wt_com := float(ow.get("common", 1.0))
+	var tot := 0.0
+	for c in cand:
+		tot += wt_com if c.owner == "common" else wt_own
+	var r := rng.randf() * tot
+	for c in cand:
+		r -= wt_com if c.owner == "common" else wt_own
+		if r <= 0.0:
+			return c
+	return cand[cand.size() - 1]
 
 
 func _mod_option(exclude: Array) -> Dictionary:

@@ -20,7 +20,7 @@
    "fx": {
     "peste": 1,
     "peste_max": 15,
-    "peste_taken": 0.03,
+    "peste_taken": 0.035,
     "peste_secs": 8.0
    },
    "lvl": [
@@ -155,7 +155,8 @@
     "keys": [
      "beast"
     ]
-   }
+   },
+   "family": "wild"
   },
   {
    "id": "brood_mother",
@@ -282,7 +283,8 @@
     "keys": [
      "beast"
     ]
-   }
+   },
+   "family": "wild"
   },
   {
    "id": "hunt_instinct",
@@ -403,8 +405,8 @@
    "cost": 8,
    "count": 30,
    "xp_parts": 30,
-   "hp": 22,
-   "dps": 4,
+   "hp": 49,
+   "dps": 4.0,
    "attack_interval": 0.25,
    "speed": 5.6,
    "range": 0.8,
@@ -497,7 +499,8 @@
     "keys": [
      "beast"
     ]
-   }
+   },
+   "family": "wild"
   },
   {
    "id": "endless_swarm",
@@ -544,6 +547,291 @@
      }
     }
    }
+  },
+  {
+   "id": "lone_wolf",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "chaser",
+   "rarity": "common",
+   "cost": 2,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 180,
+   "dps": 12,
+   "attack_interval": 0.25,
+   "speed": 5.0,
+   "range": 1,
+   "fx": {
+    "beast": true,
+    "alcateia": 0.15,
+    "alcateia_cap": 0.45
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "alcateia_cap": 0.6
+   },
+   "owner": "plague",
+   "family": "wild",
+   "model": "werewolf"
+  },
+  {
+   "id": "hyena_scavenger",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "chaser",
+   "rarity": "common",
+   "cost": 3,
+   "count": 2,
+   "xp_parts": 2,
+   "hp": 140,
+   "dps": 16,
+   "attack_interval": 0.25,
+   "speed": 5.0,
+   "range": 1,
+   "fx": {
+    "beast": true,
+    "blood": true,
+    "blood_speed": 0.4,
+    "blood_s": 5.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "blood_speed": 0.6,
+    "blood_s": 6.0
+   },
+   "owner": "plague",
+   "family": "wild",
+   "model": "werewolf"
+  },
+  {
+   "id": "spitting_viper",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "shooter",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 120,
+   "dps": 14,
+   "attack_interval": 0.25,
+   "speed": 3.5,
+   "range": 6,
+   "fx": {
+    "beast": true,
+    "projectile": true,
+    "retreat": 3.0,
+    "peste": 1
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "pierce": true
+   },
+   "owner": "plague",
+   "family": "wild",
+   "model": "rat_horde"
+  },
+  {
+   "id": "plague_carrion",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "kamikaze",
+   "rarity": "uncommon",
+   "cost": 2,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 90,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 6.5,
+   "range": 1,
+   "fx": {
+    "beast": true,
+    "explode_damage": 120,
+    "explode_radius": 2.5,
+    "peste_boom": 3
+   },
+   "lvl": [
+    "explode_damage",
+    "peste_boom"
+   ],
+   "n3": {
+    "peste_boom": 5
+   },
+   "owner": "plague",
+   "family": "wild",
+   "ai": {
+    "keys": [
+     "detonator"
+    ]
+   },
+   "model": "goblin_dynamiter"
+  },
+  {
+   "id": "brown_bear",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "tank",
+   "rarity": "uncommon",
+   "cost": 6,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 1400,
+   "dps": 30,
+   "attack_interval": 0.25,
+   "speed": 2.8,
+   "range": 1.4,
+   "fx": {
+    "beast": true,
+    "hunt_stack": 0.03,
+    "hunt_cap": 0.6
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "hunt_cap": 0.9
+   },
+   "owner": "plague",
+   "family": "wild",
+   "model": "ogre"
+  },
+  {
+   "id": "pack_den",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "uncommon",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 350,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "spawn": "wolf_pup",
+    "spawn_interval": 4.0,
+    "spawn_duration": 16.0
+   },
+   "lvl": [
+    "hp",
+    "spawn_duration"
+   ],
+   "n3": {
+    "spawn_interval": 2.5
+   },
+   "owner": "plague",
+   "family": "wild",
+   "ai": {
+    "keys": [
+     "nest"
+    ]
+   },
+   "model": "bat_nest"
+  },
+  {
+   "id": "primal_beast",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "chaser",
+   "rarity": "legendary",
+   "cost": 14,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 6000,
+   "dps": 150,
+   "attack_interval": 0.25,
+   "speed": 3.5,
+   "range": 1.8,
+   "fx": {
+    "beast": true,
+    "own_bonus": 0.03,
+    "own_cap": 1.5,
+    "pups": 4
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "own_bonus": 0.05,
+    "pups": 6
+   },
+   "owner": "plague",
+   "family": "wild",
+   "on_death": [
+    {
+     "op": "summon",
+     "unit": "wolf_pup",
+     "n": "pups",
+     "ring": 1.2
+    }
+   ],
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "value": [
+     {
+      "if": {
+       "contest_active": true
+      },
+      "add": 1.0
+     }
+    ]
+   },
+   "model": "werewolf"
+  },
+  {
+   "id": "black_pestilence",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "legendary",
+   "cost": 13,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "duration": 10.0,
+    "mult": 2.0
+   },
+   "lvl": [
+    "duration"
+   ],
+   "n3": {
+    "mult": 3.0
+   },
+   "owner": "plague",
+   "family": "pack",
+   "model": "dark_fury"
   }
  ]
 }

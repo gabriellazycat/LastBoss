@@ -1,0 +1,34 @@
+{
+ "lone_wolf": {
+  "subject": "One of the lean grey wolves with bristling fur stands alone on a rocky ledge, seen from the side in a three-quarter view, all four legs planted and his head turned toward us with his jaws slightly open. His thick grey ruff is raised along his neck and his long tail hangs low. A single bare dead tree stands behind him, and a few wisps of dust drift up behind his back legs.",
+  "bg": "ochre"
+ },
+ "hyena_scavenger": {
+  "subject": "Three tan hyenas with large dark brown blotches on their coats and sloping backs run side by side across open ground toward us, their heads low and their mouths open. The nearest hyena is large in the frame, the other two run slightly behind on either side. A single leaning dead tree stands in the distance, and a cloud of dust rises behind the three runners.",
+  "bg": "teal"
+ },
+ "spitting_viper": {
+  "subject": "A thick olive-green viper with a pale yellow belly coils in a simple round pile on dry ground, the front third of its body raised in an S-curve with its wide flat head pointing to the left. A single arc of sickly green liquid shoots from its open mouth to the left. A single flat stone sits beside the coil, and wisps of sickly green smoke drift up behind the snake.",
+  "bg": "rose"
+ },
+ "plague_carrion": {
+  "subject": "A small lean rat-like creature with swollen sickly green-grey skin and patchy bristly fur sprints straight toward us on four legs with its mouth open. Its belly is round and bloated like a balloon, and a thin long tail whips behind it. A single broken wooden fence post stands behind it, and sickly green smoke streams back from its back.",
+  "bg": "rose"
+ },
+ "brown_bear": {
+  "subject": "A huge brown bear rears up on his hind legs and faces us, both front paws raised high with the claws spread and his mouth open in a roar. His thick brown fur is plain and shaggy, and his shoulders are broad. A single tall pine trunk stands behind him, and dust and bits of torn earth rise behind his feet.",
+  "bg": "teal"
+ },
+ "pack_den": {
+  "subject": "A low dark rocky den mouth, a single wide round hole in a mound of grey stones, with three small grey wolf pups bounding out of it toward us. One larger wolf pup stands in front, the other two follow close behind. A single bare dead tree grows on top of the mound, and dust rises from the paws of the pups behind the den.",
+  "bg": "ochre"
+ },
+ "primal_beast": {
+  "subject": "A huge wolf-like beast with dark brown-grey shaggy fur and a thick mane stands on all four powerful legs, seen from the front in a three-quarter view with his head lowered and his mouth open in a roar. Four small grey wolf pups stand in a row at his front paws. A single huge standing stone rises behind him, and dust and ash drift up behind his shoulders.",
+  "bg": "sand"
+ },
+ "black_pestilence": {
+  "subject": "a lone human knight in plain steel armor made of a few large smooth plates with a faded blue tabard and a plain round steel helmet whose whole face opening is one flat solid black shadow, holding a straight steel sword, kneeling and bracing on one knee with his sword tip planted in the ground in his right gauntlet and his left hand pressed flat on his raised knee. A huge dark cloud of sickly green smoke rolls over him from behind and above, with a few black streaks inside it. A single cracked gravestone stands to his right.",
+  "bg": "sand"
+ }
+}

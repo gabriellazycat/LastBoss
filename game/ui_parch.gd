@@ -28,13 +28,19 @@ static var _tex := {}
 static var _fonts := {}
 
 
+## Pasta do kit da pele atual: a "Mapa aberto" tem as mesmas peças redesenhadas como o pergaminho do mapa.
+static func kit_dir() -> String:
+	return "res://assets/ui/kit_mapa/" if UiSkins.mapa() else KIT
+
+
 static func tex(name: String) -> Texture2D:
-	if not _tex.has(name):
-		var p := KIT + name + ".png"
+	var key := kit_dir() + name
+	if not _tex.has(key):
+		var p := kit_dir() + name + ".png"
 		if not ResourceLoader.exists(p):
 			p = PORTRAITS + name + ".png"
-		_tex[name] = load(p) if ResourceLoader.exists(p) else null
-	return _tex[name]
+		_tex[key] = load(p) if ResourceLoader.exists(p) else null
+	return _tex[key]
 
 
 ## Retrato pintado (vilão ou herói, assets/ui/portraits/<id>.png); null se ainda não existe.
@@ -273,6 +279,10 @@ static func bar(col: Color, w: float, h: float) -> ProgressBar:
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.13, 0.085, 0.06, 0.92)
 	bg.border_color = GOLD if h >= 10 else Color(GOLD, 0.8)
+	if UiSkins.mapa():
+		# Mapa aberto: trilho de papel mais escuro com contorno de tinta (sem aro dourado).
+		bg.bg_color = Color("c9b07c")
+		bg.border_color = INK
 	bg.set_border_width_all(2 if h >= 12 else 1)
 	bg.set_corner_radius_all(int(minf(h * 0.5, 7)))
 	bg.anti_aliasing = true

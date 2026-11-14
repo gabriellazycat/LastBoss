@@ -5,7 +5,7 @@ extends RefCounted
 ## a paleta, as fontes e o desenho de painéis, botões, barras e selos. As texturas dos painéis
 ## são geradas por código (madeira, pedra, laca); fontes OFL do Google Fonts em assets/fonts.
 
-const NAMES := ["Covil", "Madeira e ouro", "Pedra rúnica", "Vidro arcano", "Gótico carmesim", "Clássica (a antiga)", "Diário"]
+const NAMES := ["Covil", "Madeira e ouro", "Pedra rúnica", "Vidro arcano", "Gótico carmesim", "Clássica (a antiga)", "Diário", "Mapa aberto"]
 const F := "res://assets/fonts/"
 const DEFAULT := {
 	"BG": Color(0.055, 0.04, 0.085, 0.92), "BG_SOFT": Color(0.05, 0.035, 0.08, 0.72), "EDGE": Color(0.42, 0.3, 0.6),
@@ -63,14 +63,20 @@ static func covil() -> bool:
 	return skin == 0
 
 
-## A pele Diário (UiDiario), a padrão.
+## A pele Diário (UiDiario). A "Mapa aberto" (7, a padrão desde 13/11/2026) usa o mesmo código com o kit do mapa
+## (assets/ui/kit_mapa, tools/art/ui_kit/make_map_kit.py) e as telas próprias (menu-mapa, feira, coleção-mapa).
 static func diario() -> bool:
-	return skin == 6
+	return skin == 6 or skin == 7
+
+
+## A pele "Mapa aberto" (docs/UI_PROPOSTAS.md, direção 6).
+static func mapa() -> bool:
+	return skin == 7
 
 
 ## Lê a pele das configurações e troca a paleta do UiKit.
 static func apply() -> void:
-	var k := int(Settings.v.get("look_hud", 6))
+	var k := int(Settings.v.get("look_hud", 7))
 	if k == _applied:
 		return
 	_applied = k
@@ -80,14 +86,14 @@ static func apply() -> void:
 	_title = null
 	_body = null
 	var pal: Dictionary = DEFAULT.duplicate()
-	if k == 6:
+	if k == 6 or k == 7:
 		pal.merge(UiDiario.PAL, true)
 	elif k == 0:
 		pal.merge(UiCovil.PAL, true)
 	elif not S.is_empty():
 		pal.merge(S["pal"], true)
-	UiKit.RARITY_COLORS = (UiDiario.RARITY if k == 6 else (UiCovil.RARITY if k == 0 else DEFAULT_RARITY)).duplicate()
-	Tips.KW_COLOR = Color(0.5, 0.09, 0.05) if k == 6 else Color(1.0, 0.84, 0.42)
+	UiKit.RARITY_COLORS = (UiDiario.RARITY if k in [6, 7] else (UiCovil.RARITY if k == 0 else DEFAULT_RARITY)).duplicate()
+	Tips.KW_COLOR = Color(0.5, 0.09, 0.05) if k in [6, 7] else Color(1.0, 0.84, 0.42)
 	UiKit.BG = pal["BG"]
 	UiKit.BG_SOFT = pal["BG_SOFT"]
 	UiKit.EDGE = pal["EDGE"]

@@ -1,0 +1,22 @@
+{
+ "fallen_healer": {
+  "subject": "A human healer in a plain grey-white hooded robe, kneeling on both knees with her face hidden in the dark shadow of the hood. Her right hand presses flat on the ground and her left palm is held open in front of her chest, cupping a soft pale green glow. A single broken wooden staff lies on the ground beside her, and a few wisps of dust drift up behind her back.",
+  "bg": "rose"
+ },
+ "dark_messenger": {
+  "subject": "A slim human messenger in a plain long black cloak with a deep hood whose whole face opening is one flat solid black shadow. He strides forward with his left foot ahead, holding one rolled blank scroll in his right hand and his left hand held out flat in front of him. A bare twisted tree stands behind him, and thin black smoke wisps trail from the hem of his cloak.",
+  "bg": "sand"
+ },
+ "war_cry": {
+  "subject": "Three lean grey wolves with bristling fur charging side by side straight toward us, each with its mouth open wide and its head low. Broad streaks of orange-red light sweep back from their shoulders, and a big cloud of dust rolls up behind them. A single tall dead tree stands far behind the pack.",
+  "bg": "teal"
+ },
+ "flooded_pit": {
+  "subject": "A round stone-lined pit in the ground filled to the brim with murky brown-green water, seen from a three-quarter angle. Three grey rats with pink ears and pink tails swim across it, their heads above the surface and ripples spreading around them. A single broken wooden plank floats at the near edge, and thin mist rises behind the pit.",
+  "bg": "ochre"
+ },
+ "hollow_armor": {
+  "subject": "A tall hollow suit of plain dark steel armor made of a few large smooth plates, standing upright with a rounded helmet whose opening is filled with pure darkness. It holds one broad round steel shield in its left gauntlet at its side, and its right gauntlet hangs open at its side. A single wooden barricade of three planks stands behind it, and a little grey dust drifts up behind its shoulders.",
+  "bg": "lilac"
+ }
+}

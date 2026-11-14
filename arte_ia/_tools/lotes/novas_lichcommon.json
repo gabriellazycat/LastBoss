@@ -1,0 +1,114 @@
+[
+ {
+  "id": "eternal_army",
+  "pt": "Exército Eterno",
+  "en": "Eternal Army",
+  "type": "spell",
+  "villain": "lich",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "family": "death",
+  "fx": {
+   "summon_n": 12,
+   "duration": 15.0,
+   "raises": 12
+  },
+  "description": "Summons {summon_n} skeletons. For {duration} s, each death of yours raises another skeleton (up to {raises} times)."
+ },
+ {
+  "id": "bone_dragon",
+  "pt": "Dragão de Ossos",
+  "en": "Bone Dragon",
+  "type": "monster",
+  "villain": "lich",
+  "tags": [
+   "undead",
+   "shadow"
+  ],
+  "archetype": "shooter",
+  "family": "death",
+  "fx": {
+   "projectile": true,
+   "retreat": 3.0,
+   "heal_death": 0.03,
+   "heal_radius": 8.0
+  },
+  "description": "Flying bone dragon that spits shadow from afar. Each death of yours nearby heals it for {heal_death_pct}% health."
+ },
+ {
+  "id": "poison_dart",
+  "pt": "Flecha Envenenada",
+  "en": "Poison Dart",
+  "type": "spell",
+  "villain": "common",
+  "tags": [],
+  "archetype": "",
+  "family": "",
+  "fx": {
+   "damage": 60,
+   "radius": 2.0,
+   "burn_dps": 10,
+   "burn_s": 5.0
+  },
+  "description": "{damage} damage and poison of {burn_dps} per sec. for {burn_s} s on the nearest hero."
+ },
+ {
+  "id": "spike_trap",
+  "pt": "Armadilha de Espinhos",
+  "en": "Spike Trap",
+  "type": "structure",
+  "villain": "common",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "family": "",
+  "fx": {
+   "damage": 80,
+   "root": 1.5,
+   "trigger": 1.0
+  },
+  "description": "[[structure|Trap]]: when the hero steps on it, they take {damage} damage and are [[root|Rooted]] for {root} s. Then it vanishes."
+ },
+ {
+  "id": "goblin_scout",
+  "pt": "Batedor Goblin",
+  "en": "Goblin Scout",
+  "type": "monster",
+  "villain": "common",
+  "tags": [],
+  "archetype": "chaser",
+  "family": "",
+  "fx": {},
+  "description": "Fast, fragile goblin: a cheap lure the hero chases."
+ },
+ {
+  "id": "hired_archer",
+  "pt": "Arqueiro de Aluguel",
+  "en": "Hired Archer",
+  "type": "monster",
+  "villain": "common",
+  "tags": [],
+  "archetype": "shooter",
+  "family": "",
+  "fx": {
+   "retreat": 4.0,
+   "projectile": true
+  },
+  "description": "Shoots from afar and backs away if the hero gets close."
+ },
+ {
+  "id": "crow_flock",
+  "pt": "Revoada de Corvos",
+  "en": "Crow Murder",
+  "type": "swarm",
+  "villain": "common",
+  "tags": [],
+  "archetype": "swarm",
+  "family": "",
+  "fx": {},
+  "description": "{count} flying crows: they pass over blockers."
+ }
+]

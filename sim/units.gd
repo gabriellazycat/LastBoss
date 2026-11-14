@@ -31,6 +31,7 @@ var timer := PackedFloat32Array()
 var timer2 := PackedFloat32Array()
 var curse_t := PackedFloat32Array()
 var buff := PackedFloat32Array()
+var rage := PackedFloat32Array()   # Caçada (Urso Pardo): dano acumulado por golpe no herói; não some com as auras
 var fear_t := PackedFloat32Array()
 var slot := PackedFloat32Array()
 var tags := PackedInt32Array()
@@ -45,6 +46,8 @@ var proj_mult := 1.0
 
 # Contagens do último tick.
 var n_pack := 0
+var n_beast := 0       # Feras suas em campo (alcateia)
+var n_own := 0         # criaturas suas em campo, sem estruturas (Besta Primordial)
 var n_struct := 0
 var n_cultists := 0
 var n_kings := 0
@@ -80,7 +83,7 @@ func setup(s: Sim, capacity: int) -> void:
 	px.resize(cap); py.resize(cap); ox.resize(cap); oy.resize(cap); ax.resize(cap); ay.resize(cap)
 	hp.resize(cap); max_hp.resize(cap); dmg.resize(cap); atk_int.resize(cap); atk_t.resize(cap)
 	spd.resize(cap); rng.resize(cap); rad.resize(cap); xp.resize(cap); cost_share.resize(cap)
-	timer.resize(cap); timer2.resize(cap); curse_t.resize(cap); buff.resize(cap); fear_t.resize(cap); slot.resize(cap)
+	timer.resize(cap); timer2.resize(cap); curse_t.resize(cap); buff.resize(cap); rage.resize(cap); fear_t.resize(cap); slot.resize(cap)
 	free.resize(cap)
 	for i in cap:
 		free[i] = cap - 1 - i
@@ -126,6 +129,7 @@ func spawn(d: CardDef, x: float, y: float, xp_val: float, share: float, uflags: 
 	timer2[i] = float(d.fx.get("spawn_interval", 0.0))
 	curse_t[i] = 0.0
 	buff[i] = 0.0
+	rage[i] = 0.0
 	fear_t[i] = 0.0
 	slot[i] = fmod(i * 2.399963, TAU)
 	tags[i] = d.tags
@@ -178,7 +182,7 @@ func update(dt: float) -> void:
 	# Herói Ajudante (11/11/2026): alvo como o herói; a distância até ele conta × pull (< 1 = preferido).
 	var helper: SimHero = sim.helper if sim.helper != null and sim.helper.hp > 0.0 else null
 	var pull2 := pow(float(sim.data.rules["locations"].get("helper", {}).get("pull", 1.0)), 2) if helper else 1.0
-	n_pack = 0; n_struct = 0; n_cultists = 0; n_kings = 0
+	n_pack = 0; n_struct = 0; n_cultists = 0; n_kings = 0; n_beast = 0; n_own = 0
 	for i in hi:
 		if alive[i] == 0:
 			continue
@@ -213,6 +217,10 @@ func update(dt: float) -> void:
 			continue
 		if tags[i] & K.TAG_PACK:
 			n_pack += 1
+		if arch[i] != K.Arch.STRUCTURE:
+			n_own += 1
+			if sim.data.cards[di].beast:
+				n_beast += 1
 		if di == d_cultist:
 			n_cultists += 1
 		elif di == d_king:
@@ -232,6 +240,8 @@ func update(dt: float) -> void:
 		var speed := spd[i]
 		if (tags[i] & K.TAG_PACK) and sim.t < sim.rally_until:
 			speed *= 1.0 + sim.rally_spd
+		if a != K.Arch.STRUCTURE and sim.t < sim.warcry_until:
+			speed *= 1.0 + sim.warcry_spd
 		var attack := false
 		if (flags[i] & K.F_DEFEND) and hero_far_from_boss:
 			_step(i, bx + cos(slot[i]) * 3.0, by + sin(slot[i]) * 3.0, speed, dt)
@@ -372,6 +382,13 @@ func _structure(i: int, di: int, d: float, dt: float, nose: bool) -> void:
 			var bat: CardDef = sim.data.card(str(c.fx.get("spawn", "bat")))
 			var a := slot[i] + timer[i]
 			sim.spawn_child(bat, px[i] + cos(a) * 1.2, py[i] + sin(a) * 1.2, i)
+	elif c.fx.has("gold_per_s"):
+		# Veio de Ouro: rende ouro por segundo enquanto dura (timer2 = próximo pagamento).
+		if timer[i] > c.fxv("duration", lvl[i], 20.0) * smult:
+			sim.kill_unit(i, K.Death.EXPIRE)
+		elif timer[i] >= timer2[i]:
+			timer2[i] += 1.0
+			sim._earn_gold(c.fxv("gold_per_s", lvl[i]))
 	elif di == d_totem:
 		if timer[i] > c.fxv("duration", lvl[i], 20.0) * smult:
 			sim.kill_unit(i, K.Death.EXPIRE)

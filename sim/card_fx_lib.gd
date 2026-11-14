@@ -165,6 +165,10 @@ static func run_op(sim: Sim, k: Ctx, o: Dictionary, x: float, y: float) -> void:
 				"harvest":     # cada monstro seu que morre devolve elixir
 					sim.harvest_until = until
 					sim.harvest_elixir = val(k, o.get("elixir"))
+				"warcry":      # Grito de Guerra: todos os seus monstros (não só o Bando) correm e batem mais
+					sim.warcry_until = until
+					sim.warcry_dmg = val(k, o.get("damage"))
+					sim.warcry_spd = val(k, o.get("speed"))
 				"spell_mark":  # feitiços machucam mais o herói
 					sim.mark_until = until
 					sim.mark_bonus = val(k, o.get("bonus"))

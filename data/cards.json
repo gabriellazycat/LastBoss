@@ -12,8 +12,8 @@
    "cost": 3,
    "count": 8,
    "xp_parts": 8,
-   "hp": 25,
-   "dps": 4,
+   "hp": 52,
+   "dps": 4.0,
    "attack_interval": 0.25,
    "speed": 5.5,
    "range": 0.8,
@@ -142,7 +142,8 @@
    "n3": {
     "first_split": 3
    },
-   "owner": "plague"
+   "owner": "plague",
+   "family": "wild"
   },
   {
    "id": "shadow_bolt",
@@ -162,7 +163,7 @@
    "speed": 0,
    "range": 10,
    "fx": {
-    "damage": 140,
+    "damage": 125,
     "length": 10.0,
     "width": 1.5,
     "pierce_shield": true
@@ -556,7 +557,8 @@
     "hp",
     "dps"
    ],
-   "owner": "plague"
+   "owner": "plague",
+   "family": "wild"
   },
   {
    "id": "scrap_golem",
@@ -754,8 +756,8 @@
    "cost": 3,
    "count": 6,
    "xp_parts": 6,
-   "hp": 30,
-   "dps": 5,
+   "hp": 58,
+   "dps": 5.0,
    "attack_interval": 0.25,
    "speed": 5.8,
    "range": 0.8,
@@ -1071,8 +1073,8 @@
    "cost": 3,
    "count": 1,
    "xp_parts": 1,
-   "hp": 220,
-   "dps": 14,
+   "hp": 250,
+   "dps": 16,
    "attack_interval": 0.25,
    "speed": 4.0,
    "range": 1.1,
@@ -1187,7 +1189,7 @@
    "cost": 3,
    "count": 6,
    "xp_parts": 5,
-   "hp": 75,
+   "hp": 65,
    "dps": 7,
    "attack_interval": 0.25,
    "speed": 4.2,
@@ -1249,8 +1251,8 @@
    "fx": {
     "pick_radius": 4.0,
     "radius": 3.0,
-    "hp_mult": 3.5,
-    "min_damage": 130,
+    "hp_mult": 3.1,
+    "min_damage": 120,
     "raise": 3
    },
    "lvl": [
@@ -1427,7 +1429,7 @@
    "count": 2,
    "xp_parts": 2,
    "hp": 60,
-   "dps": 6,
+   "dps": 5,
    "attack_interval": 0.25,
    "speed": 3.0,
    "range": 6.0,
@@ -1521,8 +1523,8 @@
    "tags": [
     "pack"
    ],
-   "hp": 25,
-   "dps": 4,
+   "hp": 52,
+   "dps": 4.0,
    "attack_interval": 0.25,
    "speed": 5.5,
    "range": 0.8
@@ -1551,6 +1553,22 @@
    "attack_interval": 0.25,
    "speed": 4.5,
    "range": 1.0
+  },
+  {
+   "id": "wolf_pup",
+   "archetype": "chaser",
+   "tags": [],
+   "hp": 120,
+   "dps": 10,
+   "attack_interval": 0.25,
+   "speed": 5.0,
+   "range": 1.0,
+   "fx": {
+    "beast": true,
+    "alcateia": 0.08,
+    "alcateia_cap": 0.24
+   },
+   "owner": "plague"
   }
  ]
 }

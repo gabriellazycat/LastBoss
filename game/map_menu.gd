@@ -1,0 +1,122 @@
+class_name MapMenu
+extends Control
+## Menu principal da pele "Mapa aberto" (Settings "look_hud" 7; maquete aprovada "Menu A · o menu é o mapa",
+## docs/UI_PROPOSTAS.md): um mapa grande aberto sobre a mesa, cada opção é um lugar ligado por estradas tracejadas.
+## Nova run = o covil (no centro, anel vermelho), Coleção = a biblioteca, Compêndio = a torre, Configurações = o
+## moinho, Sair = o barco na costa; "Continuar run" = a estrada vermelha que chega ao covil (só com run salva).
+## O fundo desenhado (papel, estradas, bosques, rio, mar, rosa dos ventos, faixa do título vazia) vem pronto de
+## assets/ui/map/bg_menuA.png (tools/art/ui_kit/export_map_art.py); aqui ficam os lugares, os textos e os botões.
+
+const MAP := "res://assets/ui/map/"
+const M := 24.0   # margem do PNG em volta do papel
+# Lugares nas coordenadas do papel da maquete (1640x960): [id, desenho, chave do texto, chave da legenda, tamanho]
+const PLACES := [
+	["new_run", "m-lair", "UI_NEW_RUN", "UI_MAP_LAIR", 150.0, Vector2(846, 540)],
+	["collection", "m-library", "UI_COLLECTION", "", 104.0, Vector2(420, 330)],
+	["compendium", "m-tower", "UI_COMPENDIUM", "", 104.0, Vector2(520, 760)],
+	["settings", "m-mill", "UI_SETTINGS", "", 104.0, Vector2(1240, 350)],
+	["quit", "m-boat", "UI_QUIT", "", 104.0, Vector2(1300, 730)],
+]
+
+signal chosen(id: String)
+
+var buttons := {}          # id -> Button
+var buttons_box: Control   # os botões, na ordem do menu de hoje (continuar, nova run, coleção, ...)
+var continue_btn: Button
+var portrait: Control
+
+
+func build(villain_portrait: Texture2D) -> void:
+	var bg := TextureRect.new()
+	bg.texture = load(MAP + "bg_menuA.png")
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+	custom_minimum_size = bg.texture.get_size()
+	size = custom_minimum_size
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Título na faixa do fundo (faixa em 520,34 com 600 de largura).
+	var over := UiParch.label("UI_TITLE_OVER", "title", 17, UiParch.INK)
+	_place(over, Vector2(520, 50), Vector2(600, 0), true)
+	var t := UiParch.label("LAST BOSS", "title", 64, UiParch.INK)
+	_place(t, Vector2(520, 66), Vector2(600, 0), true)
+	var sub := UiParch.label("UI_SUBTITLE", "italic", 23, UiParch.INK)
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_place(sub, Vector2(600, 190), Vector2(440, 0), true)
+	buttons_box = Control.new()
+	buttons_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	buttons_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(buttons_box)
+	# "Continuar": a bandeira no começo da estrada vermelha que chega ao covil.
+	continue_btn = _node_button("continue", "m-tent", "UI_CONTINUE", 76.0, Vector2(846, 826), false)
+	for p in PLACES:
+		_node_button(p[0], p[1], p[2], p[4], p[5], p[0] == "new_run")
+		if p[3] != "":
+			var h := UiParch.label(p[3], "italic", 21, UiParch.INK_SOFT)
+			# contorno da cor do papel: a estrada vermelha passa por baixo sem riscar o texto
+			h.add_theme_color_override("font_outline_color", Color(UiParch.PARCH, 0.95))
+			h.add_theme_constant_override("outline_size", 10)
+			_place(h, p[5] + Vector2(-150, p[4] * 0.5 + 60), Vector2(300, 0), true)
+	# O chefe da última run, num quadrinho com moldura do mapa.
+	if villain_portrait != null:
+		portrait = UiParch.framed_art(villain_portrait, Vector2(200, 192), "frame_gold")
+		portrait.position = Vector2(M + 70, M + 560)
+		portrait.rotation_degrees = -2.0
+		add_child(portrait)
+		var me := UiParch.label("UI_TITLE_ME", "italic", 21, UiParch.BLOOD)
+		_place(me, Vector2(60, 762), Vector2(220, 0), true)
+
+
+func _place(l: Control, at: Vector2, w: Vector2, center: bool) -> void:
+	l.position = Vector2(M, M) + at
+	if w.x > 0:
+		l.custom_minimum_size.x = w.x
+		l.size.x = w.x
+	if center and l is Label:
+		(l as Label).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(l)
+
+
+## Lugar do mapa: o desenho num anel duplo (vermelho no mouse/foco) com o nome embaixo. É um Button de verdade
+## (foco por teclado e controle; as setas andam pelos lugares mais próximos na direção apertada).
+func _node_button(id: String, sym: String, key: String, sz: float, at: Vector2, main: bool) -> Button:
+	var b := Button.new()
+	b.text = key
+	b.set_meta("no_frame", true)
+	b.set_meta("no_ink", true)
+	var n: Texture2D = load(MAP + "node_%s.svg" % sym)
+	var hot: Texture2D = load(MAP + "node_%s_hot.svg" % sym)
+	b.icon = hot if main else n
+	b.expand_icon = true
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	b.add_theme_constant_override("icon_max_width", int(sz))
+	b.add_theme_font_override("font", UiParch.font("title"))
+	b.add_theme_font_size_override("font_size", 36 if main else 30)
+	var ink := UiParch.BLOOD if main else UiParch.INK
+	for k in ["font_color", "font_focus_color", "font_pressed_color"]:
+		b.add_theme_color_override(k, ink)
+	b.add_theme_color_override("font_hover_color", UiParch.BLOOD)
+	b.add_theme_color_override("font_hover_pressed_color", UiParch.BLOOD)
+	b.add_theme_color_override("font_outline_color", Color(UiParch.PARCH, 0.9))
+	b.add_theme_constant_override("outline_size", 8)
+	for st in ["normal", "hover", "pressed", "focus", "disabled", "hover_pressed"]:
+		b.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+	b.custom_minimum_size = Vector2(maxf(sz + 40.0, 260.0), sz + 52.0)
+	b.size = b.custom_minimum_size
+	b.position = Vector2(M, M) + at - Vector2(b.size.x * 0.5, sz * 0.5)
+	var lit := func(on: bool):
+		b.icon = hot if (on or main) else n
+		b.scale = Vector2.ONE * (1.06 if on else 1.0)
+	b.pivot_offset = Vector2(b.size.x * 0.5, sz * 0.5)
+	b.mouse_entered.connect(func(): b.grab_focus())
+	b.focus_entered.connect(func(): lit.call(true))
+	b.focus_exited.connect(func(): lit.call(false))
+	b.pressed.connect(func(): chosen.emit(id))
+	buttons_box.add_child(b)
+	buttons[id] = b
+	return b
+
+
+## Ordem dos botões como no menu de hoje (main_buttons.get_child(1) = Nova run).
+func ordered() -> Array:
+	return [continue_btn, buttons["new_run"], buttons["collection"], buttons["compendium"], buttons["settings"], buttons["quit"]]

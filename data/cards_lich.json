@@ -213,7 +213,7 @@
    "speed": 0,
    "range": 5,
    "fx": {
-    "damage": 60,
+    "damage": 55,
     "radius": 5.0,
     "window": 30.0,
     "cap": 20
@@ -325,6 +325,102 @@
     "aim": "cluster",
     "needs_hit": true
    }
+  },
+  {
+   "id": "eternal_army",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "",
+   "rarity": "legendary",
+   "cost": 13,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "summon_n": 12,
+    "duration": 25.0,
+    "raises": 24
+   },
+   "lvl": [
+    "duration"
+   ],
+   "n3": {
+    "raises": 36
+   },
+   "owner": "lich",
+   "family": "death",
+   "ops": [
+    {
+     "op": "summon",
+     "unit": "skeleton",
+     "n": "summon_n",
+     "ring": 2.0
+    }
+   ],
+   "ai": {
+    "wait_for": {
+     "if": {
+      "own_near_hero": 4.0
+     }
+    }
+   },
+   "model": "damned_army"
+  },
+  {
+   "id": "bone_dragon",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "undead",
+    "shadow"
+   ],
+   "archetype": "shooter",
+   "rarity": "legendary",
+   "cost": 14,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 4500,
+   "dps": 110,
+   "attack_interval": 0.25,
+   "speed": 3.0,
+   "range": 6,
+   "fx": {
+    "projectile": true,
+    "retreat": 3.0,
+    "heal_death": 0.03,
+    "heal_radius": 8.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "pierce": true
+   },
+   "owner": "lich",
+   "family": "death",
+   "fly": true,
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "value": [
+     {
+      "if": {
+       "contest_active": true
+      },
+      "add": 1.0
+     }
+    ]
+   },
+   "model": "elder_dragon"
   }
  ]
 }

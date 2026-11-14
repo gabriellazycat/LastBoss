@@ -7,7 +7,8 @@ const FPS_CAPS := [0, 30, 60, 120, 144, 240]
 
 ## 1: direção D vira o padrão (09/11/2026). 2: a interface Diário (papel e fita) vira a padrão.
 ## 4: o mundo pintado em guache S1 (guache chapado) vira o padrão (13/11/2026).
-const ART_REV := 4
+## 5: a interface "Mapa aberto" (look_hud 7) vira a padrão (13/11/2026).
+const ART_REV := 5
 
 static var v := defaults()
 # Chaves trocadas só nesta execução (--set=...), com o valor que estava salvo: save() grava o salvo, não o da execução.
@@ -26,7 +27,8 @@ static func defaults() -> Dictionary:
 		# chão 7, herói e monstros 5 (modelos CC0 KayKit/Quaternius, luz estilo RoR2). Na HUD, 6 = Diário, 0 = Covil, 5 = a antiga.
 		# Desde a rodada autônoma de 09/11/2026 o padrão é a direção G · Blender v2 (monstros, chefe e cenário
 		# do Blender, heróis KayKit; docs/ARTE_BLENDER.md). A D continua em Configurações → Visual.
-		"look_hud": 6, "look_ground": 10, "look_hero": 5, "look_enemies": 7,
+		# HUD 7 = "Mapa aberto" (13/11/2026, docs/UI_PROPOSTAS.md); 6 = Diário continua em Configurações.
+		"look_hud": 7, "look_ground": 10, "look_hero": 5, "look_enemies": 7,
 		# Mundo pintado em guache nos materiais (13/11/2026, docs/MUNDO_PINTADO.md): 0 = desligado, 1..9 = variações
 		# S1-S3, T1-T3, C1-C3 (game/art/paint_look.gd). Escolhida pelo designer em 13/11: S1, guache chapado.
 		"paint_look": 1,

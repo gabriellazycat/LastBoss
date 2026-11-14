@@ -99,6 +99,9 @@ func _ready() -> void:
 
 
 func _build_title() -> void:
+	if UiSkins.mapa():
+		_build_title_map()
+		return
 	title_box = VBoxContainer.new()
 	title_box.add_theme_constant_override("separation", 6)
 	if UiSkins.diario():
@@ -185,6 +188,37 @@ func _build_title() -> void:
 	_menu_btn("UI_SETTINGS", func(): show_screen("settings"))
 	if OS.get_name() != "Web":
 		_menu_btn("UI_QUIT", func(): get_tree().quit())
+
+
+func _on_map_choice(id: String) -> void:
+	if id == "continue":
+		continue_run.emit()
+	elif id == "new_run":
+		show_screen("decks")
+	elif id == "quit":
+		get_tree().quit()
+	else:
+		show_screen(id)
+
+
+## Pele "Mapa aberto": o título é um mapa aberto sobre a mesa (MapMenu, maquete "Menu A").
+func _build_title_map() -> void:
+	var mm := MapMenu.new()
+	var pt := UiParch.portrait("villain_" + meta.villain) if meta else null
+	if pt == null and ResourceLoader.exists("res://assets/cards/rat_king.png"):
+		pt = load("res://assets/cards/rat_king.png")
+	mm.build(pt)
+	add_child(mm)
+	title_root = mm
+	title_box = VBoxContainer.new()   # o resto do menu ainda pergunta pelo title_box; no mapa ele fica vazio
+	main_buttons = VBoxContainer.new()
+	main_buttons.visible = false
+	mm.add_child(main_buttons)
+	continue_btn = mm.continue_btn
+	new_run_btn = mm.buttons["new_run"]
+	mm.chosen.connect(_on_map_choice)
+	if OS.get_name() == "Web":
+		mm.buttons["quit"].visible = false
 
 
 func _menu_btn(txt: String, cb: Callable) -> Button:
@@ -465,8 +499,7 @@ func _fill_group() -> void:
 	var ph: Dictionary = data.phase(pending_phase)
 	var party: Array = ph.get("party", [])
 	var n := party.size()
-	var mult := float(data.villain(pending_villain)["rules"].get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0)) \
-			* float(ph.get("villain_hp", {}).get(pending_villain, 1.0))
+	var mult := float(data.rules.get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0))
 	for i in n:
 		if UiSkins.diario():
 			group_row.add_child(_wanted_poster(i, n, P, mult, str(party[i])))
@@ -559,10 +592,13 @@ func show_screen(s: String) -> void:
 	settings.visible = false
 	if s == "title":
 		continue_btn.visible = SaveGame.exists()
-		if UiSkins.diario():
-			# A opção principal é a fita vermelha: Continuar quando há run salva; senão, Nova run.
-			UiDiario.menu_button(new_run_btn, 24, not continue_btn.visible)
-		(continue_btn if continue_btn.visible else main_buttons.get_child(1)).grab_focus.call_deferred()
+		if UiSkins.mapa():
+			(continue_btn if continue_btn.visible else new_run_btn).grab_focus.call_deferred()
+		else:
+			if UiSkins.diario():
+				# A opção principal é a fita vermelha: Continuar quando há run salva; senão, Nova run.
+				UiDiario.menu_button(new_run_btn, 24, not continue_btn.visible)
+			(continue_btn if continue_btn.visible else main_buttons.get_child(1)).grab_focus.call_deferred()
 	elif s == "decks":
 		_fill_decks()
 		_focus_first_deck.call_deferred()
@@ -679,6 +715,8 @@ func _screen_node(s: String) -> Control:
 
 
 func _final_pos(s: String, c: Control, vs: Vector2) -> Vector2:
+	if s == "title" and UiSkins.mapa():
+		return (vs - c.size) * 0.5
 	if s == "title":
 		var m := clampf(vs.x * 0.06, 28.0, 120.0)
 		return Vector2(m, (vs.y - c.size.y) * 0.5)
@@ -709,7 +747,7 @@ func _process_desk(delta: float) -> void:
 		var fit := minf(1.0, minf(vs.y * 0.94 / maxf(c.size.y, 1.0), vs.x * 0.96 / maxf(c.size.x, 1.0)))
 		c.scale = Vector2.ONE * lerpf(0.16, fit, e)
 		c.position = (from - c.size * 0.5).lerp(fin, e)
-		c.rotation = lerpf(deg_to_rad(9.0 if s.length() % 2 == 0 else -9.0), deg_to_rad(-1.2 if s == "title" else 0.0), e)
+		c.rotation = lerpf(deg_to_rad(9.0 if s.length() % 2 == 0 else -9.0), deg_to_rad((-0.35 if UiSkins.mapa() else -1.2) if s == "title" else 0.0), e)
 		c.modulate.a = clampf(e * 3.0, 0.0, 1.0)
 	settings.position = (vs - settings.size) * 0.5
 	footer.text = VERSION + "   ·   " + tr("UI_MENU_KEYS")
@@ -1249,8 +1287,7 @@ func _fill_group_parch() -> void:
 	var party: Array = ph.get("party", [])
 	var n := party.size()
 	g_count.text = tr("UI_GROUP_QUEUE").format({"n": n})
-	var mult := float(data.villain(pending_villain)["rules"].get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0)) \
-			* float(ph.get("villain_hp", {}).get(pending_villain, 1.0))
+	var mult := float(data.rules.get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0))
 	UiKit.clear(g_heroes)
 	var cw := clampf(floorf((1240.0 - 10.0 * (n - 1)) / maxf(n, 1)), 150.0, 200.0)
 	for i in n:

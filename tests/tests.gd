@@ -41,9 +41,11 @@ func _ready() -> void:
 	t_relics_1111()
 	t_events()
 	t_ability_tell()
+	t_soul_absorb_cooldown()
 	t_arena_hunt()
 	t_acts()
 	t_meta()
+	t_unlock_challenges()
 	t_full_runs()
 	t_combos()
 	t_classes()
@@ -60,12 +62,13 @@ func _ready() -> void:
 	t_plague_cards()
 	t_unique_art()
 	t_helper()
+	t_round_2026_11_13()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
 
 func t_data() -> void:
-	check(data.pool.size() == 84, "84 cartas na pool (%d)" % data.pool.size())
+	check(data.pool.size() == 112, "112 cartas na pool (%d)" % data.pool.size())
 	check(data.upgrades.size() == 15, "15 upgrades")
 	check(data.contracts.size() == 7, "7 contratos (Mão Vazia saiu com o sacrifício da mão)")
 	# Vilões (C3): dono válido em tudo; baralho inicial só com cartas do vilão ou comuns, liberadas com ele.
@@ -121,7 +124,7 @@ func t_costs() -> void:
 	var tw := Sim.CardInst.new()
 	tw.def = data.card("gargoyle_tower")
 	check(s.card_cost(tw) == 4, "Dragão: Torre (estrutura) continua 4")
-	check(is_equal_approx(s.gold, 30.0), "Dragão começa com 30 de ouro")
+	check(is_equal_approx(s.gold, 45.0), "Dragão começa com 45 de ouro (calibragem de 13/11/2026)")
 	# Passivas dos vilões.
 	s.gold = 120.0
 	check(is_equal_approx(s.hoard_fire(), 0.10), "Tesouro do Dragão: 120 de ouro = +10%% de fogo (%.2f)" % s.hoard_fire())
@@ -172,23 +175,25 @@ func t_hand_cap() -> void:
 	for k in int(45.0 / s.dt):
 		s.step()
 	check(s.hand_size == 5 and s.hand.size() <= full, "Biblioteca acaba: a mão volta a 5 sem expulsar carta (%d, tamanho %d)" % [s.hand.size(), s.hand_size])
-	# Sem escada de elixir (11/11/2026): máximo 10 e 2,8 s por ponto a run toda; custo máximo das ofertas por ato
-	# continua (7/9/12), mas nunca acima do elixir máximo permanente; sem teto para as relíquias.
+	# Piso de elixir por ato (13/11/2026): máximo 10/12/14 e regen x1/x1,25/x1,5 (rules.acts[].elixir), as relíquias
+	# somam por cima sem teto; o custo máximo das ofertas (7/9/16) nunca passa do elixir máximo permanente.
 	var e := _sim(2, "dragon")
 	var spp := float(data.rules["elixir"]["seconds_per_point"])
 	check(is_equal_approx(e.elixir_max, 10.0) and e.max_offer_cost() == 7 and is_equal_approx(e.seconds_per_elixir(), spp), "ato 1: elixir máximo 10, 2,8 s por ponto, ofertas até custo 7")
+	var floors: Array = []
 	for a in data.rules["acts"]:
-		check(not a["elixir"].has("max") and not a["elixir"].has("seconds_per_point"), "acts[].elixir sem máximo nem regen (só max_cost)")
+		floors.append([float(a["elixir"].get("max", 0.0)), float(a["elixir"].get("regen_mult", 0.0))])
+	check(floors.size() == 3 and floors[0][0] <= floors[1][0] and floors[1][0] <= floors[2][0] and floors[0][1] < floors[1][1] and floors[1][1] < floors[2][1], "acts[].elixir: o piso de máximo e de regen não cai e a regen sobe a cada ato %s" % [floors])
 	e._next_act()
-	check(e.act == 1 and is_equal_approx(e.elixir_max, 10.0) and is_equal_approx(e.seconds_per_elixir(), spp), "trocar de ato não sobe o elixir nem a regen")
+	check(e.act == 1 and is_equal_approx(e.elixir_max, floors[1][0]) and is_equal_approx(e.seconds_per_elixir(), spp / floors[1][1]), "trocar de ato sobe o piso de elixir e de regen (%.1f, %.2f s)" % [e.elixir_max, e.seconds_per_elixir()])
 	e.act = 2
 	e.recalc_elixir_max()
-	check(is_equal_approx(e.elixir_max, 10.0) and e.max_offer_cost() == 10, "ato 3 sem relíquias: máximo continua 10 e as ofertas param no custo 10 (%d)" % e.max_offer_cost())
+	check(is_equal_approx(e.elixir_max, floors[2][0]) and e.max_offer_cost() == mini(16, int(floors[2][0])), "ato 3 sem relíquias: máximo do piso (%.0f) e ofertas até custo %d" % [e.elixir_max, e.max_offer_cost()])
 	var e2 := _sim(2, "dragon")
 	e2.act = 2
 	for k in 4:
 		e2.gain_relic("heart_of_well")
-	check(e2.elixir_max > 20.0 and e2.max_offer_cost() == 12, "relíquias de elixir empilham sem teto (%.0f) e liberam o custo 12 do ato 3" % e2.elixir_max)
+	check(e2.elixir_max > 20.0 and e2.max_offer_cost() == 16, "relíquias de elixir empilham sem teto (%.0f) e liberam o custo 16 do ato 3" % e2.elixir_max)
 	var mxe := e2.elixir_max
 	e2.add_temp("elixir_max", 4.0, 40.0, "t")
 	e2.elixir = mxe + 4.0
@@ -425,7 +430,7 @@ func _inst(id: String, level := 1) -> Sim.CardInst:
 func t_card_levels() -> void:
 	var rats := data.card("rat_horde")
 	check(rats.count_at(1) == 8 and rats.count_at(2) == 10 and rats.count_at(3) == 12, "Horda: 8, 10 e 12 ratos por nível")
-	check(is_equal_approx(data.card("shadow_bolt").fxv("damage", 2), 175.0), "Raio Sombrio N2: 175 de dano")
+	check(is_equal_approx(data.card("shadow_bolt").fxv("damage", 2), 156.25), "Raio Sombrio N2: 156 de dano (125 base, calibragem de 13/11/2026)")
 	check(data.card("burn_village").cost_at(1) == 4 and data.card("burn_village").cost_at(3) == 2, "Incêndio fica 1 mais barato por nível")
 	check(data.card("soul_feast").fxv("bonus_per_card", 2) == 1.0 and data.card("soul_feast").fxv("bonus_per_card", 3) == 2.0,
 		"especial do N3 só vale no nível 3")
@@ -473,8 +478,9 @@ func t_location_rewards() -> void:
 	for ci in s.cards:
 		distinct["%s/%d/%d" % [ci.def.id, ci.level, ci.mods]] = true
 	check(s.offers[0]["options"].size() == distinct.size(), "fonte, marco 3: escolhe qualquer carta do deck (cópias iguais uma vez)")
+	var n_before := s.cards.size()
 	s.choose(0)
-	check(s.cards.size() == 9, "remover tira a carta do deck")
+	check(s.cards.size() == n_before - 1, "remover tira a carta do deck")
 	s.offers.clear()
 	s._offer_marks("fountain", 1)
 	check(s.offers.size() == 1 and s.offers[0]["options"].size() == maxi(1, roundi(s.cards.size() * 0.25)), "fonte, marco 1: 1 carta entre 25%% do deck")
@@ -502,43 +508,79 @@ func t_location_rewards() -> void:
 	check(ok, "ofertas só sorteiam cartas desbloqueadas")
 
 
+func t_unlock_challenges() -> void:
+	var s := _sim(3, "plague")
+	var T: UnlockTrack = s.track
+	var stats := {"heroes_fallen": 5, "gold_end": 0.0, "gold_earned": 0.0, "gold_spent": 0, "spent_act": [10.0, 5.0]}
+	var ctx := {"won": true, "villain": "plague", "phase": 1, "wins_by_villain": {"plague": 1}, "phases_won": [], "heroes_total": 26}
+	var ids := ["ogre", "cave_troll", "sewer_flood", "brown_bear", "alpha_beast", "fallen_healer", "molten_gold", "hollow_armor"]
+	var r: Dictionary = T.check(stats, ctx, ids)
+	var done: Array = r["done"].map(func(p): return p["id"])
+	check(done.has("cave_troll") and done.has("sewer_flood") and done.has("brown_bear") and not done.has("ogre") and not done.has("alpha_beast"), "desafios: vitória na fase 1, 2ª vitória do vilão e 30 heróis no total cumprem; o resto não (%s)" % str(done))
+	T.t["plays"]["monster"] = 101
+	T.t["peak"]["rat"] = 30
+	T.t["min_loss"] = 3
+	T.t["elixir_max"] = 15.0
+	r = T.check(stats, ctx, ids)
+	done = r["done"].map(func(p): return p["id"])
+	check(done.has("ogre") and done.has("alpha_beast") and done.has("fallen_healer") and done.has("hollow_armor"), "desafios: 100 monstros jogados, 30 ratos de uma vez, perdendo até 5 monstros e 15 de Elixir máximo (%s)" % str(done))
+	check(not done.has("molten_gold") and r["near"].any(func(p): return p["id"] == "molten_gold" and absf(float(p["v"]) - 15.0) < 0.01), "desafios: gastar 300 de Elixir mostra o progresso (15)")
+	# derrota não cumpre desafio de vitória
+	ctx["won"] = false
+	r = T.check(stats, ctx, ["cave_troll", "sewer_flood"])
+	check(r["done"].is_empty(), "desafios: derrota não conta como vitória")
+	# janela deslizante: 5 cartas em 5 s
+	var s2 := _sim(4, "plague")
+	var c := Sim.CardInst.new()
+	c.def = data.card("web")
+	for i in 5:
+		s2.t = 10.0 + i
+		s2.track.on_play(s2, c)
+	check(int(s2.track.t["win_peak"].get("any|5.0", 0)) == 5, "desafios: 5 cartas em 5 segundos (janela deslizante)")
+	# a run de verdade rastreia: joga uma carta e anda um pouco
+	var s3 := _sim(6, "plague")
+	s3.elixir = 10.0
+	for i in 40:
+		s3.step()
+	check(int(s3.track.t["peak"].get("monster", 0)) == 0, "desafios: rastreador roda no passo do Sim sem erro")
+	# fim da fase: a meta libera a carta e guarda o progresso
+	var path := "user://test_meta_unlock.save"
+	var m := MetaSave.load_or_new(data, path)
+	s3.track.t["plays"]["monster"] = 110
+	s3.track.t["peak"]["rat"] = 12
+	var res := m.apply_unlocks(s3, false, path)
+	check(m.is_unlocked("ogre") and not m.is_unlocked("alpha_beast") and res["done"].size() > 0, "apply_unlocks: libera a carta cumprida mesmo na derrota")
+	check(m.progress.has("alpha_beast") and float(m.progress["alpha_beast"]["v"]) == 12.0, "apply_unlocks: guarda o melhor progresso (12/30 ratos)")
+	var m2 := MetaSave.load_or_new(data, path)
+	check(m2.is_unlocked("ogre") and m2.progress.has("alpha_beast"), "desbloqueio e progresso sobrevivem ao salvar")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
 func t_meta() -> void:
 	var path := "user://test_meta.save"
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var m := MetaSave.load_or_new(data, path)
 	check(m.villains == ["plague"] and m.villain == "plague" and not m.phase_open(2), "começa só com a Praga e a fase 2 fechada")
-	check(m.is_unlocked("rat_horde") and m.is_unlocked("rat_king") and m.is_unlocked("ogre") and not m.is_unlocked("torch"), "coleção inicial: Praga (comuns, incomuns, raras iniciais) e comuns")
-	check(m.win_phase(1) == "dragon" and m.villains.has("dragon") and m.is_unlocked("torch") and m.phase_open(2), "vencer a fase 1 libera o Dragão e as cartas dele")
-	check(not m.can_buy("torch") and m.can_buy("slime") == false, "Almas não compram comuns nem incomuns")
-	m.win_phase(2)
-	var rare := ""
-	for c in data.pool:
-		if c.rarity == 2 and not m.is_unlocked(c.id) and m.can_buy(c.id):
-			rare = c.id
-			break
-	check(rare != "" and m.unlock_cost(rare) == 100, "rara bloqueada de vilão liberado custa 100 Almas (%s)" % rare)
-	m.souls = 130
-	check(m.unlock(rare) and m.souls == 30 and m.is_unlocked(rare), "desbloquear gasta as Almas")
-	var s0 := m.souls
+	check(m.is_unlocked("rat_horde") and m.is_unlocked("rat_king") and m.is_unlocked("web") and not m.is_unlocked("ogre") and not m.is_unlocked("torch"), "coleção inicial: baralho base e cartas liberadas; o resto bloqueado por desafio")
+	check(m.win_phase(1) == "dragon" and m.villains.has("dragon") and m.is_unlocked("torch") and m.is_unlocked("hell_hound") and not m.is_unlocked("mimic") and m.phase_open(2), "vencer a fase 1 libera o Dragão e as cartas liberadas dele")
+	check(not m.can_buy("slime") and not m.can_buy("rat_tide") and not m.unlock("rat_tide"), "Almas não compram mais nada")
 	m.win_phase(3)
-	check(m.souls == s0 + 60 and m.rare_choices == 1, "fase 3 paga 60 Almas e uma rara à escolha")
-	var ch := m.rare_choice_options(3, 5)
-	check(ch.size() > 0 and m.choose_rare(ch[0]) and m.is_unlocked(ch[0]) and m.rare_choices == 0, "escolher a rara libera a carta")
+	check(m.rare_choices == 0, "fase 3 não paga mais rara à escolha")
 	# Save antigo de Pactos: migra.
 	var old := "user://test_meta_old.save"
 	var f := FileAccess.open(old, FileAccess.WRITE)
 	f.store_var({"souls": 77, "pacts": ["horde", "treasure"], "pact": "treasure", "unlocked": ["cosmic_ray", "ogre"], "phases_won": [1]})
 	f.close()
 	var mo := MetaSave.load_or_new(data, old)
-	check(mo.souls == 77 and mo.villains == ["plague", "dragon"] and mo.villain == "dragon" and not mo.is_unlocked("cosmic_ray"), "save antigo: Pactos viram vilões, Almas ficam, carta removida some")
+	check(mo.souls == 77 and mo.villains == ["plague", "dragon"] and mo.villain == "dragon" and not mo.is_unlocked("cosmic_ray") and not mo.is_unlocked("ogre"), "save antigo: Pactos viram vilões, Almas ficam, cartas antigas somem")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(old))
 	var st := {"dmg_by_card": {"a": 4000.0}, "locs_visited": 9, "result": "win"}
 	var per_loc := int(data.meta["souls"]["per_location"])
 	check(MetaSave.souls_for(data, st) == 10 + 9 * per_loc + 40, "Almas: dano, locais e vitória (%d)" % MetaSave.souls_for(data, st))
 	m.add_run(st, path)
 	var m2 := MetaSave.load_or_new(data, path)
-	check(m2.souls == m.souls and m2.is_unlocked("ogre") and m2.runs == 1, "meta salva e carrega")
+	check(m2.souls == m.souls and m2.is_unlocked("rat_king") and m2.runs == 1, "meta salva e carrega")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	# Nível da carta sobrevive ao salvamento da run.
 	var s := _sim(5)
@@ -1394,6 +1436,26 @@ func t_ability_tell() -> void:
 	check(st.y == float(data.upgrades["sword_spin"]["p"]["interval"]) and st.x > 0.0, "HUD lê a recarga da habilidade (%.1f de %.1f)" % [st.x, st.y])
 
 
+func t_soul_absorb_cooldown() -> void:
+	# "Absorver Almas" cura uma vez por recarga, não a cada morte (o enxame não pode deixar o herói imortal).
+	var s := _sim_tough(7)
+	s.hero.apply_upgrade("soul_absorb")
+	var cd := float(data.upgrades["soul_absorb"]["p"]["cooldown"])
+	s.hero.hp = s.hero.max_hp() * 0.5
+	var hp0 := s.hero.hp
+	var ids := _spawn_near(s, "rat", 3)
+	for i in ids:
+		s.kill_unit(i, K.Death.HERO)
+	var once := s.hero.max_hp() * float(data.upgrades["soul_absorb"]["p"]["heal"])
+	check(absf(s.hero.hp - hp0 - once) < 0.01, "Absorver Almas: 3 mortes juntas curam uma vez só (+%.1f, esperado %.1f)" % [s.hero.hp - hp0, once])
+	var st := s.hero.ability_state("soul_absorb")
+	check(st.y == cd and st.x > 0.0, "HUD mostra a recarga do Absorver Almas (%.1f de %.1f)" % [st.x, st.y])
+	s.hero.absorb_t = 0.0
+	var hp1 := s.hero.hp
+	s.kill_unit(_spawn_near(s, "rat", 1)[0], K.Death.HERO)
+	check(s.hero.hp > hp1, "Absorver Almas volta a curar depois da recarga")
+
+
 func t_arena_hunt() -> void:
 	var a := _sim(3)
 	a.hero.base_hp = 1.0e6
@@ -1798,7 +1860,7 @@ func t_classes() -> void:
 		s3.hero.update(s3.dt)
 	check(s3.hero.hp > s3.hero.max_hp() * 0.5, "Clériga se cura com o tempo")
 	s3.offers.clear()
-	var base2: float = float(data.hero_of(s3.party_class(1), s3.phase_hp_mult)["hp"]) * pow(float(data.rules["party"]["step"]), 1) * float(s3.deck_rules.get("hero_hp_mult", 1.0))
+	var base2: float = float(data.hero_of(s3.party_class(1), s3.phase_hp_mult)["hp"]) * pow(float(data.rules["party"]["step"]), 1) * float(data.rules.get("hero_hp_mult", 1.0))
 	s3.hero.hp = 0.0
 	s3._check_end()
 	check(s3.hero.max_hp() > base2 * 1.15, "a bênção da Clériga dá vida ao próximo (%.0f > %.0f)" % [s3.hero.max_hp(), base2])
@@ -1910,6 +1972,7 @@ func t_deck_cycle() -> void:
 	# Rota fora na arena.
 	var a := _sim(5, "treasure")
 	var routes := 0
+	a.queue.append(a._new_inst(data.card("gold_bait")))   # o baralho base do Dragão não traz mais carta de Rota
 	for ci in a.cards:
 		if ci.def.category == "route":
 			routes += 1
@@ -2030,7 +2093,7 @@ func t_dragon_c6() -> void:
 	for j in s.units.hi:
 		if s.units.alive[j] == 1 and s.units.def[j] == data.card("treasure_guard").idx:
 			tg1 = maxf(tg1, s.units.max_hp[j])
-	check(absf(tg0 - 900.0) < 1.0 and absf(tg1 - 1400.0) < 1.0, "Guarda do Tesouro: 900 de vida, +500 com 100 de ouro (%.0f → %.0f)" % [tg0, tg1])
+	check(absf(tg0 - 1020.0) < 1.0 and absf(tg1 - 1520.0) < 1.0, "Guarda do Tesouro: 1020 de vida, +500 com 100 de ouro (%.0f → %.0f)" % [tg0, tg1])
 	# Fornalha: o herói não seca, o fogo causa +30%, e ela some em 15 s.
 	s = _sim(5, "dragon")
 	var fu := _spawn(s, "furnace", 1.0)
@@ -2403,7 +2466,13 @@ func t_unique_art() -> void:
 		seen[CardModel.art_of(c.id)] = seen.get(CardModel.art_of(c.id), 0) + 1
 		if CardModel.art_of(c.id) != c.id:
 			borrowed.append(c.id)
-	check(no_png.is_empty(), "toda carta tem o próprio png %s" % [no_png])
+	# Arte das 28 cartas de 13/11/2026 ainda por fazer (skill cartas-ia): sai desta lista quando o png chegar.
+	var art_pending := ["poison_dart", "spike_trap", "goblin_scout", "hired_archer", "crow_flock", "fallen_healer", "dark_messenger", "war_cry",
+		"flooded_pit", "hollow_armor", "lone_wolf", "hyena_scavenger", "spitting_viper", "plague_carrion", "brown_bear", "pack_den",
+		"primal_beast", "black_pestilence", "hell_hound", "ash_salamander", "drakeling", "magma_golem", "gold_mine", "dragon_exchange",
+		"ash_phoenix", "meteor_storm", "eternal_army", "bone_dragon"]
+	no_png = no_png.filter(func(id): return not art_pending.has(id))
+	check(no_png.is_empty(), "toda carta tem o próprio png (fora as %d com arte pendente) %s" % [art_pending.size(), no_png])
 	check(borrowed.is_empty(), "nenhuma carta aponta para a imagem de outra %s" % [borrowed])
 	var dup: Array = []
 	for k in seen:
@@ -2557,3 +2626,233 @@ func t_helper() -> void:
 	t3.hero.ward = 10.0
 	t3.hero.clear_act_bonus()
 	check(t3.hero.ward == 0.0 and t3.hero.bonus_dmg == 0.0 and t3.hero.bonus_splash == 0.0, "Herói Ajudante: os bônus acabam no fim do ato")
+
+
+## Rodada de 13/11/2026: Selvagens, fogo e ouro do Dragão, comuns novas, piso de elixir, pesos e vida única dos heróis.
+func t_round_2026_11_13() -> void:
+	# --- Vida única dos heróis: o vilão não muda a vida.
+	var hp_ref := 0.0
+	var same := true
+	for vid in data.villain_ids:
+		var sv := _sim(3, vid)
+		if hp_ref == 0.0:
+			hp_ref = sv.hero.base_hp
+		same = same and is_equal_approx(sv.hero.base_hp, hp_ref)
+		same = same and not data.villain(vid)["rules"].has("hero_hp_mult")
+	check(same and hp_ref > 0.0, "heróis têm a mesma vida em todos os vilões (%.0f)" % hp_ref)
+	# --- Ratos e morcegos são Bando, nunca Fera.
+	var rats_ok := true
+	for id in ["rat", "rat_horde", "rabid_rats", "rat_brute", "bat", "bat_cloud", "rat_tide", "rat_king"]:
+		if data.card(id).beast:
+			rats_ok = false
+	check(rats_ok and data.card("lone_wolf").beast and data.card("wolf_pack").beast and not data.card("lone_wolf").tags & K.TAG_PACK, "ratos e morcegos não são Fera; os Selvagens são")
+	# --- Alcateia: só Fera conta (Bando não).
+	var s := _sim(5, "plague")
+	_pl_still(s)
+	var w1 := _pl(s, "lone_wolf")
+	s.step()
+	var d1 := _hit(s, w1[0])
+	_pl(s, "rat_horde")
+	s.step()
+	var d_rats := _hit(s, w1[0])
+	check(absf(d_rats - d1) < 0.01, "Alcateia: ratos em campo não contam (%.1f = %.1f)" % [d_rats, d1])
+	_pl(s, "wolf_pack")
+	s.step()
+	var d3 := _hit(s, w1[0])
+	check(d3 > d1 * 1.25, "Alcateia: Fera em campo aumenta o dano (%.1f > %.1f)" % [d3, d1])
+	# --- Infestação (Selvagem): Fera que morre faz a próxima Fera custar 1 a menos; só uma vez.
+	var wc := s.card_cost(_inst("brown_bear"))
+	s.kill_unit(w1[0], K.Death.HERO)
+	check(s.card_cost(_inst("brown_bear")) == wc - 1 and s.card_cost(_inst("rat_horde")) == data.card("rat_horde").cost, "Infestação: a próxima Fera custa 1 a menos, ratos não")
+	CardsPlague.on_card_played(s, _inst("lone_wolf"), s.hero.x, s.hero.y)
+	check(s.card_cost(_inst("brown_bear")) == wc, "Infestação: o desconto vale para uma Fera só")
+	# --- Caçada do Urso: cada golpe soma dano até o teto.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	var bear := _pl(s, "brown_bear")
+	var b0 := _hit(s, bear[0])
+	for k in 150:
+		_hit(s, bear[0])
+	var b1 := _hit(s, bear[0])
+	check(b1 > b0 * 1.5 and b1 < b0 * 1.7, "Caçada: dano sobe até o teto de +60%% (%.1f -> %.1f)" % [b0, b1])
+	# --- Sangue: hienas correm mais quando uma Fera morre.
+	var hy := _pl(s, "hyena_scavenger")
+	s.step()
+	var sp0: float = s.units.spd[hy[0]]
+	s.kill_unit(bear[0], K.Death.HERO)
+	s.step()
+	check(s.units.spd[hy[0]] > sp0 * 1.3, "Sangue: hienas correm +40%% (%.1f -> %.1f)" % [sp0, s.units.spd[hy[0]]])
+	# --- Bicho Infectado: explode com Peste.
+	s = _sim(5, "plague")
+	_tough(s)
+	var cr := _pl(s, "plague_carrion", 0.2)
+	s.kamikaze(cr[0])
+	check(CardsPlague.peste_of(s, s.hero) >= 3, "Bicho Infectado: explosão aplica 3 de Peste (%d)" % CardsPlague.peste_of(s, s.hero))
+	# --- Pestilência Negra: Peste no máximo e dobra o dano da Peste.
+	s = _sim(5, "plague")
+	_tough(s)
+	CardsPlague.on_card_played(s, _inst("rat_brute"), s.hero.x, s.hero.y)
+	CardsPlague.add_peste(s, s.hero, 5.0)
+	var pb0 := CardsPlague.hero_damage_bonus(s, s.hero, 0, 0)
+	s._apply(_inst("black_pestilence"), s.hero.x, s.hero.y)
+	check(CardsPlague.peste_of(s, s.hero) == 15 and CardsPlague.hero_damage_bonus(s, s.hero, 0, 0) > pb0 * 5.0, "Pestilência Negra: Peste no máximo e dói mais (%.2f)" % CardsPlague.hero_damage_bonus(s, s.hero, 0, 0))
+	# --- Toca da Matilha e Besta Primordial.
+	s = _sim(5, "plague")
+	_pl_still(s)
+	_pl(s, "pack_den")
+	for k in int(5.0 / s.dt):
+		s.step()
+	check(_count_def(s, "wolf_pup") >= 1, "Toca da Matilha: solta filhotes (%d)" % _count_def(s, "wolf_pup"))
+	var pr := _pl(s, "primal_beast")
+	s.step()
+	var p1 := _hit(s, pr[0])
+	for k in 6:
+		_pl(s, "rat_horde")
+	s.step()
+	check(_hit(s, pr[0]) > p1 * 1.3, "Besta Primordial: +dano por criatura em campo, Bando incluído")
+	var pups0 := _count_def(s, "wolf_pup")
+	s.kill_unit(pr[0], K.Death.HERO)
+	check(_count_def(s, "wolf_pup") >= pups0 + 4, "Besta Primordial: solta 4 filhotes ao morrer")
+	# --- Dragão: Cão do Inferno queima; Veio de Ouro e Câmbio rendem ouro; Fênix renasce; Golem deixa lava; meteoros.
+	s = _sim(5, "dragon")
+	_tough(s)
+	var hh := _spawn(s, "hell_hound", 0.4)
+	s.burn_t = 0.0
+	s.unit_hits_hero(hh[0])
+	check(s.burn_t > 0.0 and s.burn_dps >= 5.0, "Cão do Inferno: a mordida queima (%.1f por seg.)" % s.burn_dps)
+	var g0 := s.gold
+	s._apply(_inst("dragon_exchange"), s.hero.x, s.hero.y)
+	check(is_equal_approx(s.gold - g0, 40.0), "Câmbio do Dragão: +40 de ouro")
+	g0 = s.gold
+	_spawn(s, "gold_mine", 5.0)
+	for k in int(3.5 / s.dt):
+		s.step()
+	check(s.gold - g0 >= 3.0, "Veio de Ouro: rende ouro por segundo (+%.1f)" % (s.gold - g0))
+	var ph := _spawn(s, "ash_phoenix", 6.0)
+	s.kill_unit(ph[0], K.Death.HERO)
+	check(_count_def(s, "ash_phoenix") == 1, "Fênix das Cinzas: renasce")
+	var ph2: int = -1
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == data.card("ash_phoenix").idx:
+			ph2 = j
+	check(ph2 >= 0 and s.units.hp[ph2] < s.units.max_hp[ph2] * 0.55 and s.units.hp[ph2] > s.units.max_hp[ph2] * 0.45, "Fênix: renasce com 50%% da vida")
+	s.kill_unit(ph2, K.Death.HERO)
+	check(_count_def(s, "ash_phoenix") == 0, "Fênix: só renasce uma vez")
+	var gl := _spawn(s, "magma_golem", 7.0)
+	var z0 := s.zones.size()
+	s.kill_unit(gl[0], K.Death.HERO)
+	check(s.zones.size() > z0, "Golem de Magma: deixa lava ao morrer")
+	var sal := _spawn(s, "ash_salamander", 8.0)
+	CardsDragon.on_card_played(s, _inst("ash_salamander"), s.hero.x, s.hero.y)   # como no jogo: jogar uma carta cria o estado
+	z0 = s.zones.size()
+	for k in int(1.2 / s.dt):
+		s.step()
+	check(s.zones.size() > z0, "Salamandra de Brasa: deixa chamas")
+	var hp0 := s.hero.hp
+	s._apply(_inst("meteor_storm"), s.hero.x, s.hero.y)
+	for k in int(2.5 / s.dt):
+		s.step()
+	check(hp0 - s.hero.hp > 300.0, "Chuva de Meteoros: dano no herói (%.0f)" % (hp0 - s.hero.hp))
+	# --- Lich: Exército Eterno levanta esqueletos; Dragão de Ossos cura com mortes.
+	s = _sim(5, "lich")
+	_pl_still(s)
+	s._apply(_inst("eternal_army"), s.hero.x, s.hero.y)
+	check(_count_def(s, "skeleton") == 12, "Exército Eterno: 12 esqueletos (%d)" % _count_def(s, "skeleton"))
+	var sk := -1
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == data.card("skeleton").idx:
+			sk = j
+			break
+	s.kill_unit(sk, K.Death.HERO)
+	check(_count_def(s, "skeleton") == 12, "Exército Eterno: a morte levanta outro esqueleto (%d)" % _count_def(s, "skeleton"))
+	var bd := _spawn(s, "bone_dragon", 2.0)
+	s.units.hp[bd[0]] = s.units.max_hp[bd[0]] * 0.5
+	var bh0: float = s.units.hp[bd[0]]
+	var sk2 := -1
+	for j in s.units.hi:
+		if s.units.alive[j] == 1 and s.units.def[j] == data.card("skeleton").idx:
+			sk2 = j
+			break
+	s.kill_unit(sk2, K.Death.HERO)
+	check(s.units.hp[bd[0]] > bh0, "Dragão de Ossos: morte por perto o cura")
+	# --- Comuns: dardo, espinhos, curandeiro, mensageiro, grito, fosso, armadura.
+	s = _sim(5, "plague")
+	_tough(s)
+	var dh := s.hero.hp
+	s._apply(_inst("poison_dart"), s.hero.x, s.hero.y)
+	check(dh - s.hero.hp >= 59.0 and s.burn_t > 0.0, "Flecha Envenenada: dano e veneno")
+	s = _sim(5, "plague")
+	_tough(s)
+	var tr := _spawn(s, "spike_trap", 0.2)
+	s.hero.root_t = 0.0
+	dh = s.hero.hp
+	s.step()
+	check(s.hero.root_t > 0.5 and dh - s.hero.hp >= 79.0 and s.units.alive[tr[0]] == 0, "Armadilha de Espinhos: dano, prende e some")
+	s = _sim(5, "plague")
+	_pl_still(s)
+	var hl := _spawn(s, "fallen_healer", 6.0)
+	var tk := _spawn(s, "ogre", 6.5)
+	s.units.hp[tk[0]] = s.units.max_hp[tk[0]] * 0.5
+	var th0: float = s.units.hp[tk[0]]
+	for k in int(3.0 / s.dt):
+		s.step()
+	check(s.units.hp[tk[0]] > th0 + 10.0 and s.units.alive[hl[0]] == 1, "Curandeiro Caído: cura aliado por perto (%.0f -> %.0f)" % [th0, s.units.hp[tk[0]]])
+	s = _sim(5, "plague")
+	_pl_still(s)
+	var el0 := s.elixir
+	var hand0 := s.hand.size()
+	s._apply(_inst("dark_messenger"), s.hero.x, s.hero.y)
+	check(s.elixir > el0 and s.hand.size() == hand0 + 1, "Mensageiro Sombrio: compra 1 carta e devolve elixir")
+	var wcw := _spawn(s, "goblin_scout", 3.0)
+	s.step()
+	var wd0 := _hit(s, wcw[0])
+	s._apply(_inst("war_cry"), s.hero.x, s.hero.y)
+	check(_hit(s, wcw[0]) > wd0 * 1.2, "Grito de Guerra: todos os monstros causam mais (não só o Bando)")
+	var m0 := s.hero_speed_mult(s.hero)
+	s._apply(_inst("flooded_pit"), s.hero.x, s.hero.y)
+	check(s.hero_speed_mult(s.hero) < m0 * 0.75, "Fosso Inundado: herói mais lento (%.2f -> %.2f)" % [m0, s.hero_speed_mult(s.hero)])
+	var ha := _spawn(s, "hollow_armor", 2.0)
+	dh = s.hero.hp
+	s.hero_hits_unit(ha[0], 100.0)
+	check(dh - s.hero.hp >= 9.0, "Armadura Vazia: devolve 10%% do golpe (%.1f)" % (dh - s.hero.hp))
+	var bc0 := _count_def(s, "barricade")
+	s.kill_unit(ha[0], K.Death.HERO)
+	check(_count_def(s, "barricade") == bc0 + 1, "Armadura Vazia: deixa uma Barricada ao morrer")
+	# --- Peso do sorteio: carta do vilão pesa 2, comum 1.
+	s = _sim(7, "plague")
+	var com := 0
+	var tot := 400
+	for k in tot:
+		var cp := s._pick_card(func(_c: CardDef): return true, [])
+		if cp != null and cp.owner == "common":
+			com += 1
+	var n_com := 0
+	var n_all := 0
+	for c in data.pool:
+		if s._card_ok(c):
+			n_all += 1
+			if c.owner == "common":
+				n_com += 1
+	check(float(com) / tot < float(n_com) / n_all * 0.85, "sorteio: comum sai menos que no sorteio uniforme (%.0f%% contra %.0f%%)" % [100.0 * com / tot, 100.0 * n_com / n_all])
+	# --- Relíquias: oferta de ato sempre traz elixir; Biblioteca Viva compra ao embaralhar.
+	var all_have := true
+	for sd in 12:
+		var so := _sim(sd + 1, "dragon")
+		so.offers.clear()
+		so._offer_relics("act")
+		var got := false
+		for o in so.offers[0]["options"]:
+			var fxr: Dictionary = data.relics[o["id"]]["fx"]
+			if fxr.has("elixir_max") or fxr.has("elixir_regen"):
+				got = true
+		all_have = all_have and got
+	check(all_have, "oferta de relíquia do ato sempre traz uma de elixir")
+	s = _sim(5, "plague")
+	s.gain_relic("living_library")
+	s.discard.append_array(s.queue)
+	s.queue.clear()
+	var hs0 := s.hand.size()
+	s.hand.resize(maxi(0, s.hand.size() - 1))
+	hs0 = s.hand.size()
+	s.draw_card()
+	check(s.hand.size() >= hs0 + 1 and int(s.stats.get("shuffles", 0)) >= 1, "Biblioteca Viva: embaralhar compra 1 carta a mais")

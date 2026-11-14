@@ -1,0 +1,50 @@
+{
+ "eruption": {
+  "refazer": true,
+  "motivo": "Rosto do cavaleiro visível (humanos não têm olhos): esconder na sombra do elmo."
+ },
+ "gold_avalanche": {
+  "refazer": true,
+  "motivo": "só refazer o rosto pq da para ver olhos e boca "
+ },
+ "infected_bite": {
+  "refazer": true,
+  "motivo": "apague os olhos com mancha branca, só fazer preto mesmo"
+ },
+ "boiling_oil": {
+  "refazer": true,
+  "motivo": "o rosto dele esta esquisito, principalmente o olho"
+ },
+ "oil_splash": {
+  "refazer": true,
+  "motivo": "Rosto do cavaleiro visível, com os olhos fechados desenhados: esconder na sombra do elmo."
+ },
+ "torch": {
+  "refazer": true,
+  "motivo": "rosto esquisito"
+ },
+ "tar_net": {
+  "refazer": true,
+  "motivo": ""
+ },
+ "drakeling": {
+  "refazer": true,
+  "motivo": "Fofo e redondo demais, parece personagem de desenho (fere o 'nunca cartunesco')."
+ },
+ "hell_hound": {
+  "refazer": true,
+  "motivo": "Parece um urso, não um cão: cabeça e corpo grossos demais."
+ },
+ "ash_salamander": {
+  "refazer": true,
+  "motivo": "Expressão sorridente de sapo, um pouco cartunesca."
+ },
+ "black_pestilence": {
+  "refazer": true,
+  "motivo": "Rosto do cavaleiro visível (humanos não têm olhos): esconder na sombra do elmo."
+ },
+ "life_drain": {
+  "refazer": true,
+  "motivo": "Rosto do cavaleiro visível (humanos não têm olhos): esconder na sombra do elmo."
+ }
+}

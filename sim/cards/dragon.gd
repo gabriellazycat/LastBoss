@@ -73,6 +73,13 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 			_avalanche(sim, k, x, y)
 		"eruption":
 			_eruption(sim, k, x, y)
+		"meteor_storm":
+			# Chuva de Meteoros: a cada "interval" s caem 1 + (ouro / gold_step) meteoros no ponto, por "duration" s.
+			var st := _st(sim)
+			var n := 1 + int(floorf(maxf(0.0, sim.gold) / float(fx["gold_step"])))
+			st["storm"] = {"until": sim.t + d.fxv("duration", lv) * vet, "next": sim.t, "x": x, "y": y, "r": d.fxv("radius", lv),
+				"n": mini(n, int(fx["max_meteors"])), "dmg": d.fxv("damage", lv) * smult * vet, "burn": d.fxv("burn", lv) * smult,
+				"every": float(fx["interval"])}
 		"ember_rain":
 			# A zona de fogo vem de "ops"; o óleo no chão dentro do raio também pega fogo.
 			_oil_to_fire(sim, x, y, d.fxv("radius", lv), d.fxv("oil_fire_dps", lv) * smult * vet, d.fxv("oil_fire_s", lv), d.id, false)
@@ -245,9 +252,49 @@ static func on_tick(sim: Sim) -> void:
 	if furn.is_empty() and not sim.cstate.has("dragon"):
 		return
 	_st(sim)["furn"] = furn
+	_storm_and_trails(sim)
 	for hh in sim.all_heroes():
 		if hh.soaked_t > 0.0 and not furn.is_empty() and _furnace_bonus(furn, hh) > 0.0:
 			hh.soaked_t += sim.dt
+
+
+## Chuva de Meteoros (dano por onda) e rastro de fogo da Salamandra de Brasa.
+static func _storm_and_trails(sim: Sim) -> void:
+	var st := _st(sim)
+	if st.has("storm"):
+		var S: Dictionary = st["storm"]
+		if sim.t >= float(S["until"]):
+			st.erase("storm")
+		elif sim.t >= float(S["next"]):
+			S["next"] = sim.t + float(S["every"])
+			var hs := sim.heroes_near(float(S["x"]), float(S["y"]), float(S["r"]))
+			for q in int(S["n"]):
+				for i in hs.size():
+					var hh: SimHero = hs[i]
+					sim.hit_hero = hh if hh != sim.hero else null
+					sim.damage_hero(float(S["dmg"]) * sim.splash_mult(i), float(S["x"]), float(S["y"]), K.TAG_FIRE, SimHero.DMG_AREA | SimHero.DMG_SPELL, "meteor_storm")
+					if hh == sim.hero:
+						sim.burn_t = maxf(sim.burn_t, 3.0)
+						sim.burn_dps = maxf(sim.burn_dps, float(S["burn"]))
+						sim.burn_src = "meteor_storm"
+					else:
+						hh.burn_t = maxf(hh.burn_t, 3.0)
+						hh.burn_dps = maxf(hh.burn_dps, float(S["burn"]))
+				sim.hit_hero = null
+			sim.emit(K.Ev.EXPLOSION, float(S["x"]), float(S["y"]), float(S["r"]), 1)
+	var sd: CardDef = sim.data.card("ash_salamander")
+	var U := sim.units
+	var trail: Dictionary = st.get("trail", {})
+	for i in U.hi:
+		if U.alive[i] == 0 or U.def[i] != sd.idx:
+			continue
+		var key := str(i)
+		if sim.t >= float(trail.get(key, 0.0)):
+			trail[key] = sim.t + 1.0
+			var lvv := int(U.lvl[i])
+			sim.zones.append({"kind": "fire", "x": U.px[i], "y": U.py[i], "r": 1.2, "t": sd.fxv("trail_s", lvv), "dps": sd.fxv("trail_dps", lvv),
+				"src": sd.id, "curse": 0})
+	st["trail"] = trail
 
 
 ## Multiplicador do golpe da unidade i no herói, antes do dano (1.0 = nada).
@@ -274,7 +321,18 @@ static func hero_damage_bonus(sim: Sim, hh: SimHero, tags: int, kind: int) -> fl
 
 ## Unidade i vai morrer (cause = K.Death.*); os dados dela ainda estão em sim.units.
 static func on_unit_death(sim: Sim, i: int, cause: int) -> void:
-	pass
+	# Fênix das Cinzas: renasce uma vez com parte da vida.
+	var U := sim.units
+	var c: CardDef = sim.data.cards[U.def[i]]
+	if cause != K.Death.HERO or not c.fx.has("rebirth") or (U.flags[i] & K.F_REVIVED):
+		return
+	var lv := int(U.lvl[i])
+	var j := U.spawn(c, U.px[i], U.py[i], 0.0, 0.0, (U.flags[i] & (K.F_CURSED | K.F_DEFEND)) | K.F_REVIVED | K.F_NO_XP | K.F_FLY, U.uid[i])
+	if j >= 0:
+		U.lvl[j] = lv
+		U.max_hp[j] = U.max_hp[i]
+		U.hp[j] = U.max_hp[i] * c.fxv("rebirth", lv)
+		U.dmg[j] = U.dmg[i]
 
 
 ## Depois de uma carta jogada (já aplicada).

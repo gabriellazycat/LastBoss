@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Last Boss — designs da tela de desbloqueio</title>
+<style>
+:root{--bg:#2a2118;--paper:#f1e6cc;--paper2:#e6d6b0;--ink:#2b2118;--mut:#7a6a52;--line:#c9b68f;--red:#8a2b1f;--ok:#2f7a3a;--gold:#c8962b;--tape:#4b8a8f}
+*{box-sizing:border-box}body{margin:0;background:#171310;color:#efe4cc;font:15px/1.4 system-ui,sans-serif}
+header{padding:14px 18px;border-bottom:1px solid #3a2f22;position:sticky;top:0;background:#171310;z-index:9}
+h1{margin:0 0 8px;font-size:19px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{padding:8px 14px;border:2px solid #4a3c2a;border-radius:8px;background:#241d15;color:#efe4cc;cursor:pointer;font:inherit;font-weight:600}
+.tab.on{background:var(--gold);border-color:var(--gold);color:#241a08}
+.sw{margin-left:auto;display:flex;gap:6px}
+.stage{padding:22px 16px 60px;display:flex;justify-content:center}
+.screen{width:min(1100px,100%);min-height:560px;border-radius:14px;position:relative;overflow:hidden;padding:26px 28px}
+.note{max-width:1100px;margin:0 auto;padding:0 16px 14px;color:#b8a888;font-size:13px}
+img.art{display:block;width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;background:#0003}
+.nm{font-weight:700}
+.rar{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;border:1px solid #0005}
+.r-common{background:#bbb}.r-uncommon{background:#4caf50}.r-rare{background:#3b82f6}.r-legendary{background:#f5a623}
+/* A — Caderno */
+.A{background:radial-gradient(ellipse at top,#6b5a3e,#3b2f20);}
+.A .page{background:var(--paper);color:var(--ink);border-radius:6px;padding:26px 30px;box-shadow:0 10px 30px #0008;position:relative;transform:rotate(-.4deg);background-image:repeating-linear-gradient(transparent 0 31px,#c9b68f55 31px 32px)}
+.A .tapep{position:absolute;top:-12px;left:50%;width:140px;height:26px;margin-left:-70px;background:var(--tape);opacity:.85;transform:rotate(2deg)}
+.A h2{margin:0 0 4px;font-family:Georgia,serif;font-size:30px;color:var(--red)}
+.A .sub{color:var(--mut);margin-bottom:16px;font-family:Georgia,serif;font-style:italic}
+.A .row{display:grid;grid-template-columns:120px 1fr auto;gap:16px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line)}
+.A .row .nm{font-family:Georgia,serif;font-size:20px}
+.A .feito{font-size:15px}.A .feito b{color:var(--ok)}
+.A .stamp{border:3px solid var(--ok);color:var(--ok);border-radius:6px;padding:4px 10px;font-weight:800;transform:rotate(-6deg);letter-spacing:1px}
+.A .quase h3{font-family:Georgia,serif;margin:22px 0 6px}
+.A .q{display:flex;gap:10px;align-items:center;margin:6px 0;font-size:14px}.A .q img{width:34px;aspect-ratio:2/3;border-radius:4px;filter:grayscale(.6)}
+.bar{flex:1;height:10px;background:#0002;border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
+/* B — Revelação */
+.B{background:radial-gradient(ellipse at 50% 30%,#3d2f55,#120d1a);text-align:center}
+.B h2{font-size:34px;margin:0;color:#ffd978;text-shadow:0 0 18px #ffb52b66}
+.B .sub{color:#c9b9e6;margin-bottom:22px}
+.B .cards{display:flex;gap:26px;justify-content:center;flex-wrap:wrap}
+.B .cd{width:200px;perspective:800px;cursor:pointer}
+.B .inner{position:relative;transform-style:preserve-3d;transition:transform .8s;aspect-ratio:2/3.9}
+.B .cd.flip .inner{transform:rotateY(180deg)}
+.B .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px}
+.B .back{background:repeating-linear-gradient(45deg,#4a2f73 0 10px,#3a2360 10px 20px);border:3px solid #ffd978;display:flex;align-items:center;justify-content:center;font-size:56px;color:#ffd978;aspect-ratio:2/3}
+.B .front{transform:rotateY(180deg);display:flex;flex-direction:column;gap:8px}
+.B .front .art{border:3px solid #ffd978;box-shadow:0 0 24px #ffb52b88}
+.B .why{background:#1d1530;border:1px solid #6a54a0;border-radius:8px;padding:8px;font-size:13px;color:#ddd1f5}
+.B .why b{color:#7ef08f}
+.B .hint{margin-top:18px;color:#a591cc;font-size:13px}
+/* C — Troféus / lista */
+.C{background:linear-gradient(#1c2a33,#0f171c)}
+.C h2{margin:0 0 2px;font-size:28px;letter-spacing:1px;text-transform:uppercase}
+.C .sub{color:#8fb0c0;margin-bottom:16px}
+.C .cols{display:grid;grid-template-columns:1.2fr 1fr;gap:20px}
+@media(max-width:800px){.C .cols{grid-template-columns:1fr}}
+.C .panel{background:#16222a;border:1px solid #2f4653;border-radius:10px;padding:14px}
+.C h3{margin:0 0 10px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#7fb4c9}
+.C .t{display:grid;grid-template-columns:54px 1fr;gap:12px;padding:8px;border-radius:8px;background:#1d2d37;margin-bottom:8px;border-left:4px solid #5be07a}
+.C .t img{width:54px;border-radius:5px}.C .t .nm{font-size:15px}.C .t .d{font-size:13px;color:#a9c4d1}.C .t .d b{color:#5be07a}
+.C .p{display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+.C .p img{width:40px;border-radius:4px;filter:grayscale(.7)}.C .p .d{font-size:12px;color:#a9c4d1}
+.C .bar{margin-top:3px}
+.C .bar i{background:#4db6d6}
+/* D — Destaque */
+.D{background:linear-gradient(135deg,#5a1d17,#1e0f0d);display:grid;grid-template-columns:330px 1fr;gap:28px;align-items:center}
+@media(max-width:800px){.D{grid-template-columns:1fr}}
+.D .big{position:relative}.D .big img{border:4px solid #f0c25c;border-radius:12px;box-shadow:0 0 40px #f0c25c66}
+.D .new{position:absolute;top:-10px;right:-10px;background:#f0c25c;color:#3a1c05;font-weight:900;padding:6px 12px;border-radius:6px;transform:rotate(6deg)}
+.D h2{margin:0;font-size:30px;color:#f0c25c}.D .lbl{font-size:12px;letter-spacing:2px;color:#d9a79c;margin-top:14px}
+.D .feito{font-size:22px;font-family:Georgia,serif;margin:4px 0 8px}.D .feito b{color:#7ef08f}
+.D .minis{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.D .mini{width:74px;opacity:.55;cursor:pointer;border:2px solid transparent;border-radius:6px}.D .mini.on{opacity:1;border-color:#f0c25c}
+.D .mini img{width:100%;border-radius:4px}
+.D .more{margin-top:18px;font-size:13px;color:#d9a79c}
+.btn{display:inline-block;margin-top:18px;padding:10px 22px;border-radius:8px;background:#f0c25c;color:#2b1405;font-weight:800;cursor:pointer;border:0;font:inherit;font-weight:800}
+.D .btn{background:#f0c25c}.A .btn{background:var(--red);color:#fff}.B .btn{background:#ffd978;color:#2a1a40}.C .btn{background:#4db6d6;color:#08222c}
+.empty{opacity:.85;font-style:italic}
+</style></head><body>
+<header>
+ <h1>Tela de fim de fase — quatro propostas de design</h1>
+ <div class="tabs"><span class="tabs" id="tabs"></span>
+  <span class="sw"><button class="tab" id="sv">Vitória</button><button class="tab" id="sd">Derrota</button></span></div>
+</header>
+<div class="note" id="note"></div>
+<div class="stage"><div class="screen" id="screen"></div></div>
+<script>
+const U=[ // desbloqueios de exemplo: o que a pessoa fez
+ {id:"ogre",nm:"Ogro",r:"uncommon",d:"Jogue 60 monstros numa mesma fase",f:"Você jogou <b>67 monstros</b> nesta fase"},
+ {id:"bat_cloud",nm:"Nuvem de Morcegos",r:"common",d:"Tenha 4 morcegos em campo ao mesmo tempo",f:"Você chegou a ter <b>5 morcegos</b> em campo"},
+ {id:"corrupt_piper",nm:"Flautista Corrompido",r:"uncommon",d:"Faça 200 ratos morrerem numa mesma fase",f:"<b>214 ratos</b> morreram nesta fase"},
+];
+const Q=[ // quase lá
+ {id:"rat_tide",nm:"Maré de Ratos",d:"Use a mesma carta de monstro 15 vezes numa mesma fase",v:11,m:15,u:"vezes"},
+ {id:"primal_beast",nm:"Besta Primordial",d:"Jogue 40 cartas de Bando numa mesma fase",v:29,m:40,u:"cartas"},
+ {id:"alpha_beast",nm:"Besta Alfa",d:"Tenha 30 ratos em campo ao mesmo tempo",v:22,m:30,u:"ratos"},
+];
+const img=id=>'<img class="art" src="../assets/cards/'+id+'.png" alt="">';
+let design="A",won=true;
+const D={
+A:{name:"A · Página do diário",note:"Segue a interface Diário: papel pautado, fita, carimbo verde. Cada carta nova vira uma linha com o que você fez; embaixo, o que ficou perto.",
+ render(){return '<div class="page"><div class="tapep"></div><h2>'+(won?'Fase vencida':'Fase perdida')+'</h2><div class="sub">'+(U.length?U.length+' cartas novas entraram na sua coleção':'Nenhuma carta nova desta vez')+'</div>'+
+ U.map(u=>'<div class="row"><div>'+img(u.id)+'</div><div><div class="nm"><span class="rar r-'+u.r+'"></span>'+u.nm+'</div><div style="color:var(--mut);font-size:13px">Desafio: '+u.d+'</div><div class="feito">'+u.f+'</div></div><div class="stamp">LIBERADA</div></div>').join('')+
+ '<div class="quase"><h3>Quase lá</h3>'+Q.map(q=>'<div class="q">'+img(q.id)+'<div style="flex:1"><b>'+q.nm+'</b> — '+q.d+'<div class="bar"><i style="width:'+q.v/q.m*100+'%"></i></div></div><span>'+q.v+'/'+q.m+'</span></div>').join('')+'</div>'+
+ '<button class="btn">Continuar</button></div>'}},
+B:{name:"B · Revelação de cartas",note:"Cada carta nova aparece virada de costas; você clica para virar e ver a carta com o que você fez embaixo. Mais cerimônia, bom para quando sai raridade alta.",
+ render(){return '<h2>'+(won?'Vitória!':'Derrota')+'</h2><div class="sub">'+U.length+' cartas desbloqueadas — clique para revelar</div><div class="cards">'+
+ U.map((u,i)=>'<div class="cd" data-i="'+i+'"><div class="inner"><div class="face back">?</div><div class="face front">'+img(u.id)+'<div class="nm">'+u.nm+'</div><div class="why">'+u.f+'</div></div></div></div>').join('')+
+ '</div><div class="hint">Clique nas cartas para virar</div><button class="btn">Continuar</button>'}},
+C:{name:"C · Painel de conquistas",note:"Duas colunas: à esquerda o que você desbloqueou (feito e meta), à direita o progresso das próximas, com barra. Bom para ver o que falta mesmo na derrota.",
+ render(){return '<h2>'+(won?'Vitória':'Derrota')+' — resultado da fase</h2><div class="sub">Coleção: +'+U.length+' cartas</div><div class="cols"><div class="panel"><h3>Desbloqueadas agora</h3>'+
+ U.map(u=>'<div class="t">'+img(u.id)+'<div><div class="nm"><span class="rar r-'+u.r+'"></span>'+u.nm+'</div><div class="d">Meta: '+u.d+'</div><div class="d">✔ '+u.f+'</div></div></div>').join('')+'</div><div class="panel"><h3>Em andamento</h3>'+
+ Q.map(q=>'<div class="p">'+img(q.id)+'<div><div class="nm" style="font-size:14px">'+q.nm+'</div><div class="d">'+q.d+'</div><div class="bar"><i style="width:'+q.v/q.m*100+'%"></i></div><div class="d">'+q.v+' / '+q.m+' '+q.u+'</div></div></div>').join('')+'</div></div><button class="btn">Continuar</button>'}},
+D:{name:"D · Uma carta de cada vez",note:"Carta grande em destaque, com o desafio e o que você fez em letras grandes; as outras ficam em miniaturas para trocar. Foco total na carta nova.",
+ render(){const u=U[sel%U.length];return '<div class="big">'+img(u.id)+'<div class="new">NOVA!</div></div><div><h2>'+(won?'Fase vencida':'Fase perdida')+'</h2><div class="lbl">CARTA DESBLOQUEADA</div><div class="feito" style="font-size:28px">'+u.nm+'</div>'+
+ '<div class="lbl">DESAFIO</div><div class="feito">'+u.d+'</div><div class="lbl">O QUE VOCÊ FEZ</div><div class="feito">'+u.f+'</div>'+
+ '<div class="minis">'+U.map((x,i)=>'<div class="mini '+(i==sel?'on':'')+'" data-i="'+i+'">'+img(x.id)+'</div>').join('')+'</div><div class="more">Próxima por desbloquear: '+Q[0].nm+' ('+Q[0].v+'/'+Q[0].m+')</div><button class="btn">Continuar</button></div>'}}
+};
+let sel=0;
+function render(){
+ document.getElementById("tabs").innerHTML=Object.keys(D).map(k=>'<button class="tab '+(k==design?'on':'')+'" data-k="'+k+'">'+D[k].name+'</button>').join("");
+ document.getElementById("note").textContent=D[design].note;
+ const s=document.getElementById("screen");s.className="screen "+design;s.innerHTML=D[design].render();
+ document.getElementById("sv").classList.toggle("on",won);document.getElementById("sd").classList.toggle("on",!won)}
+document.addEventListener("click",e=>{
+ const t=e.target.closest("[data-k]");if(t){design=t.dataset.k;return render()}
+ const c=e.target.closest(".B .cd");if(c)return c.classList.toggle("flip");
+ const m=e.target.closest(".D .mini");if(m){sel=+m.dataset.i;return render()}});
+document.getElementById("sv").onclick=()=>{won=true;render()};
+document.getElementById("sd").onclick=()=>{won=false;render()};
+render();
+</script></body></html>

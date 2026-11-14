@@ -380,7 +380,7 @@ func _paper(id: String, at: Vector2, rot_deg: float, sz: Vector2) -> void:
 	area.add_child(cs)
 	pivot.add_child(area)
 	area.input_event.connect(func(_c, e, _p, _n, _i):
-		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and current != id:
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and current != id and not UiSkins.mapa():
 			paper_clicked.emit(id))
 	area.mouse_entered.connect(func(): hover = id)
 	area.mouse_exited.connect(func(): if hover == id: hover = "")
@@ -425,12 +425,14 @@ func _wanted() -> void:
 func set_current(id: String) -> void:
 	current = id
 	for k in papers:
-		papers[k]["pivot"].visible = k != id
+		# Pele "Mapa aberto": o mapa aberto (MapMenu) toma o lugar dos papéis do menu; eles ficam só como ponto de
+		# partida das telas (screen_point), sem aparecer nem pegar o clique.
+		papers[k]["pivot"].visible = k != id and not UiSkins.mapa()
 
 
 func set_continue(on: bool) -> void:
 	if papers.has("continue"):
-		papers["continue"]["pivot"].visible = on and current != "continue"
+		papers["continue"]["pivot"].visible = on and current != "continue" and not UiSkins.mapa()
 
 
 ## Ponto da tela onde está o papel `id` (de onde a tela 2D sai e para onde volta).

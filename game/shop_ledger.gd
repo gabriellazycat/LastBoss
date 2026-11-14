@@ -68,6 +68,22 @@ var desc_l: RichTextLabel
 var desc_r: RichTextLabel
 var desc_sig := ""
 var pick_cards: Array = []            # antes/depois do passo do baralho: as cartas de verdade (molde), não desenho
+# Pele "Mapa aberto" (UiSkins.mapa()): a loja vira a "Feira do Mascate" (maquete aprovada "Loja B · Mapa da feira",
+# docs/ui_propostas/escolher.html, lojaB(); foto docs/ui_propostas/fotos/d6_lojaB.jpg). Mesma lógica, outra apresentação:
+# cada carta é uma barraca na estrada do mapa; serviços num painel à direita; a ficha do item em foco no alto à direita.
+var fair := false                     # decidido ao abrir a loja
+var fair_hover := -1                  # barraca sob o mouse (índice da opção): só realça; o clique escolhe
+var fair_buy := Rect2()               # botão "Comprar" da ficha (quadro)
+var buy_hot := false
+const FAIR_PO := Vector2(140, 90)     # canto do papel da maquete na tela de 1920x1080
+const FAIR_BG := "res://assets/ui/map/bg_lojaB.png"   # o papel já desenhado (+24 px de margem): vai em (116, 66)
+const FAIR_SPOTS := [Vector2(260, 300), Vector2(560, 230), Vector2(860, 330), Vector2(480, 560), Vector2(800, 640)]
+const FAIR_FICHA := Rect2(1210, 300, 510, 330)
+const FAIR_RED := Color("a8323a")
+const FAIR_INK := Color("3a2a1c")
+const FAIR_PAPER := Color("e8d6a8")
+const FAIR_ART_R := 66.0
+static var _fair_tex := {}
 
 
 func _init() -> void:
@@ -196,6 +212,9 @@ func _open(shop: Dictionary) -> void:
 				r["rect"] = Rect2(RP + Vector2(56, 128 + si * 88), Vector2(RS.x - 112, 82))
 				si += 1
 	note_rect = Rect2(RP + Vector2(56, 530 + maxf(ri - 1, 0) * 122), Vector2(RS.x - 112, 210 - maxf(ri - 1, 0) * 122))
+	fair = UiSkins.mapa()
+	if fair:
+		_fair_layout(n_cards)
 	_log(tr("UI_LEDGER_OPEN"), "")
 	if hud.selected < 0:
 		hud.selected = 0
@@ -380,7 +399,9 @@ func _pick_row_at(p: Vector2) -> int:
 func _gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseMotion:
 		var p := _dp(e.position)
-		if mode == "shop":
+		if mode == "shop" and fair:
+			_fair_motion(p)
+		elif mode == "shop":
 			seal_hot = p.distance_to(_seal_c()) < 78.0
 			for r in rows:
 				if not r["sold"] and (r["rect"] as Rect2).has_point(p):
@@ -409,6 +430,10 @@ func _gui_input(e: InputEvent) -> void:
 			accept_event()
 			return
 		if e.button_index != MOUSE_BUTTON_LEFT:
+			return
+		if fair:
+			_fair_click(p)
+			accept_event()
 			return
 		if p.distance_to(_seal_c()) < 78.0:
 			chosen.emit(Sim.SKIP)
@@ -529,7 +554,11 @@ func _scroll_to_sel() -> void:
 ## a carta da lista e depois Confirmar. Vazio se a linha está fora da área visível da lista (role antes).
 func click_points(kk: int) -> Array:
 	if kk == Sim.SKIP:
+		if mode == "shop" and fair:
+			return [o + _fair_leave_rect().get_center() * k]
 		return [o + (_btn_rect(0).get_center() if mode == "pick" else _seal_c()) * k]
+	if mode == "shop" and fair:
+		return _fair_click_points(kk)
 	if mode == "shop":
 		var opts: Array = shop_obj["options"] if shop_obj != null else []
 		for r in rows:
@@ -574,6 +603,9 @@ func _sync_note() -> void:
 	if sig == note_sig:
 		return
 	note_sig = sig
+	if fair:
+		_fair_sync_note(r)
+		return
 	var top := 16.0 + (30.0 if head != "" else 0.0)
 	var nr := Rect2(note_rect.position + Vector2(34, top), Vector2(note_rect.size.x - 60, note_rect.size.y - top - 46))
 	note.position = o + nr.position * k
@@ -834,6 +866,19 @@ func _stamp(c: Vector2, word: String, fs: float) -> void:
 
 func _draw() -> void:
 	if sim == null or (shop_obj == null and mode == "shop"):
+		return
+	if fair:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.118, 0.094, 0.078, 0.62))
+		_S()
+		if shop_obj != null:
+			_draw_fair()
+		if mode == "pick":
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.024, 0.016, 0.78))
+			_S()
+			_draw_pick()
+		_draw_toast()
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		return
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.035, 0.03, 0.35))
 	_S()
@@ -1397,3 +1442,376 @@ func _lt(p: Vector2, s: String, f: Font, fs: float, col: Color, align := HORIZON
 	list_clip.draw_set_transform(p * k, 0.0, Vector2.ONE)
 	list_clip.draw_string(f, Vector2.ZERO, s, align, w * k if w > 0.0 else -1.0, roundi(fs * k), col)
 	list_clip.draw_set_transform(Vector2.ZERO, 0.0, Vector2(k, k))
+
+
+# ---------------------------------------------------------------- feira do mascate (pele "Mapa aberto")
+
+static func _ftex(name: String) -> Texture2D:
+	if not _fair_tex.has(name):
+		var p := name if name.begins_with("res://") else "res://assets/ui/map/" + name
+		_fair_tex[name] = load(p) if ResourceLoader.exists(p) else null
+	return _fair_tex[name]
+
+
+## Barracas nos pontos da estrada da maquete (3 a 5 cartas; com menos, espalhadas pela estrada) e os serviços em
+## linhas no painel da direita. Cada linha guarda "c" (centro do círculo da barraca) e "rect" (clique e setas).
+func _fair_layout(n_cards: int) -> void:
+	var picks: Array = {0: [], 1: [2], 2: [0, 2], 3: [0, 2, 3], 4: [0, 1, 2, 3]}.get(n_cards, [0, 1, 2, 3, 4])
+	var n_serv := 0
+	for r in rows:
+		if r["kind"] != "card":
+			n_serv += 1
+	var step := _fair_step(n_serv)
+	var sp := _fair_serv_rect(n_serv)
+	var ci := 0
+	var si := 0
+	for r in rows:
+		if r["kind"] == "card":
+			var spot: Vector2 = FAIR_SPOTS[int(picks[ci]) if ci < picks.size() else ci % FAIR_SPOTS.size()]
+			var c := FAIR_PO + spot + Vector2(0, -30)
+			r["c"] = c
+			r["stall"] = ci
+			r["rect"] = Rect2(c.x - 82, c.y - 82, 164, 208)
+			ci += 1
+		else:
+			r["rect"] = Rect2(sp.position.x + 18, sp.position.y + 58 + si * step, sp.size.x - 48, step)
+			si += 1
+
+
+func _fair_step(n: int) -> float:
+	return minf(42.0, 174.0 / maxf(n, 1.0))
+
+
+func _fair_serv_rect(n: int) -> Rect2:
+	return Rect2(1220, 656, 500, 62 + n * _fair_step(n) + 14)
+
+
+func _fair_leave_rect() -> Rect2:
+	var w := _tw(tr("UI_FAIR_LEAVE"), f_disp, 26) + 56
+	return Rect2(1540, 910, w, 56)
+
+
+func _fair_motion(p: Vector2) -> void:
+	seal_hot = _fair_leave_rect().has_point(p)
+	buy_hot = fair_buy.has_point(p) and not _focus_row().is_empty()
+	fair_hover = -1
+	for r in rows:
+		if r["sold"] or not (r["rect"] as Rect2).has_point(p):
+			continue
+		var i := _index_of(r)
+		if i < 0:
+			continue
+		if r["kind"] == "card":
+			# A barraca só acende sob o mouse; quem escolhe é o clique (a ficha não troca no caminho até o Comprar).
+			fair_hover = i
+		else:
+			# As linhas de serviço ficam ao lado da ficha: passar o mouse já mostra a descrição.
+			if hud.selected != i and hud.sfx.is_valid():
+				hud.sfx.call("ui_click", 1.4)
+			hud.selected = i
+
+
+## Clique: Sair; Comprar (o item da ficha); uma barraca escolhe (a já escolhida compra); uma linha de serviço compra.
+func _fair_click(p: Vector2) -> void:
+	if _fair_leave_rect().has_point(p):
+		chosen.emit(Sim.SKIP)
+		return
+	if fair_buy.has_point(p) and not _focus_row().is_empty():
+		chosen.emit(hud.selected)
+		return
+	for r in rows:
+		if r["sold"] or not (r["rect"] as Rect2).has_point(p):
+			continue
+		var i := _index_of(r)
+		if i < 0:
+			return
+		if r["kind"] == "card" and hud.selected != i:
+			hud.selected = i
+			if hud.sfx.is_valid():
+				hud.sfx.call("ui_click", 1.2)
+		else:
+			hud.selected = i
+			chosen.emit(i)
+		return
+
+
+## Pontos do teste com o mouse: barraca (escolhe) e Comprar; a linha de serviço compra num clique só.
+func _fair_click_points(kk: int) -> Array:
+	var opts: Array = shop_obj["options"] if shop_obj != null else []
+	for r in rows:
+		if kk < opts.size() and is_same(r["op"], opts[kk]):
+			if r["kind"] != "card":
+				return [o + (r["rect"] as Rect2).get_center() * k]
+			var buy := Rect2(FAIR_FICHA.position + Vector2(28, 252), Vector2(_fair_buy_w(r), 52))
+			return [o + (r["c"] as Vector2) * k, o + buy.get_center() * k]
+	return []
+
+
+func _fair_buy_w(r: Dictionary) -> float:
+	return _tw(tr("UI_FAIR_BUY").format({"p": int(r["price"])}), f_disp, 26) + 26 + 52
+
+
+## Descrição da ficha: o mesmo texto (com palavras-chave e caixas) do livro, em Fell itálico, encolhendo até caber.
+func _fair_sync_note(r: Dictionary) -> void:
+	var nr := Rect2(FAIR_FICHA.position + Vector2(202, 100), Vector2(FAIR_FICHA.size.x - 202 - 26, 142))
+	note.position = o + nr.position * k
+	note.size = nr.size * k
+	note.add_theme_font_override("normal_font", UiParch.font("italic"))
+	note.add_theme_constant_override("line_separation", -2)
+	Tips.set_text(note, _note_body(r))
+	note.add_theme_color_override("default_color", FAIR_INK)
+	var fs := 22.0
+	while fs > 14.0:
+		note.add_theme_font_size_override("normal_font_size", roundi(fs * k))
+		if note.get_content_height() <= note.size.y:
+			break
+		fs -= 1.0
+
+
+## Texto com halo de papel (os nomes por cima da estrada tracejada, como o text-shadow da maquete).
+func _txt_halo(p: Vector2, s: String, f: Font, fs: float, col: Color) -> void:
+	draw_set_transform(o + p * k, 0.0, Vector2.ONE)
+	var sz := roundi(fs * k)
+	draw_string_outline(f, Vector2.ZERO, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, sz, maxi(2, roundi(7 * k)), Color(FAIR_PAPER, 0.85))
+	draw_string(f, Vector2.ZERO, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, sz, col)
+	_S()
+
+
+func _draw_fair() -> void:
+	var bg := _ftex(FAIR_BG)
+	if bg:
+		draw_texture(bg, FAIR_PO - Vector2(24, 24))
+	var foc := _focus_row()
+	# Título e subtítulo na faixa já desenhada no fundo.
+	var title := tr("UI_FAIR_TITLE")
+	var bx := Rect2(1252, 134, 438, 148)
+	var words := title.split(" ")
+	if _tw(title, f_disp, 52) <= bx.size.x - 40 or words.size() < 2:
+		_txt(Vector2(bx.position.x, 212), title, f_disp, _fit(title, f_disp, 52, bx.size.x - 30, 30), FAIR_INK, HORIZONTAL_ALIGNMENT_CENTER, bx.size.x)
+	else:
+		var cut := ceili(words.size() / 2.0)
+		var l1 := " ".join(words.slice(0, cut))
+		var l2 := " ".join(words.slice(cut))
+		var fs := _fit(l1 if _tw(l1, f_disp, 52) > _tw(l2, f_disp, 52) else l2, f_disp, 52, bx.size.x - 40, 30)
+		_txt(Vector2(bx.position.x, 184), l1, f_disp, fs, FAIR_INK, HORIZONTAL_ALIGNMENT_CENTER, bx.size.x)
+		_txt(Vector2(bx.position.x, 234), l2, f_disp, fs, FAIR_INK, HORIZONTAL_ALIGNMENT_CENTER, bx.size.x)
+	_txt(Vector2(bx.position.x, 266), tr("UI_FAIR_SUB"), UiParch.font("italic"), 19, FAIR_INK, HORIZONTAL_ALIGNMENT_CENTER, bx.size.x)
+	# Tracejado vermelho da barraca escolhida até a ficha.
+	if not foc.is_empty() and foc["kind"] == "card":
+		var a: Vector2 = foc["c"] + Vector2(84, 8)
+		var b := FAIR_FICHA.position + Vector2(-6, 92)
+		var pts := PackedVector2Array([a])
+		pts.append_array(_bez(a, a + Vector2(90, 10), b - Vector2(90, 0), b, 220))
+		var run := 0.0
+		for i in pts.size() - 1:
+			var l := pts[i].distance_to(pts[i + 1])
+			if fmod(run, 11.0) < 5.0:
+				draw_line(pts[i], pts[i + 1], FAIR_RED, 2.6, true)
+			run += l
+	for r in rows:
+		if r["kind"] == "card":
+			_draw_stall(r, is_same(r, foc), _index_of(r) == fair_hover and not r["sold"])
+	_draw_fair_ficha(foc)
+	_draw_fair_services(foc)
+	# Bolsa (o ouro pisca em vermelho quando falta) e Sair da feira.
+	var pulse := clampf(1.0 - (t - gold_pulse) / 0.6, 0.0, 1.0)
+	var lab := tr("UI_FAIR_PURSE")
+	var val := tr("UI_FAIR_PURSE_V").format({"g": int(sim.gold), "n": sim.cards.size()})
+	var by := 946.0
+	_txt(Vector2(1240, by), lab, f_disp, 25, FAIR_INK)
+	var vx := 1240 + _tw(lab, f_disp, 25) + 8
+	var it := UiParch.font("italic")
+	var vfs := _fit(val, it, 25, 1530 - vx - 12, 16) * (1.0 + 0.15 * sin(pulse * PI))
+	_txt(Vector2(vx, by), val, it, vfs, FAIR_INK.lerp(FAIR_RED, pulse))
+	var lr := _fair_leave_rect()
+	draw_style_box(UiParch.button_box("hover" if seal_hot else "normal"), lr)
+	_txt(Vector2(lr.position.x, lr.position.y + 37), tr("UI_FAIR_LEAVE"), f_disp, 26, UiParch.BLOOD if seal_hot else FAIR_INK, HORIZONTAL_ALIGNMENT_CENTER, lr.size.x)
+
+
+## Uma barraca: arte da carta num círculo com anel duplo de tinta (vermelho se escolhida), a tenda em cima, o nome
+## embaixo e o preço na faixa vermelha inclinada (apagada se o ouro não dá).
+func _draw_stall(r: Dictionary, hot: bool, hover: bool) -> void:
+	var c: Vector2 = r["c"] + Vector2(_shake(r), 0)
+	var sold: bool = r["sold"]
+	var poor: bool = not sold and sim.gold + 0.0001 < float(r["price"])
+	var R := FAIR_ART_R
+	if hot and not sold:
+		for i in 6:
+			draw_circle(c, R + 30 - i * 2.6, Color(FAIR_RED, 0.07))
+		draw_circle(c, R + 14, FAIR_RED)
+	else:
+		draw_circle(c, R + 11, Color(FAIR_RED, 0.85) if hover else FAIR_INK)
+	draw_circle(c, R + 9, FAIR_PAPER)
+	draw_circle(c, R + 4, FAIR_INK)
+	draw_circle(c, R, Color("f1e3bd"))
+	var cd: CardDef = r["cd"]
+	var tex := UiDiario.card_tex(cd.id)
+	if tex:
+		var ts := tex.get_size()
+		var side := minf(ts.x, ts.y)
+		var cu := Vector2(0.5, 0.5 if ts.y <= ts.x else 0.42)
+		var hu := Vector2(side / ts.x, side / ts.y) * 0.5
+		var pts := PackedVector2Array()
+		var uvs := PackedVector2Array()
+		for i in 48:
+			var d := Vector2.from_angle(TAU * i / 48.0)
+			pts.append(c + d * R)
+			uvs.append(cu + d * hu)
+		draw_colored_polygon(pts, Color(0.62, 0.6, 0.58) if sold else Color.WHITE, uvs, tex)
+	var tent := _ftex("icon_m-tent.svg")
+	if tent:
+		draw_texture_rect(tent, Rect2(c.x - 26, c.y - 88, 52, 44), false)
+	# Nome (com + vermelho do nível).
+	var nm: String = r["name"]
+	var plus: String = r["plus"]
+	var fs := _fit(nm + (" " + plus if plus != "" else ""), f_disp, 26, 300, 18)
+	var nw := _tw(nm, f_disp, fs)
+	var pw := _tw(" " + plus, f_disp, fs) if plus != "" else 0.0
+	var x0 := c.x - (nw + pw) * 0.5
+	var col := FAIR_INK if not sold else Color(FAIR_INK, 0.55)
+	_txt_halo(Vector2(x0, c.y + 104), nm, f_disp, fs, col)
+	if plus != "":
+		_txt_halo(Vector2(x0 + nw, c.y + 104), " " + plus, f_disp, fs, FAIR_RED)
+	if sold:
+		_stamp(c, tr("UI_LEDGER_STAMP_SOLD"), 30)
+		return
+	# Preço na faixa vermelha.
+	var ptxt := str(int(r["price"]))
+	var tw := _tw(ptxt, f_disp, 24) + 16 + 28
+	var tc := c + Vector2(52 + tw * 0.5, -20)
+	var rot := deg_to_rad(4.0 if int(r.get("stall", 0)) % 2 else -4.0)
+	_fair_tag(tc, rot, Vector2(tw, 38), ptxt, 24, poor)
+
+
+## Faixa de preço (rf-box red): papel vermelho, contorno de tinta e filete creme; com falta de ouro, apagada.
+func _fair_tag(c: Vector2, rot: float, sz: Vector2, txt: String, fs: float, poor: bool) -> void:
+	_L(c, rot)
+	var lr := Rect2(-sz * 0.5, sz)
+	_rrect(Rect2(lr.position + Vector2(1, 3), lr.size), Color(0, 0, 0, 0.25), 7)
+	var bgc := FAIR_RED if not poor else Color("8a6e5e")
+	_rrect(lr, bgc, 7, 2.5, FAIR_INK)
+	_rrect(lr.grow(-5), Color.TRANSPARENT, 4, 1.0, Color(1.0, 0.92, 0.82, 0.6), false)
+	var cream := Color("f6ead0") if not poor else Color(0.96, 0.92, 0.82, 0.75)
+	var w := _tw(txt, f_disp, fs)
+	var x := -(w + 16) * 0.5
+	draw_circle(Vector2(x + w + 12, -1), fs * 0.2, cream)
+	_txt_in(c, rot, Vector2(x, fs * 0.36), txt, f_disp, fs, cream)
+	_S()
+
+
+func _fair_icon(kind: String) -> String:
+	return {"pick_upgrade": "s-up", "mod": "s-cheap", "pick_remove": "s-remove", "relic": "s-relic"}.get(kind, "s-up")
+
+
+func _fair_name(r: Dictionary) -> String:
+	if r["kind"] == "relic":
+		return tr("UI_FAIR_RELIC").format({"r": r["name"]})
+	if r["kind"] in ["pick_upgrade", "pick_remove"]:
+		return tr("UI_FAIR_" + str(r["kind"]))
+	return r["name"]
+
+
+## Ficha do item escolhido: arte (ou o ícone do serviço), nome, linha de tipo, a descrição (RichTextLabel `note`),
+## Comprar · N na fita vermelha e a dica (ou quanto falta de ouro).
+func _draw_fair_ficha(foc: Dictionary) -> void:
+	var fr := FAIR_FICHA
+	draw_style_box(UiParch.box("gold", 0.0), fr)
+	fair_buy = Rect2()
+	if foc.is_empty():
+		return
+	var it := UiParch.font("italic")
+	var tc := fr.position + Vector2(103, 102)
+	if foc["kind"] == "card":
+		var rot := deg_to_rad(-2.0)
+		_L(tc, rot)
+		var pr := Rect2(-75, -72, 150, 144)
+		_rrect(Rect2(pr.position + Vector2(1, 4), pr.size), Color(0, 0, 0, 0.22), 3)
+		draw_rect(pr, Color("f1e3bd"))
+		var cd: CardDef = foc["cd"]
+		var tex := UiDiario.card_tex(cd.id)
+		if tex:
+			_art_fit(self, tex, pr.grow(-6), Color.WHITE, true)
+		draw_rect(pr, FAIR_INK, false, 2.0)
+		_S()
+	else:
+		var ic := _ftex("node_%s.svg" % _fair_icon(str(foc["kind"])))
+		if ic:
+			draw_texture_rect(ic, Rect2(tc - Vector2(66, 66), Vector2(132, 132)), false)
+	var nm := _fair_name(foc) if foc["kind"] != "card" else str(foc["name"])
+	var plus: String = foc["plus"]
+	var fs := _fit(nm + (" " + plus if plus != "" else ""), f_disp, 32, fr.size.x - 200 - 22, 20)
+	_txt(fr.position + Vector2(200, 58), nm, f_disp, fs, FAIR_INK)
+	if plus != "":
+		_txt(fr.position + Vector2(200 + _tw(nm + " ", f_disp, fs), 58), plus, f_disp, fs, FAIR_RED)
+	var head := ""
+	if foc["kind"] == "card":
+		var cd: CardDef = foc["cd"]
+		head = " · ".join([UiKit.type_line(cd), tr("RARITY_" + CardMold.RAR_NAMES[clampi(cd.rarity, 0, 3)]),
+			tr("UI_FAIR_COST").format({"n": cd.cost_at(int(foc["lv"]))})])
+	else:
+		head = _note_head(foc)
+	if head != "":
+		_txt(fr.position + Vector2(202, 89), head, it, _fit(head, it, 19, fr.size.x - 202 - 22, 14), FAIR_INK)
+	# Comprar · N (fita vermelha; escura se não dá) e a dica ao lado.
+	var short := int(ceil(float(foc["price"]) - sim.gold))
+	var btxt := tr("UI_FAIR_BUY").format({"p": int(foc["price"])})
+	fair_buy = Rect2(fr.position + Vector2(28, 252), Vector2(_fair_buy_w(foc), 52))
+	var rb := UiParch.ribbon_box("monster", short > 0)
+	if buy_hot and short <= 0:
+		rb.modulate_color = Color(1.12, 1.08, 1.04)
+	draw_style_box(rb, fair_buy.grow_individual(10, 2, 10, 4))
+	var cream := UiParch.CREAM if short <= 0 else Color(UiParch.CREAM, 0.6)
+	var bw := _tw(btxt, f_disp, 26)
+	var bx := fair_buy.get_center().x - (bw + 22) * 0.5
+	_txt(Vector2(bx, fair_buy.position.y + 35), btxt, f_disp, 26, cream)
+	draw_circle(Vector2(bx + bw + 14, fair_buy.position.y + 26), 5.0, cream)
+	var hx := fair_buy.end.x + 22
+	var hint := tr("UI_LEDGER_SHORT").format({"n": short}) if short > 0 else tr("UI_FAIR_HINT_PAD" if hud.pad else "UI_FAIR_HINT")
+	_txt(Vector2(hx, fair_buy.position.y + 33), hint, it, _fit(hint, it, 19, fr.end.x - 24 - hx, 13), FAIR_RED if short > 0 else FAIR_INK)
+
+
+## Painel de serviços: ícone em anel duplo, nome, pontilhado e preço; o em foco em vermelho, o vendido riscado.
+func _draw_fair_services(foc: Dictionary) -> void:
+	var serv: Array = rows.filter(func(r): return r["kind"] != "card")
+	if serv.is_empty():
+		return
+	var step := _fair_step(serv.size())
+	var sp := _fair_serv_rect(serv.size())
+	draw_style_box(UiParch.box("gold", 0.0), sp)
+	_txt(sp.position + Vector2(30, 46), tr("UI_FAIR_SERV"), f_disp, 28, FAIR_INK)
+	var it := UiParch.font("italic")
+	for r in serv:
+		var rr: Rect2 = r["rect"]
+		rr.position.x += _shake(r)
+		var sold: bool = r["sold"]
+		var hot: bool = is_same(r, foc) and not sold
+		var poor: bool = not sold and sim.gold + 0.0001 < float(r["price"])
+		var y := rr.position.y + 4
+		var isz := minf(36.0, step - 4.0)
+		if hot:
+			_rrect(Rect2(rr.position.x - 4, y - 3, rr.size.x + 8, isz + 6), Color(FAIR_RED, 0.12), 8)
+		var ic := _ftex("node_%s%s.svg" % [_fair_icon(str(r["kind"])), "_hot" if hot else ""])
+		if ic:
+			draw_texture_rect(ic, Rect2(rr.position.x + 6, y, isz, isz), false, Color(1, 1, 1, 0.5 if sold else 1.0))
+		var base := y + isz * 0.5 + 8
+		var ptxt := str(int(r["price"]))
+		var pw := _tw(ptxt, f_disp, 21) + 18
+		var px := rr.end.x - 4 - pw
+		var nm := _fair_name(r)
+		var x0 := rr.position.x + 54
+		var fs := _fit(nm, it, 21, px - x0 - 30, 14)
+		var col := FAIR_INK if not sold else Color(FAIR_INK, 0.5)
+		if hot:
+			col = FAIR_RED
+		_txt(Vector2(x0, base), nm, it, fs, col)
+		var nw := _tw(nm, it, fs)
+		if sold:
+			draw_line(Vector2(x0 - 2, base - fs * 0.3), Vector2(x0 + nw + 2, base - fs * 0.34), FAIR_RED, 2.5, true)
+		_dotted(Vector2(x0 + nw + 10, base - 2), Vector2(px - 8, base - 2), Color(FAIR_INK, 0.6), 6.0, 1.1)
+		var pc := FAIR_INK if not poor else FAIR_RED
+		if sold:
+			pc = Color(FAIR_INK, 0.45)
+		_txt(Vector2(px, base), ptxt, f_disp, 21, pc)
+		draw_circle(Vector2(rr.end.x - 10, base - 7), 4.0, pc)
+		if sold:
+			_stamp(Vector2(px - 60, base - 8), tr("UI_LEDGER_STAMP_SOLD" if r["kind"] == "relic" else "UI_LEDGER_STAMP_DONE"), 18)

@@ -6,7 +6,7 @@ extends RefCounted
 ## lendárias. Custos e fórmula das Almas em data/meta.json.
 
 const PATH := "user://meta.save"
-const VERSION := 2                 # 2: vilões no lugar dos Pactos (10/11/2026)
+const VERSION := 3                 # 2: vilões no lugar dos Pactos (10/11/2026); 3: cartas liberadas por desafio (13/11/2026)
 
 var data: GameData
 var souls := 0
@@ -17,6 +17,11 @@ var runs := 0
 var phases_won: Array = []
 ## Fases 3 e 4 pagam uma rara à escolha: quantas escolhas o jogador ainda tem para fazer no menu.
 var rare_choices := 0
+## Desafios de desbloqueio (data/unlocks.json): fases vencidas por vilão, heróis derrotados no total e o melhor
+## progresso de cada carta ainda bloqueada ({id: {"v", "g"}}), para a coleção mostrar "11/15".
+var wins_by_villain: Dictionary = {}
+var heroes_total := 0
+var progress: Dictionary = {}
 ## Para onde salvar. Os modos de teste da janela trocam para outro arquivo: o --menutest gravava o vilão
 ## escolhido no meta do jogador (rodada 09/11/2026).
 var file := PATH
@@ -59,9 +64,14 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 			m.villain = d.villain_id(str(v.get("villain", v.get("pact", m.villain))))
 			if not m.villains.has(m.villain):
 				m.villain = d.villain_ids[0]
-			for id in v.get("unlocked", []):
-				if d.card(id) and not m.unlocked.has(id):
-					m.unlocked.append(id)
+			m.heroes_total = int(v.get("heroes_total", 0))
+			m.wins_by_villain = v.get("wins_by_villain", {})
+			m.progress = v.get("progress", {})
+			# Saves antigos (até a versão 2) tinham cartas compradas com Almas: o sistema de desafios recomeça da coleção inicial.
+			if int(v.get("ver", 1)) >= 3:
+				for id in v.get("unlocked", []):
+					if d.card(id) and not m.unlocked.has(id):
+						m.unlocked.append(id)
 	return m
 
 
@@ -70,7 +80,8 @@ func save(path := "") -> bool:
 	if f == null:
 		return false
 	f.store_var({"ver": VERSION, "souls": souls, "unlocked": unlocked, "villain": villain, "villains": villains,
-		"runs": runs, "phases_won": phases_won, "rare_choices": rare_choices})
+		"runs": runs, "phases_won": phases_won, "rare_choices": rare_choices,
+		"wins_by_villain": wins_by_villain, "heroes_total": heroes_total, "progress": progress})
 	return true
 
 
@@ -98,8 +109,7 @@ func win_phase(n: int) -> String:
 	var ph: Dictionary = data.phase(n)
 	if first:
 		souls += int(ph.get("reward_souls", 0))
-		if ph.get("rare_choice", false):
-			rare_choices += 1
+		# A rara à escolha saiu (13/11/2026): cartas bloqueadas só se liberam por desafio.
 	var vid := str(ph.get("unlock_villain", ""))
 	if vid != "" and not villains.has(vid):
 		unlock_villain(vid)
@@ -142,17 +152,41 @@ func unlock_cost(id: String) -> int:
 
 
 ## Almas compram só raras e lendárias de vilões liberados (ou comuns).
-func can_buy(id: String) -> bool:
-	var c: CardDef = data.card(id)
-	return c != null and not is_unlocked(id) and c.rarity >= 2 and (c.owner == "common" or villains.has(c.owner))
+func can_buy(_id: String) -> bool:
+	return false   # 13/11/2026: nada se compra mais com Almas; as cartas se liberam por desafio
 
 
-func unlock(id: String) -> bool:
-	if not can_buy(id) or souls < unlock_cost(id):
-		return false
-	souls -= unlock_cost(id)
-	unlocked.append(id)
-	return true
+func unlock(_id: String) -> bool:
+	return false
+
+
+## Fim de uma fase da campanha (vitória ou derrota): confere os desafios das cartas ainda bloqueadas do vilão
+## jogado (e das comuns), libera as cumpridas e guarda o melhor progresso das outras.
+## Devolve {"done": [{id, v, g}], "near": [...]}; chamar antes de win_phase (que registra a fase vencida).
+func apply_unlocks(sim: Sim, won: bool, path := "") -> Dictionary:
+	if sim.campaign_phase <= 0:
+		return {"done": [], "near": []}   # a fase de tutorial não libera nada
+	var vid := sim.deck_id
+	var locked: Array = []
+	for c in data.pool:
+		if data.in_pool(c, vid) and not unlocked.has(c.id) and data.unlock_challenges.has(c.id):
+			locked.append(c.id)
+	var ctx := {"won": won, "villain": vid, "phase": sim.campaign_phase, "wins_by_villain": wins_by_villain,
+		"phases_won": phases_won, "heroes_total": heroes_total}
+	var res: Dictionary = sim.track.check(sim.stats, ctx, locked)
+	for p in res["done"]:
+		if not unlocked.has(p["id"]):
+			unlocked.append(p["id"])
+		progress.erase(p["id"])
+	for p in res["near"]:
+		var old: Dictionary = progress.get(p["id"], {})
+		if float(p["v"]) / maxf(float(p["g"]), 0.001) >= float(old.get("v", 0.0)) / maxf(float(old.get("g", 1.0)), 0.001):
+			progress[p["id"]] = {"v": p["v"], "g": p["g"]}
+	if won:
+		wins_by_villain[vid] = int(wins_by_villain.get(vid, 0)) + 1
+	heroes_total += int(sim.stats.get("heroes_fallen", 0))
+	save(path)
+	return res
 
 
 ## Cartas que as ofertas da run deste vilão podem sortear (coleção dele e comuns).

@@ -89,6 +89,7 @@ var dash_y := 0.0
 var cry_t := 0.0
 var strike_t := 0.0
 var reflect_t := 0.0
+var absorb_t := 0.0   # recarga do "Absorver Almas"
 var second_used := false
 var taken: Dictionary = {}
 var taken_total := 0.0
@@ -107,7 +108,7 @@ func setup(s_: Sim) -> void:
 	sim = s_
 	H = sim.data.hero_of(sim.party_class(0), sim.phase_hp_mult, sim.phase_dmg_mult)
 	AI = H["ai"]
-	base_hp = float(H["hp"]) * float(sim.deck_rules.get("hero_hp_mult", 1.0))
+	base_hp = float(H["hp"]) * float(sim.R.get("hero_hp_mult", 1.0))
 	hp = base_hp
 	radius = H["radius"]
 	shield_max = H["shield"]["hp"]
@@ -218,7 +219,7 @@ func next_hero(i: int) -> void:
 	shield_max = H["shield"]["hp"]
 	shield_cos = cos(deg_to_rad(float(H["shield"]["cone"]) * 0.5))
 	level = i + 1
-	base_hp = float(H["hp"]) * pow(float(sim.data.rules["party"]["step"]), i) * float(sim.deck_rules.get("hero_hp_mult", 1.0))
+	base_hp = float(H["hp"]) * pow(float(sim.data.rules["party"]["step"]), i) * float(sim.R.get("hero_hp_mult", 1.0))
 	curses = 0
 	hp = base_hp
 	shield_hp = shield_max
@@ -274,6 +275,7 @@ func update(dt: float) -> void:
 	cry_t -= dt
 	strike_t -= dt
 	reflect_t -= dt
+	absorb_t -= dt
 	if shield_hp <= 0.0:
 		shield_t -= dt
 		if shield_t <= 0.0:
@@ -609,6 +611,16 @@ func ability_index(id: String) -> int:
 	return -1
 
 
+## "Absorver Almas": cura quando um monstro morre, no máximo uma vez por recarga
+## (sem ela o enxame torna o herói imortal).
+func soul_absorb_on_kill() -> void:
+	if not has("soul_absorb") or absorb_t > 0.0:
+		return
+	var p: Dictionary = upgrades["soul_absorb"]
+	heal(max_hp() * float(p["heal"]))
+	absorb_t = p["cooldown"]
+
+
 ## Estado de uma habilidade para a HUD: (recarga que falta, recarga total, preparação que falta ou -1).
 ## Habilidades passivas devolvem recarga 0 e total 0.
 func ability_state(id: String) -> Vector3:
@@ -624,6 +636,8 @@ func ability_state(id: String) -> Vector3:
 			return Vector3(maxf(0.0, strike_t), float(upgrades[id]["interval"]), -1.0)
 		"reflect_shield":
 			return Vector3(maxf(0.0, reflect_t), float(upgrades[id]["cooldown"]), -1.0)
+		"soul_absorb":
+			return Vector3(maxf(0.0, absorb_t), float(upgrades[id]["cooldown"]), -1.0)
 		"second_wind":
 			return Vector3(1.0 if second_used else 0.0, 1.0 if second_used else 0.0, -1.0)
 	return Vector3(0.0, 0.0, -1.0)

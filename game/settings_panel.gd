@@ -154,7 +154,9 @@ func _rebuild() -> void:
 			note.autowrap_mode = TextServer.AUTOWRAP_WORD
 			note.custom_minimum_size = Vector2(700, 0)
 			body.add_child(note)
-			_choice("look_hud", _look_names(UiSkins.NAMES), [6, 0, 1, 2, 3, 4, 5])
+			# Nomes na mesma ordem dos valores (antes "Covil" escolhia o Diário).
+			var hv := [7, 6, 0, 1, 2, 3, 4, 5]
+			_choice("look_hud", hv.map(func(v): return UiSkins.NAMES[v]), hv)
 			_direction_choice()
 			_choice("look_ground", _look_names(GroundLooks.NAMES), range(GroundLooks.NAMES.size()))
 			_choice("look_hero", _look_names(Looks.NAMES), range(Looks.NAMES.size()))

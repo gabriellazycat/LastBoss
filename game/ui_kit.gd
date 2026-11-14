@@ -396,20 +396,32 @@ static func card_rich(d: CardDef, size: int, col: Color, w: float, center := tru
 	return l
 
 
+## Linha de uma carta bloqueada: "Desafio: ... (11/15)" (o texto vem de UNLOCK_<id>; o progresso, do MetaSave).
+static func unlock_text(meta: MetaSave, d: CardDef) -> String:
+	if not meta.data.unlock_challenges.has(d.id):
+		return TranslationServer.translate("UI_UNLOCK_WITH").format({"v": TranslationServer.translate("DECK_" + d.owner)})
+	var t := TranslationServer.translate("UNLOCK_" + d.id)
+	var p: Dictionary = meta.progress.get(d.id, {})
+	var extra := ""
+	if not p.is_empty() and float(p.get("g", 1.0)) > 1.0:
+		extra = " (%d/%d)" % [int(floor(float(p["v"]))), int(round(float(p["g"])))]
+	return TranslationServer.translate("UI_CHALLENGE").format({"t": t}) + extra
+
+
 static func type_line(d: CardDef) -> String:
 	var parts: Array = [TranslationServer.translate("TYPE_" + d.type)]
 	for t in d.tag_names:
 		parts.append(TranslationServer.translate("TAG_" + t))
+	# Fera é característica (fx.beast), não tag de dados: aparece na linha de tipos como Bando, Fogo etc.
+	if d.beast and not d.tag_names.has("beast"):
+		parts.append(TranslationServer.translate("TAG_beast"))
 	return " · ".join(parts)
 
 
-## Regras do vilão: a passiva dele e, se houver, o ajuste de vida dos heróis (montados dos dados).
+## Regras do vilão: a passiva dele (a vida dos heróis é igual para todos: rules.hero_hp_mult).
 static func deck_rules_text(data: GameData, vid: String) -> String:
 	var id := data.villain_id(vid)
 	var lines: Array = ["• " + TranslationServer.translate("VILLAIN_%s_PASSIVE" % id)]
-	var x = data.villain(id).get("rules", {}).get("hero_hp_mult", 1.0)
-	if not is_equal_approx(float(x), 1.0):
-		lines.append("• " + TranslationServer.translate("RULE_hero_hp_mult").format({"p": int(round(float(x) * 100.0))}))
 	return "
 ".join(lines)
 
@@ -501,7 +513,9 @@ static func mini_card(d: CardDef, cost: int, mods: Array, key := "", w := 116.0,
 ## Carta desenhada: arte, custo, atalho, nome, tipo, modificadores e texto. `w` define a escala.
 static func card(d: CardDef, cost: int, mods: Array, key := "", w := 168.0, level := 1) -> PanelContainer:
 	if UiSkins.diario():
-		return UiDiario.card(d, cost, mods, key, w, level)
+		var dc := UiDiario.card(d, cost, mods, key, w, level)
+		dc.set_meta("ui_card", true)   # --bare (capturas para maquete) mantém as cartas e esconde o resto
+		return dc
 	if UiSkins.covil():
 		return UiCovil.card(d, cost, mods, key, w, level)
 	var k := w / 168.0

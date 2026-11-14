@@ -88,6 +88,13 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 			st["endless_t"] = sim.t + d.fxv("duration", lv) * k.vet   # os 12 ratos vêm das ops
 		"devour":
 			_devour(sim, k, x, y)
+		"black_pestilence":
+			# Pestilência Negra: Peste no máximo em todos os heróis agora; por um tempo a Peste dói em dobro.
+			var st := _st(sim)
+			for hh: SimHero in sim.all_heroes():
+				add_peste(sim, hh, float(st["cfg"][0]))
+			st["black_t"] = sim.t + d.fxv("duration", lv) * k.vet
+			st["black_mult"] = d.fxv("mult", lv)
 		_:
 			return false
 	return true
@@ -178,6 +185,8 @@ static func _units_pass(sim: Sim, st: Dictionary, dt2: float) -> void:
 			continue
 		if c.fx.has("beast") or OLD_BEASTS.has(c.id):
 			var want := c.speed * beast_mult
+			if c.fx.has("blood") and sim.t - float(st.get("blood_at", -100.0)) <= c.fxv("blood_s", int(U.lvl[i]), 5.0):
+				want *= 1.0 + c.fxv("blood_speed", int(U.lvl[i]))   # Sangue: Fera morta acelera as hienas
 			if absf(U.spd[i] - want) > 0.001:
 				U.spd[i] = want
 		match c.id:
@@ -271,6 +280,9 @@ static func on_unit_hit(sim: Sim, i: int, real: float) -> void:
 			add_peste(sim, hh, n * minf(1.0, U.atk_int[i]))
 		if sim.t < float(st.get("hunt_t", -1.0)) and is_beast(c):
 			U.hp[i] = minf(U.max_hp[i], U.hp[i] + real * float(st["hunt_steal"]))
+	if real > 0.0 and c.fx.has("hunt_stack"):
+		# Caçada (Urso): cada golpe no herói soma dano acumulativo até o teto.
+		U.rage[i] = minf(c.fxv("hunt_cap", int(U.lvl[i]), 0.6), U.rage[i] + float(c.fx["hunt_stack"]) * minf(1.0, U.atk_int[i]))
 	if c.id == "war_boar" and U.timer2[i] <= 0.0:
 		# Investida: empurra o herói e o atordoa; recarga em timer2 (o Chaser já a desconta a cada passo).
 		U.timer2[i] = float(c.fx["cd"])
@@ -291,7 +303,8 @@ static func hero_damage_bonus(sim: Sim, hh: SimHero, tags: int, kind: int) -> fl
 	var key := str(hh.pidx)
 	if not pe.has(key):
 		return 0.0
-	return float(pe[key][0]) * float(st["cfg"][1])
+	var mult := float(st.get("black_mult", 2.0)) if sim.t < float(st.get("black_t", -1.0)) else 1.0
+	return float(pe[key][0]) * float(st["cfg"][1]) * mult
 
 
 ## Unidade i vai morrer (cause = K.Death.*); os dados dela ainda estão em sim.units.
@@ -316,6 +329,8 @@ static func on_unit_death(sim: Sim, i: int, cause: int) -> void:
 static func on_card_played(sim: Sim, c: Sim.CardInst, x: float, y: float) -> void:
 	if c.def.owner == "plague":
 		_st(sim)   # daqui em diante os ganchos rodam
+		if c.def.beast and int(sim.cstate["plague"].get("wild_disc", 0)) > 0:
+			sim.cstate["plague"]["wild_disc"] = 0   # a Fera com desconto saiu
 
 
 ## Multiplicador do golpe do herói nas suas unidades (1.0 = nada; 0.7 = herói causa 30% menos).
@@ -325,4 +340,13 @@ static func hero_out_mult(sim: Sim) -> float:
 
 ## Soma ao custo da carta c agora (negativo = desconto). O custo final nunca fica abaixo de 0.
 static func card_cost_add(sim: Sim, c: Sim.CardInst) -> int:
+	if c.def.beast and sim.cstate.has("plague") and int(sim.cstate["plague"].get("wild_disc", 0)) > 0:
+		return -1   # Infestação (Selvagem): a próxima Fera custa 1 a menos
 	return 0
+
+
+## Uma Fera sua morreu (Infestação, parte 2): a próxima Fera custa 1 a menos e o Sangue das hienas liga.
+static func on_beast_death(sim: Sim, c: CardDef) -> void:
+	var st := _st(sim)
+	st["wild_disc"] = 1
+	st["blood_at"] = sim.t

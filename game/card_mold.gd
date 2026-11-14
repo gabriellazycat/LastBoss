@@ -19,8 +19,12 @@ const SH_BLOTS := preload("res://game/ui/card_blots.gdshader")
 const SH_SWEEP := preload("res://game/ui/card_sweep.gdshader")
 const SH_RAYS := preload("res://game/ui/card_rays.gdshader")
 const SH_FADE := preload("res://game/ui/card_art_fade.gdshader")
+const SH_FLAMES := preload("res://game/ui/card_fuse_flames.gdshader")
 
 static var _tex := {}
+static var _fuse_cache := {}
+static var _fx_tex := {}
+static var _add_mat: CanvasItemMaterial = null
 static var _serif: Font = null
 static var _serif_bold: Font = null
 
@@ -275,7 +279,7 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 	var top := _scaled(Vector2(sx, sy), full)
 	holder.add_child(top)
 	if burnt:
-		top.add_child(_layer("mod_explosive_edge_" + sz, full))
+		_explosive_fx(top, compact, DH, level, mo)
 	var gs := Vector2(84, 96) if compact else Vector2(68, 78)
 	var cheaper := cost < d.cost
 	var gem := Control.new()
@@ -437,3 +441,322 @@ static func set_hot(p: Control, on: bool) -> void:
 	tw.tween_property(s, "position:x", sz.x + 4.0, 0.9).from(-bw - sk).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_interval(0.7)
 	s.set_meta("tw", tw)
+
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Explosiva (13/11/2026): pavio aceso em volta da carta. A borda (cordinha trançada + fio de brasa) é o PNG
+# mod_explosive_edge_*; aqui fica o que anda. Por nível da carta:
+#   1 = faísca correndo o pavio (loop) com rastro curto de brasa e faisquinhas soltando dela;
+#   2 = faísca maior + estouros pequenos (clarão, anel de fumaça e lascas) de tempos em tempos em pontos da borda;
+#   3 = tudo isso + chamas lambendo o pé da carta (shader) e um estouro grande periódico com brasas voando.
+# Os estouros só caem em pontos da borda longe do custo, da fita do nome e do texto. Com o tremor em zero, só a borda.
+# Custo: por carta 1 Line2D de ~20 pontos, 1-3 sprites, 1-3 CPUParticles2D pequenos e 1-3 tweens.
+
+## Pontos do contorno irregular: o mesmo jag(H,3,13,3,9) de tools/art/card_mold/overlays.js (rng xorshift32 da cartas_v4).
+static func _fuse_path(dh: float) -> Dictionary:
+	if _fuse_cache.has(dh):
+		return _fuse_cache[dh]
+	var st := [(3 * 2654435761) & 0xFFFFFFFF]
+	if st[0] == 0:
+		st[0] = 1
+	var amp := 13.0
+	var b := 3.0
+	var hh := int(dh)
+	var pts := PackedVector2Array()
+	for t in range(0, 301, 9):
+		pts.append(Vector2(t, snappedf(b + _rnd(st) * amp, 0.1)))
+	for t in range(0, hh + 1, 9):
+		pts.append(Vector2(snappedf(300.0 - (b + _rnd(st) * amp), 0.1), t))
+	for t in range(300, -1, -9):
+		pts.append(Vector2(t, snappedf(dh - (b + _rnd(st) * amp), 0.1)))
+	for t in range(hh, -1, -9):
+		pts.append(Vector2(snappedf(b + _rnd(st) * amp, 0.1), t))
+	pts.append(pts[0])
+	var cum := PackedFloat32Array([0.0])
+	for i in range(1, pts.size()):
+		cum.append(cum[i - 1] + pts[i].distance_to(pts[i - 1]))
+	var r := {"pts": pts, "cum": cum, "len": cum[cum.size() - 1]}
+	_fuse_cache[dh] = r
+	return r
+
+
+static func _rnd(st: Array) -> float:
+	var s: int = st[0]
+	s = (s ^ (s << 13)) & 0xFFFFFFFF
+	s = s ^ (s >> 17)
+	s = (s ^ (s << 5)) & 0xFFFFFFFF
+	st[0] = s
+	return float(s) / 4294967296.0
+
+
+## Ponto a uma distância `d` ao longo do pavio (dá a volta).
+static func _fuse_at(fp: Dictionary, d: float) -> Vector2:
+	var cum: PackedFloat32Array = fp["cum"]
+	var pts: PackedVector2Array = fp["pts"]
+	d = fposmod(d, fp["len"])
+	var i := clampi(cum.bsearch(d), 1, cum.size() - 1)
+	var seg := cum[i] - cum[i - 1]
+	return pts[i - 1].lerp(pts[i], 0.0 if seg <= 0.0 else (d - cum[i - 1]) / seg)
+
+
+## Trecho do pavio entre d0 e d1 (d1 > d0), com os vértices do meio: o rastro da faísca.
+static func _fuse_span(fp: Dictionary, d0: float, d1: float) -> PackedVector2Array:
+	var cum: PackedFloat32Array = fp["cum"]
+	var pts: PackedVector2Array = fp["pts"]
+	var L: float = fp["len"]
+	var out := PackedVector2Array([_fuse_at(fp, d0)])
+	var a := fposmod(d0, L)
+	var left := d1 - d0
+	var i := cum.bsearch(a, false)
+	while left > 0.0:
+		if i >= cum.size():
+			i = 1
+			a -= L
+		var step := cum[i] - a
+		if step >= left:
+			break
+		left -= step
+		a = cum[i]
+		out.append(pts[i])
+		i += 1
+	out.append(_fuse_at(fp, d1))
+	return out
+
+
+## Pontos da borda onde um estouro não cobre custo, nome nem texto (os estouros grandes ficam ainda mais longe).
+static func _safe_spots(fp: Dictionary, compact: bool, big: bool) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var y_max := (220.0 if compact else 150.0) if big else (280.0 if compact else 205.0)
+	var pts: PackedVector2Array = fp["pts"]
+	for i in range(0, pts.size() - 1, 2):
+		var p := pts[i]
+		if p.y > y_max or (p.x < 96.0 and p.y < 100.0):   # gema do custo no canto de cima à esquerda
+			continue
+		if compact and p.x > 220.0 and p.y < 56.0:          # atalho do teclado (mão)
+			continue
+		out.append(p.lerp(Vector2(150.0, p.y), 0.04))        # um nadinha para dentro
+	return out
+
+
+static func _fx_texture(kind: String) -> Texture2D:
+	if _fx_tex.has(kind):
+		return _fx_tex[kind]
+	var g := Gradient.new()
+	match kind:
+		"glow":   # clarão da faísca: miolo branco-amarelo, halo laranja
+			g.offsets = PackedFloat32Array([0.0, 0.12, 0.35, 1.0])
+			g.colors = PackedColorArray([Color(1, 1, 0.92, 1), Color(1, 0.86, 0.45, 0.95), Color(1, 0.45, 0.08, 0.35), Color(1, 0.3, 0.0, 0.0)])
+		"dot":    # faisquinha
+			g.offsets = PackedFloat32Array([0.0, 0.4, 1.0])
+			g.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0.7), Color(1, 1, 1, 0)])
+		"ring":   # anel de fumaça (miolo vazio)
+			g.offsets = PackedFloat32Array([0.0, 0.36, 0.62, 0.8, 1.0])
+			g.colors = PackedColorArray([Color(0.22, 0.18, 0.15, 0), Color(0.22, 0.18, 0.15, 0.1), Color(0.16, 0.12, 0.1, 0.9), Color(0.3, 0.26, 0.23, 0.5), Color(0.4, 0.38, 0.36, 0)])
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(1.0, 0.5)
+	t.width = 64 if kind != "dot" else 16
+	t.height = t.width
+	_fx_tex[kind] = t
+	return t
+
+
+static func _additive() -> CanvasItemMaterial:
+	if _add_mat == null:
+		_add_mat = CanvasItemMaterial.new()
+		_add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	return _add_mat
+
+
+static func _sprite(kind: String, add: bool) -> Sprite2D:
+	var s := Sprite2D.new()
+	s.texture = _fx_texture(kind)
+	if add:
+		s.material = _additive()
+	return s
+
+
+## Faíscas/brasas soltas no mundo (local_coords desligado: ficam para trás quando a faísca anda).
+static func _embers(amount: int, life: float, v0: float, v1: float, grav: float, s0: float, s1: float, burst: bool) -> CPUParticles2D:
+	var pt := CPUParticles2D.new()
+	pt.texture = _fx_texture("dot")
+	pt.material = _additive()
+	pt.amount = amount
+	pt.lifetime = life
+	pt.local_coords = false
+	pt.one_shot = burst
+	pt.explosiveness = 1.0 if burst else 0.0
+	pt.emitting = not burst
+	pt.direction = Vector2(0, -1)
+	pt.spread = 180.0
+	pt.gravity = Vector2(0, grav)
+	pt.initial_velocity_min = v0
+	pt.initial_velocity_max = v1
+	pt.damping_min = v0 * 0.6
+	pt.damping_max = v0 * 1.2
+	pt.scale_amount_min = s0
+	pt.scale_amount_max = s1
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0, 0.3, 1.0])
+	g.colors = PackedColorArray([Color(1, 0.97, 0.8, 1), Color(1, 0.62, 0.15, 0.95), Color(0.85, 0.2, 0.02, 0)])
+	pt.color_ramp = g
+	return pt
+
+
+static func _explosive_fx(top: Control, compact: bool, dh: float, level: int, mo: float) -> void:
+	var lv := clampi(level, 1, 3)
+	var full := Vector2(300.0, dh)
+	# chamas lambendo o pé da carta (nível 3): por baixo da cordinha, quase todas fora da carta
+	if lv >= 3:
+		var fl := ColorRect.new()
+		var fh := 32.0 if compact else 54.0
+		fl.position = Vector2(-8.0, dh - (20.0 if compact else 36.0))   # pontas até ~384 (grande) / ~360 (mão): abaixo do texto; na mão só roçam a fita
+		fl.size = Vector2(316.0, fh)
+		fl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var fm := ShaderMaterial.new()
+		fm.shader = SH_FLAMES
+		fm.set_shader_parameter("motion", mo)
+		fm.set_shader_parameter("hole", 0.0 if compact else 0.6)   # vão baixo no meio: a placa "III" fica à mostra
+		fm.set_shader_parameter("seed", randf() * 50.0)
+		fl.material = fm
+		top.add_child(fl)
+	var edge := _layer("mod_explosive_edge_" + ("cmp" if compact else "full"), full)
+	top.add_child(edge)
+	if mo <= 0.0:
+		return
+	var fp := _fuse_path(dh)
+	var L: float = fp["len"]
+	var k := 1.35 if compact else 1.0   # na mão a carta é pequena: tudo um pouco maior para ler
+	var fx := Node2D.new()
+	fx.name = "Fuse"
+	top.add_child(fx)
+
+	# --- a faísca: pavio queimado atrás dela (fuligem), rastro de brasa (Line2D afinando), clarão piscando e faisquinhas
+	var soot := Line2D.new()
+	soot.width = 4.2 * k
+	var sg := Gradient.new()
+	sg.offsets = PackedFloat32Array([0.0, 0.6, 1.0])
+	sg.colors = PackedColorArray([Color(0.1, 0.05, 0.02, 0), Color(0.1, 0.05, 0.02, 0.55), Color(0.1, 0.05, 0.02, 0.8)])
+	soot.gradient = sg
+	soot.joint_mode = Line2D.LINE_JOINT_ROUND
+	fx.add_child(soot)
+	var trail := Line2D.new()
+	trail.width = (4.4 if lv == 1 else 5.8) * k
+	var wc := Curve.new()
+	wc.add_point(Vector2(0, 0.15))
+	wc.add_point(Vector2(1, 1))
+	trail.width_curve = wc
+	var tg := Gradient.new()
+	tg.offsets = PackedFloat32Array([0.0, 0.7, 1.0])
+	tg.colors = PackedColorArray([Color(1, 0.3, 0.02, 0), Color(1, 0.62, 0.15, 0.85), Color(1, 0.95, 0.7, 1)])
+	trail.gradient = tg
+	trail.joint_mode = Line2D.LINE_JOINT_ROUND
+	trail.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	trail.end_cap_mode = Line2D.LINE_CAP_ROUND
+	trail.material = _additive()
+	fx.add_child(trail)
+	var spark := Node2D.new()
+	fx.add_child(spark)
+	var glow := _sprite("glow", true)
+	var gsc := (0.66 if lv == 1 else 0.95) * k
+	glow.scale = Vector2.ONE * gsc
+	spark.add_child(glow)
+	var core := _sprite("dot", true)
+	core.scale = Vector2.ONE * (0.75 if lv == 1 else 1.0) * k
+	spark.add_child(core)
+	var sp := _embers(12 if lv == 1 else 20, 0.6, 35.0, 85.0 if lv == 1 else 110.0, 80.0, 0.16 * k, (0.3 if lv == 1 else 0.4) * k, false)
+	spark.add_child(sp)
+
+	var period := (5.0 if lv == 1 else 4.4) * (L / 1600.0)   # ~7 s por volta no nível 1
+	var tail := (60.0 if lv == 1 else 85.0) * k
+	var off := randf() * L
+	var run := func(d: float) -> void:
+		spark.position = _fuse_at(fp, d)
+		trail.points = _fuse_span(fp, d - tail, d)
+		soot.points = _fuse_span(fp, d - tail * 2.2, d - tail * 0.5)
+		var fl := 0.85 + 0.15 * sin(d * 0.9) + 0.1 * sin(d * 2.3)   # tremulada do clarão
+		if compact and spark.position.y > dh - 70.0:
+			fl *= 0.6   # na mão, a faísca passa rente à fita do nome: clarão menor ali
+		glow.scale = Vector2.ONE * gsc * fl
+	var tw := fx.create_tween().set_loops()
+	tw.tween_method(run, off, off + L, period)
+	run.call(off)
+
+	# --- estouros nos pontos seguros da borda (nível 2 e 3)
+	if lv >= 2:
+		var spots := _safe_spots(fp, compact, false)
+		var pop := _pop_node(k, false)
+		fx.add_child(pop)
+		var tp := pop.create_tween().set_loops()
+		tp.tween_interval(0.6 + randf() * 1.6)
+		tp.tween_callback(func() -> void: _pop_fire(pop, spots[randi() % spots.size()], false))
+		tp.tween_interval(1.5 if lv == 2 else 1.2)
+	if lv >= 3:
+		var spots_big := _safe_spots(fp, compact, true)
+		var boom := _pop_node(k, true)
+		fx.add_child(boom)
+		var tb := boom.create_tween().set_loops()
+		tb.tween_interval(2.4 + randf() * 2.0)
+		tb.tween_callback(func() -> void:
+			_pop_fire(boom, spots_big[randi() % spots_big.size()], true)
+			var te := edge.create_tween()   # a borda inteira acende com o estouro
+			te.tween_property(edge, "modulate", Color(1.9, 1.45, 1.05), 0.08)
+			te.tween_property(edge, "modulate", Color.WHITE, 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT))
+		tb.tween_interval(2.6)
+
+
+## Nó de um estouro: clarão (soma), anel de fumaça e lascas de brasa disparadas de uma vez.
+static func _pop_node(k: float, big: bool) -> Node2D:
+	var n := Node2D.new()
+	var ring := _sprite("ring", false)
+	ring.name = "Ring"
+	ring.modulate.a = 0.0
+	n.add_child(ring)
+	var flash := _sprite("glow", true)
+	flash.name = "Flash"
+	flash.modulate.a = 0.0
+	n.add_child(flash)
+	if big:   # onda de calor larga e laranja por baixo do clarão
+		var wave := _sprite("glow", true)
+		wave.name = "Wave"
+		wave.modulate = Color(1.0, 0.55, 0.2, 0.0)
+		n.add_child(wave)
+	var e := _embers(32 if big else 14, 1.2 if big else 0.7, 80.0 if big else 55.0, 200.0 if big else 120.0, 110.0 if big else 50.0,
+			0.22 * k, (0.55 if big else 0.36) * k, true)
+	e.name = "Bits"
+	n.add_child(e)
+	n.set_meta("k", k)
+	return n
+
+
+static func _pop_fire(n: Node2D, at: Vector2, big: bool) -> void:
+	if not is_instance_valid(n):
+		return
+	var k: float = n.get_meta("k", 1.0)
+	n.position = at
+	var flash := n.get_node("Flash") as Sprite2D
+	var ring := n.get_node("Ring") as Sprite2D
+	var bits := n.get_node("Bits") as CPUParticles2D
+	# as lascas saem para fora da carta (longe do texto)
+	bits.direction = (at - Vector2(150.0, 200.0)).normalized()
+	bits.spread = 80.0 if big else 60.0
+	bits.restart()
+	var s := (2.6 if big else 1.5) * k
+	var t := n.create_tween().set_parallel()
+	var wave := n.get_node_or_null("Wave") as Sprite2D
+	if wave != null:
+		wave.scale = Vector2.ONE * s * 0.6
+		wave.modulate.a = 0.9
+		t.tween_property(wave, "scale", Vector2.ONE * s * 2.0, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(wave, "modulate:a", 0.0, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	flash.scale = Vector2.ONE * s * 0.3
+	flash.modulate.a = 1.0
+	t.tween_property(flash, "scale", Vector2.ONE * s, 0.12).set_ease(Tween.EASE_OUT)
+	t.tween_property(flash, "modulate:a", 0.0, 0.42 if big else 0.32).set_delay(0.1)
+	ring.scale = Vector2.ONE * s * 0.35
+	ring.modulate.a = 1.0
+	t.tween_property(ring, "scale", Vector2.ONE * s * (1.5 if big else 1.15), 1.1 if big else 0.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(ring, "modulate:a", 0.0, 1.0 if big else 0.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)

@@ -1,6 +1,6 @@
 {
  "raised_servant": {
-  "subject": "A single yellowed human skeleton with dark empty eye sockets and rusty scraps of armor, hunched forward and running at the viewer in a low chase. His right bony hand reaches out ahead of him with the fingers spread, his left arm swings back at his side. Pale cyan-green ghostly light glows in his ribcage, and a single leaning gravestone stands behind him with thin wisps of cold smoke trailing from his heels.",
+  "subject": "A single yellowed human skeleton with dark empty eye sockets, hunched forward and running at the viewer in a low chase. His right bony hand reaches out ahead of him with the fingers spread, his left arm swings back at his side. Every bone, including the ribs, the spine and the pelvis, is painted in warm yellowed ivory, the same warm color as old aged bone, and his skull is a normal human size. A small pale cyan-green glow shines in the dark gap of his ribcage, and a single leaning gravestone stands behind him with thin wisps of cold smoke trailing from his heels.",
   "bg": "ochre"
  },
  "life_drain": {
@@ -14,14 +14,13 @@
  "open_grave": {
   "subject": "A freshly dug open grave in dark earth with a cracked wooden headstone leaning at its head. Two yellowed human skeletons with dark empty eye sockets and rusty scraps of armor climb out of the hole, the first gripping the grass edge with both bony hands, the second reaching up with his right arm. Cold cyan-green ghostly light glows from deep inside the grave, and a single bare dead tree stands behind it with thin mist rolling away.",
   "bg": "ochre"
-}
- ,
+ },
  "soul_storm": {
   "subject": "a lone human knight in dented steel plate armor with a faded blue tabard and a plain round steel helmet, holding a straight steel sword, swinging his sword wildly at the air with his right gauntlet while his left arm stays raised. Five pale translucent ghosts of hooded figures trailing into wisps swirl around him in a ring, each reaching toward him with both hands. Cold cyan-green ghostly light flickers in the swirling air, and a few cyan sparks drift behind him.",
   "bg": "rose"
  },
  "bone_colossus": {
-  "subject": "A towering colossus built from hundreds of yellowed bones, with a broad ribcage, two thick arms made of stacked leg bones and a single huge skull with dark empty eye sockets lit by cold cyan-green ghostly light. He stands facing the viewer with both fists planted on the ground in front of him. Several smaller yellowed human skeletons with rusty scraps of armor are fused into his shoulders, and a single broken stone pillar stands behind him with pale dust rising from his feet.",
+  "subject": "A gigantic human skeleton with warm yellowed ivory bones like old aged bone, seen from a low front angle, striding straight toward us with its right leg stepping forward and its left leg far behind, its right arm reaching out toward us with the open hand wide, its left arm swung back, its head lowered and its jaw open in a roar, its whole body leaning forward. Built exactly like a real human skeleton with thick bones: one round skull with a jaw, a spine, one ribcage of simple curved ribs, a pelvis, two arms that each have one upper arm bone, two forearm bones and one hand with five fingers, and two legs that each have one thigh bone, two shin bones and one foot. Its two big dark skull sockets glow with cold cyan-green ghostly light. It strides through a broken graveyard: three large leaning gravestones and one toppled stone pillar lie around its feet, with big broken stone slabs and cracked earth between them, and a cloud of pale dust rolls up around its legs. Far behind it, a row of large bare dead trees stands along the horizon.",
   "bg": "slate"
  },
  "arcane_apocalypse": {

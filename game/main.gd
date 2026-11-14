@@ -639,6 +639,8 @@ func _begin(s: Sim) -> void:
 
 func _process(delta: float) -> void:
 	life += delta
+	if auto_args.has("bare"):
+		_bare_ui()
 	if DisplayServer.get_name() != "headless":
 		UiCovil.sync(get_viewport())
 	if menu_root and not running and not (menu_root is DeskScene):
@@ -847,6 +849,9 @@ func _process(delta: float) -> void:
 		result_played = true
 		SaveGame.erase()
 		hud.souls_gained = meta.add_run(sim.stats) if auto_args.is_empty() else MetaSave.souls_for(data, sim.stats)
+		if auto_args.is_empty():
+			# Desafios de desbloqueio: vitória ou derrota, confere as cartas ainda bloqueadas (antes de win_phase).
+			hud.unlock_result = meta.apply_unlocks(sim, sim.result in [K.Result.WIN, K.Result.WIN_EARLY])
 		if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] and auto_args.is_empty():
 			# Campanha: vencer a fase libera a próxima e, às vezes, um vilão novo.
 			var np := meta.win_phase(sim.campaign_phase)
@@ -1192,7 +1197,15 @@ func _menu_test() -> void:
 	await get_tree().create_timer(0.3).timeout
 	await _key(KEY_ESCAPE)
 	step.call("Esc volta ao título", menu.screen == "title")
-	if menu_root is DeskScene:
+	if UiSkins.mapa() and menu.title_root is MapMenu:
+		# Pele "Mapa aberto": os papéis da mesa saem; o clique no lugar "Compêndio" do mapa abre a tela.
+		await _click((menu.title_root as MapMenu).buttons["compendium"])
+		for _f in 4:
+			await get_tree().process_frame
+		step.call("Lugar do mapa abre a tela", menu.screen == "compendium")
+		await _key(KEY_ESCAPE)
+		await _click(null)
+	elif menu_root is DeskScene:
 		# Clique no papel da Coleção deitado na mesa (picking 3D) abre a tela; Esc devolve o título.
 		var dp := get_viewport().get_final_transform() * (menu_root as DeskScene).screen_point("compendium")
 		# Como uma pessoa: o mouse chega no papel antes do clique (o picking 3D usa a última posição).
@@ -1738,3 +1751,29 @@ func _pad_cursor(delta: float) -> void:
 		pad_active = true
 		cursor += v * 900.0 * float(Settings.v["pad_speed"]) * delta
 		cursor = cursor.clamp(Vector2.ZERO, get_viewport().get_visible_rect().size)
+
+## --bare (só capturas para maquetes de UI, docs/UI_PROPOSTAS.md): esconde a interface e deixa o mundo e as cartas
+## (mão, ofertas, loja). Quem contém uma carta fica, mas sem desenhar o próprio fundo (self_modulate transparente).
+func _bare_ui() -> void:
+	var keep := {}
+	for n in get_tree().root.find_children("*", "Control", true, false):
+		if n.has_meta("ui_card") or n is HandFan:
+			var p: Node = n
+			while p:
+				keep[p] = true
+				p = p.get_parent()
+	for n in get_tree().root.find_children("*", "Control", true, false):
+		var c := n as Control
+		if keep.has(c):
+			if not (c.has_meta("ui_card") or c is HandFan):
+				c.self_modulate.a = 0.0
+			continue
+		var inside := false
+		var p2: Node = c.get_parent()
+		while p2:
+			if p2 is HandFan or p2.has_meta("ui_card"):
+				inside = true
+				break
+			p2 = p2.get_parent()
+		if not inside:
+			c.visible = false

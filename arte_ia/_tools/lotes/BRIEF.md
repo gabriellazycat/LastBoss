@@ -6,11 +6,13 @@ Read: this brief, `../fichas.json` (fixed phrases for recurring figures), and yo
 (each card: id, pt/en name, type, villain, tags, archetype, fx = gameplay effect).
 Write: `../subjects/<chunk>.json` = `{"<id>": {"subject": "...", "bg": "lilac|teal|ochre|sand|slate|rose"}, ...}` for EVERY card in the chunk.
 
-A fixed style block (flat gouache poster painting) and a fixed tone sentence are added automatically. The subject is
-ONLY the content. The pilot showed that simple, countable compositions come out coherent and busy ones do not.
+A fixed style block (light gouache painted with one very wide flat brush: no fine lines, no small marks) and a fixed
+tone sentence are added automatically. The subject is ONLY the content. Simple, countable compositions come out
+coherent and busy ones do not. Everything you describe must be paintable with a very wide brush: if a detail would
+be smaller than about 1/20 of the picture width, leave it out.
 
 ## Rules (all mandatory)
-1. 2-4 English sentences, natural and concrete: who, one clear pose/action, 2-3 visual details, ONE story element of scenery.
+1. 2-4 English sentences, natural and concrete: who, one clear pose/action, 1-2 big visual details, ONE story element of scenery.
    No style, medium, lighting, quality or photo words.
 2. NEVER negations (no, not, without, never, none, nothing, free of): rewrite as positives.
 3. A recurring figure from fichas.json = its phrase pasted VERBATIM; add only pose and action around it.
@@ -30,9 +32,17 @@ ONLY the content. The pilot showed that simple, countable compositions come out 
 10. STRUCTURES, LAIRS, ROUTES: the building/place in focus with its creatures doing their job (rats leaving a burrow).
 11. Rarity does not change the art. Keep the lower ~6% of the image unimportant (a name ribbon covers it).
 12. Use the card's fx/tags only to choose WHAT is shown (fire, poison, gold, souls); never write numbers.
+13. EYES (designer rule 13/11): never write the word eye/eyes/gaze/stare/visor-glow in a subject. Eyes are added
+    automatically to creatures as small stylized almond shapes. HUMANS never have eyes: write every human (knight,
+    archer, cultist, healer, messenger) with the face hidden in the dark shadow of a hood or helmet.
+14. NO FINE DETAIL (designer rule 13/11): armor, clothing, scales, fur and stone are "plain" large shapes. Never list
+    armor parts (pauldrons, greaves, rivets, buckles, straps, chain, engravings), ornaments, spikes rows, teeth rows,
+    scale or feather patterns, jewels, runes, filigree, small coins or small embers in the foreground. Name one plain
+    material and one big shape: "plain smooth steel armor made of a few large plates", "a plain brown cloak".
+    Crowds are fine when they read as big overlapping silhouettes (the rat swarm), never as many small figures.
 
 ## Two subjects that worked in the pilot
-- death_knight: "A tall undead knight in blackened plate armor with a horned iron helmet and a tattered black cloak, his visor glowing with cold cyan-green ghostly light. He strides forward, holding one black longsword in his right gauntlet with the blade raised over his right shoulder, his left fist clenched at his side. A single cracked gravestone stands behind him, and torn strips of his cloak stream back in the wind." (bg sand)
+- death_knight: "A tall undead knight in plain black armor made of a few large plates with a horned iron helmet that hides his face in dark shadow and a tattered black cloak. He strides forward, holding one black longsword in his right gauntlet with the blade raised over his right shoulder, his left fist clenched at his side. A single cracked gravestone stands behind him, and torn strips of his cloak stream back in the wind." (bg sand)
 - weakness_curse: "<hero phrase>, kneeling on one knee with his head bowed, his right gauntlet gripping the hilt of his one sword whose tip rests on the ground, his left hand pressed flat on his raised knee. A thin crack runs down the blade, and a thin veil of dark purple smoke rises from the crack and drifts up behind his shoulders." (bg ochre)
 
 Before finishing, re-read your file and fix any banned word or negation. Reply only with the list of ids written.

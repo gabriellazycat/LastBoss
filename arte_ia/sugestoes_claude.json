@@ -1,0 +1,13 @@
+{
+ "drakeling": {"prioridade": "alta", "motivo": "Fofo e redondo demais, parece personagem de desenho (fere o 'nunca cartunesco')."},
+ "hell_hound": {"prioridade": "alta", "motivo": "Parece um urso, não um cão: cabeça e corpo grossos demais."},
+ "fallen_healer": {"prioridade": "alta", "motivo": "Quase toda branca, sem cor de fundo; muito mais apagada que o resto do baralho."},
+ "eruption": {"prioridade": "alta", "motivo": "Rosto do cavaleiro visível (humanos não têm olhos): esconder na sombra do elmo."},
+ "black_pestilence": {"prioridade": "alta", "motivo": "Rosto do cavaleiro visível (humanos não têm olhos): esconder na sombra do elmo."},
+ "life_drain": {"prioridade": "alta", "motivo": "Rosto do cavaleiro visível (humanos não têm olhos): esconder na sombra do elmo."},
+ "oil_splash": {"prioridade": "alta", "motivo": "Rosto do cavaleiro visível, com os olhos fechados desenhados: esconder na sombra do elmo."},
+ "tar_net": {"prioridade": "media", "motivo": "Rosto do cavaleiro parcialmente visível: esconder na sombra do elmo."},
+ "spike_trap": {"prioridade": "media", "motivo": "Rosto do cavaleiro parcialmente visível: esconder na sombra do elmo."},
+ "corrupt_piper": {"prioridade": "media", "motivo": "Rosto humano iluminado; os outros humanos escondem o rosto na sombra."},
+ "ash_salamander": {"prioridade": "media", "motivo": "Expressão sorridente de sapo, um pouco cartunesca."}
+}

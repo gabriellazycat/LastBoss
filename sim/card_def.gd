@@ -20,6 +20,7 @@ var speed: float = 0.0
 var range: float = 1.0
 var fx: Dictionary = {}
 var fly := false
+var beast := false          # Fera (Praga): fx.beast; os ratos e morcegos são Bando, nunca Fera
 var projectile := false
 var is_unit := false
 var is_spell := false
@@ -63,6 +64,7 @@ static func from_dict(d: Dictionary, i: int, cat_override := "") -> CardDef:
 	c.ai = d.get("ai", {})
 	c.ai_keys = c.ai.get("keys", [])
 	c.fly = bool(d.get("fly", false))
+	c.beast = bool(c.fx.get("beast", false))
 	c.projectile = bool(c.fx.get("projectile", false))
 	c.is_spell = c.type == "spell"
 	c.is_structure = c.type == "structure"

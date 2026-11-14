@@ -1,0 +1,34 @@
+{
+ "hell_hound": {
+  "subject": "A huge lean black hound the size of a horse with smooth charcoal fur, a deep narrow chest, long thin legs, a long narrow pointed snout, two tall pointed ears and a long thin tail, bounding forward in side view with all four legs stretched and its jaws open wide. Its back and shoulders glow with large patches of molten orange. A few streaks of orange fire trail from its paws across the bare ground, and thin smoke wisps drift up behind it.",
+  "bg": "teal"
+ },
+ "ash_salamander": {
+  "subject": "A large salamander with smooth charcoal-grey skin and broad glowing orange patches along its back, a long low body, four short legs and a long tail curving to the left, walking forward in side view. Its head is narrow and wedge-shaped with a long closed mouth in a straight line and is held low. A wide ribbon of flames burns on the ground where it has stepped, and grey ash drifts up behind it.",
+  "bg": "lilac"
+ },
+ "drakeling": {
+  "subject": "A young red dragon seen in side view with a lean muscular body, smooth crimson skin, a long neck, a narrow wedge-shaped head with a long snout, two short swept-back horns, a pale yellow belly and a long tapering tail, flying with both leathery bat-like wings spread wide and its body leaning forward. It spits one stream of orange fire from its open mouth toward us. A single round rock spire rises far behind it, and a few orange embers trail behind its tail.",
+  "bg": "teal"
+ },
+ "magma_golem": {
+  "subject": "A towering golem built from a few huge blocks of black rock with wide cracks glowing orange, standing upright with its right fist raised high over its head and its left arm hanging at its side. Its blocky head sits low between broad shoulders. Thick orange lava drips from its raised fist and thin smoke rises behind it.",
+  "bg": "sand"
+ },
+ "gold_mine": {
+  "subject": "A rough cave mouth cut into a grey rock face, with large chunks of shining yellow gold ore glowing in the rock around the opening. A wooden mine cart stands at the entrance holding a heap of gold ore, and two small red-scaled kobolds with lizard snouts, tiny horns and ragged leather aprons push it forward, one pickaxe resting on the right kobold's shoulder. Soft dust drifts out of the cave behind them.",
+  "bg": "slate"
+ },
+ "dragon_exchange": {
+  "subject": "a huge ancient red dragon with cracked crimson scales, a pale yellow belly, long curved horns and a ragged frill, lowering its head toward us with its mouth closed and its right forepaw resting flat on one single large bar of shining gold. Its left forepaw is planted on the ground beside it. Warm orange light glows around the bar and a few embers float up behind the dragon's shoulders.",
+  "bg": "teal"
+ },
+ "ash_phoenix": {
+  "subject": "A large fiery bird with a long neck, a hooked beak, a broad tail and both wings spread wide, its body made of glowing orange and yellow flames over a dark grey core. It dives through the air with its beak open, spitting one bright ball of fire toward us. Grey ash and a few glowing embers trail behind its tail.",
+  "bg": "slate"
+ },
+ "meteor_storm": {
+  "subject": "a lone human knight in plain steel armor made of a few large smooth plates with a faded blue tabard and a plain round steel helmet whose whole face opening is one flat solid black shadow, holding a straight steel sword, raising his shield over his head with his left arm while his right hand grips the sword at his side. Three huge flaming boulders streak down from above and one crashes into the ground in front of him in a burst of orange fire. Thick dark smoke and sparks rise behind him, seen from the front.",
+  "bg": "lilac"
+ }
+}

@@ -16,6 +16,7 @@ const C_WEAK := Color(0.85, 0.4, 1.0)
 const C_MARK := Color(0.95, 0.3, 0.55)
 const C_BUBO := Color(0.6, 0.85, 0.25)
 const C_CURSE := Color(0.85, 0.2, 0.25)
+const C_PESTE := Color(0.5, 0.95, 0.5)
 const C_BLESS := Color(1.0, 0.95, 0.7)
 const C_BUFF := Color(1.0, 0.65, 0.2)
 const C_DEVOUR := Color(0.95, 0.25, 0.2)
@@ -82,6 +83,8 @@ func hero_effects() -> Array:
 	if sim.t < sim.mark_until: add.call("mark", C_MARK, sim.mark_until - sim.t)
 	if cs.has("plague") and sim.t < float(cs["plague"].get("bubo_t", -1.0)):
 		add.call("bubo", C_BUBO, float(cs["plague"]["bubo_t"]) - sim.t)
+	var pst := CardsPlague.peste_of(sim, h)
+	if pst > 0: add.call("peste", C_PESTE, -1.0, pst)
 	if sim.has_method("hero_blessed") and sim.call("hero_blessed"): add.call("bless", C_BLESS, -1.0)
 	if h.curses > 0: add.call("curse", C_CURSE, -1.0, h.curses)
 	return out
@@ -173,6 +176,12 @@ static func glyph(ci: CanvasItem, p: Vector2, kind: String, col: Color, s: float
 		"bubo":
 			for a in 3:
 				ci.draw_circle(p + Vector2.from_angle(TAU * a / 3.0 - PI * 0.5) * s * 0.5, s * 0.32, col)
+		"peste":
+			# Gota de pus com duas manchas: acúmulos de Peste (o número vai embaixo do selo).
+			ci.draw_circle(p + Vector2(0, s * 0.25), s * 0.55, col)
+			ci.draw_colored_polygon(PackedVector2Array([p + Vector2(0, -s * 0.95), p + Vector2(s * 0.5, s * 0.05), p + Vector2(-s * 0.5, s * 0.05)]), col)
+			ci.draw_circle(p + Vector2(-s * 0.18, s * 0.2), s * 0.14, col.darkened(0.6))
+			ci.draw_circle(p + Vector2(s * 0.2, s * 0.45), s * 0.1, col.darkened(0.6))
 		"curse":
 			ci.draw_line(p + Vector2(-s, -s) * 0.6, p + Vector2(s, s) * 0.6, col.lightened(0.3), w, true)
 			ci.draw_line(p + Vector2(s, -s) * 0.6, p + Vector2(-s, s) * 0.6, col.lightened(0.3), w, true)

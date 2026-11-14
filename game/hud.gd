@@ -92,6 +92,8 @@ var offer_obj = null                   # oferta já animada (a mesma oferta reco
 var ledger: ShopLedger                 # a loja é o livro-caixa do mercador (game/shop_ledger.gd, decisão 11/11/2026)
 var sfx: Callable                      # som da interface: sfx.call(id, tom)
 var souls_gained := 0
+var unlock_near: Label
+var unlock_result: Dictionary = {}   # cartas liberadas e progresso dos desafios (MetaSave.apply_unlocks)
 var pause_layer: Control
 var pause_menu: VBoxContainer
 var pause_deck: GridContainer
@@ -100,6 +102,7 @@ var pause_time: Label
 var settings: SettingsPanel
 var result_layer: Control
 var result_title: Label
+var result_icon: TextureRect   # pele "Mapa aberto": o covil desenhado no alto do resultado
 var result_sub: Label
 var result_grid: GridContainer
 var result_btn: Button
@@ -181,6 +184,7 @@ func _build_top() -> void:
 	upg_row.add_child(upg_none)
 	hv.add_child(upg_row)
 	duel.add_child(hp)
+	_map_doodle(hp, "m-bosque", Vector2(96, 42), Vector2(16, 8))
 
 
 func _build_left() -> void:
@@ -243,6 +247,7 @@ func _build_right() -> void:
 	parts_panel.add_child(parts_box)
 	parts_panel.visible = false
 	add_child(parts_panel)
+	_map_doodle(parts_panel, "m-rat", Vector2(64, 32), Vector2(22, 0), true)
 	tool_row = HBoxContainer.new()
 	tool_row.add_theme_constant_override("separation", 6)
 	add_child(tool_row)
@@ -519,6 +524,16 @@ func _build_result() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
 	p.add_child(v)
+	if UiSkins.mapa():
+		# Mapa aberto: o covil no alto (anel vermelho na vitória), morros e bosque apoiados na moldura de baixo.
+		result_icon = TextureRect.new()
+		result_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		result_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		result_icon.custom_minimum_size = Vector2(0, 112)
+		result_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(result_icon)
+		_map_doodle(p, "m-mount", Vector2(150, 62), Vector2(26, 14), false, true)
+		_map_doodle(p, "m-bosque", Vector2(130, 56), Vector2(26, 12))
 	result_title = UiKit.title(80)
 	result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(result_title)
@@ -829,6 +844,26 @@ func refresh(delta: float, fps: float) -> void:
 	tool_row.visible = not over and not pause_layer.visible
 	if over and not result_shown:
 		_show_result()
+
+
+## Cartas liberadas nesta fase: revelação por cima do resultado; sem nenhuma, uma linha "Quase lá" no resultado.
+func _show_unlocks() -> void:
+	if is_instance_valid(unlock_near):
+		unlock_near.queue_free()
+	if unlock_result.is_empty():
+		return
+	var rv := UnlockReveal.build(sim.data, unlock_result)
+	if rv != null:
+		add_child(rv)
+		rv.finished.connect(func(): result_btn.grab_focus.call_deferred())
+		return
+	var txt := UnlockReveal.near_text(unlock_result)
+	if txt != "":
+		unlock_near = UiKit.label(15, UiKit.MUTED, 3)
+		unlock_near.text = txt
+		unlock_near.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		result_grid.get_parent().add_child(unlock_near)
+		result_grid.get_parent().move_child(unlock_near, result_grid.get_index() + 1)
 
 
 func _refresh_top() -> void:
@@ -1463,6 +1498,10 @@ func _show_result() -> void:
 	var won := r in ["win", "win_early"]
 	result_title.text = tr("UI_RESULT_TITLE_" + r)
 	UiKit.title_color(result_title, UiKit.GOLD if won else Color(0.9, 0.24, 0.18))
+	if result_icon:
+		result_icon.texture = load("res://assets/ui/map/node_m-lair%s.svg" % ("_hot" if won else ""))
+		result_icon.modulate = Color.WHITE if won else Color(0.78, 0.7, 0.62)
+		UiKit.title_color(result_title, UiParch.INK if won else UiParch.BLOOD)
 	result_sub.text = tr("UI_RESULT_" + r)
 	var top := ""
 	var best := 0
@@ -1502,3 +1541,20 @@ func _show_result() -> void:
 		tp.add_child(tv)
 		result_grid.add_child(tp)
 	result_btn.grab_focus.call_deferred()
+	_show_unlocks()
+
+
+## Pele "Mapa aberto": um desenho do mapa apoiado na linha de baixo da moldura do painel, no canto direito (o
+## bosquinho no painel do herói, o rato no do corpo do chefe), como nas maquetes (docs/UI_PROPOSTAS.md). Pintado
+## pelo próprio painel, embaixo do texto.
+func _map_doodle(panel: Control, icon: String, sz: Vector2, from_corner: Vector2, on_top := false, left := false) -> void:
+	if not UiSkins.mapa():
+		return
+	var tex: Texture2D = load("res://assets/ui/map/icon_%s.svg" % icon)
+	if tex == null:
+		return
+	panel.draw.connect(func():
+		var at := Vector2(panel.size.x - sz.x - from_corner.x, -sz.y * 0.55 + from_corner.y) if on_top else panel.size - sz - from_corner
+		if left:
+			at.x = from_corner.x
+		panel.draw_texture_rect(tex, Rect2(at, sz), false))

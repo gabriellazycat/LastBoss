@@ -9,28 +9,36 @@
    ],
    "portrait": "villain_plague",
    "start_deck": [
-    "rat_horde",
-    "rat_horde",
-    "rabid_rats",
-    "rabid_rats",
     "rat_brute",
     "rat_brute",
-    "pack_call",
     "infected_bite",
     "rat_burrow",
-    "web"
+    "web",
+    "pack_call",
+    "lone_wolf",
+    "rat_horde",
+    "rat_horde",
+    "wolf_pack",
+    "wolf_pack",
+    "brood_mother",
+    "crow_flock",
+    "hired_archer"
    ],
    "start_deck_final": [
-    "rat_horde",
-    "rat_horde",
-    "rabid_rats",
-    "rabid_rats",
     "rat_brute",
     "rat_brute",
-    "pack_call",
     "infected_bite",
     "rat_burrow",
-    "web"
+    "web",
+    "pack_call",
+    "lone_wolf",
+    "rat_horde",
+    "rat_horde",
+    "wolf_pack",
+    "wolf_pack",
+    "brood_mother",
+    "crow_flock",
+    "hired_archer"
    ],
    "start_rares": [
     "rat_king",
@@ -38,8 +46,8 @@
     "devour"
    ],
    "rules": {
-    "hero_hp_mult": 2.4,
-    "infestation": 0.1
+    "infestation": 0.2,
+    "wild_infestation": 1
    }
   },
   {
@@ -52,27 +60,37 @@
    "portrait": "villain_dragon",
    "start_deck": [
     "oil_splash",
-    "oil_splash",
     "torch",
     "torch",
     "goblin_dynamiter",
+    "goblin_dynamiter",
     "kobold_scavengers",
     "kobold_scavengers",
-    "gold_bait",
     "cursed_coins",
-    "barricade"
+    "barricade",
+    "fire_imp",
+    "treasure_guard",
+    "ash_salamander",
+    "crow_flock",
+    "goblin_scout",
+    "goblin_scout"
    ],
    "start_deck_final": [
     "oil_splash",
-    "oil_splash",
     "torch",
     "torch",
     "goblin_dynamiter",
+    "goblin_dynamiter",
     "kobold_scavengers",
     "kobold_scavengers",
-    "gold_bait",
     "cursed_coins",
-    "barricade"
+    "barricade",
+    "fire_imp",
+    "treasure_guard",
+    "ash_salamander",
+    "crow_flock",
+    "goblin_scout",
+    "goblin_scout"
    ],
    "start_rares": [
     "dragon_vault",
@@ -80,8 +98,7 @@
     "ember_rain"
    ],
    "rules": {
-    "hero_hp_mult": 1.746,
-    "start_gold": 30,
+    "start_gold": 45,
     "hoard_step": 50,
     "hoard_fire": 0.05,
     "hoard_fire_max": 0.3
@@ -100,24 +117,32 @@
     "bone_legion",
     "raised_servant",
     "raised_servant",
+    "raised_servant",
     "shadow_bolt",
     "shadow_bolt",
-    "arcane_spark",
     "acolyte",
     "corpse_blast",
-    "weakness_curse"
+    "weakness_curse",
+    "cultists",
+    "open_grave",
+    "poison_dart",
+    "crow_flock"
    ],
    "start_deck_final": [
     "bone_legion",
     "bone_legion",
     "raised_servant",
     "raised_servant",
+    "raised_servant",
     "shadow_bolt",
     "shadow_bolt",
-    "arcane_spark",
     "acolyte",
     "corpse_blast",
-    "weakness_curse"
+    "weakness_curse",
+    "cultists",
+    "open_grave",
+    "poison_dart",
+    "crow_flock"
    ],
    "start_rares": [
     "bone_totem",
@@ -125,7 +150,6 @@
     "shadow_echo"
    ],
    "rules": {
-    "hero_hp_mult": 1.806,
     "harvest_every": 8
    }
   }

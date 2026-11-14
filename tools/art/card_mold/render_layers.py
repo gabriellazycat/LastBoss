@@ -1,6 +1,7 @@
 """Renderiza as camadas do molde de carta (moldura A da v4) em PNGs transparentes com o Chrome headless.
 
-Uso: python tools/art/card_mold/render_layers.py
+Uso: python tools/art/card_mold/render_layers.py [pasta_tmp] [--only=texto]
+     --only=explosive_edge,explosive_mask refaz só as camadas cujo nome contém um dos textos (as outras ficam como estão).
 Saída: assets/cards/mold/*.png (600x840 a carta grande, 600x760 a da mão; 2x do desenho 300x420 / 300x380).
 Depende de docs/decisoes_2026-11-11/cartas_v4.html (funções de pintura, filtros e moldura) e de overlays.js (upgrades).
 Depois de rodar, abra o projeto no Godot (ou `godot --headless --import`) para importar as imagens.
@@ -15,7 +16,9 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "assets" / "cards" / "mold"
-TMP = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / ".godot" / "mold_tmp"
+_POS = [a for a in sys.argv[1:] if not a.startswith("--")]
+ONLY = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--only=")), "")
+TMP = Path(_POS[0]) if _POS else ROOT / ".godot" / "mold_tmp"
 CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe"
 SRC = ROOT / "docs" / "decisoes_2026-11-11" / "cartas_v4.html"
 FONT = (ROOT / "assets" / "fonts" / "IMFellEnglishSC-Regular.ttf").as_posix()
@@ -117,7 +120,8 @@ html,body{{background:transparent!important;margin:0}}body{{background:transpare
     W, H = 40 + cols * px, 40 + rows * py
     shot = TMP / f"{tag}.png"
     subprocess.run([CHROME, "--headless", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=2",
-                    "--default-background-color=00000000", f"--window-size={W},{H}", "--virtual-time-budget=4000",
+                    "--default-background-color=00000000",
+                    f"--user-data-dir={TMP / 'chrome_profile'}", f"--window-size={W},{H}", "--virtual-time-budget=4000",
                     f"--screenshot={shot}", page.as_uri()], check=True, capture_output=True)
     im = Image.open(shot).convert("RGBA")
     for i, c in enumerate(items):
@@ -131,7 +135,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     head = build_head()
     ov_js = (Path(__file__).parent / "overlays.js").read_text(encoding="utf-8")
-    items = cells()
+    items = [c for c in cells() if not ONLY or any(o in c["name"] for o in ONLY.split(","))]
     chunk = 24
     for n in range(0, len(items), chunk):
         render_sheet(head, ov_js, items[n:n + chunk], f"sheet{n // chunk}")

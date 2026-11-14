@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Last Boss — Desbloqueio de cartas</title>
+<style>
+:root{--bg:#f3ead6;--ink:#2b2118;--card:#fffaf0;--line:#c9b68f;--acc:#8a2b1f;--ok:#2f7a3a;--mut:#7a6a52;--lock:#8a5a08}
+@media(prefers-color-scheme:dark){:root{--bg:#1d1812;--ink:#efe4cc;--card:#2a231a;--line:#51442f;--acc:#e0705a;--ok:#4fae5d;--mut:#a39475;--lock:#e0a53c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding:10px 16px}
+h1{margin:0 0 8px;font-size:20px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tab,.mode{padding:8px 14px;border:2px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;font-weight:600;font:inherit;font-weight:600}
+.tab.on{border-color:var(--acc);background:var(--acc);color:#fff}
+.mode.on{border-color:var(--ok);background:var(--ok);color:#fff}
+.sep{width:1px;height:28px;background:var(--line);margin:0 6px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.bar input,.bar select,.bar button{padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit}
+.bar button{cursor:pointer}.bar button.pri{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:600}
+.count{font-weight:700;color:var(--acc)}
+.note{font-size:12px;color:var(--mut);margin-top:6px}
+main{padding:12px 16px 60px}
+h2{font-size:16px;margin:18px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.c{position:relative;background:var(--card);border:3px solid var(--line);border-radius:10px;overflow:hidden;user-select:none}
+.c.base{border-color:var(--ok);box-shadow:0 0 0 2px var(--ok)}
+.c.lk{border-color:var(--lock)}
+.c img,.c .ph{display:block;width:100%;aspect-ratio:2/3;object-fit:cover;background:#0002}
+.c.lk img{filter:grayscale(.7) brightness(.8)}
+.ph{display:flex;align-items:center;justify-content:center;color:var(--mut)}
+.c .ds{padding:2px 6px 4px;font-size:12px;line-height:1.3}.c .nm{padding:4px 6px 0;font-weight:600;font-size:13px}.c .mt{padding:0 6px 6px;font-size:11px;color:var(--mut)}
+.cost{position:absolute;top:4px;left:4px;background:#1b2a6b;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.rar{position:absolute;top:6px;right:6px;width:12px;height:12px;border-radius:50%;border:1px solid #0006}
+.r-common{background:#bbb}.r-uncommon{background:#4caf50}.r-rare{background:#3b82f6}.r-legendary{background:#f5a623}
+.ub{padding:6px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.st{display:flex;gap:4px}
+.st button{flex:1;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit;font-size:12px}
+.st button.on.f{background:var(--ok);color:#fff;border-color:var(--ok)}
+.st button.on.l{background:var(--lock);color:#fff;border-color:var(--lock)}
+.ub textarea{width:100%;min-height:58px;resize:vertical;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;font-size:12px}
+.ub .rl{align-self:flex-start;padding:3px 8px;font-size:11px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
+.badge{padding:6px;text-align:center;font-size:12px;font-weight:700;color:var(--ok);border-top:1px solid var(--line)}
+.badge.s{color:var(--mut);font-weight:600}
+.toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none}
+.toast.on{opacity:1}
+/* resumo */
+.sum{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 8px 4px 4px}
+.row img,.row .ph{width:44px;height:66px;aspect-ratio:auto;border-radius:5px;flex:none;object-fit:cover}
+.row .rn{width:200px;flex:none;font-weight:600}.row .rn small{display:block;font-weight:400;color:var(--mut);font-size:11px}
+.row .rc{flex:1;font-size:14px}
+.row.lk{border-left:4px solid var(--lock)}.row.fr{border-left:4px solid var(--ok)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--card);border:2px solid var(--ok);border-radius:8px;padding:3px 8px 3px 3px;font-size:13px;font-weight:600}
+.chip img,.chip .ph{width:34px;height:51px;aspect-ratio:auto;border-radius:4px;object-fit:cover}
+.chip b{color:var(--ok)}
+</style></head><body>
+<header>
+ <h1>Last Boss — desbloqueio de cartas por desafio</h1>
+ <div class="tabs"><span id="tabs" class="tabs"></span><span class="sep"></span>
+  <button class="mode" id="m-unlock" data-m="unlock">✎ Editar desafios</button>
+  <button class="mode" id="m-sum" data-m="sum">📋 Resumo da classe</button></div>
+ <div class="bar" id="bar">
+  <input id="q" placeholder="Buscar carta…">
+  <select id="fr"><option value="">Toda raridade</option><option>common</option><option>uncommon</option><option>rare</option><option>legendary</option></select>
+  <select id="fs"><option value="">Todas</option><option value="lk">Só bloqueadas</option><option value="fr">Só liberadas</option></select>
+  <button id="reset">Refazer desafios sugeridos</button>
+  <button id="clear">Liberar todas</button>
+  <button class="pri" id="copy">Copiar JSON</button>
+  <button id="dl">Baixar JSON</button>
+ </div>
+ <div class="note">🔓 Liberada = pode ser sorteada como carta nova durante o jogo. 🔒 Bloqueada = só entra no sorteio depois de cumprir o desafio. O deck base é fixo. Carta comum tem o mesmo estado e o mesmo desafio nas três classes. Fase = uma run inteira (uns 25 min).</div>
+</header>
+<main id="main"></main><div class="toast" id="toast"></div>
+<script>
+const D=/*DATA*/null;
+const KEYU="lastboss_unlocks_v5";
+const BASE={};D.villains.forEach(v=>BASE[v.id]=new Set(v.start_deck));
+const byId=Object.fromEntries(D.cards.map(c=>[c.id,c]));
+let U={};try{U=JSON.parse(localStorage.getItem(KEYU)||"{}")}catch(e){}
+function pool(v){return D.cards.filter(c=>c.owner==v||c.owner=="common")}
+D.villains.forEach(v=>{if(!U[v.id])U[v.id]={};pool(v.id).forEach(c=>{
+ if(!U[v.id][c.id]){const d=(D.defaults[v.id]||{})[c.id],alt=(D.alts[v.id][c.id]||[""])[0]||"";
+  U[v.id][c.id]=d?{st:d[0],ch:d[0]=="locked"?d[1]:alt}:{st:"locked",ch:alt}}})});
+const isBaseAny=id=>D.villains.some(v=>BASE[v.id].has(id));
+// carta comum: liberada em uma classe (ou no deck base de qualquer uma) = liberada em todas
+function normalize(){D.cards.forEach(c=>{if(c.owner!="common")return;
+ const fr=isBaseAny(c.id)||D.villains.some(v=>U[v.id][c.id]&&U[v.id][c.id].st=="free");
+ if(fr)D.villains.forEach(v=>{if(U[v.id][c.id])U[v.id][c.id].st="free"})})}
+normalize();
+let cur=D.villains[0].id,mode="sum";
+const save=()=>{try{localStorage.setItem(KEYU,JSON.stringify(U))}catch(e){}};
+const toast=t=>{const e=document.getElementById("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800)};
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const ro={common:0,uncommon:1,rare:2,legendary:3};
+const sortC=a=>a.slice().sort((x,y)=>ro[x.rarity]-ro[y.rarity]||x.cost-y.cost||x.name.localeCompare(y.name));
+const stOf=(v,id)=>BASE[v].has(id)?"base":U[v][id].st;
+const nLocked=v=>pool(v).filter(c=>stOf(v,c.id)=="locked").length;
+const nFree=v=>pool(v).filter(c=>stOf(v,c.id)=="free").length;
+const TG={pack:'Bando',undead:'Morto-vivo',fire:'Fogo',shadow:'Sombra',construct:'Construção',beast:'Fera'};
+const tg=c=>(c.tags||[]).map(x=>TG[x]||x).join(' · ');
+const img=c=>c.art?'<img loading="lazy" src="../assets/cards/'+c.id+'.png">':'<div class="ph">sem arte</div>';
+const baseCount=v=>{const m={};D.villains.find(x=>x.id==v).start_deck.forEach(i=>m[i]=(m[i]||0)+1);return m};
+function head(){
+ document.getElementById("tabs").innerHTML=D.villains.map(v=>'<button class="tab '+(v.id==cur?'on':'')+'" data-v="'+v.id+'">'+v.name+' ('+BASE[v.id].size+' base · '+nFree(v.id)+' 🔓 · '+nLocked(v.id)+' 🔒)</button>').join("");
+ document.getElementById("m-unlock").classList.toggle("on",mode=="unlock");
+ document.getElementById("m-sum").classList.toggle("on",mode=="sum");
+ ["q","fr","fs","reset","clear"].forEach(i=>document.getElementById(i).style.display=mode=="unlock"?"":"none")}
+function render(){head();
+ const m=document.getElementById("main");
+ if(mode=="sum"){m.innerHTML=summary();return}
+ const q=document.getElementById("q").value.toLowerCase(),fr=document.getElementById("fr").value,fs=document.getElementById("fs").value;
+ const ok=c=>{if(q&&!c.name.toLowerCase().includes(q)&&!c.id.includes(q))return false;
+  if(fr&&c.rarity!=fr)return false;const s=stOf(cur,c.id);
+  if(fs=="lk")return s=="locked";if(fs=="fr")return s!="locked";return true};
+ const own=sortC(D.cards.filter(c=>c.owner==cur&&ok(c))),com=sortC(D.cards.filter(c=>c.owner=="common"&&ok(c)));
+ m.innerHTML='<h2>Cartas da classe ('+own.length+')</h2><div class="grid">'+own.map(card).join("")+'</div><h2>Cartas comuns, de todas as classes ('+com.length+')</h2><div class="grid">'+com.map(card).join("")+'</div>'}
+function card(c){
+ const s=stOf(cur,c.id),u=U[cur][c.id];let cls="c",bottom="";
+ const meta='<div class="mt">'+(c.type||c.cat)+(tg(c)?' · '+tg(c):'')+' · '+c.rarity+(c.hp?' · vida '+c.hp:'')+(c.dps?' · dps '+c.dps:'')+(c.count>1?' · x'+c.count:'')+'</div>';
+ const shared=c.owner=="common";
+ if(s=="base"){cls+=" base";bottom='<div class="badge">✔ Deck base (fixo)</div>'}
+ else if(shared&&isBaseAny(c.id)){bottom='<div class="badge s">🔓 Liberada: está no deck base de '+D.villains.filter(v=>BASE[v.id].has(c.id)).map(v=>v.name.split(" ")[0]).join(", ")+'</div>'}
+ else{if(s=="locked")cls+=" lk";
+  const has=(D.alts[cur][c.id]||[]).length>1;
+  bottom='<div class="ub"><div class="st"><button class="f '+(s=="free"?"on":"")+'" data-s="free">🔓 Liberada</button><button class="l '+(s=="locked"?"on":"")+'" data-s="locked">🔒 Bloqueada</button></div>'+
+   (s=="locked"?'<textarea data-ch="1" placeholder="Escreva o desafio…">'+esc(u.ch)+'</textarea>'+(has?'<button class="rl" data-rl="1">↻ outro desafio sugerido</button>':''):'')+
+   (shared?'<div class="badge s" style="border:0;padding:0">vale para todas as classes</div>':'')+'</div>'}
+ return '<div class="'+cls+'" data-id="'+c.id+'">'+img(c)+'<div class="cost">'+c.cost+'</div><div class="rar r-'+c.rarity+'" title="'+c.rarity+'"></div><div class="nm">'+c.name+'</div><div class="ds">'+c.desc+'</div>'+meta+bottom+'</div>'}
+function summary(){
+ const bc=baseCount(cur),vn=D.villains.find(v=>v.id==cur).name;
+ const pl=pool(cur).filter(c=>!BASE[cur].has(c.id));
+ const fr=sortC(pl.filter(c=>U[cur][c.id].st=="free")),lk=sortC(pl.filter(c=>U[cur][c.id].st=="locked"));
+ const tile=(c,cls,foot)=>'<div class="c '+cls+'">'+img(c)+'<div class="cost">'+c.cost+'</div><div class="rar r-'+c.rarity+'" title="'+c.rarity+'"></div><div class="nm">'+c.name+'</div><div class="ds">'+c.desc+'</div><div class="mt">'+(c.type||c.cat)+(tg(c)?' · '+tg(c):'')+' · '+c.rarity+(c.owner=="common"?' · comum':'')+'</div>'+foot+'</div>';
+ const bs=sortC(Object.keys(bc).map(i=>byId[i]));
+ return '<h2>'+vn+' — deck base ('+D.villains.find(v=>v.id==cur).start_deck.length+' cartas, fixo)</h2><div class="grid">'+bs.map(c=>tile(c,"base",'<div class="badge">✔ Deck base · '+bc[c.id]+'×</div>')).join("")+'</div>'+
+  '<h2>🔓 Liberadas — podem ser sorteadas no jogo ('+fr.length+')</h2><div class="grid">'+fr.map(c=>tile(c,"",'<div class="badge s">🔓 Liberada desde o início</div>')).join("")+'</div>'+
+  '<h2>🔒 Bloqueadas — requisito para liberar ('+lk.length+')</h2><div class="grid">'+lk.map(c=>tile(c,"lk",'<div class="ub"><b style="font-size:12px;color:var(--lock)">🔒 Desafio</b><div style="font-size:13px">'+esc(U[cur][c.id].ch||"(sem desafio escrito)")+'</div></div>')).join("")+'</div>'}
+function keep(f){const y=scrollY;f();save();render();scrollTo(0,y)}
+function setCh(id,t){if(byId[id].owner=="common")D.villains.forEach(v=>{if(U[v.id][id])U[v.id][id].ch=t});else U[cur][id].ch=t}
+function setSt(id,st){const c=byId[id];
+ if(c.owner=="common")D.villains.forEach(v=>{if(U[v.id][id])U[v.id][id].st=st});else U[cur][id].st=st}
+document.addEventListener("click",e=>{
+ const t=e.target.closest(".tab");if(t){cur=t.dataset.v;return render()}
+ const m=e.target.closest(".mode");if(m){mode=m.dataset.m;return render()}
+ const c=e.target.closest(".c");if(!c)return;const id=c.dataset.id;
+ const sb=e.target.closest("[data-s]");
+ if(sb)return keep(()=>setSt(id,sb.dataset.s));
+ if(e.target.closest("[data-rl]"))return keep(()=>{const u=U[cur][id],a=D.alts[cur][id]||[],i=a.indexOf(u.ch);setCh(id,a[(i+1)%a.length]||u.ch)})});
+document.addEventListener("input",e=>{
+ if(e.target.matches("[data-ch]")){const id=e.target.closest(".c").dataset.id;setCh(id,e.target.value);save()}});
+["q","fr","fs"].forEach(i=>document.getElementById(i).addEventListener("input",render));
+document.getElementById("clear").onclick=()=>keep(()=>{pool(cur).forEach(c=>{if(!BASE[cur].has(c.id))setSt(c.id,"free")})});
+document.getElementById("reset").onclick=()=>keep(()=>{pool(cur).forEach(c=>{setCh(c.id,(D.alts[cur][c.id]||[""])[0]||"")});toast("Desafios sugeridos restaurados")});
+function out(){const o={};D.villains.forEach(v=>{const un={};pool(v.id).forEach(c=>{if(BASE[v.id].has(c.id))return;const u=U[v.id][c.id];
+  un[c.id]=u.st=="free"?{status:"free"}:{status:"locked",challenge:u.ch}});
+ o[v.id]={start_deck:v.start_deck,unlocks:un}});return JSON.stringify(o,null,1)}
+document.getElementById("copy").onclick=async()=>{try{await navigator.clipboard.writeText(out());toast("JSON copiado — cole no chat")}catch(e){prompt("Copie:",out())}};
+document.getElementById("dl").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([out()],{type:"application/json"}));a.download="desbloqueios.json";a.click()};
+render();
+</script></body></html>

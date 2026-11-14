@@ -1,0 +1,146 @@
+[
+ {
+  "id": "hell_hound",
+  "pt": "Cão do Inferno",
+  "en": "Hell Hound",
+  "type": "monster",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "chaser",
+  "family": "fire",
+  "fx": {
+   "burn_hit": 5.0,
+   "burn_s": 3.0
+  },
+  "description": "[[fire|Fire]] hound. Every bite burns for {burn_hit} per sec. for {burn_s} s (doubled on a [[soaked|Soaked]] hero)."
+ },
+ {
+  "id": "ash_salamander",
+  "pt": "Salamandra de Brasa",
+  "en": "Ember Salamander",
+  "type": "monster",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "tank",
+  "family": "fire",
+  "fx": {
+   "trail_dps": 8.0,
+   "trail_s": 4.0
+  },
+  "description": "[[fire|Fire]] creature. Leaves flames where it walks: {trail_dps} per sec. for {trail_s} s."
+ },
+ {
+  "id": "drakeling",
+  "pt": "Filhote de Dragão",
+  "en": "Drakeling",
+  "type": "monster",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "shooter",
+  "family": "fire",
+  "fx": {
+   "projectile": true,
+   "retreat": 2.5,
+   "burn_hit": 6.0,
+   "burn_s": 2.0
+  },
+  "description": "Small flying [[fire|Fire]] dragon: spits from afar and burns the target ({burn_hit} per sec.)."
+ },
+ {
+  "id": "magma_golem",
+  "pt": "Golem de Magma",
+  "en": "Magma Golem",
+  "type": "monster",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "tank",
+  "family": "fire",
+  "fx": {
+   "lava_dps": 25.0,
+   "lava_s": 8.0,
+   "lava_r": 2.5
+  },
+  "description": "[[fire|Fire]] giant. On death, it becomes a lava pool: {lava_dps} per sec. for {lava_s} s."
+ },
+ {
+  "id": "gold_mine",
+  "pt": "Veio de Ouro",
+  "en": "Gold Vein",
+  "type": "structure",
+  "villain": "dragon",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "family": "greed",
+  "fx": {
+   "gold_per_s": 1.5,
+   "duration": 20.0
+  },
+  "description": "[[structure|Structure]] that earns {gold_per_s} [[gold|Gold]] per second for {duration} s."
+ },
+ {
+  "id": "dragon_exchange",
+  "pt": "Câmbio do Dragão",
+  "en": "Dragon's Exchange",
+  "type": "spell",
+  "villain": "dragon",
+  "tags": [],
+  "archetype": "",
+  "family": "greed",
+  "fx": {
+   "gold": 40
+  },
+  "description": "Gain {gold} [[gold|Gold]]. The opposite of the Toll: elixir becomes gold."
+ },
+ {
+  "id": "ash_phoenix",
+  "pt": "Fênix das Cinzas",
+  "en": "Ash Phoenix",
+  "type": "monster",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "shooter",
+  "family": "fire",
+  "fx": {
+   "projectile": true,
+   "retreat": 3.0,
+   "rebirth": 0.5,
+   "burn_hit": 10.0,
+   "burn_s": 3.0
+  },
+  "description": "Flying [[fire|Fire]] bird: every spit burns for {burn_hit} per sec. When it dies, it is reborn once with {rebirth_pct}% health."
+ },
+ {
+  "id": "meteor_storm",
+  "pt": "Chuva de Meteoros",
+  "en": "Meteor Storm",
+  "type": "spell",
+  "villain": "dragon",
+  "tags": [
+   "fire"
+  ],
+  "archetype": "",
+  "family": "fire",
+  "fx": {
+   "damage": 180,
+   "burn": 15,
+   "radius": 6.0,
+   "duration": 10.0,
+   "interval": 1.0,
+   "gold_step": 50,
+   "max_meteors": 4
+  },
+  "description": "For {duration} s, meteors fall on the spot: {damage} [[fire|Fire]] damage each, with burning. 1 meteor, +1 for every {gold_step} gold kept (up to {max_meteors})."
+ }
+]

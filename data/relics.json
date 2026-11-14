@@ -351,6 +351,58 @@
     "pickup_mods": 2
    },
    "owner": "common"
+  },
+  {
+   "id": "deep_cistern",
+   "rarity": "uncommon",
+   "bot_value": 4.5,
+   "fx": {
+    "elixir_max": 3
+   },
+   "owner": "common",
+   "weight": 1.5
+  },
+  {
+   "id": "copper_tap",
+   "rarity": "common",
+   "bot_value": 4.0,
+   "fx": {
+    "elixir_regen": 0.2
+   },
+   "owner": "common",
+   "weight": 1.5
+  },
+  {
+   "id": "still_aether",
+   "rarity": "rare",
+   "bot_value": 5.5,
+   "fx": {
+    "elixir_max": 2,
+    "elixir_regen": 0.35
+   },
+   "owner": "common",
+   "weight": 1.5
+  },
+  {
+   "id": "aether_heart",
+   "rarity": "legendary",
+   "bot_value": 7.0,
+   "fx": {
+    "elixir_max": 4,
+    "elixir_regen": 0.5
+   },
+   "owner": "common",
+   "weight": 1.5
+  },
+  {
+   "id": "living_library",
+   "rarity": "uncommon",
+   "bot_value": 4.0,
+   "fx": {
+    "draw_on_shuffle": 1
+   },
+   "owner": "common",
+   "weight": 2.0
   }
  ]
 }

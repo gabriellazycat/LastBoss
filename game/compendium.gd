@@ -124,10 +124,7 @@ func _cards_of(g: GridContainer, owner: String) -> void:
 		if d.n3.size() > 0:
 			lines.append(tr("UI_OPT_UP_N3"))
 		if meta and not meta.is_unlocked(d.id):
-			if meta.can_buy(d.id):
-				lines.append("[color=#e0b070]" + tr("UI_COMP_LOCKED").format({"c": meta.unlock_cost(d.id)}) + "[/color]")
-			else:
-				lines.append("[color=#e0b070]" + tr("UI_UNLOCK_WITH").format({"v": tr("DECK_" + d.owner)}) + "[/color]")
+			lines.append("[color=#e0b070]" + UiKit.unlock_text(meta, d) + "[/color]")
 		v.add_child(Tips.label("\n".join(lines), 13, UiKit.TEXT, CARD_W))
 		g.add_child(v)
 

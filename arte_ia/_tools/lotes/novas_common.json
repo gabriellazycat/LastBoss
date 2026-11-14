@@ -1,0 +1,81 @@
+[
+ {
+  "id": "fallen_healer",
+  "pt": "Curandeiro Caído",
+  "en": "Fallen Healer",
+  "type": "monster",
+  "villain": "common",
+  "tags": [],
+  "archetype": "support",
+  "family": "",
+  "fx": {
+   "heal": 0.03,
+   "aura_radius": 6.0
+  },
+  "description": "Heals allies within {aura_radius} m for {heal_pct}% health per second (not structures)."
+ },
+ {
+  "id": "dark_messenger",
+  "pt": "Mensageiro Sombrio",
+  "en": "Dark Messenger",
+  "type": "spell",
+  "villain": "common",
+  "tags": [
+   "shadow"
+  ],
+  "archetype": "",
+  "family": "",
+  "fx": {
+   "draw": 1,
+   "elixir": 1
+  },
+  "description": "Draw {draw} card and refund {elixir} [[elixir|elixir]]."
+ },
+ {
+  "id": "war_cry",
+  "pt": "Grito de Guerra",
+  "en": "War Cry",
+  "type": "spell",
+  "villain": "common",
+  "tags": [],
+  "archetype": "",
+  "family": "",
+  "fx": {
+   "duration": 8.0,
+   "damage": 0.25,
+   "speed": 0.3
+  },
+  "description": "For {duration} s, all your monsters run +{speed_pct}% faster and deal +{damage_pct}% damage."
+ },
+ {
+  "id": "flooded_pit",
+  "pt": "Fosso Inundado",
+  "en": "Flooded Pit",
+  "type": "lair",
+  "villain": "common",
+  "tags": [],
+  "archetype": "",
+  "family": "",
+  "fx": {
+   "duration": 25.0,
+   "hero_slow": 0.3
+  },
+  "description": "[[lair|Temporary]]: for {duration} s, heroes walk {hero_slow_pct}% slower."
+ },
+ {
+  "id": "hollow_armor",
+  "pt": "Armadura Vazia",
+  "en": "Hollow Armor",
+  "type": "monster",
+  "villain": "common",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "tank",
+  "family": "",
+  "fx": {
+   "reflect": 0.1
+  },
+  "description": "Returns {reflect_pct}% of the damage the hero deals to it. On death, it leaves a Barricade."
+ }
+]

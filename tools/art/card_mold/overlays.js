@@ -48,8 +48,24 @@ function overlay(kind,H,wb,id){let s=gradDefs(id);const r=rng(kind.length*17+3);
   s+=`<rect x="0" y="0" width="300" height="${wb}" fill="url(#vg${id})" opacity=".7"/>`;
  }
  /* a carta Explosiva tem a silhueta queimada e irregular: a máscara recorta a carta inteira e a borda desenha a brasa */
- if(kind==="explosive_mask")s+=`<path d="${jag(H,3,22,2,9)}" fill="#fff"/>`;
- if(kind==="explosive_edge")s+=`<path d="${jag(H,3,22,2,9)}" fill="none" stroke="#1a0c06" stroke-width="9" stroke-linejoin="round" opacity=".92" filter="url(#frameInk)"/><path d="${jag(H,3,22,2,9)}" fill="none" stroke="#ff7a1a" stroke-width="2.6" filter="url(#bloom)"/>`;
+ if(kind==="explosive_mask")s+=`<path d="${jag(H,3,13,3,9)}" fill="#fff"/>`;
+ /* 13/11/2026: volta à silhueta da variação 1 (jag 3,13,3,9) com um PAVIO contínuo em volta: cordinha trançada fina e
+    chamuscada com o fio de brasa por cima. A faísca que corre o pavio, os estouros e as chamas são animados no Godot
+    (game/card_mold.gd, _fuse; o caminho é o mesmo jag portado para GDScript). Na mão (H 380) o traço engrossa para ler a 150 px. */
+ if(kind==="explosive_edge"){const P=jag(H,3,13,3,9),k=H===380?1.45:1;
+  s+=`<defs><clipPath id="cp${id}"><path d="${P}"/></clipPath><filter id="sc${id}" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="${4*k}"/></filter>
+   <filter id="em${id}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceGraphic" stdDeviation="${1.3*k}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+  /* chamuscado: um halo escuro e borrado só do lado de dentro da silhueta */
+  s+=`<g clip-path="url(#cp${id})"><path d="${P}" fill="none" stroke="#2a1206" stroke-width="${16*k}" opacity=".55" filter="url(#sc${id})"/></g>`;
+  /* a cordinha: base escura, fios claros em tracejado (a trança) e sombras entre os fios */
+  s+=`<path d="${P}" fill="none" stroke="#1a0c06" stroke-width="${6.2*k}" stroke-linejoin="round" opacity=".88" filter="url(#frameInk)"/>`;
+  s+=`<path d="${P}" fill="none" stroke="#6a4020" stroke-width="${4*k}" stroke-linejoin="round"/>`;
+  s+=`<path d="${P}" fill="none" stroke="#c99257" stroke-width="${4*k}" stroke-linejoin="round" stroke-dasharray="${1.7*k} ${2.3*k}"/>`;
+  s+=`<path d="${P}" fill="none" stroke="#2a1408" stroke-width="${4*k}" stroke-linejoin="round" stroke-dasharray="${.7*k} ${3.3*k}" stroke-dashoffset="${-1.8*k}" opacity=".8"/>`;
+  /* o fio de brasa por cima (fino, para a trança aparecer dos dois lados) */
+  s+=`<path d="${P}" fill="none" stroke="#ff7a1a" stroke-width="${1.5*k}" stroke-linejoin="round" filter="url(#em${id})"/>`;
+  s+=`<path d="${P}" fill="none" stroke="#ffd58a" stroke-width="${.55*k}" stroke-linejoin="round" opacity=".9"/>`;
+ }
  /* só as partes estáticas: as rachaduras do Amaldiçoado e as manchas do Sombrio são shaders (game/ui/card_*.gdshader) */
  if(kind==="cursed"){
   s+=`<g transform="translate(250 56)" filter="url(#bloom)"><path d="M-26 0 Q0 -22 26 0 Q0 22 -26 0Z" fill="#2a0a3c" stroke="#e6a8ff" stroke-width="2.4"/><circle r="8" fill="#e6a8ff"/><circle r="3.4" fill="#2a0a3c"/></g>`;

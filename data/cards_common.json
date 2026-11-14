@@ -203,13 +203,13 @@
    "cost": 8,
    "count": 1,
    "xp_parts": 1,
-   "hp": 2200,
+   "hp": 1800,
    "dps": 40,
    "attack_interval": 2.0,
    "speed": 2.4,
    "range": 4.0,
    "fx": {
-    "regen": 0.02,
+    "regen": 0.01,
     "projectile": true
    },
    "lvl": [
@@ -256,6 +256,350 @@
     "stomp_stun"
    ],
    "owner": "common"
+  },
+  {
+   "id": "poison_dart",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "common",
+   "cost": 2,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "damage": 60,
+    "radius": 2.0,
+    "burn_dps": 10,
+    "burn_s": 5.0
+   },
+   "lvl": [
+    "damage"
+   ],
+   "n3": {
+    "burn_dps": 15
+   },
+   "owner": "common",
+   "ops": [
+    {
+     "op": "damage",
+     "damage": "damage",
+     "radius": "radius"
+    },
+    {
+     "op": "status",
+     "status": "burn",
+     "duration": "burn_s",
+     "dps": "burn_dps",
+     "target": "nearest",
+     "radius": "radius"
+    }
+   ],
+   "model": "shadow_bolt"
+  },
+  {
+   "id": "spike_trap",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "common",
+   "cost": 2,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 120,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "damage": 80,
+    "root": 1.5,
+    "trigger": 1.0
+   },
+   "lvl": [
+    "damage"
+   ],
+   "n3": {
+    "root": 2.5
+   },
+   "owner": "common",
+   "model": "gargoyle_tower"
+  },
+  {
+   "id": "goblin_scout",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "chaser",
+   "rarity": "common",
+   "cost": 2,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 70,
+   "dps": 10,
+   "attack_interval": 0.25,
+   "speed": 6.5,
+   "range": 1,
+   "fx": {},
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "owner": "common",
+   "model": "goblin_dynamiter"
+  },
+  {
+   "id": "hired_archer",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "shooter",
+   "rarity": "common",
+   "cost": 3,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 120,
+   "dps": 12,
+   "attack_interval": 0.25,
+   "speed": 3.0,
+   "range": 7,
+   "fx": {
+    "retreat": 4.0,
+    "projectile": true
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "pierce": true
+   },
+   "owner": "common",
+   "model": "skeleton_archers"
+  },
+  {
+   "id": "crow_flock",
+   "category": "field",
+   "type": "swarm",
+   "tags": [],
+   "archetype": "swarm",
+   "rarity": "common",
+   "cost": 3,
+   "count": 6,
+   "xp_parts": 6,
+   "hp": 20,
+   "dps": 4,
+   "attack_interval": 0.25,
+   "speed": 5.5,
+   "range": 0.8,
+   "fx": {},
+   "lvl": [
+    "count"
+   ],
+   "n3": {
+    "pierce": true
+   },
+   "owner": "common",
+   "fly": true,
+   "model": "bat"
+  },
+  {
+   "id": "fallen_healer",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "support",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 160,
+   "dps": 3,
+   "attack_interval": 1.0,
+   "speed": 3.0,
+   "range": 1,
+   "fx": {
+    "heal": 0.03,
+    "aura_radius": 6.0
+   },
+   "lvl": [
+    "hp",
+    "heal"
+   ],
+   "n3": {
+    "heal": 0.05
+   },
+   "owner": "common",
+   "model": "skeleton"
+  },
+  {
+   "id": "dark_messenger",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "shadow"
+   ],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 1,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "draw": 1,
+    "elixir": 1
+   },
+   "lvl": [
+    "elixir"
+   ],
+   "n3": {
+    "draw": 2
+   },
+   "owner": "common",
+   "ops": [
+    {
+     "op": "draw",
+     "n": "draw"
+    },
+    {
+     "op": "elixir",
+     "amount": "elixir"
+    }
+   ],
+   "model": "shadow_bolt"
+  },
+  {
+   "id": "war_cry",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 2,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "duration": 8.0,
+    "damage": 0.25,
+    "speed": 0.3
+   },
+   "lvl": [
+    "duration"
+   ],
+   "n3": {
+    "damage": 0.35,
+    "speed": 0.4
+   },
+   "owner": "common",
+   "ops": [
+    {
+     "op": "buff",
+     "slot": "warcry",
+     "duration": "duration",
+     "damage": "damage",
+     "speed": "speed"
+    }
+   ],
+   "ai": {
+    "wait_for": {
+     "if": {
+      "own_near_hero": 4.0
+     }
+    }
+   },
+   "model": "dark_fury"
+  },
+  {
+   "id": "flooded_pit",
+   "category": "lair",
+   "type": "lair",
+   "tags": [],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "duration": 25.0,
+    "hero_slow": 0.3
+   },
+   "lvl": [
+    "duration"
+   ],
+   "n3": {
+    "hero_slow": 0.4
+   },
+   "owner": "common",
+   "ops": [
+    {
+     "op": "temp",
+     "kind": "hero_slow",
+     "value": "hero_slow",
+     "duration": "duration"
+    }
+   ],
+   "model": "boiling_oil"
+  },
+  {
+   "id": "hollow_armor",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "tank",
+   "rarity": "uncommon",
+   "cost": 4,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 700,
+   "dps": 20,
+   "attack_interval": 0.25,
+   "speed": 2.5,
+   "range": 1.3,
+   "fx": {
+    "reflect": 0.1
+   },
+   "lvl": [
+    "hp",
+    "dps",
+    "reflect"
+   ],
+   "n3": {
+    "reflect": 0.2
+   },
+   "owner": "common",
+   "on_death": [
+    {
+     "op": "summon",
+     "unit": "barricade",
+     "n": 1,
+     "ring": 0.0
+    }
+   ],
+   "model": "scrap_golem"
   }
  ]
 }

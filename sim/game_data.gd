@@ -20,6 +20,8 @@ var hero_classes: Dictionary = {}  # id -> overlay (data/hero_classes.json)
 var phases: Array = []             # fases da campanha (data/campaign.json)
 var villains: Dictionary = {}      # id -> dict (data/villains.json): os 3 vilões (C3, 10/11/2026)
 var villain_ids: Array = []
+var free_cards: Array = []         # liberadas desde o início (data/unlocks.json)
+var unlock_challenges: Dictionary = {}  # id da carta -> desafio que a libera
 var _alias: Dictionary = {}        # id antigo de Pacto -> vilão
 
 
@@ -68,6 +70,9 @@ static func load_dir(dir := "res://data") -> GameData:
 		g.villain_ids.append(v["id"])
 		for a in v.get("aliases", []):
 			g._alias[a] = v["id"]
+	var uj := _read(dir + "/unlocks.json")
+	g.free_cards = uj.get("free", [])
+	g.unlock_challenges = uj.get("challenges", {})
 	return g
 
 
@@ -134,22 +139,29 @@ func in_pool(c: CardDef, vid: String) -> bool:
 	return c.owner == "common" or c.owner == vid
 
 
-## Coleção que liberar o vilão entrega: as comuns e incomuns dele e as raras iniciais.
+## Carta que já vem liberada: está no baralho inicial de algum vilão ou na lista "free" (data/unlocks.json).
+func is_start_card(id: String) -> bool:
+	if free_cards.has(id):
+		return true
+	for vid in villain_ids:
+		if villains[vid].get("start_deck", []).has(id):
+			return true
+	return false
+
+
+## Coleção que liberar o vilão entrega: as cartas dele que já vêm liberadas (baralho inicial e "free").
 func villain_cards(vid: String) -> Array:
 	var out: Array = []
 	for c in pool:
-		if c.owner == vid and c.rarity <= 1:
+		if c.owner == vid and is_start_card(c.id):
 			out.append(c.id)
-	for id in villain(vid).get("start_rares", []):
-		if by_id.has(id) and not out.has(id):
-			out.append(id)
 	return out
 
 
-## Comuns (owner common) de raridade comum e incomum: vêm na coleção desde o início.
+## Comuns (owner common) que já vêm liberadas: o resto das comuns só sai por desafio.
 func common_cards() -> Array:
 	var out: Array = []
 	for c in pool:
-		if c.owner == "common" and c.rarity <= 1:
+		if c.owner == "common" and is_start_card(c.id):
 			out.append(c.id)
 	return out

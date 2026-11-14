@@ -148,6 +148,14 @@ static func _kw_params() -> Dictionary:
 		"fountain_window": _num(L["fountain"]["window"]),
 		"tp_cd": _num(A["teleport_cooldown"]), "tp_cost": _num(A["teleport_cost"]), "altar_hp": _num(A["altar_hp"]),
 	}
+	# Peste: os números moram na Ratazana (fx), como no CardsPlague._st.
+	var rb: CardDef = data.card("rat_brute")
+	var pf: Dictionary = rb.fx if rb else {}
+	p["peste_pct"] = _num(snappedf(float(pf.get("peste_taken", 0.03)) * 100.0, 0.1))
+	if TranslationServer.get_locale().begins_with("pt"):
+		p["peste_pct"] = str(p["peste_pct"]).replace(".", ",")   # 3,5% em português
+	p["peste_max"] = _num(pf.get("peste_max", 15.0))
+	p["peste_secs"] = _num(pf.get("peste_secs", 8.0))
 	# Marcos das barras (ato 1): fountain_m1..3, ritual_m1..3, shrine_m1..3, bridge_m1..3.
 	for ty in ["fountain", "ritual", "shrine", "bridge"]:
 		for k in 3:

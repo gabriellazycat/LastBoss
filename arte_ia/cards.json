@@ -670,5 +670,229 @@
   "pt": "Marca Sombria",
   "en": "Shadow Mark",
   "art": true
+ },
+ {
+  "id": "poison_dart",
+  "type": "spell",
+  "villain": "common",
+  "pt": "Flecha Envenenada",
+  "en": "Poison Dart",
+  "art": false
+ },
+ {
+  "id": "spike_trap",
+  "type": "structure",
+  "villain": "common",
+  "pt": "Armadilha de Espinhos",
+  "en": "Spike Trap",
+  "art": false
+ },
+ {
+  "id": "goblin_scout",
+  "type": "monster",
+  "villain": "common",
+  "pt": "Batedor Goblin",
+  "en": "Goblin Scout",
+  "art": false
+ },
+ {
+  "id": "hired_archer",
+  "type": "monster",
+  "villain": "common",
+  "pt": "Arqueiro de Aluguel",
+  "en": "Hired Archer",
+  "art": false
+ },
+ {
+  "id": "crow_flock",
+  "type": "swarm",
+  "villain": "common",
+  "pt": "Revoada de Corvos",
+  "en": "Crow Murder",
+  "art": false
+ },
+ {
+  "id": "fallen_healer",
+  "type": "monster",
+  "villain": "common",
+  "pt": "Curandeiro Caído",
+  "en": "Fallen Healer",
+  "art": false
+ },
+ {
+  "id": "dark_messenger",
+  "type": "spell",
+  "villain": "common",
+  "pt": "Mensageiro Sombrio",
+  "en": "Dark Messenger",
+  "art": false
+ },
+ {
+  "id": "war_cry",
+  "type": "spell",
+  "villain": "common",
+  "pt": "Grito de Guerra",
+  "en": "War Cry",
+  "art": false
+ },
+ {
+  "id": "flooded_pit",
+  "type": "lair",
+  "villain": "common",
+  "pt": "Fosso Inundado",
+  "en": "Flooded Pit",
+  "art": false
+ },
+ {
+  "id": "hollow_armor",
+  "type": "monster",
+  "villain": "common",
+  "pt": "Armadura Vazia",
+  "en": "Hollow Armor",
+  "art": false
+ },
+ {
+  "id": "hell_hound",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Cão do Inferno",
+  "en": "Hell Hound",
+  "art": false
+ },
+ {
+  "id": "ash_salamander",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Salamandra de Brasa",
+  "en": "Ember Salamander",
+  "art": false
+ },
+ {
+  "id": "drakeling",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Filhote de Dragão",
+  "en": "Drakeling",
+  "art": false
+ },
+ {
+  "id": "magma_golem",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Golem de Magma",
+  "en": "Magma Golem",
+  "art": false
+ },
+ {
+  "id": "gold_mine",
+  "type": "structure",
+  "villain": "dragon",
+  "pt": "Veio de Ouro",
+  "en": "Gold Vein",
+  "art": false
+ },
+ {
+  "id": "dragon_exchange",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Câmbio do Dragão",
+  "en": "Dragon's Exchange",
+  "art": false
+ },
+ {
+  "id": "ash_phoenix",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Fênix das Cinzas",
+  "en": "Ash Phoenix",
+  "art": false
+ },
+ {
+  "id": "meteor_storm",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Chuva de Meteoros",
+  "en": "Meteor Storm",
+  "art": false
+ },
+ {
+  "id": "eternal_army",
+  "type": "spell",
+  "villain": "lich",
+  "pt": "Exército Eterno",
+  "en": "Eternal Army",
+  "art": false
+ },
+ {
+  "id": "bone_dragon",
+  "type": "monster",
+  "villain": "lich",
+  "pt": "Dragão de Ossos",
+  "en": "Bone Dragon",
+  "art": false
+ },
+ {
+  "id": "lone_wolf",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Lobo Solitário",
+  "en": "Lone Wolf",
+  "art": false
+ },
+ {
+  "id": "hyena_scavenger",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Hiena Carniceira",
+  "en": "Scavenger Hyena",
+  "art": false
+ },
+ {
+  "id": "spitting_viper",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Víbora Cuspidora",
+  "en": "Spitting Viper",
+  "art": false
+ },
+ {
+  "id": "plague_carrion",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Bicho Infectado",
+  "en": "Plagued Critter",
+  "art": false
+ },
+ {
+  "id": "brown_bear",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Urso Pardo",
+  "en": "Brown Bear",
+  "art": false
+ },
+ {
+  "id": "pack_den",
+  "type": "structure",
+  "villain": "plague",
+  "pt": "Toca da Matilha",
+  "en": "Wolf Den",
+  "art": false
+ },
+ {
+  "id": "primal_beast",
+  "type": "monster",
+  "villain": "plague",
+  "pt": "Besta Primordial",
+  "en": "Primal Beast",
+  "art": false
+ },
+ {
+  "id": "black_pestilence",
+  "type": "spell",
+  "villain": "plague",
+  "pt": "Pestilência Negra",
+  "en": "Black Pestilence",
+  "art": false
  }
 ]

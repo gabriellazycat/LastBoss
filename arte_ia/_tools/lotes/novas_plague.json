@@ -1,0 +1,135 @@
+[
+ {
+  "id": "lone_wolf",
+  "pt": "Lobo Solitário",
+  "en": "Lone Wolf",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "chaser",
+  "family": "wild",
+  "fx": {
+   "beast": true,
+   "alcateia": 0.15,
+   "alcateia_cap": 0.45
+  },
+  "description": "[[beast|Beast]]. Hunting Party: +{alcateia_pct}% damage for each other Beast of yours on the field (up to +{alcateia_cap_pct}%). Rats and bats don't count."
+ },
+ {
+  "id": "hyena_scavenger",
+  "pt": "Hiena Carniceira",
+  "en": "Scavenger Hyena",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "chaser",
+  "family": "wild",
+  "fx": {
+   "beast": true,
+   "blood": true,
+   "blood_speed": 0.4,
+   "blood_s": 5.0
+  },
+  "description": "{count} hyenas ([[beast|Beast]]). Blood: when a Beast of yours dies, the hyenas run +{blood_speed_pct}% faster for {blood_s} s."
+ },
+ {
+  "id": "spitting_viper",
+  "pt": "Víbora Cuspidora",
+  "en": "Spitting Viper",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "shooter",
+  "family": "wild",
+  "fx": {
+   "beast": true,
+   "projectile": true,
+   "retreat": 3.0,
+   "peste": 1
+  },
+  "description": "[[beast|Beast]] that spits from afar; each spit adds 1 stack of Plague."
+ },
+ {
+  "id": "plague_carrion",
+  "pt": "Bicho Infectado",
+  "en": "Plagued Critter",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "kamikaze",
+  "family": "wild",
+  "fx": {
+   "beast": true,
+   "explode_damage": 120,
+   "explode_radius": 2.5,
+   "peste_boom": 3
+  },
+  "description": "[[beast|Beast]]. Runs at the hero and bursts: {explode_damage} damage and {peste_boom} stacks of Plague."
+ },
+ {
+  "id": "brown_bear",
+  "pt": "Urso Pardo",
+  "en": "Brown Bear",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "tank",
+  "family": "wild",
+  "fx": {
+   "beast": true,
+   "hunt_stack": 0.03,
+   "hunt_cap": 0.6
+  },
+  "description": "[[beast|Beast]]. The Hunt: +{hunt_stack_pct}% damage per second spent hitting the hero, stacking (up to +{hunt_cap_pct}%)."
+ },
+ {
+  "id": "pack_den",
+  "pt": "Toca da Matilha",
+  "en": "Wolf Den",
+  "type": "structure",
+  "villain": "plague",
+  "tags": [
+   "construct"
+  ],
+  "archetype": "structure",
+  "family": "wild",
+  "fx": {
+   "spawn": "wolf_pup",
+   "spawn_interval": 4.0,
+   "spawn_duration": 16.0
+  },
+  "description": "Releases a wolf pup ([[beast|Beast]]) every {spawn_interval} s for {spawn_duration} s. Pups count for the Hunting Party."
+ },
+ {
+  "id": "primal_beast",
+  "pt": "Besta Primordial",
+  "en": "Primal Beast",
+  "type": "monster",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "chaser",
+  "family": "wild",
+  "fx": {
+   "beast": true,
+   "own_bonus": 0.03,
+   "own_cap": 1.5,
+   "pups": 4
+  },
+  "description": "[[beast|Beast]]. +{own_bonus_pct}% damage for each creature of yours on the field, Pack or Beast (up to +{own_cap_pct}%). On death, releases {pups} wolf pups."
+ },
+ {
+  "id": "black_pestilence",
+  "pt": "Pestilência Negra",
+  "en": "Black Pestilence",
+  "type": "spell",
+  "villain": "plague",
+  "tags": [],
+  "archetype": "",
+  "family": "pack",
+  "fx": {
+   "duration": 10.0,
+   "mult": 2.0
+  },
+  "description": "Every hero gets maximum Plague right now. For {duration} s, Plague hurts {mult}× more."
+ }
+]

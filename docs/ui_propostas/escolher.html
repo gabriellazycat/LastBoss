@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propostas de UI</title>
+<style>
+@font-face { font-family: "Alegreya"; src: url("../../assets/fonts/Alegreya-VF.ttf"); font-weight: 400 900; }
+@font-face { font-family: "Alegreya Sans"; src: url("../../assets/fonts/AlegreyaSans-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "Alegreya Sans"; src: url("../../assets/fonts/AlegreyaSans-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Alegreya Sans"; src: url("../../assets/fonts/AlegreyaSans-ExtraBold.ttf"); font-weight: 800; }
+@font-face { font-family: "Fell SC"; src: url("../../assets/fonts/IMFellEnglishSC-Regular.ttf"); }
+@font-face { font-family: "Fell It"; src: url("../../assets/fonts/IMFellEnglish-Italic.ttf"); }
+@font-face { font-family: "Patrick"; src: url("../../assets/fonts/PatrickHand-Regular.ttf"); }
+@font-face { font-family: "Marcellus"; src: url("../../assets/fonts/MarcellusSC-Regular.ttf"); }
+@font-face { font-family: "Spectral"; src: url("../../assets/fonts/Spectral-SemiBold.ttf"); }
+
+:root { --page: #e9e2d4; --pink: #3c2a1e; --line: #c9bca6; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: #3c2a1e; font: 16px/1.4 "Alegreya Sans", system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 20; background: #f5efe3; border-bottom: 1px solid var(--line);
+  padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+header h1 { font-size: 19px; margin: 0; }
+.group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.group span { color: #7a6656; font-size: 14px; }
+header button { font: inherit; border: 1px solid var(--line); background: #fffaf0; color: #3c2a1e; border-radius: 6px; padding: 5px 11px; cursor: pointer; }
+header button.on { background: #3c2a1e; color: #f5efe3; border-color: #3c2a1e; }
+.pick { margin-left: auto; font-weight: 700; }
+.pick b { color: #2f6b5a; }
+main { padding: 14px; }
+.intro { margin: 0 0 12px; color: #6b5848; max-width: 1100px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr)); gap: 14px; }
+.cell { background: #f5efe3; border: 2px solid var(--line); border-radius: 8px; overflow: hidden; }
+.cell.chosen { border-color: #2f6b5a; box-shadow: 0 0 0 3px #2f6b5a40; }
+.cell .bar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; }
+.cell .nm { font-weight: 800; }
+.cell .ds { color: #7a6656; font-size: 14px; }
+.cell .bar button { margin-left: auto; font: inherit; border: 1px solid var(--line); background: #fffaf0; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.frame { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; cursor: zoom-in; background: #222; }
+.stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+.zoom { position: fixed; inset: 0; z-index: 30; background: #000e; display: none; flex-direction: column; align-items: center; justify-content: center; }
+.zoom.on { display: flex; }
+.zoom .frame { width: min(100vw, calc((100vh - 60px) * 16 / 9)); cursor: zoom-out; }
+.zoom .cap { color: #fff; padding: 10px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.zoom .cap button { font: inherit; background: #fff2; color: #fff; border: 1px solid #fff4; border-radius: 6px; padding: 5px 11px; cursor: pointer; }
+.fx { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.fx img { width: 100%; display: block; }
+
+/* ============================ componentes (geometria comum) ============================ */
+.bg-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.dim { position: absolute; inset: 0; background: rgba(30, 28, 34, .45); }
+.ui { position: absolute; }
+.skin { position: absolute; inset: 0; z-index: 0; }
+.c { position: relative; z-index: 1; }
+.timer { left: 22px; top: 20px; width: 190px; height: 86px; padding: 14px 20px; }
+.timer .t { font-size: 40px; line-height: 1; }
+.timer .s { font-size: 17px; margin-top: 4px; }
+.route { left: 22px; top: 126px; width: 84px; height: 880px; padding: 22px 0; }
+.route svg { position: relative; z-index: 1; display: block; margin: 0 auto; }
+.route .tag { position: absolute; left: 96px; top: 470px; white-space: nowrap; font-size: 19px; padding: 4px 12px; z-index: 2; }
+.hero { left: 700px; top: 16px; width: 520px; height: 158px; padding: 16px 26px 14px 104px; }
+.hero .lv { position: absolute; left: 24px; top: 34px; width: 60px; height: 72px; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+.hero .nm { font-size: 30px; line-height: 1.05; }
+.hero .hp { position: relative; height: 26px; margin: 8px 0 6px; }
+.hero .hp .fill { position: absolute; left: 0; top: 0; bottom: 0; }
+.hero .hp .txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; z-index: 2; }
+.hero .sub { font-size: 18px; }
+.hero .ab { display: flex; gap: 6px; margin-top: 6px; }
+.hero .ab i { width: 30px; height: 30px; border-radius: 50%; display: block; }
+.btns { right: 22px; top: 20px; display: flex; gap: 10px; }
+.btns .b { position: relative; width: 66px; height: 56px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.elixir { left: 380px; top: 952px; width: 1160px; height: 104px; padding: 0 40px; display: flex; align-items: center; gap: 0; }
+.elixir .drops { position: relative; z-index: 1; display: flex; gap: 46px; flex: 1; padding-left: 20px; }
+.elixir .drops svg { width: 34px; height: 44px; }
+.elixir .n { position: relative; z-index: 1; font-size: 30px; margin: 0 28px 0 10px; white-space: nowrap; }
+.elixir .big { position: relative; z-index: 1; width: 64px; height: 82px; }
+.elixir .gold { position: relative; z-index: 1; font-size: 30px; margin-left: 18px; white-space: nowrap; }
+.boss { right: 22px; top: 86px; width: 370px; height: 312px; padding: 22px 26px; }
+.boss .h { font-size: 28px; margin-bottom: 8px; }
+.boss .row { display: flex; justify-content: space-between; font-size: 19px; margin-top: 6px; }
+.boss .pb { height: 14px; margin: 4px 0 2px; position: relative; }
+.boss .pb .fill { position: absolute; inset: 0; }
+.relics { right: 22px; top: 414px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.relics .r { position: relative; font-size: 18px; padding: 4px 14px; }
+.otitle { left: 50%; top: 190px; transform: translateX(-50%); padding: 14px 60px; font-size: 46px; white-space: nowrap; }
+.ohint { left: 50%; top: 290px; transform: translateX(-50%); font-size: 20px; padding: 4px 18px; white-space: nowrap; }
+.ocard { top: 418px; width: 274px; }
+.ocard img { display: block; width: 100%; position: relative; z-index: 1; }
+.ocard .ot { position: absolute; left: 50%; top: -52px; transform: translateX(-50%); white-space: nowrap; font-size: 20px; padding: 4px 16px; z-index: 2; }
+.obtn { left: 50%; top: 838px; transform: translateX(-50%); width: 290px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.ledger { left: 150px; top: 110px; width: 1620px; height: 860px; padding: 50px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 70px; }
+.ledger .pg { position: relative; z-index: 1; }
+.ledger .h { font-size: 38px; }
+.ledger .sh { font-size: 19px; margin-bottom: 18px; }
+.ledger .it { display: flex; align-items: center; gap: 18px; padding: 12px 10px; position: relative; }
+.ledger .it img { width: 150px; height: 92px; object-fit: cover; border-radius: 3px; }
+.ledger .it .nmi { font-size: 27px; flex: 1; }
+.ledger .it .pr { font-size: 24px; padding: 2px 14px; position: relative; }
+.ledger .sv { display: flex; align-items: center; gap: 14px; font-size: 23px; padding: 10px; position: relative; }
+.ledger .sv .pr { margin-left: auto; font-size: 22px; padding: 2px 12px; position: relative; }
+.ledger .desc { margin-top: 16px; padding: 16px 18px; font-size: 21px; position: relative; }
+.ledger .foot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 14px; align-items: center; font-size: 22px; }
+.ledger .exit { position: absolute; right: 0; bottom: 0; padding: 12px 28px; font-size: 26px; }
+.menu { left: 104px; top: 134px; width: 800px; height: 792px; padding: 50px 56px; }
+.menu .k { font-size: 21px; letter-spacing: .04em; }
+.menu .ttl { font-size: 104px; line-height: 1; margin: 12px 0 10px; }
+.menu .sub { font-size: 24px; margin-bottom: 30px; }
+.menu .opts { display: flex; flex-direction: column; gap: 14px; width: 380px; }
+.menu .opt { position: relative; height: 60px; display: flex; align-items: center; padding-left: 24px; font-size: 27px; }
+.menu .por { position: absolute; right: 56px; bottom: 76px; width: 230px; z-index: 1; }
+.menu .por img { width: 100%; display: block; }
+.menu .pc { text-align: center; font-size: 22px; margin-top: 8px; }
+
+/* botões e opções pintam o próprio fundo (a cor de destaque do tema), sem a pele do painel por cima */
+.menu .opt > .skin, .obtn > .skin, .btns .b > .skin, .exit > .skin { display: none; }
+/* fundo com borda pintada numa camada própria: o filtro nunca entorta o texto */
+.hero .hp, .boss .pb, .hero .lv, .otitle { isolation: isolate; }
+.hero .hp::before, .boss .pb::before, .hero .lv::before, .otitle::before { content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--b, transparent); filter: var(--f, none); box-shadow: var(--s, none); border-radius: var(--r, 0); }
+
+/* ===== tema 1: papel aquarelado ===== */
+.d1 { font-family: "Alegreya", serif; color: #3d3430; }
+.d1 .skin { background: #f4eee2; filter: url(#torn); box-shadow: 0 6px 16px #0003; }
+.d1 .skin::before { content: ""; position: absolute; inset: 8% 10% auto auto; width: 55%; height: 60%; border-radius: 50%;
+  background: radial-gradient(closest-side, #b9cdbf99, #b9cdbf00); filter: url(#wash); }
+.d1 .skin::after { content: ""; position: absolute; inset: 0; background: url(../../assets/textures/paint/T2/grass_v.png) 0 0 / 420px; mix-blend-mode: soft-light; opacity: .35; }
+.d1 .hero .nm, .d1 .boss .h, .d1 .otitle, .d1 .ledger .h, .d1 .menu .ttl { font-weight: 800; color: #6e3a33; }
+.d1 .hero .hp, .d1 .boss .pb { --b: #d9cfbf; --f: url(#rough); }
+.d1 .hero .hp .fill, .d1 .boss .pb .fill { filter: url(#rough); }
+.d1 .hero .hp .fill { background: #b4574b; }
+.d1 .boss .pb .fill { background: #7e78a6; }
+.d1 .hero .lv { --b: #c9b9a2; --f: url(#torn); color: #3d3430; }
+.d1 .hero .ab i { background: #9fb7aa; filter: url(#rough); }
+.d1 .hero .ab i:nth-child(2n) { background: #c99a86; }
+.d1 .route .tag, .d1 .relics .r, .d1 .ohint, .d1 .ocard .ot, .d1 .ledger .pr, .d1 .ledger .desc { background: #efe6d3; box-shadow: 0 2px 6px #0002; }
+.d1 .obtn, .d1 .menu .opt, .d1 .btns .b, .d1 .ledger .exit { background: #e6dccb; box-shadow: 0 3px 8px #0002; }
+.d1 .menu .opt:first-child { background: #b8cdc2; }
+.d1 .elixir .n, .d1 .elixir .gold { color: #5a4fa0; }
+
+/* ===== tema 2: faixas de pincel ===== */
+.d2 { font-family: "Alegreya Sans", sans-serif; color: #f4ede0; }
+.d2 .skin { background: #46505a; filter: url(#brush); border-radius: 30px; }
+.d2 .btns .b { background: #46505a; border-radius: 50%; }
+.d2 .menu > .skin, .d2 .ledger > .skin { filter: none; border-radius: 14px; box-shadow: 0 8px 24px #0006; }
+.d2 .timer .skin, .d2 .btns .b .skin { background: #46505a; }
+.d2 .hero .nm, .d2 .boss .h, .d2 .otitle, .d2 .ledger .h, .d2 .menu .ttl, .d2 .menu .opt, .d2 .obtn { font-family: "Fell SC", serif; }
+.d2 .hero .hp, .d2 .boss .pb { --b: #2c333a; --f: url(#brush); }
+.d2 .hero .hp .fill, .d2 .boss .pb .fill { filter: url(#brush); }
+.d2 .hero .hp .fill { background: #c24a3d; }
+.d2 .boss .pb .fill { background: #8b7fd1; }
+.d2 .hero .lv { --b: #b8a37f; --f: url(#brush); color: #2c2a28; }
+.d2 .hero .ab i { background: #8fb3a3; }
+.d2 .hero .ab i:nth-child(2n) { background: #d0866c; }
+.d2 .otitle { --b: #a23a33; --f: url(#brush); }
+.d2 .otitle span, .d2 .ocard .ot span { filter: none; }
+.d2 .route .tag, .d2 .relics .r, .d2 .ohint, .d2 .ocard .ot, .d2 .ledger .pr, .d2 .ledger .desc { background: #46505ae6; }
+.d2 .obtn, .d2 .ledger .exit { background: #a23a33; }
+.d2 .menu .opt { background: #46505acc; }
+.d2 .menu .opt:first-child { background: #a23a33; }
+.d2 .menu .k, .d2 .menu .sub, .d2 .menu .pc, .d2 .ledger .sh { color: #e8dcc4; }
+.d2 .elixir .n, .d2 .elixir .gold { color: #f0e6ff; }
+
+/* ===== tema 3: caderno de esboço ===== */
+.d3 { font-family: "Patrick", cursive; color: #3f3a36; }
+.d3 .skin { background: #f6f2ea; border: 3px solid #4a4440; border-radius: 6px; filter: url(#pencil); box-shadow: 4px 5px 0 #4a444033; }
+.d3 .hero .nm, .d3 .boss .h, .d3 .otitle, .d3 .ledger .h, .d3 .menu .ttl { font-family: "Fell It", serif; color: #8a3b2f; }
+.d3 .hero .hp, .d3 .boss .pb { border: 2px solid #4a4440; filter: url(#pencil); background: #fff; }
+.d3 .hero .hp .fill { background: repeating-linear-gradient(-45deg, #b4574b 0 6px, #b4574b99 6px 10px); }
+.d3 .boss .pb .fill { background: repeating-linear-gradient(-45deg, #6f68a0 0 6px, #6f68a099 6px 10px); }
+.d3 .hero .lv { border: 3px solid #4a4440; border-radius: 50%; filter: url(#pencil); background: #fff; }
+.d3 .hero .ab i { border: 2px solid #4a4440; background: #dfe9e2; filter: url(#pencil); }
+.d3 .route .tag, .d3 .relics .r, .d3 .ohint, .d3 .ocard .ot, .d3 .ledger .pr { background: #fffdf7; border: 2px solid #4a4440; border-radius: 4px; }
+.d3 .obtn, .d3 .menu .opt, .d3 .btns .b, .d3 .ledger .exit { background: #fffdf7; border: 2.5px solid #4a4440; border-radius: 6px; }
+.d3 .menu .opt:first-child { background: #f1dcd5; }
+.d3 .otitle { background: #fffdf7; border: 3px solid #4a4440; transform: translateX(-50%) rotate(-1.5deg); }
+.d3 .ledger .desc { border: 2px dashed #4a4440; }
+.d3 .elixir .n, .d3 .elixir .gold { color: #4a4440; }
+
+/* ===== tema 4: língua da carta ===== */
+.d4 { font-family: "Alegreya", serif; color: #3b2e28; }
+.d4 .skin { background: linear-gradient(#efe6d6, #e7dcc8); clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  box-shadow: inset 0 0 0 2px #e7dcc8, inset 0 0 0 4px #5a4638, inset 0 0 0 7px #e7dcc8, inset 0 0 0 8px #5a463888; }
+.d4 .hero .nm, .d4 .boss .h, .d4 .ledger .h, .d4 .menu .ttl, .d4 .menu .opt, .d4 .obtn, .d4 .ocard .ot, .d4 .relics .r, .d4 .route .tag { font-family: "Fell SC", serif; }
+.d4 .hero .nm { color: #f6eee0; background: #a7392f; display: inline-block; padding: 2px 24px 4px; clip-path: polygon(0 0, 100% 0, 96% 50%, 100% 100%, 0 100%, 4% 50%); }
+.d4 .hero .hp, .d4 .boss .pb { background: #d7ccb9; box-shadow: inset 0 0 0 2px #5a4638; }
+.d4 .hero .hp .fill { background: #a7392f; }
+.d4 .boss .pb .fill { background: #6b56b8; }
+.d4 .hero .lv { background: #6b56b8; color: #fff; clip-path: path("M30 0 C 44 22 60 36 60 50 A 30 30 0 1 1 0 50 C 0 36 16 22 30 0 Z"); }
+.d4 .hero .ab i { background: #3e7d63; box-shadow: inset 0 0 0 2px #e7dcc8; }
+.d4 .hero .ab i:nth-child(2n) { background: #a7392f; }
+.d4 .route .tag, .d4 .relics .r, .d4 .ohint, .d4 .ledger .pr { background: #efe6d6; box-shadow: inset 0 0 0 2px #5a4638; }
+.d4 .ocard .ot { background: #6b56b8; color: #fff; clip-path: polygon(0 0, 100% 0, 95% 50%, 100% 100%, 0 100%, 5% 50%); }
+.d4 .otitle { font-family: "Fell SC", serif; background: #a7392f; color: #f6eee0; clip-path: polygon(0 0, 100% 0, 97% 50%, 100% 100%, 0 100%, 3% 50%); }
+.d4 .obtn, .d4 .menu .opt, .d4 .btns .b, .d4 .ledger .exit { background: #efe6d6; box-shadow: inset 0 0 0 2px #5a4638, inset 0 0 0 5px #efe6d6, inset 0 0 0 6px #5a463880; }
+.d4 .menu .opt:first-child { background: #a7392f; color: #f6eee0; box-shadow: none; }
+.d4 .boss .h, .d4 .ledger .h, .d4 .menu .ttl { color: #a7392f; }
+.d4 .elixir .n, .d4 .elixir .gold { color: #6b56b8; }
+
+/* ===== tema 5: recorte de papel ===== */
+.d5 { font-family: "Alegreya Sans", sans-serif; color: #2f2a2a; }
+.d5 .skin { background: #a1bbb2; filter: url(#cut); box-shadow: 0 5px 0 #00000026; }
+.d5 .hero .skin { background: #c9bfd8; }
+.d5 .timer .skin { background: #e3be9b; }
+.d5 .route .skin { background: #e8dfcf; }
+.d5 .elixir .skin { background: #c9bfd8; }
+.d5 .boss .skin { background: #e8dfcf; }
+.d5 .ledger .skin { background: #e8dfcf; }
+.d5 .menu .skin { background: #e8dfcf; }
+.d5 .hero .nm, .d5 .boss .h, .d5 .otitle, .d5 .ledger .h, .d5 .menu .ttl, .d5 .obtn, .d5 .menu .opt { font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+.d5 .hero .hp, .d5 .boss .pb { --b: #ffffff80; --f: url(#cut); }
+.d5 .hero .hp .fill { background: #b84f45; }
+.d5 .boss .pb .fill { background: #6f62b0; }
+.d5 .hero .lv { --b: #e3be9b; --f: url(#cut); }
+.d5 .hero .ab i { background: #6f9c8b; filter: url(#cut); }
+.d5 .hero .ab i:nth-child(2n) { background: #c07a62; }
+.d5 .route .tag, .d5 .relics .r, .d5 .ocard .ot, .d5 .ledger .pr { background: #e3be9b; box-shadow: 0 3px 0 #0002; }
+.d5 .ohint { background: #e8dfcf; }
+.d5 .otitle { --b: #c08e86; --f: url(#cut); }
+.d5 .obtn, .d5 .menu .opt, .d5 .btns .b, .d5 .ledger .exit { background: #a1bbb2; box-shadow: 0 4px 0 #0002; }
+.d5 .menu .opt:first-child { background: #c08e86; }
+.d5 .ledger .desc { background: #c9bfd8; }
+.d5 .elixir .n, .d5 .elixir .gold { color: #3e3570; font-weight: 800; }
+
+/* ===== tema 6: mapa aberto (o pergaminho do mapa da rota) ===== */
+.d6 { font-family: "Fell It", serif; color: #3a2a1c; --ink: #3a2a1c; --red: #a8323a; }
+.d6 .skin { background:
+    radial-gradient(circle at 22% 30%, #b8975a2e, transparent 32%),
+    radial-gradient(circle at 78% 70%, #b8975a26, transparent 36%),
+    radial-gradient(circle at 60% 18%, #fff4d230, transparent 30%),
+    radial-gradient(ellipse at center, #e8d6a8 0%, #dcc796 70%, #cdb581 100%);
+  box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 0 8px #e3cf9f, inset 0 0 0 9.5px var(--ink), inset 0 0 36px #a8844a66, 0 6px 18px #0004; }
+.d6 .hero .nm, .d6 .boss .h, .d6 .ledger .h, .d6 .menu .ttl, .d6 .menu .opt, .d6 .obtn, .d6 .otitle, .d6 .btns .b, .d6 .ledger .exit, .d6 .relics .r, .d6 .route .tag, .d6 .ocard .ot, .d6 .menu .k { font-family: "Fell SC", serif; }
+.d6 .hero .nm { font-size: 32px; }
+.d6 .hero .hp, .d6 .boss .pb { --b: #cdb581; box-shadow: inset 0 0 0 2px var(--ink); }
+.d6 .hero .hp .fill { background: var(--red); inset: 3px auto 3px 3px; }
+.d6 .boss .pb .fill { background: #5e4a8a; inset: 3px; }
+.d6 .hero .hp .txt { color: #f6ead0; }
+.d6 .hero .lv { --b: #e8d6a8; border-radius: 50%; box-shadow: 0 0 0 3px var(--ink), 0 0 0 7px #e3cf9f, 0 0 0 9px var(--red); width: 62px; height: 62px; top: 40px; }
+.d6 .hero .lv::before { border-radius: 50%; }
+.d6 .hero .ab i { background: #e8d6a8; box-shadow: inset 0 0 0 2px var(--ink), inset 0 0 0 5px #e8d6a8, inset 0 0 0 7px var(--red); }
+.d6 .route circle { fill: #e8d6a8; stroke: var(--ink); stroke-width: 2.5; }
+.d6 .route circle:last-of-type { fill: var(--red); }
+.d6 .route line { stroke: var(--ink); stroke-dasharray: 3 5; opacity: .7; }
+.d6 .route rect { fill: var(--red); }
+.d6 .route .tag, .d6 .relics .r, .d6 .ohint, .d6 .ledger .pr { background: #e3cf9f; box-shadow: inset 0 0 0 1.5px var(--ink); }
+.d6 .ocard .ot { background: #e3cf9f; box-shadow: inset 0 0 0 2px var(--ink), inset 0 0 0 5px #e3cf9f, inset 0 0 0 6px var(--ink); }
+.d6 .otitle { --b: #e3cf9f; color: var(--ink); padding: 16px 70px; }
+.d6 .otitle::before { box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 0 8px #e3cf9f, inset 0 0 0 9.5px var(--ink); }
+.d6 .otitle::after { content: ""; position: absolute; left: -54px; right: -54px; top: 18px; bottom: -16px; z-index: -2;
+  background: linear-gradient(#cdb37c, #bfa36a); clip-path: polygon(0 0, 100% 0, calc(100% - 28px) 50%, 100% 100%, 0 100%, 28px 50%); }
+.d6 .obtn, .d6 .menu .opt, .d6 .btns .b, .d6 .ledger .exit { background: #e3cf9f; box-shadow: inset 0 0 0 2.5px var(--ink), inset 0 0 0 6px #e3cf9f, inset 0 0 0 7px var(--ink); }
+.d6 .menu .opt:first-child { background: var(--red); color: #f6ead0; box-shadow: inset 0 0 0 2.5px var(--ink), inset 0 0 0 6px var(--red), inset 0 0 0 7px #f6ead0aa; }
+.d6 .menu .ttl { font-size: 96px; }
+.d6 .boss .h, .d6 .ledger .h { color: var(--ink); }
+.d6 .ledger .desc { border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); }
+.d6 .ledger::after { content: ""; position: absolute; left: 50%; top: 40px; bottom: 40px; border-left: 2px dashed #3a2a1c66; z-index: 1; }
+.d6 .elixir .n, .d6 .elixir .gold { color: var(--ink); font-family: "Fell SC", serif; }
+.d6 .timer .t { font-family: "Fell SC", serif; }
+.deco { display: none; position: absolute; z-index: 1; width: 150px; height: 150px; pointer-events: none; }
+.d6 .deco { display: block; }
+
+/* mapa aberto: nada reto — papel torto de borda irregular, linhas à mão, desenhos do mapa nos espaços vazios */
+.doodle { display: none; position: absolute; z-index: 1; pointer-events: none; overflow: visible; }
+.d6 .doodle { display: block; }
+.d6 .doodle { filter: url(#mapline); }
+.d6 .deco { z-index: 2; }
+.d6 .deco circle:first-child { fill: #e3cf9f; }
+.d6 .menu .por { bottom: 168px; }
+.ledger .foot .pr { position: relative; }
+.d6 .skin { filter: url(#mapedge); border-radius: 16px 7px 20px 9px / 9px 18px 7px 15px; }
+.d6 .hero > .skin { transform: rotate(-0.6deg); }
+.d6 .timer > .skin { transform: rotate(1deg); }
+.d6 .route > .skin { transform: rotate(0.35deg); }
+.d6 .elixir > .skin { transform: rotate(-0.3deg); }
+.d6 .boss > .skin { transform: rotate(0.7deg); }
+.d6 .ledger > .skin { transform: rotate(-0.35deg); }
+.d6 .menu > .skin { transform: rotate(-0.7deg); }
+.d6 .hero .hp, .d6 .boss .pb { box-shadow: none; --s: inset 0 0 0 2px #3a2a1c; --f: url(#mapline); --r: 4px 8px 5px 9px; }
+.d6 .hero .hp .fill, .d6 .boss .pb .fill { filter: url(#mapline); border-radius: 3px 7px 4px 6px; }
+.d6 .otitle::before, .d6 .otitle::after { filter: url(#mapline); }
+.d6 :is(.menu .opt, .obtn, .btns .b, .ledger .exit, .relics .r, .route .tag, .ocard .ot, .ohint, .ledger .pr) { background: none !important; box-shadow: none !important; isolation: isolate; }
+.d6 :is(.menu .opt, .obtn, .btns .b, .ledger .exit, .relics .r, .route .tag, .ocard .ot, .ohint, .ledger .pr)::after { content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--pb, #e3cf9f); box-shadow: var(--ps, inset 0 0 0 1.6px #3a2a1c); filter: url(#mapline); border-radius: 6px 10px 5px 9px / 9px 5px 10px 6px; }
+.d6 :is(.menu .opt, .obtn, .btns .b, .ledger .exit, .ocard .ot) { --ps: inset 0 0 0 2.5px #3a2a1c, inset 0 0 0 6px #e3cf9f, inset 0 0 0 7px #3a2a1c; }
+.d6 .menu .opt:first-child { --pb: #a8323a; --ps: inset 0 0 0 2.5px #3a2a1c, inset 0 0 0 6px #a8323a, inset 0 0 0 7px #f6ead0aa; }
+.d6 .menu .opt:nth-child(2) { transform: rotate(0.4deg); }
+.d6 .menu .opt:nth-child(3) { transform: rotate(-0.3deg); }
+.d6 .menu .opt:nth-child(4) { transform: rotate(0.25deg); }
+.d6 .relics .r:nth-child(odd) { transform: rotate(-0.8deg); }
+.d6 .relics .r:nth-child(even) { transform: rotate(0.6deg); }
+.d6 .ocard:nth-of-type(odd) .ot { transform: translateX(-50%) rotate(-1deg); }
+.d6 .ledger::after { border-left: none; background: none; width: 2px; left: calc(50% - 1px);
+  background-image: linear-gradient(#3a2a1c66 50%, transparent 0); background-size: 2px 14px; filter: url(#mapline); }
+.d6 .ledger .desc { border: none; position: relative; }
+.d6 .ledger .desc::after { content: ""; position: absolute; inset: 0; border-top: 1.6px solid #3a2a1c; border-bottom: 1.6px solid #3a2a1c; filter: url(#mapline); }
+
+/* ===== refazer menu e loja (mapa aberto) ===== */
+.rf { position: absolute; }
+.rf-p { position: absolute; }
+.rf-p > .skin { position: absolute; inset: 0; }
+.rf-ban { position: absolute; text-align: center; isolation: isolate; font-family: "Fell SC", serif; color: #3a2a1c; padding: 10px 40px; }
+.rf-ban::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #e3cf9f; filter: url(#mapline);
+  box-shadow: inset 0 0 0 3px #3a2a1c, inset 0 0 0 8px #e3cf9f, inset 0 0 0 9.5px #3a2a1c; }
+.rf-ban::after { content: ""; position: absolute; left: -50px; right: -50px; top: 22px; bottom: -18px; z-index: -2; filter: url(#mapline);
+  background: linear-gradient(#cdb37c, #bfa36a); clip-path: polygon(0 0, 100% 0, calc(100% - 30px) 50%, 100% 100%, 0 100%, 30px 50%); }
+.rf-ban .k { font-size: 17px; letter-spacing: .05em; }
+.rf-ban .t { line-height: 1; }
+.rf-node { position: absolute; text-align: center; transform: translate(-50%, -50%); }
+.rf-node svg { display: block; margin: 0 auto; overflow: visible; }
+.rf-node .lb { font-family: "Fell SC", serif; font-size: 30px; color: #3a2a1c; margin-top: 4px; white-space: nowrap; text-shadow: 0 0 6px #e8d6a8, 0 0 3px #e8d6a8; }
+.rf-node.main .lb { color: #a8323a; font-size: 36px; }
+.rf-node .hint { font-family: "Fell It", serif; font-size: 19px; color: #5a4632; white-space: nowrap; text-shadow: 0 0 5px #e8d6a8; }
+.rf-txt { position: absolute; font-family: "Fell It", serif; color: #3a2a1c; }
+.rf-sc { font-family: "Fell SC", serif; }
+.rf-frame { position: absolute; padding: 10px; isolation: isolate; }
+.rf-frame::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #e3cf9f; filter: url(#mapline); box-shadow: inset 0 0 0 2.5px #3a2a1c, inset 0 0 0 6px #e3cf9f, inset 0 0 0 7px #3a2a1c; }
+.rf-frame img { display: block; width: 100%; }
+.rf-opt { position: relative; isolation: isolate; font-family: "Fell SC", serif; color: #3a2a1c; }
+.rf-box::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #e3cf9f; filter: url(#mapline); box-shadow: inset 0 0 0 2.5px #3a2a1c, inset 0 0 0 6px #e3cf9f, inset 0 0 0 7px #3a2a1c; border-radius: 6px 10px 5px 9px / 9px 5px 10px 6px; }
+.rf-box.red { color: #f6ead0; }
+.rf-box.red::before { background: #a8323a; box-shadow: inset 0 0 0 2.5px #3a2a1c, inset 0 0 0 6px #a8323a, inset 0 0 0 7px #f6ead0aa; }
+.rf-fold { position: absolute; top: 0; bottom: 0; width: 70px; pointer-events: none; z-index: 1;
+  background: linear-gradient(90deg, transparent, #8a6a3a22 40%, #8a6a3a44 49%, #fff6d855 51%, #fff6d822 60%, transparent); }
+.rf-ruled { position: absolute; background-image: repeating-linear-gradient(transparent 0 45px, #3a2a1c2a 45px 46.5px); }
+.rf-entry { position: absolute; display: flex; align-items: flex-end; gap: 10px; font-family: "Fell It", serif; font-size: 27px; color: #3a2a1c; }
+.rf-entry .lead { flex: 1; border-bottom: 2px dotted #3a2a1c99; margin-bottom: 8px; }
+.rf-entry .pr { font-family: "Fell SC", serif; font-size: 26px; }
+.rf-thumb { position: absolute; padding: 6px; isolation: isolate; }
+.rf-thumb::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #f1e3bd; box-shadow: inset 0 0 0 2px #3a2a1c, 0 3px 6px #0003; filter: url(#mapline); }
+.rf-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.rf-tag { position: absolute; text-align: center; isolation: isolate; font-family: "Fell It", serif; color: #3a2a1c; padding: 14px 12px 10px; }
+.rf-tag::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #ead8aa; filter: url(#mapline);
+  clip-path: polygon(14% 0, 86% 0, 100% 18%, 100% 100%, 0 100%, 0 18%); box-shadow: inset 0 0 0 2px #3a2a1c; }
+.rf-tag::after { content: ""; position: absolute; left: 50%; top: 7px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; border: 2px solid #3a2a1c; background: #8a7a5a; }
+
+/* ?bg=1: só o fundo desenhado (o jogo põe por cima os lugares, textos, cartas e botões) — tools/art/ui_kit/export_map_art.py */
+body.bgonly { background: transparent !important; }
+body.bgonly :is(.bg-img, .dim, .rf-node, .rf-txt, .rf-opt, .rf-frame, .rf-thumb, .rf-tag, .rf-p .rf-p) { display: none !important; }
+body.bgonly .rf-ban > * { visibility: hidden; }
+body.bgonly use[href="#m-tent"], body.bgonly path[stroke-dasharray="4 6"] { display: none; }
+/* hoje (referência) */
+.d0 .ui { display: none; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="torn" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="3"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter>
+    <filter id="rough" x="-5%" y="-20%" width="110%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter>
+    <filter id="wash"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="11"/><feDisplacementMap in="SourceGraphic" scale="40"/></filter>
+    <filter id="brush" x="-5%" y="-25%" width="110%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.12" numOctaves="3" seed="5"/><feDisplacementMap in="SourceGraphic" scale="16"/></filter>
+    <filter id="pencil" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="1" seed="2"/><feDisplacementMap in="SourceGraphic" scale="2.5"/></filter>
+    <filter id="cut" x="-3%" y="-6%" width="106%" height="112%"><feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="1" seed="9"/><feDisplacementMap in="SourceGraphic" scale="6"/></filter>
+
+    <filter id="mapedge" x="-4%" y="-8%" width="108%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="2" seed="21"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter>
+    <filter id="mapline" x="-6%" y="-30%" width="112%" height="160%"><feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="3.5"/></filter>
+    <symbol id="m-tree" viewBox="0 0 40 46"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 44 L20 30"/><path d="M20 31 C 8 32 4 24 8 17 C 6 9 14 3 20 6 C 26 2 35 8 33 16 C 37 23 31 32 20 31 Z" fill="#e3cf9f"/><path d="M15 20 q3 3 6 1" opacity=".6"/></g></symbol>
+    <symbol id="m-pine" viewBox="0 0 34 50"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 48 L17 40"/><path d="M17 3 L8 18 L13 17 L5 30 L12 29 L3 41 L31 41 L22 29 L29 30 L21 17 L26 18 Z" fill="#e3cf9f"/></g></symbol>
+    <symbol id="m-hills" viewBox="0 0 90 30"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 28 C 14 6 26 6 40 28"/><path d="M30 28 C 44 2 62 2 78 28"/><path d="M60 28 C 70 16 80 16 88 28"/><path d="M47 14 l4 3 M55 10 l4 3" opacity=".6"/></g></symbol>
+    <symbol id="m-river" viewBox="0 0 300 50" preserveAspectRatio="none"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 30 C 40 6 70 44 110 26 S 180 4 220 22 S 270 40 298 18"/><path d="M2 40 C 42 16 72 52 112 34 S 182 14 222 32 S 272 50 298 28"/><path d="M60 30 q6 -3 12 0 M150 18 q6 -3 12 0 M240 30 q6 -3 12 0" opacity=".55"/></g></symbol>
+    <symbol id="m-house" viewBox="0 0 40 36"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 34 L6 16 L20 5 L34 16 L34 34 Z" fill="#e3cf9f"/><path d="M16 34 L16 24 L24 24 L24 34"/><path d="M26 10 L26 4 L30 4 L30 13"/></g></symbol>
+    <symbol id="m-birds" viewBox="0 0 50 20"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 q6 -8 11 0 q5 -8 11 0"/><path d="M28 6 q4 -5 8 0 q4 -5 8 0"/></g></symbol>
+    <symbol id="m-rat" viewBox="0 0 80 40"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 30 C 10 18 24 10 40 12 C 52 13 60 18 64 24 L 72 26 L 64 30 C 54 34 26 36 14 30 Z" fill="#e3cf9f"/><path d="M14 30 C 6 30 2 24 6 18 C 9 14 4 10 2 12"/><path d="M58 18 C 58 12 64 12 63 18"/><circle cx="64" cy="24" r="1.2" fill="#3a2a1c"/><path d="M30 34 l-2 5 M46 34 l2 5"/></g></symbol>
+    <symbol id="m-serpent" viewBox="0 0 110 44"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 36 C 12 14 22 14 28 34" fill="#e3cf9f"/><path d="M34 36 C 42 10 54 10 60 34" fill="#e3cf9f"/><path d="M66 36 C 72 20 82 4 96 10 C 104 14 104 22 96 22 L 88 20" fill="#e3cf9f"/><circle cx="95" cy="14" r="1.3" fill="#3a2a1c"/><path d="M0 38 q8 -4 16 0 t16 0 t16 0 t16 0 t16 0 t16 0" opacity=".6"/></g></symbol>
+    <symbol id="m-grass" viewBox="0 0 30 16"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15 l3 -9 M9 15 l1 -12 M15 15 l-2 -8 M20 15 l3 -10 M26 15 l-1 -7"/></g></symbol>
+
+    <symbol id="m-vale" viewBox="0 0 760 140"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M0 78 C 60 58 120 54 180 66 C 230 76 270 62 320 50 C 352 42 372 44 382 56 L 398 56 C 410 44 440 38 480 46 C 540 58 580 70 640 60 C 690 52 730 56 760 64 L 760 140 L 0 140 Z" fill="#e3cf9f"/><path d="M0 112 C 70 96 160 96 250 108 C 300 114 330 120 352 140" fill="#e3cf9f"/><path d="M428 140 C 452 118 500 104 580 102 C 660 100 720 108 760 116" fill="#e3cf9f"/><path d="M150 70 l6 5" opacity=".55"/><path d="M166 74 l6 5" opacity=".55"/><path d="M470 56 l6 5" opacity=".55"/><path d="M486 60 l6 5" opacity=".55"/><path d="M650 68 l6 5" opacity=".55"/><path d="M666 66 l6 5" opacity=".55"/><path d="M384 56 C 380 72 366 84 360 98 C 352 116 340 128 330 140"/><path d="M396 56 C 402 72 416 86 420 100 C 426 118 440 130 452 140"/><path d="M384 86 q6 -3 12 0" opacity=".6"/><path d="M392 108 q6 -3 12 0" opacity=".6"/><path d="M386 128 q6 -3 12 0" opacity=".6"/><use href="#m-pine" x="17.5" y="25.4" width="33.0" height="48.6"/><use href="#m-tree" x="36.5" y="25.2" width="39.0" height="44.8"/><use href="#m-pine" x="62.0" y="13.1" width="36.0" height="52.9"/><use href="#m-tree" x="83.0" y="17.7" width="42.0" height="48.3"/><use href="#m-pine" x="113.5" y="19.4" width="33.0" height="48.6"/><use href="#m-tree" x="136.0" y="30.6" width="36.0" height="41.4"/><use href="#m-tree" x="-0.5" y="52.2" width="45.0" height="51.8"/><use href="#m-pine" x="28.5" y="44.7" width="39.0" height="57.3"/><use href="#m-tree" x="52.0" y="44.8" width="48.0" height="55.2"/><use href="#m-pine" x="86.0" y="47.1" width="36.0" height="52.9"/><use href="#m-tree" x="109.0" y="53.7" width="42.0" height="48.3"/><use href="#m-pine" x="155.0" y="59.9" width="30.0" height="44.1"/><use href="#m-tree" x="181.5" y="68.0" width="33.0" height="38.0"/><use href="#m-house" x="539.8" y="59.5" width="40.5" height="36.5"/><use href="#m-house" x="576.5" y="62.4" width="35.1" height="31.6"/><use href="#m-house" x="604.4" y="57.1" width="43.2" height="38.9"/><path d="M660 98 L660 70 L668 58 L676 70 L676 98 M668 58 L668 50 M664 54 L672 54"/><path d="M548 98 C 600 104 650 104 700 98" opacity=".7"/><use href="#m-pine" x="695.0" y="55.9" width="30.0" height="44.1"/><use href="#m-tree" x="716.0" y="62.6" width="36.0" height="41.4"/><path d="M300 22 q6 -7 11 0 q5 -7 11 0"/><path d="M336 12 q4 -5 8 0 q4 -5 8 0"/></g></symbol>
+    <symbol id="m-encarte" viewBox="0 0 440 250"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8 C 150 4 290 10 434 6 L 436 242 C 290 246 150 240 4 244 Z" fill="#e0cb98" stroke-width="3"/><path d="M14 16 C 150 12 290 18 426 14 L 428 234 C 290 238 150 232 12 236 Z"/><path d="M14 70 C 40 76 54 96 48 118 C 42 140 62 156 58 178 C 54 200 70 214 66 236"/><path d="M26 140 q4 -3 8 0 t8 0" opacity=".6"/><path d="M22 190 q4 -3 8 0 t8 0" opacity=".6"/><path d="M30 98 q4 -3 8 0 t8 0" opacity=".6"/><use href="#m-serpent" x="14" y="200" width="44" height="18"/><path d="M330 16 C 320 50 270 62 250 90 C 230 118 200 128 160 140 C 120 152 90 150 56 162"/><path d="M342 16 C 334 54 284 70 262 98 C 242 124 210 138 166 150 C 126 162 96 162 60 172"/><path d="M96 70 C 140 80 170 96 196 120 C 214 136 236 156 268 168 C 310 184 346 186 380 196" stroke="#a8323a" stroke-dasharray="7 6" stroke-width="2.4"/><path d="M198 128 L 214 146 M210 122 L 226 140" stroke-width="2.2"/><use href="#m-house" x="75.0" y="52.2" width="22" height="19.8"/><use href="#m-house" x="99.0" y="49.8" width="18" height="16.2"/><path d="M366 208 L 382 180 L 398 208 Z M382 180 L 382 166 L 394 170 L 382 174" fill="#e3cf9f"/><path d="M396 222 l8 8 M404 222 l-8 8" stroke="#a8323a" stroke-width="2.4"/><use href="#m-pine" x="291.0" y="85.5" width="18" height="26.5"/><use href="#m-tree" x="309.0" y="88.7" width="22" height="25.3"/><use href="#m-pine" x="334.0" y="86.5" width="16" height="23.5"/><use href="#m-tree" x="130.0" y="191.0" width="20" height="23.0"/><use href="#m-pine" x="154.0" y="192.5" width="16" height="23.5"/><use href="#m-tree" x="173.0" y="197.3" width="18" height="20.7"/><path d="M230 226 C 246 208 262 208 276 226 M262 226 C 280 204 300 204 316 226"/><path d="M150 22 C 210 20 260 20 300 22 L 300 48 C 260 50 210 50 150 48 Z" fill="#e3cf9f" stroke-width="1.6"/></g><text x="225" y="41" text-anchor="middle" font-family="Fell It" font-size="17" fill="#3a2a1c">Rota do Mascate</text></symbol>
+    <symbol id="m-bosque" viewBox="0 0 120 52"><g fill="none" stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 52 C 22 30 50 24 74 34 C 92 26 110 32 118 52" fill="#e3cf9f"/><use href="#m-pine" x="21.0" y="19.5" width="18" height="26.5"/><use href="#m-tree" x="37.0" y="18.7" width="22" height="25.3"/><use href="#m-pine" x="58.0" y="20.5" width="16" height="23.5"/><use href="#m-tree" x="75.0" y="27.3" width="18" height="20.7"/><path d="M96 14 q4 -5 8 0 q4 -5 8 0"/></g></symbol>
+
+    <symbol id="m-lair" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 52 L10 26 L16 26 L16 20 L22 20 L22 26 L26 26 L26 16 L34 16 L34 26 L38 26 L38 20 L44 20 L44 26 L50 26 L50 52 Z" fill="#e3cf9f"/><path d="M25 52 L25 40 C 25 34 35 34 35 40 L35 52"/><path d="M30 16 L30 6 L40 9 L30 12" fill="#a8323a"/><path d="M16 34 l0 6 M44 34 l0 6"/></g></symbol>
+    <symbol id="m-library" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 24 L30 10 L52 24 Z" fill="#e3cf9f"/><path d="M10 24 L50 24 L50 50 L10 50 Z" fill="#e3cf9f"/><path d="M16 28 L16 46 M24 28 L24 46 M36 28 L36 46 M44 28 L44 46"/><path d="M6 52 L54 52"/><path d="M27 32 l6 0 l0 10 l-6 0 Z" fill="#a8323a" stroke-width="1.4"/></g></symbol>
+    <symbol id="m-tower" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 54 L22 24 L38 24 L40 54 Z" fill="#e3cf9f"/><path d="M18 24 L30 6 L42 24 Z" fill="#e3cf9f"/><path d="M27 54 L27 46 C 27 42 33 42 33 46 L33 54"/><path d="M28 32 l4 0 l0 6 l-4 0 Z"/><path d="M30 6 L30 2"/></g></symbol>
+    <symbol id="m-mill" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 54 L24 30 L36 30 L38 54 Z" fill="#e3cf9f"/><path d="M22 30 L30 22 L38 30"/><path d="M30 26 L12 10 M30 26 L48 10 M30 26 L14 42 M30 26 L46 42"/><path d="M12 10 L18 6 L34 22 M48 10 L52 16 L36 30" stroke-width="1.3"/><circle cx="30" cy="26" r="2.5" fill="#3a2a1c"/></g></symbol>
+    <symbol id="m-boat" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 40 L50 40 L44 50 L16 50 Z" fill="#e3cf9f"/><path d="M30 40 L30 8"/><path d="M30 10 L48 36 L30 36 Z" fill="#e3cf9f"/><path d="M28 12 L14 34 L28 34" fill="#e3cf9f"/><path d="M4 54 q6 -4 12 0 t12 0 t12 0 t12 0 t12 0" opacity=".6"/></g></symbol>
+    <symbol id="m-tent" viewBox="0 0 60 50"><g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 46 L30 8 L54 46 Z" fill="#e3cf9f"/><path d="M30 8 L30 2 L40 5 L30 8" fill="#a8323a"/><path d="M24 46 L30 30 L36 46"/><path d="M14 34 l32 0" opacity=".5"/></g></symbol>
+    <symbol id="m-mount" viewBox="0 0 120 50"><g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 48 L30 10 L44 28 L60 4 L84 36 L96 22 L118 48 Z" fill="#e3cf9f"/><path d="M30 10 l-6 12 M60 4 l-8 14 M60 4 l6 10" opacity=".55"/></g></symbol>
+    <symbol id="m-flour" viewBox="0 0 300 30"><g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M4 15 C 60 15 100 15 134 15 M166 15 C 200 15 240 15 296 15"/><path d="M150 4 L158 15 L150 26 L142 15 Z" fill="#a8323a"/><path d="M134 15 C 128 6 118 8 122 15 C 118 22 128 24 134 15 M166 15 C 172 6 182 8 178 15 C 182 22 172 24 166 15"/></g></symbol>
+    <symbol id="m-roll" viewBox="0 0 680 60" preserveAspectRatio="none"><defs><linearGradient id="rollg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9b07a"/><stop offset=".45" stop-color="#ead9ad"/><stop offset="1" stop-color="#b39660"/></linearGradient></defs>
+      <g fill="none" stroke="#3a2a1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6 L658 6 C 676 6 676 54 658 54 L22 54 C 4 54 4 6 22 6 Z" fill="url(#rollg)"/><ellipse cx="22" cy="30" rx="12" ry="24" fill="#d8c08c"/><ellipse cx="22" cy="30" rx="4" ry="9"/><path d="M640 14 C 646 22 646 38 640 46" opacity=".5"/></g></symbol>
+
+    <symbol id="s-up" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12 L40 10 L42 50 L18 52 Z" fill="#e3cf9f"/><path d="M22 18 L36 17 L37 30 L23 31 Z" opacity=".5"/><path d="M44 40 L44 20 M36 27 L44 18 L52 27" stroke="#a8323a" stroke-width="3"/></g></symbol>
+    <symbol id="s-cheap" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 26 L26 8 L50 8 L52 32 L34 50 Z" fill="#e3cf9f"/><circle cx="42" cy="18" r="4"/><path d="M22 34 L36 24" stroke="#a8323a" stroke-width="3"/><path d="M24 26 l2 2 M34 32 l2 2" stroke="#a8323a" stroke-width="3"/></g></symbol>
+    <symbol id="s-remove" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10 L38 10 L40 52 L16 52 Z" fill="#e3cf9f"/><path d="M16 30 L22 26 L26 32 L32 27 L36 31 L40 28"/><path d="M40 12 L54 26 M54 12 L40 26" stroke="#a8323a" stroke-width="3.2"/></g></symbol>
+    <symbol id="s-relic" viewBox="0 0 60 60"><g fill="none" stroke="#3a2a1c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 C 20 10 28 12 30 16 C 32 12 40 10 50 14 L50 48 C 40 44 32 46 30 50 C 28 46 20 44 10 48 Z" fill="#e3cf9f"/><path d="M30 16 L30 50"/><path d="M16 28 C 18 24 24 24 26 28 C 24 32 18 32 16 28 Z" stroke="#a8323a"/><circle cx="21" cy="28" r="1.6" fill="#a8323a"/><path d="M36 24 l8 0 M36 30 l8 0 M36 36 l6 0" opacity=".6"/></g></symbol>
+  </defs>
+</svg>
+<header>
+  <h1>Propostas de UI</h1>
+  <div class="group" id="scenes"><span>Tela:</span></div>
+  <div class="group" id="views"><span>Ver:</span></div>
+  <div class="pick" id="pick"></div>
+</header>
+<main id="main"></main>
+<div class="zoom" id="zoom"><div class="frame" id="zf"></div><div class="cap" id="zc"></div></div>
+
+<script src="img/peste.js"></script>
+<script>
+const D = [
+  ["Hoje", "A UI atual, para comparar", "d0"],
+  ["1 · Papel aquarelado", "Papel com borda rasgada e mancha de aguada; Alegreya", "d1"],
+  ["2 · Faixas de pincel", "Sem moldura: texto sobre pinceladas largas; IM Fell SC", "d2"],
+  ["3 · Caderno de esboço", "Traço de lápis leve sobre papel claro; letra à mão", "d3"],
+  ["4 · Língua da carta", "Fio duplo, cantos cortados e faixas como na carta; IM Fell SC", "d4"],
+  ["5 · Recorte de papel", "Papéis recortados nos tons das cartas, em camadas", "d5"],
+  ["6 · Mapa aberto", "O pergaminho do mapa da rota: linha dupla de tinta, faixas e vermelho; IM Fell", "d6"],
+];
+const SC = { run: "HUD da run", arena: "Arena do chefe", oferta: "Oferta de carta", loja: "Loja", menu: "Menu" };
+const store = {
+  get(k, d) { try { const x = localStorage.getItem("ui_" + k); return x === null ? d : JSON.parse(x); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("ui_" + k, JSON.stringify(v)); } catch (e) {} },
+};
+let scene = store.get("scene", "run"), view = store.get("view", "grid"), chosen = store.get("chosen", null);
+
+const drop = (fill, c) => `<svg viewBox="0 0 34 44"><path d="M17 1 C 24 13 32 21 32 29 A 15 15 0 1 1 2 29 C 2 21 10 13 17 1 Z" fill="${fill}" stroke="${c}" stroke-width="2"/></svg>`;
+function route() {
+  const ys = [40, 150, 270, 380, 500, 610, 720, 800], xs = [[42], [18, 42, 66], [30, 56], [30, 56], [18, 42, 66], [42], [42], [42]];
+  const cols = ["#7e9f8f", "#c99a86", "#9f97c4", "#d6b36b"];
+  let s = `<svg width="84" height="840" viewBox="0 0 84 840">`;
+  for (let i = 0; i < ys.length - 1; i++) for (const a of xs[i]) for (const b of xs[i + 1]) { const my = (ys[i] + ys[i + 1]) / 2, mx = (a + b) / 2 + ((a * 7 + b * 3 + i * 11) % 17 - 8); s += `<path d="M${a} ${ys[i]} Q ${mx} ${my} ${b} ${ys[i + 1]}" fill="none" stroke="#6b5f55" stroke-width="2" opacity=".55"/>`; }
+  ys.forEach((y, i) => xs[i].forEach((x, j) => { s += `<circle cx="${x}" cy="${y}" r="${i === ys.length - 1 ? 13 : 10}" fill="${i === ys.length - 1 ? "#a7392f" : cols[(i + j) % 4]}" stroke="#3b2e28" stroke-width="2"/>`; }));
+  return s + `<rect x="30" y="4" width="24" height="24" rx="4" fill="#3b2e28"/></svg>`;
+}
+const COMPASS = `<svg class="deco" viewBox="-50 -50 100 100" style="RIGHT"><g fill="none" stroke="#3a2a1c" stroke-width="1.2"><circle r="44"/><circle r="38"/><circle r="12"/></g>
+  <g fill="#3a2a1c"><path d="M0 -46 L6 -6 L0 0 L-6 -6Z"/><path d="M0 46 L6 6 L0 0 L-6 6Z" fill="#a8323a"/><path d="M46 0 L6 6 L0 0 L6 -6Z"/><path d="M-46 0 L-6 6 L0 0 L-6 -6Z"/></g>
+  <text y="-30" text-anchor="middle" font-size="10" fill="#3a2a1c" font-family="Fell SC">N</text></svg>`;
+const DD = (sym, x, y, w, h, st = "") => `<svg class="doodle" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;${st}"><use href="#${sym}"/></svg>`;
+const P = (cls, inner, st = "") => `<div class="ui ${cls}" style="${st}"><div class="skin"></div><div class="c">${inner}</div></div>`;
+function hero(arena) {
+  return `<div class="ui hero"><div class="skin"></div><div class="lv">${arena ? 6 : 1}</div><div class="c">
+    <div class="nm">O Herói</div>
+    <div class="hp"><div class="fill" style="width:${arena ? 99 : 100}%"></div><div class="txt">${arena ? "7338 / 7371" : "4059 / 4059"}</div></div>
+    <div class="sub">Herói ${arena ? 6 : 1} de 7 · Escudeiro</div>
+    ${arena ? `<div class="ab"><i></i><i></i><i></i><i></i><i></i></div>` : `<div class="sub" style="opacity:.75">Sem habilidades ainda</div>`}</div>
+    ${DD("m-bosque", 384, 96, 120, 52)}</div>`;
+}
+const timer = (t, s) => P("timer", `<div class="t">${t}</div>${s ? `<div class="s">${s}</div>` : ""}`);
+const btns = () => `<div class="ui btns">${["❚❚", "1x", "▦"].map(x => `<div class="b"><div class="skin"></div><div class="c">${x}</div></div>`).join("")}</div>`;
+function elixir(n, max, gold) {
+  let d = "";
+  const show = Math.min(max, 10);
+  for (let i = 0; i < show; i++) d += drop(i < n ? "#6b56b8" : "#d8cfc0", i < n ? "#3e3168" : "#9b8f80");
+  return `<div class="ui elixir"><div class="skin"></div><div class="drops">${d}</div><div class="n">${n} / ${max}</div>
+    <div class="big">${drop("#6b56b8", "#3e3168").replace("<svg ", '<svg width="64" height="82" ')}</div>${gold !== null ? `<div class="gold">${gold} de ouro</div>` : ""}</div>`;
+}
+const routeUI = () => `<div class="ui route"><div class="skin"></div>${route()}<div class="tag">Bifurcação · 212 m</div></div>`;
+
+const SCREENS = {
+  run: () => `<img class="bg-img" src="img/run.jpg">${timer("00:04")}${routeUI()}${hero(false)}${btns()}${elixir(6, 10, 0)}`,
+  arena: () => `<img class="bg-img" src="img/arena.jpg">${timer("23:45", "Luta final no covil")}${hero(true)}${btns()}${elixir(3, 23, null)}
+    ${P("boss", `<div class="h">Seu corpo</div>${["Braço esquerdo", "Braço direito", "Cabeça", "Núcleo"].map(n => `<div class="row"><span>${n}</span><span>100%</span></div><div class="pb"><div class="fill"></div></div>`).join("")}<div class="row" style="margin-top:12px"><span>Teleporte pronto</span></div>${DD("m-rat", 258, 258, 66, 34)}`)}
+    <div class="ui relics">${["Coração do Poço", "Torneira de Cobre", "Alambique de Éter", "Trombeta da Vitória", "Caldeirão Fundo"].map(r => `<div class="r">${r}</div>`).join("")}</div>`,
+  oferta: () => `<img class="bg-img" src="img/oferta.jpg"><div class="dim"></div>${timer("00:01")}${routeUI()}${hero(false)}${btns()}
+    <div class="ui otitle"><span>Subiu de nível! Escolha 1</span></div><div class="ui ohint">Clique numa opção ou aperte o número dela · 0 recusa</div>
+    ${[535, 823, 1113].map((x, i) => `<div class="ui ocard" style="left:${x}px"><div class="ot"><span>Carta nova · Comum</span></div><img src="img/oferta_c${i + 1}.png"></div>`).join("")}
+    <div class="ui obtn"><div class="skin"></div><div class="c">Recusar</div></div>`,
+  loja: () => `<img class="bg-img" src="img/run.jpg"><div class="dim" style="background:rgba(30,28,34,.6)"></div>
+    <div class="ui ledger"><div class="skin"></div>${COMPASS.replace("RIGHT", "left:1262px;top:452px;width:120px;height:120px")}
+      ${DD("m-encarte", 880, 500, 440, 250)}
+      <div class="pg"><div class="h">Livro-caixa do Mascate</div><div class="sh">estoque do dia (sem fiado, sem troco)</div>
+        ${[["rat_brute", "Ratazana", 75], ["wolf_pack", "Matilha de Lobos", 50], ["war_boar", "Javali de Guerra", 50], ["rat_tide", "Horda de Ratos", 40], ["brown_bear", "Urso Pardo", 60]].map(([a, n, p]) => `<div class="it"><img src="../../assets/cards/${a}.png"><div class="nmi">${n}</div><div class="pr">● ${p}</div></div>`).join("")}
+        <div class="foot"><span class="pr" style="padding:2px 12px">● 200</span><span>14 cartas no baralho</span></div></div>
+      <div class="pg"><div class="h">Serviços e relíquia</div><div class="sh">cobrado à parte</div>
+        ${[["Subir nível", 75], ["Barato em Horda de Ratos", 60], ["Tirar carta", 50], ["Grimório Pesado", 250]].map(([n, p]) => `<div class="sv">✦ ${n}<span class="pr">● ${p}</span></div>`).join("")}
+        <div class="desc">Monstro · Construção<br>Devolve 10% do dano que o herói causa a ela. Ao morrer, deixa uma Barricada.</div>
+        <div class="exit"><div class="skin"></div><div class="c">Sair da loja</div></div></div></div>`,
+  menu: () => `<img class="bg-img" src="img/menu_hoje.jpg">
+    <div class="ui menu"><div class="skin"></div><div class="c"><div class="k">UM JOGO DE CARTAS EM QUE VOCÊ É O CHEFE FINAL</div>
+      <div class="ttl">Last Boss</div><div class="sub">O herói está a caminho. Molde quem vai bater à sua porta.</div>
+      <div class="opts">${["Nova run", "Coleção", "Compêndio", "Configurações", "Sair"].map(o => `<div class="opt"><div class="skin"></div><div class="c">${o}</div></div>`).join("")}</div></div>
+      ${COMPASS.replace("RIGHT", "right:-26px;top:-30px;width:140px;height:140px")}
+      ${DD("m-vale", 20, 640, 760, 140)}<div class="por"><img src="../../assets/cards/rat_king.png"><div class="pc">eu, o chefe final</div></div></div>`,
+};
+
+// ===== refazer menu e loja (direção 6) =====
+const IMG = (a) => `../../assets/cards/${a}.png`;
+const USE = (sym, x, y, w, h, st = "") => `<svg class="rf" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;filter:url(#mapline);overflow:visible;${st}"><use href="#${sym}"/></svg>`;
+const PAPER = (x, y, w, h, rot = 0, inner = "") => `<div class="rf-p" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;transform:rotate(${rot}deg)"><div class="skin"></div>${inner}</div>`;
+function NODE(x, y, sym, label, main = false, hint = "", size = 104) {
+  const r = size / 2;
+  return `<div class="rf-node${main ? " main" : ""}" style="left:${x}px;top:${y}px"><svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="filter:url(#mapline)">
+    <circle cx="${r}" cy="${r}" r="${r - 3}" fill="#e8d6a8" stroke="${main ? "#a8323a" : "#3a2a1c"}" stroke-width="${main ? 4 : 3}"/>
+    <circle cx="${r}" cy="${r}" r="${r - 10}" fill="none" stroke="#3a2a1c" stroke-width="1.6"/>
+    <use href="#${sym}" x="${r * 0.42}" y="${r * 0.4}" width="${r * 1.16}" height="${r * 1.16}"/></svg><div class="lb">${label}</div>${hint ? `<div class="hint">${hint}</div>` : ""}</div>`;
+}
+const SICON = (sym, size = 76) => `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto;filter:url(#mapline);overflow:visible">
+  <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 3}" fill="#e8d6a8" stroke="#3a2a1c" stroke-width="3"/><circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 9}" fill="none" stroke="#3a2a1c" stroke-width="1.4"/>
+  <use href="#${sym}" x="${size * 0.2}" y="${size * 0.2}" width="${size * 0.6}" height="${size * 0.6}"/></svg>`;
+const SERV_ICON = ["s-up", "s-cheap", "s-remove", "s-relic"];
+const ROAD = (d, red = false) => `<path d="${d}" fill="none" stroke="${red ? "#a8323a" : "#3a2a1c"}" stroke-width="${red ? 3 : 2.2}" stroke-dasharray="${red ? "10 7" : "7 7"}" stroke-linecap="round" opacity="${red ? 1 : .8}"/>`;
+const SVGL = (x, y, w, h, inner) => `<svg class="rf" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;filter:url(#mapline);overflow:visible" viewBox="0 0 ${w} ${h}">${inner}</svg>`;
+const WAVES = (pts) => pts.map(([x, y]) => `<path d="M${x} ${y} q6 -4 12 0 t12 0" fill="none" stroke="#3a2a1c" stroke-width="1.6" opacity=".6"/>`).join("");
+const KING = `<div class="rf-frame" style="left:SX;top:SY;width:SWpx;transform:rotate(SR)"><img src="${IMG("rat_king")}"><div class="rf-txt" style="position:static;text-align:center;font-size:21px;margin-top:6px">eu, o chefe final</div></div>`;
+const king = (x, y, w, r = 0) => KING.replace("SX", x + "px").replace("SY", y + "px").replace("SW", w).replace("SR", r + "deg");
+
+// --- Menu A: o menu é o mapa
+function menuA() {
+  const W = 1640, H = 960;
+  const sea = `<path d="M1430 0 C 1400 120 1460 220 1420 330 C 1386 430 1450 540 1410 650 C 1380 740 1430 860 1400 960" fill="none" stroke="#3a2a1c" stroke-width="2.4"/>`
+    + `<path d="M1446 0 C 1418 120 1478 220 1438 330 C 1404 430 1468 540 1428 650 C 1398 740 1448 860 1418 960" fill="none" stroke="#3a2a1c" stroke-width="1.2" opacity=".6"/>`
+    + WAVES([[1500, 120], [1560, 220], [1490, 330], [1550, 470], [1500, 600], [1570, 760], [1500, 860]]);
+  const river = `<path d="M290 0 C 320 90 256 150 300 230 C 340 300 280 380 250 440 C 220 500 250 560 236 620" fill="none" stroke="#3a2a1c" stroke-width="2.2"/><path d="M306 0 C 336 90 272 150 316 228 C 356 300 296 382 266 442 C 236 502 266 562 252 620" fill="none" stroke="#3a2a1c" stroke-width="1.4" opacity=".7"/>`;
+  const roads = ROAD("M820 520 C 700 470 600 420 470 360") + ROAD("M800 560 C 720 640 640 700 560 740") + ROAD("M880 520 C 1000 460 1120 420 1200 380")
+    + ROAD("M880 560 C 1000 650 1120 700 1260 720") + ROAD("M840 900 C 840 820 846 720 846 640", true);
+  return `<img class="bg-img" src="img/menu.jpg"><div class="dim" style="background:rgba(20,14,10,.35)"></div>
+  ${PAPER(140, 60, W, H, -0.35, `
+    ${SVGL(0, 0, W, H, sea + river + roads)}
+    ${USE("m-mount", 1080, 150, 240, 100)}${USE("m-mount", 1220, 186, 180, 76)}${USE("m-hills", 120, 820, 240, 80)}${USE("m-hills", 1060, 820, 220, 72)}
+    ${[[90, 240, 40], [126, 230, 46], [168, 246, 38], [96, 300, 44], [140, 296, 40], [180, 310, 46], [220, 296, 36]].map(([x, y, w], i) => USE(i % 2 ? "m-pine" : "m-tree", x, y, w, w * 1.2)).join("")}
+    ${[[620, 760, 40], [660, 770, 46], [700, 760, 38], [1000, 230, 36], [1036, 240, 42]].map(([x, y, w], i) => USE(i % 2 ? "m-tree" : "m-pine", x, y, w, w * 1.2)).join("")}
+    ${USE("m-serpent", 1470, 400, 120, 48)}${USE("m-birds", 960, 360, 60, 24)}${USE("m-house", 1060, 560, 38, 34)}${USE("m-house", 1100, 572, 30, 27)}
+    ${NODE(846, 540, "m-lair", "Nova run", true, "o teu covil", 150)}
+    ${NODE(420, 330, "m-library", "Coleção")}${NODE(520, 760, "m-tower", "Compêndio")}${NODE(1240, 350, "m-mill", "Configurações")}${NODE(1300, 730, "m-boat", "Sair")}
+    <div class="rf-ban" style="left:520px;top:34px;width:600px"><div class="k">um jogo de cartas em que você é o chefe final</div><div class="t" style="font-size:64px">Last Boss</div></div>
+    <div class="rf-txt" style="left:600px;top:190px;width:440px;text-align:center;font-size:23px">O herói está a caminho. Molde quem vai bater à sua porta.</div>
+    ${king(70, 560, 200, -2)}
+    ${COMPASS.replace("RIGHT", "left:1250px;top:-36px;width:150px;height:150px")}
+  `)}`;
+}
+
+// --- Menu B: papiro enrolado
+function menuB() {
+  const opts = ["Nova run", "Coleção", "Compêndio", "Configurações", "Sair"];
+  return `<img class="bg-img" src="img/menu.jpg"><div class="dim" style="background:rgba(20,14,10,.3)"></div>
+  ${PAPER(660, 96, 600, 900, 0.3, `
+    <div class="rf-ban" style="left:60px;top:60px;width:480px"><div class="k">um jogo de cartas em que você é o chefe final</div><div class="t" style="font-size:72px">Last Boss</div></div>
+    <div class="rf-txt" style="left:60px;top:226px;width:480px;text-align:center;font-size:24px">O herói está a caminho.<br>Molde quem vai bater à sua porta.</div>
+    <div style="position:absolute;left:210px;top:312px;width:180px;height:180px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px #3a2a1c,0 0 0 9px #e3cf9f,0 0 0 11px #a8323a"><img src="${IMG("rat_king")}" style="width:100%;height:100%;object-fit:cover"></div>
+    ${USE("m-flour", 150, 520, 300, 30)}
+    ${opts.map((o, i) => `<div class="rf-opt" style="position:absolute;left:0;right:0;top:${574 + i * 58}px;text-align:center;font-size:${i ? 34 : 40}px;color:${i ? "#3a2a1c" : "#a8323a"}">${o}</div>`).join("")}
+    ${SVGL(190, 626, 220, 16, `<path d="M4 8 C 60 2 160 14 216 6" fill="none" stroke="#a8323a" stroke-width="2.4"/>`)}
+    ${USE("m-flour", 150, 850, 300, 30)}
+  `)}
+  ${USE("m-roll", 620, 62, 680, 64)}${USE("m-roll", 620, 966, 680, 64)}`;
+}
+
+// --- Menu C: mapa dobrado em três
+function menuC() {
+  const opts = ["Nova run", "Coleção", "Compêndio", "Configurações", "Sair"];
+  const W = 1560, H = 860, P3 = W / 3;
+  return `<img class="bg-img" src="img/menu.jpg"><div class="dim" style="background:rgba(20,14,10,.3)"></div>
+  ${PAPER(180, 110, W, H, -0.25, `
+    <div class="rf-fold" style="left:${P3 - 35}px"></div><div class="rf-fold" style="left:${2 * P3 - 35}px"></div>
+    <div class="rf-txt rf-sc" style="left:64px;top:60px;font-size:19px;letter-spacing:.05em">um jogo de cartas em que você é o chefe final</div>
+    <div class="rf-txt rf-sc" style="left:60px;top:92px;font-size:92px;line-height:1">Last Boss</div>
+    <div class="rf-txt" style="left:64px;top:200px;width:400px;font-size:24px">O herói está a caminho. Molde quem vai bater à sua porta.</div>
+    ${opts.map((o, i) => `<div class="rf-opt rf-box${i ? "" : " red"}" style="position:absolute;left:64px;top:${300 + i * 82}px;width:390px;height:62px;padding:12px 24px;font-size:30px">${o}</div>`).join("")}
+    ${king(P3 + 110, 120, 300, 1.5)}
+    <div class="rf-ban" style="left:${P3 + 90}px;top:600px;width:340px;font-size:30px">O covil</div>
+    <div class="rf-txt" style="left:${P3 + 70}px;top:700px;width:380px;text-align:center;font-size:21px">Aqui o herói termina a viagem.<br>Ou você termina a sua.</div>
+    ${SVGL(2 * P3, 0, P3, H, `<path d="M420 0 C 380 120 300 160 330 280 C 360 400 250 470 280 600 C 300 700 240 780 260 860" fill="none" stroke="#3a2a1c" stroke-width="2.2"/><path d="M436 0 C 396 120 316 160 346 280 C 376 400 266 470 296 600 C 316 700 256 780 276 860" fill="none" stroke="#3a2a1c" stroke-width="1.3" opacity=".7"/>`
+      + ROAD("M60 760 C 120 640 90 520 170 440 C 230 380 200 300 250 220", true) + `<path d="M243 212 l14 14 M257 212 l-14 14" stroke="#a8323a" stroke-width="3"/>`)}
+    ${USE("m-mount", 2 * P3 + 80, 70, 220, 92)}${USE("m-lair", 2 * P3 + 210, 150, 80, 80)}
+    ${[[60, 470, 40], [96, 480, 46], [130, 466, 38], [60, 540, 44], [104, 548, 40], [150, 540, 36]].map(([x, y, w], i) => USE(i % 2 ? "m-tree" : "m-pine", 2 * P3 + x, y, w, w * 1.2)).join("")}
+    ${USE("m-house", 2 * P3 + 100, 760, 40, 36)}${USE("m-house", 2 * P3 + 144, 770, 32, 29)}${USE("m-birds", 2 * P3 + 300, 520, 50, 20)}
+    ${COMPASS.replace("RIGHT", `left:${W - 170}px;top:${H - 180}px;width:140px;height:140px`)}
+  `)}`;
+}
+
+// --- Loja A: livro-razão
+const STOCK = [["rat_brute", "Ratazana", 75], ["wolf_pack", "Matilha de Lobos", 50], ["war_boar", "Javali de Guerra", 50], ["rat_tide", "Horda de Ratos", 40], ["brown_bear", "Urso Pardo", 60]];
+const SERV = [["Subir nível de uma carta", 75], ["Barato em Horda de Ratos", 60], ["Tirar uma carta do baralho", 50], ["Relíquia: Grimório Pesado", 250]];
+function lojaA() {
+  const W = 1640, H = 880, half = W / 2;
+  return `<img class="bg-img" src="img/run.jpg"><div class="dim" style="background:rgba(30,24,20,.62)"></div>
+  ${PAPER(140, 100, W, H, -0.3, `
+    <div class="rf-fold" style="left:${half - 35}px"></div>
+    <div class="rf-ruled" style="left:70px;top:200px;width:${half - 140}px;height:560px"></div><div class="rf-ruled" style="left:${half + 70}px;top:200px;width:${half - 140}px;height:420px"></div>
+    <div class="rf-txt rf-sc" style="left:70px;top:58px;font-size:44px">Livro-caixa do Mascate</div>
+    <div class="rf-txt" style="left:72px;top:118px;font-size:22px">estoque do dia — sem fiado, sem troco</div>
+    ${STOCK.map(([a, n, pr], i) => `<div class="rf-thumb" style="left:72px;top:${196 + i * 112}px;width:150px;height:96px;transform:rotate(${[-2, 1.5, -1, 2, -1.5][i]}deg)"><img src="${IMG(a)}"></div>
+      <div class="rf-entry" style="left:248px;top:${222 + i * 112}px;width:${half - 330}px"><span>${n}</span><span class="lead"></span><span class="pr">${pr} ●</span></div>`).join("")}
+    <div class="rf-txt rf-sc" style="left:${half + 70}px;top:58px;font-size:44px">Serviços</div>
+    <div class="rf-txt" style="left:${half + 72}px;top:118px;font-size:22px">cobrados à parte</div>
+    ${SERV.map(([n, pr], i) => `<div class="rf-entry" style="left:${half + 70}px;top:${206 + i * 92}px;width:${half - 140}px"><span>${n}</span><span class="lead"></span><span class="pr">${pr} ●</span></div>`).join("")}
+    <div class="rf-txt" style="left:${half + 90}px;top:600px;width:${half - 200}px;font-size:22px;padding:14px 18px;background:#efdfb4;box-shadow:0 3px 8px #0003;transform:rotate(-1deg)"><span class="rf-sc">Grimório Pesado</span> · Monstro, Construção<br>Devolve 10% do dano que o herói causa a ela. Ao morrer, deixa uma Barricada.</div>
+    <div class="rf-txt" style="left:72px;top:${H - 82}px;font-size:25px"><span class="rf-sc">Saldo:</span> 200 de ouro · 14 cartas no baralho</div>
+    <div class="rf-txt" style="left:${half + 90}px;top:${H - 120}px;font-size:24px">Assinado,<br><span style="font-size:34px">o Mascate</span></div>
+    ${SVGL(half + 80, H - 54, 300, 10, `<path d="M4 6 C 80 2 200 9 296 4" stroke="#3a2a1c" stroke-width="1.8" fill="none"/>`)}
+    <div style="position:absolute;left:${W - 230}px;top:${H - 210}px;width:150px;height:150px;transform:rotate(-8deg)">
+      ${`<svg viewBox="0 0 150 150" style="width:100%;height:100%;overflow:visible"><path d="M75 6 C 100 4 112 18 128 26 C 146 40 144 60 146 76 C 148 98 134 112 124 126 C 108 144 88 146 72 144 C 50 146 34 136 22 122 C 6 106 4 86 6 70 C 6 48 18 30 34 18 C 46 8 60 8 75 6 Z" fill="#a8323a" stroke="#6e1e24" stroke-width="3"/><circle cx="75" cy="76" r="48" fill="none" stroke="#6e1e24" stroke-width="2.5"/></svg>`}
+      <div class="rf-sc" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#f6e3c4;font-size:26px;line-height:1">Sair<br>da loja</div></div>
+  `)}`;
+}
+
+// --- Loja B: mapa da feira
+function lojaB() {
+  const W = 1640, H = 900;
+  const spots = [[260, 300], [560, 230], [860, 330], [480, 560], [800, 640]];
+  const road = ROAD("M80 760 C 200 640 220 420 260 330 C 300 240 460 200 560 260 C 660 320 760 340 860 360 C 940 380 900 500 800 560 C 700 620 560 600 480 590", true);
+  return `<img class="bg-img" src="img/run.jpg"><div class="dim" style="background:rgba(30,24,20,.62)"></div>
+  ${PAPER(140, 90, W, H, 0.25, `
+    ${SVGL(0, 0, W, H, road + `<path d="M0 820 C 200 800 360 860 560 840" fill="none" stroke="#3a2a1c" stroke-width="2"/>` + WAVES([[100, 860], [300, 870]]))}
+    ${USE("m-hills", 640, 60, 200, 66)}${USE("m-mount", 60, 70, 220, 92)}
+    ${[[620, 730, 40], [660, 740, 46], [700, 730, 38], [380, 420, 36], [680, 470, 40]].map(([x, y, w], i) => USE(i % 2 ? "m-tree" : "m-pine", x, y, w, w * 1.2)).join("")}
+    ${STOCK.map(([a, n, pr], i) => { const [x, y] = spots[i]; return `
+      <div class="rf-node" style="left:${x}px;top:${y}px"><div style="width:132px;height:132px;margin:0 auto;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px #3a2a1c,0 0 0 9px #e8d6a8,0 0 0 ${i === 2 ? "14px #a8323a,0 0 18px 16px #a8323a55" : "11px #3a2a1c"}"><img src="${IMG(a)}" style="width:100%;height:100%;object-fit:cover"></div>
+      <div class="lb" style="font-size:26px">${n}</div></div>
+      ${USE("m-tent", x - 26, y - 118, 52, 44)}
+      <div class="rf-opt rf-box red" style="position:absolute;left:${x + 50}px;top:${y - 70}px;padding:4px 14px;font-size:24px;transform:rotate(${i % 2 ? 4 : -4}deg)">${pr} ●</div>`; }).join("")}
+    <div class="rf-ban" style="left:1110px;top:40px;width:440px"><div class="t" style="font-size:52px">Feira do Mascate</div><div class="k" style="font-family:'Fell It';text-transform:none;font-size:19px">sem fiado, sem troco</div></div>
+    ${SVGL(0, 0, W, H, `<path d="M930 300 C 980 300 1010 290 1060 290" fill="none" stroke="#a8323a" stroke-width="2.4" stroke-dasharray="4 6"/>`)}
+    <div class="rf-p" style="left:1070px;top:210px;width:510px;height:330px;transform:rotate(0.5deg)"><div class="skin"></div>
+      <div class="rf-thumb" style="left:28px;top:30px;width:150px;height:144px;transform:rotate(-2deg)"><img src="${IMG("war_boar")}"></div>
+      <div class="rf-txt rf-sc" style="left:200px;top:30px;font-size:32px;line-height:1.05">Javali de Guerra</div>
+      <div class="rf-txt" style="left:202px;top:72px;font-size:19px">Monstro · Fera · Comum · custa 5</div>
+      <div class="rf-txt" style="left:202px;top:104px;width:280px;font-size:21px;line-height:1.3">Fera: ao acertar, empurra o herói 3 m e o atordoa 1 s (recarga 6 s).</div>
+      <div class="rf-opt rf-box red" style="position:absolute;left:28px;top:252px;padding:10px 26px;font-size:26px">Comprar · 50 ●</div>
+      <div class="rf-txt" style="left:270px;top:262px;font-size:19px">ou clique em outra barraca</div></div>
+    <div class="rf-p" style="left:1080px;top:566px;width:500px;height:236px;transform:rotate(-0.6deg)"><div class="skin"></div>
+      <div class="rf-txt rf-sc" style="left:30px;top:18px;font-size:28px">Serviços</div>
+      ${SERV.map(([n, pr], i) => `<div style="position:absolute;left:24px;top:${62 + i * 42}px;width:36px;height:36px">${SICON(SERV_ICON[i], 36)}</div><div class="rf-entry" style="left:72px;top:${62 + i * 42}px;width:400px;font-size:21px"><span>${n}</span><span class="lead"></span><span class="pr" style="font-size:21px">${pr} ●</span></div>`).join("")}</div>
+    <div class="rf-txt" style="left:1100px;top:828px;font-size:25px"><span class="rf-sc">Bolsa:</span> 200 de ouro · 14 cartas</div>
+    <div class="rf-opt rf-box" style="position:absolute;left:1400px;top:818px;padding:10px 26px;font-size:26px">Sair da feira</div>
+    ${COMPASS.replace("RIGHT", "left:880px;top:20px;width:120px;height:120px")}
+  `)}`;
+}
+
+// --- Loja C: cartas penduradas no varal
+function lojaC() {
+  const W = 1640, H = 880;
+  const xs = [150, 430, 710, 990, 1270], ys = [176, 196, 206, 196, 176];
+  return `<img class="bg-img" src="img/run.jpg"><div class="dim" style="background:rgba(30,24,20,.62)"></div>
+  ${PAPER(140, 100, W, H, -0.2, `
+    <div class="rf-ban" style="left:570px;top:30px;width:500px"><div class="t" style="font-size:52px">Banca do Mascate</div><div class="k" style="font-family:'Fell It';text-transform:none;font-size:19px">estoque do dia — sem fiado, sem troco</div></div>
+    ${SVGL(0, 0, W, 300, `<path d="M70 150 C 400 230 1240 230 1570 150" fill="none" stroke="#3a2a1c" stroke-width="3"/><circle cx="70" cy="150" r="7" fill="#3a2a1c"/><circle cx="1570" cy="150" r="7" fill="#3a2a1c"/>`)}
+    ${STOCK.map(([a, n, pr], i) => `<div class="rf-thumb" style="left:${xs[i]}px;top:${ys[i]}px;width:210px;height:250px;transform:rotate(${[-3, 2, -1, 2.5, -2][i]}deg);transform-origin:50% 0"><img src="${IMG(a)}"></div>
+      ${SVGL(xs[i] + 98, ys[i] - 8, 14, 22, `<path d="M7 0 L7 22" stroke="#3a2a1c" stroke-width="2"/>`)}
+      <div class="rf-tag" style="left:${xs[i] + 30}px;top:${ys[i] + 262}px;width:150px;transform:rotate(${[3, -2, 1, -3, 2][i]}deg)"><div style="font-size:21px;line-height:1.1">${n}</div><div class="rf-sc" style="font-size:28px;color:#a8323a">${pr} ●</div></div>`).join("")}
+    ${USE("m-flour", 670, 576, 300, 30)}
+    <div class="rf-txt rf-sc" style="left:0;right:0;top:608px;text-align:center;font-size:30px">Serviços</div>
+    ${SERV.map(([n, pr], i) => `<div class="rf-txt" style="left:${90 + i * 370}px;top:654px;width:330px;text-align:center;font-size:22px">${SICON(SERV_ICON[i], 60)}<div style="margin-top:6px">${n}</div><div class="rf-sc" style="font-size:26px;color:#a8323a">${pr} ●</div></div>`).join("")}
+    <div class="rf-txt" style="left:80px;top:${H - 70}px;font-size:24px"><span class="rf-sc">Bolsa:</span> 200 de ouro · 14 cartas no baralho</div>
+    <div class="rf-opt rf-box red" style="position:absolute;left:${W - 280}px;top:${H - 74}px;padding:10px 28px;font-size:26px">Sair da loja</div>
+  `)}`;
+}
+Object.assign(SCREENS, { menuA, menuB, menuC, lojaA, lojaB, lojaC });
+const REDO = [["menuA", "Menu A · O menu é o mapa"], ["menuB", "Menu B · Papiro enrolado"], ["menuC", "Menu C · Mapa dobrado"],
+  ["lojaA", "Loja A · Livro-razão"], ["lojaB", "Loja B · Mapa da feira"], ["lojaC", "Loja C · Cartas penduradas"]];
+
+// ===== Coleção nos estilos do menu A / B / C =====
+const PACTS = [["Rainha da Peste", "24 / 28", "rat_brute"], ["Rei Dragão", "9 / 28", "war_boar"], ["Lich Eterno", "14 / 28", "black_pestilence"], ["Comuns", "18 / 28", "brown_bear"]];
+const GRID = (x0, y0, cols, rows, w, h, gap, start = 0, owned = 99) => PESTE.slice(start, start + cols * rows).map(([id, nm, cost], i) => {
+  const x = x0 + (i % cols) * (w + gap), y = y0 + Math.floor(i / cols) * (h + gap + 34), off = i >= owned;
+  return `<div class="rf-thumb" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;transform:rotate(${((i * 37) % 7 - 3) * 0.4}deg);${off ? "filter:grayscale(1) opacity(.45)" : ""}"><img src="${IMG(id)}"></div>
+    <div class="rf-txt" style="left:${x - 8}px;top:${y + h + 6}px;width:${w + 16}px;text-align:center;font-size:18px;line-height:1.1">${off ? "???" : nm}</div>`; }).join("");
+function colA() {
+  const W = 1640, H = 960;
+  const regions = [[300, 260, "m-lair"], [300, 640, "m-mount"], [640, 250, "m-tower"], [640, 650, "m-house"]];
+  return `<img class="bg-img" src="img/menu.jpg"><div class="dim" style="background:rgba(20,14,10,.35)"></div>
+  ${PAPER(140, 60, W, H, -0.35, `
+    ${SVGL(0, 0, W, H, ROAD("M300 260 C 420 330 520 300 640 250") + ROAD("M300 640 C 430 560 520 600 640 650") + ROAD("M300 260 C 260 400 260 520 300 640") + ROAD("M640 250 C 700 420 700 520 640 650")
+      + `<path d="M820 40 C 800 300 840 600 810 920" fill="none" stroke="#3a2a1c" stroke-width="2" stroke-dasharray="2 8" opacity=".6"/>`)}
+    ${PACTS.map(([n, c, a], i) => { const [x, y] = regions[i]; return `<div class="rf-node${i ? "" : " main"}" style="left:${x}px;top:${y}px"><div style="width:${i ? 120 : 150}px;height:${i ? 120 : 150}px;margin:0 auto;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px #3a2a1c,0 0 0 9px #e8d6a8,0 0 0 ${i ? "11px #3a2a1c" : "13px #a8323a"}"><img src="${IMG(a)}" style="width:100%;height:100%;object-fit:cover"></div><div class="lb">${n}</div><div class="hint">${c} cartas</div></div>`; }).join("")}
+    ${[[110, 420, 40], [146, 430, 46], [470, 470, 40], [506, 480, 44]].map(([x, y, w], i) => USE(i % 2 ? "m-tree" : "m-pine", x, y, w, w * 1.2)).join("")}
+    ${USE("m-birds", 430, 140, 60, 24)}
+    <div class="rf-ban" style="left:170px;top:40px;width:440px"><div class="t" style="font-size:54px">Coleção</div><div class="k" style="font-family:'Fell It';text-transform:none;font-size:19px">a biblioteca do covil</div></div>
+    <div class="rf-txt rf-sc" style="left:880px;top:50px;font-size:40px">Rainha da Peste</div>
+    <div class="rf-txt" style="left:882px;top:100px;font-size:21px">24 de 28 cartas · clique numa para ler</div>
+    ${GRID(880, 150, 5, 3, 120, 116, 26, 0, 13)}
+    <div class="rf-opt rf-box" style="position:absolute;left:${W - 230}px;top:${H - 96}px;padding:10px 26px;font-size:26px">Voltar</div>
+    ${COMPASS.replace("RIGHT", "left:700px;top:820px;width:110px;height:110px")}
+  `)}`;
+}
+function colB() {
+  const tabs = ["Peste", "Dragão", "Lich", "Comuns"];
+  return `<img class="bg-img" src="img/menu.jpg"><div class="dim" style="background:rgba(20,14,10,.3)"></div>
+  ${tabs.map((t, i) => `<div class="rf-opt rf-box${i ? "" : " red"}" style="position:absolute;left:1340px;top:${200 + i * 84}px;width:170px;padding:10px 18px;font-size:24px;transform:rotate(${i % 2 ? 1 : -1}deg)">${t}</div>`).join("")}
+  ${PAPER(560, 96, 760, 900, 0.3, `
+    <div class="rf-ban" style="left:150px;top:50px;width:460px"><div class="t" style="font-size:60px">Coleção</div><div class="k" style="font-family:'Fell It';text-transform:none;font-size:19px">Rainha da Peste · 24 de 28</div></div>
+    ${USE("m-flour", 230, 196, 300, 30)}
+    ${GRID(70, 250, 5, 3, 112, 110, 22, 0, 13)}
+    ${USE("m-flour", 230, 760, 300, 30)}
+    <div class="rf-txt" style="left:0;right:0;top:800px;text-align:center;font-size:22px">role o papiro para ver mais · Esc volta</div>
+  `)}
+  ${USE("m-roll", 520, 62, 840, 64)}${USE("m-roll", 520, 966, 840, 64)}`;
+}
+function colC() {
+  const W = 1560, H = 860, P3 = W / 3;
+  return `<img class="bg-img" src="img/menu.jpg"><div class="dim" style="background:rgba(20,14,10,.3)"></div>
+  ${PAPER(180, 110, W, H, -0.25, `
+    <div class="rf-fold" style="left:${P3 - 35}px"></div><div class="rf-fold" style="left:${2 * P3 - 35}px"></div>
+    <div class="rf-txt rf-sc" style="left:60px;top:56px;font-size:70px;line-height:1">Coleção</div>
+    <div class="rf-txt" style="left:64px;top:140px;font-size:22px">escolha um pacto</div>
+    ${PACTS.map(([n, c], i) => `<div class="rf-opt rf-box${i ? "" : " red"}" style="position:absolute;left:60px;top:${200 + i * 92}px;width:400px;height:70px;padding:8px 22px;font-size:28px;line-height:1.1">${n}<div style="font-family:'Fell It';font-size:18px">${c} cartas</div></div>`).join("")}
+    <div class="rf-opt rf-box" style="position:absolute;left:60px;top:${H - 110}px;padding:10px 26px;font-size:26px">Voltar</div>
+    ${USE("m-tower", 330, H - 140, 90, 90)}
+    <div class="rf-txt rf-sc" style="left:${P3 + 50}px;top:50px;font-size:38px">Rainha da Peste</div>
+    <div class="rf-txt" style="left:${P3 + 52}px;top:98px;font-size:21px">24 de 28 cartas</div>
+    ${GRID(P3 + 50, 150, 7, 3, 124, 118, 22, 0, 18)}
+    ${COMPASS.replace("RIGHT", `left:${W - 150}px;top:24px;width:120px;height:120px`)}
+  `)}`;
+}
+Object.assign(SCREENS, { colA, colB, colC });
+REDO.splice(3, 0, ["colA", "Coleção no estilo A · o mapa"], ["colB", "Coleção no estilo B · papiro"], ["colC", "Coleção no estilo C · mapa dobrado"]);
+
+const TODAY = { run: "base/run_hoje.png", arena: "base/arena_hoje.png", oferta: "base/oferta_hoje.png", loja: "base/loja_hoje.png", menu: "img/menu_hoje.jpg" };
+
+const SHOT = (d, sc) => `fotos/d${d}_${sc}.jpg`;
+function stageImg(d, sc) { return `<img class="bg-img" src="${d === 0 ? TODAY[sc] : SHOT(d, sc)}">`; }
+function stage(d, sc) {
+  if (d === 0) return `<div class="stage d0"><img class="bg-img" src="${TODAY[sc]}"></div>`;
+  return `<div class="stage ${D[d][2]}">${SCREENS[sc]()}</div>`;
+}
+function fit(root) {
+  root.querySelectorAll(".frame").forEach(f => { const st = f.querySelector(".stage"); if (st) st.style.transform = `scale(${f.clientWidth / 1920})`; });
+}
+function header() {
+  const s = document.getElementById("scenes");
+  s.innerHTML = "<span>Tela:</span>";
+  for (const k in SC) { const b = document.createElement("button"); b.textContent = SC[k]; b.className = k === scene ? "on" : ""; b.onclick = () => { scene = k; store.set("scene", k); render(); }; s.appendChild(b); }
+  const v = document.getElementById("views");
+  v.innerHTML = "<span>Ver:</span>";
+  for (const [k, n] of [["grid", "Telas"], ["redo", "Refazer: menu e loja"], ["fx", "Efeito Explosivo"]]) { const b = document.createElement("button"); b.textContent = n; b.className = k === view ? "on" : ""; b.onclick = () => { view = k; store.set("view", k); render(); }; v.appendChild(b); }
+  document.getElementById("pick").innerHTML = chosen === null ? "Clique em <b>Escolher</b> na sua favorita" : `Sua escolha: <b>${D[chosen][0]}</b> — me diga no chat`;
+}
+function choose(d) { chosen = chosen === d ? null : d; store.set("chosen", chosen); render(); }
+function render() {
+  header();
+  const m = document.getElementById("main");
+  if (view === "redo") {
+    m.innerHTML = `<p class="intro">Mapa aberto: 3 versões novas do menu e 3 da loja. Clique para ver grande.</p><div class="grid">${REDO.map(([k, n]) =>
+      `<div class="cell"><div class="bar"><div class="nm">${n}</div></div><div class="frame" onclick="window.open('fotos/d6_${k}.jpg')"><img class="bg-img" src="fotos/d6_${k}.jpg"></div></div>`).join("")}</div>`;
+    return;
+  }
+  if (view === "fx") {
+    m.innerHTML = `<p class="intro">O "Explosivo" de hoje (variante 4) e as versões anteriores. Diga qual era a bonita.</p><div class="fx" id="fxg"></div>`;
+    fetch("fx/lista.json").then(r => r.json()).then(L => { document.getElementById("fxg").innerHTML = L.map(x => `<div class="cell"><div class="bar"><div><div class="nm">${x.nome}</div><div class="ds">${x.desc}</div></div></div><img src="fx/${x.img}"></div>`).join(""); }).catch(() => { document.getElementById("fxg").innerHTML = "<p>As fotos do efeito ainda estão sendo feitas.</p>"; });
+    return;
+  }
+  m.innerHTML = `<p class="intro">Maquetes: o mundo e as cartas são fotos reais do jogo; só a interface é nova. Clique numa tela para ver grande (setas ← → trocam a direção).</p><div class="grid" id="g"></div>`;
+  const g = document.getElementById("g");
+  D.forEach(([n, ds], d) => {
+    const c = document.createElement("div");
+    c.className = "cell" + (chosen === d ? " chosen" : "");
+    c.innerHTML = `<div class="bar"><div><div class="nm">${n}</div><div class="ds">${ds}</div></div>${d ? `<button>${chosen === d ? "Escolhida ✓" : "Escolher"}</button>` : ""}</div><div class="frame">${stageImg(d, scene)}</div>`;
+    if (d) c.querySelector("button").onclick = () => choose(d);
+    c.querySelector(".frame").onclick = () => zoom(d);
+    g.appendChild(c);
+  });
+  requestAnimationFrame(() => fit(g));
+}
+let zd = 0;
+function zoom(d) {
+  zd = d;
+  const z = document.getElementById("zoom");
+  document.getElementById("zf").innerHTML = stageImg(d, scene);
+  document.getElementById("zc").innerHTML = `<button id="p">←</button><span>${D[d][0]} — ${SC[scene]}</span><button id="n">→</button>${d ? `<button id="ch">${chosen === d ? "Escolhida ✓" : "Escolher esta"}</button>` : ""}<button id="x">Fechar (Esc)</button>`;
+  z.classList.add("on");
+  fit(z);
+  z.querySelector("#p").onclick = () => zoom((d + 6) % 7);
+  z.querySelector("#n").onclick = () => zoom((d + 1) % 7);
+  if (d) z.querySelector("#ch").onclick = () => { choose(d); zoom(d); };
+  z.querySelector("#x").onclick = () => z.classList.remove("on");
+}
+document.getElementById("zf").onclick = () => document.getElementById("zoom").classList.remove("on");
+document.addEventListener("keydown", e => {
+  const z = document.getElementById("zoom");
+  if (!z.classList.contains("on")) return;
+  if (e.key === "Escape") z.classList.remove("on");
+  if (e.key === "ArrowRight") zoom((zd + 1) % 7);
+  if (e.key === "ArrowLeft") zoom((zd + 6) % 7);
+});
+window.addEventListener("resize", () => { fit(document); });
+// ?solo=<direção>&tela=<tela>: só a maquete, 1920x1080 em escala 1 (tools/art/render_ui_mockups.sh tira a foto).
+const Q = new URLSearchParams(location.search);
+if (Q.has("solo")) {
+  if (Q.has("bg")) document.documentElement.classList.add("bgonly");
+  document.body.innerHTML = document.querySelector("svg").outerHTML + `<div style="position:relative;width:1920px;height:1080px;overflow:hidden">${stage(+Q.get("solo"), Q.get("tela"))}</div>`;
+  document.body.style.margin = "0"; if (Q.has("bg")) { document.body.classList.add("bgonly"); document.documentElement.style.background = "transparent"; }
+} else {
+  render();
+}
+</script>
+</body>
+</html>

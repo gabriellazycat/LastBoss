@@ -34,7 +34,7 @@ Em feitiço, dano é multiplicado por `smult × vet` e duração por `vet`; a ma
 | `curse` | `n` (0), `target` (`"hero"`), `radius` | `n` maldições (+1 se Amaldiçoada). |
 | `zone` | `kind`, `radius` (3), `duration` (5) e os da zona | Zona no chão tratada por `Sim._zones()`: `web` (`root`, `soak` opcional: lentidão e prende uma vez por herói), `oil` (`dps`, `soaked`), `fire` (`dps`), `coins` (`stop`, `curses`, `gold`: o primeiro que pisa para e você ganha ouro). |
 | `summon` | `unit` (id de carta ou auxiliar: `skeleton`, `rat`, `bat`, `spectre`), `n` (1), `ring` (0,8) | Invoca unidades em anel no ponto, sem elixir de volta. |
-| `buff` | `slot`, `duration` e os do slot | Reforço com duração (substitui o anterior do mesmo slot): `rally` (`damage`, `speed`: monstros com tag `pack` batem e correm mais), `harvest` (`elixir`: cada monstro seu que morre devolve elixir), `spell_mark` (`bonus`: feitiços machucam mais). Slot novo precisa de código no Sim. |
+| `buff` | `slot`, `duration` e os do slot | Reforço com duração (substitui o anterior do mesmo slot): `rally` (`damage`, `speed`: monstros com tag `pack` batem e correm mais), `harvest` (`elixir`: cada monstro seu que morre devolve elixir), `spell_mark` (`bonus`: feitiços machucam mais), `warcry` (`damage`, `speed`: todos os seus monstros, não só o Bando; Grito de Guerra). Slot novo precisa de código no Sim. |
 | `elixir` | `amount` | Ganha elixir (até o máximo). |
 | `gold` | `amount` | Ganha ouro (como dano/disputa: conta para relíquias). |
 | `pay_gold` | `amount` | Paga ouro (conta em `gold_spent`). |

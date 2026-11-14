@@ -4,7 +4,7 @@
   "bg": "teal"
  },
  "fire_imp": {
-  "subject": "Three small fire imps with glowing orange-red skin, short black horns and thin pointed tails charge forward in a line across bare ground, each one leaning forward with both clawed hands reaching ahead. Small flames flicker along their shoulders and backs. A single charred tree stump stands behind them, and a few embers rise in the air behind the group.",
+  "subject": "Three small fire imps with glowing orange-red skin, short black horns and thin pointed tails charge forward in a line across bare ground, each one leaning forward with both clawed hands reaching ahead. Each imp's eyes are two small yellow leaf shapes filled completely with one solid bright yellow, easy to see against the red skin. Small flames flicker along their shoulders and backs. A single charred tree stump stands behind them, and a few embers rise in the air behind the group.",
   "bg": "slate"
  },
  "tar_net": {
@@ -24,7 +24,7 @@
   "bg": "ochre"
  },
  "bone_legion": {
-  "subject": "Five yellowed human skeletons with dark empty eye sockets and rusty scraps of armor march forward side by side in a wide shallow line, each one holding one rusty short sword in his right hand and one round wooden shield on his left arm. Their jaws hang slightly open and their ribs show clearly. A single leaning gravestone stands behind them, and pale dust rises from their footsteps.",
+  "subject": "Three yellowed human skeletons with dark empty eye sockets march forward side by side in a shallow line, each one holding one plain short sword in his right hand and one plain round wooden shield on his left arm. Each body is a plain smooth pale bone shape with a chest of four thick ribs. A single leaning gravestone stands behind them, and pale dust rises from their footsteps.",
   "bg": "teal"
  },
  "ghoul": {

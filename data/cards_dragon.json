@@ -62,8 +62,8 @@
    "cost": 2,
    "count": 4,
    "xp_parts": 4,
-   "hp": 35,
-   "dps": 4,
+   "hp": 48,
+   "dps": 5,
    "attack_interval": 0.25,
    "speed": 5.5,
    "range": 0.8,
@@ -195,8 +195,8 @@
    "cost": 5,
    "count": 1,
    "xp_parts": 1,
-   "hp": 900,
-   "dps": 28,
+   "hp": 1020,
+   "dps": 32,
    "attack_interval": 1.5,
    "speed": 2.5,
    "range": 1.5,
@@ -551,6 +551,308 @@
     ]
    },
    "fly": true
+  },
+  {
+   "id": "hell_hound",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "chaser",
+   "rarity": "common",
+   "cost": 2,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 150,
+   "dps": 12,
+   "attack_interval": 0.25,
+   "speed": 5.5,
+   "range": 1,
+   "fx": {
+    "burn_hit": 5.0,
+    "burn_s": 3.0
+   },
+   "lvl": [
+    "hp",
+    "dps",
+    "burn_hit"
+   ],
+   "n3": {
+    "burn_hit": 8.0
+   },
+   "owner": "dragon",
+   "family": "fire",
+   "model": "werewolf"
+  },
+  {
+   "id": "ash_salamander",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "tank",
+   "rarity": "uncommon",
+   "cost": 4,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 900,
+   "dps": 20,
+   "attack_interval": 0.25,
+   "speed": 2.5,
+   "range": 1.2,
+   "fx": {
+    "trail_dps": 9.0,
+    "trail_s": 4.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "trail_s": 6.0
+   },
+   "owner": "dragon",
+   "family": "fire",
+   "model": "ogre"
+  },
+  {
+   "id": "drakeling",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "shooter",
+   "rarity": "uncommon",
+   "cost": 5,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 395,
+   "dps": 34,
+   "attack_interval": 0.25,
+   "speed": 3.0,
+   "range": 5,
+   "fx": {
+    "projectile": true,
+    "retreat": 2.5,
+    "burn_hit": 6.0,
+    "burn_s": 2.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "pierce": true
+   },
+   "owner": "dragon",
+   "family": "fire",
+   "fly": true,
+   "model": "fire_imp"
+  },
+  {
+   "id": "magma_golem",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "tank",
+   "rarity": "rare",
+   "cost": 8,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 1400,
+   "dps": 30,
+   "attack_interval": 0.25,
+   "speed": 2.0,
+   "range": 1.6,
+   "fx": {
+    "lava_dps": 25.0,
+    "lava_s": 8.0,
+    "lava_r": 2.5
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "lava_s": 12.0
+   },
+   "owner": "dragon",
+   "family": "fire",
+   "on_death": [
+    {
+     "op": "zone",
+     "kind": "fire",
+     "radius": "lava_r",
+     "duration": "lava_s",
+     "dps": "lava_dps"
+    }
+   ],
+   "model": "ogre"
+  },
+  {
+   "id": "gold_mine",
+   "category": "field",
+   "type": "structure",
+   "tags": [
+    "construct"
+   ],
+   "archetype": "structure",
+   "rarity": "uncommon",
+   "cost": 4,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 300,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 0,
+   "fx": {
+    "gold_per_s": 1.5,
+    "duration": 20.0
+   },
+   "lvl": [
+    "hp",
+    "duration"
+   ],
+   "n3": {
+    "gold_per_s": 2.0
+   },
+   "owner": "dragon",
+   "family": "greed",
+   "ai": {
+    "keys": [
+     "bait_target"
+    ]
+   },
+   "model": "mimic"
+  },
+  {
+   "id": "dragon_exchange",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 3,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "gold": 40
+   },
+   "lvl": [
+    "gold"
+   ],
+   "n3": {
+    "gold": 70
+   },
+   "owner": "dragon",
+   "family": "greed",
+   "ops": [
+    {
+     "op": "gold",
+     "amount": "gold"
+    }
+   ],
+   "model": "gold_bait"
+  },
+  {
+   "id": "ash_phoenix",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "shooter",
+   "rarity": "legendary",
+   "cost": 13,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 3500,
+   "dps": 90,
+   "attack_interval": 0.25,
+   "speed": 3.5,
+   "range": 6,
+   "fx": {
+    "projectile": true,
+    "retreat": 3.0,
+    "rebirth": 0.5,
+    "burn_hit": 10.0,
+    "burn_s": 3.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "rebirth": 0.75
+   },
+   "owner": "dragon",
+   "family": "fire",
+   "fly": true,
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "value": [
+     {
+      "if": {
+       "contest_active": true
+      },
+      "add": 1.0
+     }
+    ]
+   },
+   "model": "elder_dragon"
+  },
+  {
+   "id": "meteor_storm",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "",
+   "rarity": "legendary",
+   "cost": 15,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 5,
+   "fx": {
+    "damage": 180,
+    "burn": 15,
+    "radius": 6.0,
+    "duration": 10.0,
+    "interval": 1.0,
+    "gold_step": 50,
+    "max_meteors": 4
+   },
+   "lvl": [
+    "duration"
+   ],
+   "n3": {
+    "max_meteors": 6
+   },
+   "owner": "dragon",
+   "family": "fire",
+   "ai": {
+    "aim": "cluster",
+    "needs_hit": true
+   },
+   "model": "boiling_oil"
   }
  ]
 }

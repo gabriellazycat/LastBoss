@@ -1,0 +1,565 @@
+{
+ "molten_gold": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo",
+  "nota": "aprovada pelo designer em 13/11 (teste do estilo)"
+ },
+ "bubonic_plague": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo",
+  "nota": "aprovada pelo designer em 13/11 (teste do estilo)"
+ },
+ "death_knight": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo",
+  "nota": "aprovada pelo designer em 13/11 (teste do estilo)"
+ },
+ "cave_troll": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo",
+  "nota": "aprovada pelo designer em 13/11 (teste do estilo)"
+ },
+ "rat_brute": {
+  "seed": 1001,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "infected_bite": {
+  "seed": 1001,
+  "den": 0.78,
+  "dir": "final_novo"
+ },
+ "bat_cloud": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "rat_trap": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "wolf_pack": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "brood_mother": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "corrupt_piper": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "sewer_flood": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "elder_dragon": {
+  "dir": "final_novo",
+  "nota": "aprovada pelo designer em 13/11 (teste do estilo)"
+ },
+ "ruin_titan": {
+  "dir": "final_novo",
+  "nota": "aprovada pelo designer em 13/11 (teste do estilo)"
+ },
+ "war_boar": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hunt_instinct": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "devour": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "rat_tide": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "mother_nest": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "alpha_beast": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "endless_swarm": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "lone_wolf": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hyena_scavenger": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "spitting_viper": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "plague_carrion": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "brown_bear": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "pack_den": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "primal_beast": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "black_pestilence": {
+  "seed": 1002,
+  "den": 0.85,
+  "dir": "final_novo"
+ },
+ "spark": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "kobold_scavengers": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "trap_chest": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "treasure_guard": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "furnace": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "dragon_vault": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "blood_tax": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "ember_rain": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "gold_avalanche": {
+  "seed": 1002,
+  "den": 0.85,
+  "dir": "final_novo"
+ },
+ "eruption": {
+  "seed": 1001,
+  "den": 0.78,
+  "dir": "final_novo"
+ },
+ "hell_hound": {
+  "seed": 1001,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "ash_salamander": {
+  "seed": 1001,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "drakeling": {
+  "seed": 1001,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "magma_golem": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "gold_mine": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "dragon_exchange": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "ash_phoenix": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "meteor_storm": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "raised_servant": {
+  "seed": 1002,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "life_drain": {
+  "seed": 1001,
+  "den": 0.78,
+  "dir": "final_novo"
+ },
+ "profane_ritual": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "open_grave": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "soul_storm": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "bone_colossus": {
+  "seed": 1009,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "arcane_apocalypse": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "eternal_army": {
+  "seed": 1001,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "bone_dragon": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "barricade": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "weakness_curse": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "deep_chalice": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "dark_sacrifice": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "war_banner": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "poison_dart": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "spike_trap": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "goblin_scout": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hired_archer": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "crow_flock": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "fallen_healer": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "dark_messenger": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "war_cry": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "flooded_pit": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hollow_armor": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "rat_horde": {
+  "seed": 1001,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "skeleton_archers": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "goblin_dynamiter": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "slime": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "shadow_bolt": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "bat_nest": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "rat_king": {
+  "seed": 1001,
+  "den": 0.5,
+  "dir": "final_novo",
+  "nota": "aprovada em 13/11 (cadeia A-V2-S1); N\u00c3O regenerar; copia em _arquivo_2026-11-13/novo_estilo/rat_king"
+ },
+ "bone_totem": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "cultists": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "ogre": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "web": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "mimic": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "boiling_oil": {
+  "seed": 1002,
+  "den": 0.78,
+  "dir": "final_novo"
+ },
+ "ghost": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "gargoyle_tower": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "werewolf": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "scrap_golem": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "soul_feast": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "gold_bait": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "burn_village": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "soul_collector": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "forbidden_library": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "dark_forge": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "rabid_rats": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "pack_call": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "rat_burrow": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "oil_splash": {
+  "seed": 1001,
+  "den": 0.78,
+  "dir": "final_novo"
+ },
+ "torch": {
+  "seed": 1001,
+  "den": 0.78,
+  "dir": "final_novo"
+ },
+ "fire_imp": {
+  "seed": 1003,
+  "den": 0.72,
+  "dir": "final_novo"
+ },
+ "tar_net": {
+  "seed": 1001,
+  "den": 0.78,
+  "dir": "final_novo"
+ },
+ "gold_merc": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "toll": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "cursed_coins": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "bone_legion": {
+  "seed": 1001,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "ghoul": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "corpse_blast": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "soul_harvest": {
+  "seed": 1002,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "arcane_spark": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "shadow_echo": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "acolyte": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "shadow_mark": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ }
+}
