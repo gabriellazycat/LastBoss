@@ -1951,10 +1951,23 @@ func t_deck_cycle() -> void:
 	var reshuffled := false
 	for k in 60:
 		s._cycle(k % s.hand.size())
+		# Recarga da vaga (15/11/2026): a compra chega depois de DRAW_DELAY s.
+		for _w in int(ceil(Sim.DRAW_DELAY / s.dt)) + 1:
+			s._tick_draws()
 		ok = ok and _deck_total(s) == s.cards.size() and s.hand.size() == mini(s.hand_size, s.cards.size())
 		reshuffled = reshuffled or int(s.stats.get("shuffles", 0)) > 0
 	check(ok, "ciclo compra/mão/descarte conserva as cartas (%d)" % s.cards.size())
 	check(reshuffled, "descarte é embaralhado quando a compra acaba")
+	# Recarga: a vaga jogada fica vazia por DRAW_DELAY s e só então recebe carta.
+	var w := _sim(3, "treasure")
+	w._cycle(0)
+	var empty_now := w.hand[0] == null and w.hand.size() == mini(w.hand_size, w.cards.size())
+	for _w in int(Sim.DRAW_DELAY / w.dt) - 2:
+		w._tick_draws()
+	var still_empty := w.hand[0] == null and w.wait_left(0) > 0.0
+	for _w in 4:
+		w._tick_draws()
+	check(empty_now and still_empty and w.hand[0] != null, "carta jogada: a vaga espera %.1f s antes da compra" % Sim.DRAW_DELAY)
 	# Retorna: uma vez por embaralhada.
 	var r := _sim(4)
 	var c: Sim.CardInst = r.hand[0]

@@ -44,6 +44,10 @@ var deck_rules: Dictionary = {}
 var elixir := 0.0
 var elixir_max := 10.0
 var hand: Array = []
+## Recarga da vaga (15/11/2026): a carta jogada deixa a vaga vazia (null) por DRAW_DELAY s antes da compra.
+## hand_wait[k] = segundos que faltam para a vaga k receber carta (paralelo a `hand`; null/0 = sem espera).
+const DRAW_DELAY := 1.0
+var hand_wait: Array = []
 ## Pilha de compra (o nome antigo ficou): a mão compra do começo dela. Baralho com descarte (passo C2, 10/11/2026):
 ## carta jogada vai para `discard`; quando a compra acaba, o descarte é embaralhado e vira a compra.
 var queue: Array = []
@@ -238,6 +242,7 @@ func step() -> void:
 		return
 	tick += 1
 	t += dt
+	_tick_draws()
 	_meter()
 	_temps()
 	_elixir()
@@ -1160,7 +1165,7 @@ func _bench_route_cards() -> void:
 	for i in range(hand.size() - 1, -1, -1):
 		if hand[i] and hand[i].def.category == "route":
 			benched.append(hand[i])
-			hand.remove_at(i)
+			_hand_remove(i)
 	_refill_hand()
 
 
@@ -2031,14 +2036,49 @@ func _cycle(hi_: int) -> void:
 	var c: CardInst = hand[hi_]
 	_to_discard(c)
 	if hand.size() > mini(hand_size, HAND_MAX):
-		hand.remove_at(hi_)
+		_hand_remove(hi_)
 	else:
-		var nc := draw_card()
-		if nc:
-			hand[hi_] = nc
-		else:
-			hand.remove_at(hi_)
+		# A vaga fica vazia por DRAW_DELAY s (a mão mostra o tracejado enchendo); _tick_draws compra depois.
+		hand[hi_] = null
+		_set_wait(hi_, DRAW_DELAY)
 	_refill_hand()
+
+
+## Vagas vazias da mão: descontam a espera e, ao zerar, compram (sem carta fora da mão, a vaga sai).
+func _tick_draws() -> void:
+	var i := 0
+	while i < hand.size():
+		if hand[i] == null:
+			var left := wait_left(i) - dt
+			if left > 0.0:
+				_set_wait(i, left)
+			else:
+				var nc := draw_card()
+				if nc == null:
+					_hand_remove(i)
+					continue
+				hand[i] = nc
+				_set_wait(i, 0.0)
+		i += 1
+
+
+## Segundos que faltam para a vaga i da mão receber carta (0 = sem espera).
+func wait_left(i: int) -> float:
+	if i < 0 or i >= hand_wait.size() or hand_wait[i] == null:
+		return 0.0
+	return float(hand_wait[i])
+
+
+func _set_wait(i: int, v: float) -> void:
+	if hand_wait.size() < hand.size():
+		hand_wait.resize(hand.size())
+	hand_wait[i] = v
+
+
+func _hand_remove(i: int) -> void:
+	hand.remove_at(i)
+	if i < hand_wait.size():
+		hand_wait.remove_at(i)
 
 
 ## "Retorna": volta para a compra em posição aleatória, uma vez por embaralhada; nas outras vezes, descarte.
@@ -2078,6 +2118,9 @@ func _refill_hand() -> void:
 	while hand.size() < mini(hand_size, HAND_MAX):
 		var c := draw_card()
 		if c == null:
+			break
+		if hand.size() >= mini(hand_size, HAND_MAX):
+			queue.push_front(c)   # a embaralhada no meio da compra ("compra ao embaralhar") já encheu a mão
 			break
 		hand.append(c)
 

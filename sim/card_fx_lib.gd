@@ -189,8 +189,10 @@ static func run_op(sim: Sim, k: Ctx, o: Dictionary, x: float, y: float) -> void:
 			for i in int(val(k, o.get("n"), 1.0)):
 				if sim.hand.size() < Sim.HAND_MAX:
 					var dc := sim.draw_card()
-					if dc:
+					if dc and sim.hand.size() < Sim.HAND_MAX:
 						sim.hand.append(dc)
+					elif dc:
+						sim.queue.push_front(dc)   # "compra ao embaralhar" encheu a mão no meio da compra
 		_:
 			push_error("CardFxLib: op desconhecida %s na carta %s" % [str(o.get("op", "")), d.id])
 

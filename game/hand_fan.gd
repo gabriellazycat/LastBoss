@@ -262,6 +262,29 @@ func refresh(delta: float) -> void:
 	_refresh_preview(m, motion)
 	_refresh_balloon(m)
 	_refresh_tips(delta)
+	queue_redraw()
+
+
+## Vaga esperando a compra (15/11/2026): contorno tracejado branco e o interior enchendo de baixo para cima
+## durante a recarga (Sim.DRAW_DELAY).
+func _draw() -> void:
+	if sim == null:
+		return
+	var n := sim.hand.size()
+	for k in n:
+		if sim.hand[k] != null:
+			continue
+		var r: Array = _rest(k, n)
+		var f := clampf(1.0 - sim.wait_left(k) / Sim.DRAW_DELAY, 0.0, 1.0)
+		draw_set_transform(r[0], r[1], Vector2.ONE)
+		var box := Rect2(-CARD * 0.5, CARD).grow(-6.0)
+		draw_rect(box, Color(1, 1, 1, 0.08))
+		var fh := box.size.y * f
+		draw_rect(Rect2(box.position.x, box.end.y - fh, box.size.x, fh), Color(1, 1, 1, 0.35))
+		var pts := [box.position, Vector2(box.end.x, box.position.y), box.end, Vector2(box.position.x, box.end.y)]
+		for i in 4:
+			draw_dashed_line(pts[i], pts[(i + 1) % 4], Color(1, 1, 1, 0.9), 2.5, 9.0)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 ## Caixas das palavras-chave ao lado da carta: só depois de TIP_HOLD s com o mouse parado nela (passar rápido não
