@@ -407,6 +407,10 @@ static func grass_material() -> ShaderMaterial:
 static func prop_mesh(id: String) -> Mesh:
 	if look() == 0 or not id in ["tree", "tree_round", "dead_tree", "bush", "rock"]:
 		return null
+	if Looks.g_on():
+		var gm := Looks.g_mesh(id)
+		if gm:
+			return gm
 	var P := preset()
 	var p := "res://assets/models/ground%d/%s.res" % [int(P.get("props", look())), id]
 	if P.has("props_dir"):

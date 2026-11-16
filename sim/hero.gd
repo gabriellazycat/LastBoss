@@ -13,6 +13,7 @@ const TGT_PART := 3
 const TGT_ALTAR := 4
 const TGT_PILLAR := 5
 const HELPER_PIDX := 99    # índice do Herói Ajudante (chaves por herói, como a Peste, não colidem com a fila)
+const HELPER_ENGAGE := 7.0 # Herói Ajudante: raio em que ele escolhe monstros (= a folga da coleira de Sim._follow)
 const LEASH_MAX := 18.0   # a coleira estica até aqui enquanto persegue um alvo
 
 var sim: Sim
@@ -28,7 +29,7 @@ var radius := 0.6
 var level := 1
 var pidx := 0                   # índice deste herói na fila do grupo
 var follower := false           # fase de grupo: anda junto do herói da vez, levantado por quem chegou
-var is_helper := false          # Herói Ajudante (11/11/2026): parado no local, fora do grupo; some no fim da disputa
+var is_helper := false          # Herói Ajudante (11/11/2026): briga junto do herói da vez, fora do grupo; some no fim da disputa
 # Bônus do Herói Ajudante quando o jogador falha (valem até o fim do ato; herói novo não herda).
 var ward := 0.0                 # escudo extra: absorve qualquer dano antes da vida
 var bonus_dmg := 0.0            # +dano (fração)
@@ -91,6 +92,7 @@ var strike_t := 0.0
 var reflect_t := 0.0
 var absorb_t := 0.0   # recarga do "Absorver Almas"
 var second_used := false
+var share := 1.0   # fração da força da party que é deste herói (1 = sozinho)
 var taken: Dictionary = {}
 var taken_total := 0.0
 var leash_mult := 1.0
@@ -108,7 +110,8 @@ func setup(s_: Sim) -> void:
 	sim = s_
 	H = sim.data.hero_of(sim.party_class(0), sim.phase_hp_mult, sim.phase_dmg_mult)
 	AI = H["ai"]
-	base_hp = float(H["hp"]) * float(sim.R.get("hero_hp_mult", 1.0))
+	share = _party_share(0)
+	base_hp = float(H["hp"]) * float(sim.R.get("hero_hp_mult", 1.0)) * share
 	hp = base_hp
 	radius = H["radius"]
 	shield_max = H["shield"]["hp"]
@@ -181,6 +184,7 @@ func clear_act_bonus() -> void:
 ## Copia o estado de outro herói (o seguidor que vira o herói da vez quando a fila acaba).
 func take_over(f: SimHero) -> void:
 	next_hero(f.pidx)
+	second_used = f.second_used
 	hp = f.hp
 	upgrades = f.upgrades.duplicate(true)
 	upgrade_order = f.upgrade_order.duplicate()
@@ -209,7 +213,14 @@ func damage() -> float:
 	# golpe na arena mais forte. Chegar à arena sem ter derrubado heróis na estrada passa a custar caro.
 	if sim.phase == K.Phase.ARENA:
 		m *= 1.0 + float(sim.data.rules["arena"].get("queue_dmg", 0.0)) * maxi(0, sim.party_size() - 1 - sim.party_idx)
-	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * m * (1.0 + bonus_dmg)
+	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * m * (1.0 + bonus_dmg) * share
+
+
+## Parte da força da party que cabe a este membro: a party soma a força de um herói só, dividida entre os membros
+## (expoente em rules.party.share_exp; 1 = divide igual).
+func _party_share(i: int) -> float:
+	var n := sim.party_n_of(i)
+	return 1.0 if n <= 1 else 1.0 / pow(float(n), float(sim.data.rules["party"].get("share_exp", 1.0)))
 
 
 ## Herói seguinte da fila: um nível acima, vida e dano ×step, tudo cheio. Habilidades e dano recebido ficam (são do grupo).
@@ -218,8 +229,9 @@ func next_hero(i: int) -> void:
 	H = sim.data.hero_of(sim.party_class(i), sim.phase_hp_mult, sim.phase_dmg_mult)
 	shield_max = H["shield"]["hp"]
 	shield_cos = cos(deg_to_rad(float(H["shield"]["cone"]) * 0.5))
-	level = i + 1
-	base_hp = float(H["hp"]) * pow(float(sim.data.rules["party"]["step"]), i) * float(sim.R.get("hero_hp_mult", 1.0))
+	level = sim.party_number(i) + 1
+	share = _party_share(i)
+	base_hp = float(H["hp"]) * pow(float(sim.data.rules["party"]["step"]), sim.party_number(i)) * float(sim.R.get("hero_hp_mult", 1.0)) * share
 	curses = 0
 	hp = base_hp
 	shield_hp = shield_max
@@ -289,9 +301,8 @@ func update(dt: float) -> void:
 	_validate_target()
 	_move(dt)
 	if is_helper:
-		# Herói Ajudante: plantado no local (não anda, não é empurrado nem arrastado); só bate em quem chega perto.
-		x = hold_x
-		y = hold_y
+		# Herói Ajudante (15/11/2026): anda e briga ao lado do herói da vez. O ponto de espera (hold) acompanha o
+		# herói e a coleira fica em Sim._follow; sem a lógica de estrada (progresso, impaciência) do herói da vez.
 		_attack(dt)
 		return
 	if sim.phase == K.Phase.ROAD:
@@ -756,7 +767,7 @@ func _choose_target() -> void:
 	var arena := sim.phase == K.Phase.ARENA
 	var unit_r := 3.0 if arena else engage
 	if is_helper:
-		unit_r = minf(unit_r, float(H["attack_range"]) + 1.5)   # parado: só o que ele alcança
+		unit_r = minf(unit_r, HELPER_ENGAGE)   # vai atrás do que chega perto do grupo, sem se afastar do herói
 	if push_t > 0.0 and not arena:
 		unit_r = minf(unit_r, 2.5)   # impaciência: só o que está colado nele
 	# Prorrogação longa (10/11/2026): depois de 2 min dela, o herói vai no chefe e só briga com o que está

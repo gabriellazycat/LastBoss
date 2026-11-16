@@ -68,7 +68,7 @@ func show_tab(id: String) -> void:
 		"cards":
 			body = _cards()
 		"relics":
-			body = _list(data.relic_ids.map(func(r): return [tr("REL_" + r), tr("RELD_" + r), _rarity_col(str(data.relics[r].get("rarity", "common")))]))
+			body = _list(data.relic_ids.map(func(r): return [tr("REL_" + r), tr("RELD_" + r), _rarity_col(str(data.relics[r].get("rarity", "common"))), r]))
 		"mods":
 			body = _list(K.MOD_IDS.map(func(m): return [tr("MOD_" + m), Tips.rich(tr("MODDESC_" + m), false), UiKit.GOLD]))
 		"locs":
@@ -137,6 +137,8 @@ func _list(rows: Array) -> Container:
 		var p := UiKit.panel(UiKit.BG_SOFT, (r[2] as Color).darkened(0.3), 10)
 		var h := HBoxContainer.new()
 		h.add_theme_constant_override("separation", 18)
+		if r.size() > 3:
+			h.add_child(UiKit.relic_icon(str(r[3]), 48.0))   # aba Relíquias: ícone (15/11/2026)
 		var n := UiKit.title(22, (r[2] as Color).lightened(0.3))
 		n.text = r[0]
 		n.custom_minimum_size = Vector2(260, 0)

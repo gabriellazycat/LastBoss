@@ -11,6 +11,18 @@ Substitui a compra com Almas. **Fase = uma run inteira** (~23–27 min); os cont
 - Acabou a compra com Almas (`MetaSave.can_buy/unlock` devolvem falso) e a rara à escolha das fases 3 e 4 (não paga mais). As Almas ainda são ganhas e aparecem no resultado; ficaram sem uso (decidir o que fazer com elas).
 - Saves antigos (versão < 3): a coleção recomeça do deck base + liberadas; Almas, vilões liberados e fases vencidas ficam.
 
+## Rodada 15/11/2026: 75% dos desafios entre runs
+
+Uma boa run liberava mais de 10 cartas. Agora 42 dos 56 desafios (75%) só se cumprem somando várias fases, e 14 (25%) continuam sendo feitos de uma run (combos, rajadas, janelas de tempo, vencer com restrição, vencer a 1ª/2ª fase).
+
+- **"… no total"** (`total: true`): soma o valor de todas as fases. Carta de vilão soma só as fases jogadas com ele; carta comum soma as de todos os vilões. **Runs perdidas também somam.** Tipos que somam: `plays`, `died`, `gold_spent`, `gold_earned`, `elixir_spent`, `soaked_time`, `burn_time`, `coins`, `heroes`.
+- **"… em N fases diferentes"** (`runs: N`): o feito de uma run, cumprido em N fases. Também: "Vença N fases sem jogar estruturas", "Termine N fases com X de ouro".
+- **"Vença N fases com este vilão"** (N ≥ 2) também conta como entre runs.
+- Ritmo pensado: coleção inteira em ~20 runs; metas = 2 a 6 runs normais conforme a raridade. Números **estimados** a partir da sonda com bots de 13/11 (`tools/propostas_numeros.html`, valor típico ≈ 40% do melhor bot), **não medidos** com gente jogando.
+- Save: cartas já liberadas continuam liberadas; os acumulados começam do zero (`MetaSave.totals` por vilão, `MetaSave.runs_done` por carta). Os heróis derrotados antes (`heroes_total`) entram como `totals["_old"]` e valem para todos.
+
+**Página para ver e reescrever:** `python -I tools/desafios_editor/server.py` → http://127.0.0.1:8768 (ou "desafios" no `.claude/launch.json`). Mostra a proporção entre runs / numa run, filtra por vilão e tipo, e "Reescrever" tem modelos com números. "Salvar no jogo" grava `tools/desbloqueios.json` e roda o gerador; texto que o jogo não entende pode virar pedido em `balance_reports/pedidos_desafios.json`. Para o texto novo aparecer no jogo rodando pela linha de comando, reimporte (`--headless --import`); pelo editor do Godot é automático.
+
 ## Onde está
 
 | O quê | Arquivo |

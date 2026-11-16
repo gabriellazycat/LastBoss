@@ -157,6 +157,7 @@ static func run_op(sim: Sim, k: Ctx, o: Dictionary, x: float, y: float) -> void:
 			_zone(sim, k, o, x, y, mul, dur_mul)
 		"buff":
 			var until := sim.t + val(k, o.get("duration")) * dur_mul
+			sim.note_linger(until)
 			match str(o["slot"]):
 				"rally":       # monstros de bando (tag pack): +dano e +velocidade
 					sim.rally_until = until
@@ -210,8 +211,6 @@ static func _status(sim: Sim, k: Ctx, o: Dictionary, x: float, y: float) -> void
 				hh.note("slow", 2.0)
 			"root":
 				hh.root_t = maxf(hh.root_t, dur * sim.cc_mult())
-				if hh == sim.hero:
-					sim._cc()
 			"petrify":
 				hh.petrify_t = maxf(hh.petrify_t, dur)
 			"fear":

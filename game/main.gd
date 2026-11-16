@@ -54,6 +54,11 @@ func _ready() -> void:
 			if not Settings.session.has(key):
 				Settings.session[key] = Settings.v[key]
 			Settings.v[key] = looks[k]
+	# --mapstyle=N (0 a 4): variação dos rios, montanhas e árvores do mapa grande (propostas de 15/11/2026).
+	if auto_args.has("mapstyle"):
+		Minimap.FS = int(auto_args["mapstyle"])
+	if auto_args.has("mapfog"):
+		Minimap.FOG = auto_args["mapfog"] != "0"
 	# Testes e capturas salvam num arquivo próprio: nunca tocam na run salva do jogador.
 	if not auto_args.is_empty():
 		SaveGame.current = "user://test_run.save"

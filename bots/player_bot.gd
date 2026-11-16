@@ -54,7 +54,7 @@ func _random(sim: Sim) -> void:
 	if c.def.is_spell and c.def.category == "field" and not aim_of(c.def) in ["line", "own_unit"]:
 		var a := rng.randf() * TAU
 		pos += Vector2(cos(a), sin(a)) * sqrt(rng.randf()) * float(P.get("spell_spread", 6.0))
-	sim.play(i, pos.x, pos.y)
+	sim.play(i, pos.x, pos.y)   # (o aleatório solta em qualquer ponto: no círculo de um herói a jogada só é recusada)
 	if sim.phase == K.Phase.ARENA and rng.randf() < 0.1:
 		sim.teleport(rng.randi_range(0, sim.arena.altar_pos.size() - 1))
 
@@ -78,6 +78,8 @@ func _greedy(sim: Sim) -> void:
 			break
 		var c2: Sim.CardInst = sim.hand[best]
 		var pos := _target(sim, c2, false)
+		if c2.def.category == "field" and not c2.def.is_spell:
+			pos = sim.clear_of_rings(pos)
 		if sim.play(best, pos.x, pos.y) != K.Block.OK:
 			break
 	if sim.phase == K.Phase.ARENA:
@@ -341,6 +343,8 @@ func _smart(sim: Sim) -> void:
 		if sim.phase == K.Phase.ARENA and sim.elixir - sim.card_cost(c) < float(P.get("teleport_reserve", 2.0)) and sim.arena.tp_cd <= 0.0:
 			break
 		var pos := _smart_target(sim, c, shrine if counting else {})
+		if c.def.category == "field" and not c.def.is_spell:
+			pos = sim.clear_of_rings(pos)
 		if sim.play(best, pos.x, pos.y) != K.Block.OK:
 			break
 	if sim.phase == K.Phase.ARENA:
@@ -640,6 +644,11 @@ func _opt_value(sim: Sim, o: Dictionary) -> float:
 
 ## Evento de texto: soma um valor grosseiro das ações de cada opção; a que pede ouro que falta não conta.
 func _pick_event(sim: Sim, opts: Array) -> int:
+	# Experimento (batch --force_event=id:opção): o evento forçado sempre usa a mesma opção.
+	if sim.force_event_opt >= 0 and sim.force_event != "" and opts.size() > 0 and str(opts[0]["event"]) == sim.force_event:
+		for k in opts.size():
+			if int(opts[k]["opt"]) == sim.force_event_opt and sim.event_option_ok(opts[k]):
+				return k
 	if kind == "random":
 		var ok: Array = []
 		for k in opts.size():

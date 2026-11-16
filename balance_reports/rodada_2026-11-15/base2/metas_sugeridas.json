@@ -1,0 +1,266 @@
+{
+ "alpha_beast": {
+  "meta_atual": 30.0,
+  "kind": "peak",
+  "mediana_maxima": 53.0,
+  "sugestao": 48
+ },
+ "arcane_apocalypse": {
+  "meta_atual": 7.0,
+  "kind": "plays_window",
+  "mediana_maxima": 12.0,
+  "sugestao": 11
+ },
+ "arcane_spark": {
+  "meta_atual": 120.0,
+  "kind": "plays",
+  "mediana_maxima": 102.0,
+  "sugestao": 92
+ },
+ "ash_phoenix": {
+  "meta_atual": 1000.0,
+  "kind": "gold_end",
+  "mediana_maxima": 1674.58,
+  "sugestao": 1507
+ },
+ "bat_cloud": {
+  "meta_atual": 12.0,
+  "kind": "peak",
+  "mediana_maxima": 53.0,
+  "sugestao": 48
+ },
+ "bat_nest": {
+  "meta_atual": 3.0,
+  "kind": "peak",
+  "mediana_maxima": 3.0,
+  "sugestao": 3
+ },
+ "black_pestilence": {
+  "meta_atual": 150.0,
+  "kind": "plays",
+  "mediana_maxima": 218.0,
+  "sugestao": 196
+ },
+ "blood_tax": {
+  "meta_atual": 100.0,
+  "kind": "plays",
+  "mediana_maxima": 218.0,
+  "sugestao": 196
+ },
+ "boiling_oil": {
+  "meta_atual": 75.0,
+  "kind": "soaked_time",
+  "mediana_maxima": 146.425,
+  "sugestao": 132
+ },
+ "bone_colossus": {
+  "meta_atual": 3000.0,
+  "kind": "died",
+  "mediana_maxima": 1274.0,
+  "sugestao": 1147
+ },
+ "bone_dragon": {
+  "meta_atual": 35.0,
+  "kind": "heroes",
+  "mediana_maxima": 7.0,
+  "sugestao": 6
+ },
+ "brown_bear": {
+  "meta_atual": 20.0,
+  "kind": "heroes",
+  "mediana_maxima": 7.0,
+  "sugestao": 6
+ },
+ "burn_village": {
+  "meta_atual": 150.0,
+  "kind": "burn_time",
+  "mediana_maxima": 117.94999999999999,
+  "sugestao": 106
+ },
+ "corrupt_piper": {
+  "meta_atual": 2000.0,
+  "kind": "died",
+  "mediana_maxima": 906.0,
+  "sugestao": 815
+ },
+ "elder_dragon": {
+  "meta_atual": 5.0,
+  "kind": "peak",
+  "mediana_maxima": 5.0,
+  "sugestao": 4
+ },
+ "ember_rain": {
+  "meta_atual": 25.0,
+  "kind": "plays",
+  "mediana_maxima": 218.0,
+  "sugestao": 196
+ },
+ "eternal_army": {
+  "meta_atual": 12.0,
+  "kind": "peak",
+  "mediana_maxima": 18.5,
+  "sugestao": 17
+ },
+ "flooded_pit": {
+  "meta_atual": 5.0,
+  "kind": "plays",
+  "mediana_maxima": 39.0,
+  "sugestao": 35
+ },
+ "forbidden_library": {
+  "meta_atual": 200.0,
+  "kind": "plays",
+  "mediana_maxima": 39.0,
+  "sugestao": 35
+ },
+ "ghost": {
+  "meta_atual": 40.0,
+  "kind": "peak",
+  "mediana_maxima": 18.0,
+  "sugestao": 16
+ },
+ "gold_avalanche": {
+  "meta_atual": 6000.0,
+  "kind": "gold_earned",
+  "mediana_maxima": 5371.049999999999,
+  "sugestao": 4834
+ },
+ "gold_bait": {
+  "meta_atual": 25.0,
+  "kind": "coins",
+  "mediana_maxima": 21.5,
+  "sugestao": 19
+ },
+ "hollow_armor": {
+  "meta_atual": 20.0,
+  "kind": "elixir_max",
+  "mediana_maxima": 20.0,
+  "sugestao": 18
+ },
+ "hunt_instinct": {
+  "meta_atual": 40.0,
+  "kind": "plays",
+  "mediana_maxima": 218.0,
+  "sugestao": 196
+ },
+ "life_drain": {
+  "meta_atual": 5.0,
+  "kind": "curses",
+  "mediana_maxima": 10.0,
+  "sugestao": 9
+ },
+ "magma_golem": {
+  "meta_atual": 10.0,
+  "kind": "peak",
+  "mediana_maxima": 61.0,
+  "sugestao": 55
+ },
+ "meteor_storm": {
+  "meta_atual": 80.0,
+  "kind": "plays",
+  "mediana_maxima": 59.5,
+  "sugestao": 54
+ },
+ "mimic": {
+  "meta_atual": 60.0,
+  "kind": "plays",
+  "mediana_maxima": 23.5,
+  "sugestao": 21
+ },
+ "molten_gold": {
+  "meta_atual": 2000.0,
+  "kind": "elixir_spent",
+  "mediana_maxima": 812.5,
+  "sugestao": 731
+ },
+ "mother_nest": {
+  "meta_atual": 20.0,
+  "kind": "peak_on_spell",
+  "mediana_maxima": 36.5,
+  "sugestao": 33
+ },
+ "ogre": {
+  "meta_atual": 600.0,
+  "kind": "plays",
+  "mediana_maxima": 202.5,
+  "sugestao": 182
+ },
+ "pack_den": {
+  "meta_atual": 40.0,
+  "kind": "plays",
+  "mediana_maxima": 23.5,
+  "sugestao": 21
+ },
+ "plague_carrion": {
+  "meta_atual": 40.0,
+  "kind": "peak",
+  "mediana_maxima": 61.0,
+  "sugestao": 55
+ },
+ "primal_beast": {
+  "meta_atual": 600.0,
+  "kind": "plays",
+  "mediana_maxima": 115.0,
+  "sugestao": 104
+ },
+ "rat_tide": {
+  "meta_atual": 40.0,
+  "kind": "plays_same",
+  "mediana_maxima": 52.0,
+  "sugestao": 47
+ },
+ "rat_trap": {
+  "meta_atual": 5.0,
+  "kind": "peste",
+  "mediana_maxima": 15.0,
+  "sugestao": 14
+ },
+ "shadow_echo": {
+  "meta_atual": 5.0,
+  "kind": "plays_window",
+  "mediana_maxima": 6.0,
+  "sugestao": 5
+ },
+ "shadow_mark": {
+  "meta_atual": 1000.0,
+  "kind": "plays",
+  "mediana_maxima": 408.0,
+  "sugestao": 367
+ },
+ "soul_collector": {
+  "meta_atual": 2000.0,
+  "kind": "burst",
+  "mediana_maxima": 4457.865,
+  "sugestao": 4012
+ },
+ "soul_feast": {
+  "meta_atual": 400.0,
+  "kind": "plays",
+  "mediana_maxima": 218.0,
+  "sugestao": 196
+ },
+ "soul_storm": {
+  "meta_atual": 6.0,
+  "kind": "spells_distinct",
+  "mediana_maxima": 7.0,
+  "sugestao": 6
+ },
+ "spike_trap": {
+  "meta_atual": 5.0,
+  "kind": "plays_window",
+  "mediana_maxima": 9.0,
+  "sugestao": 8
+ },
+ "spitting_viper": {
+  "meta_atual": 150.0,
+  "kind": "plays",
+  "mediana_maxima": 73.0,
+  "sugestao": 66
+ },
+ "tar_net": {
+  "meta_atual": 2000.0,
+  "kind": "gold_spent",
+  "mediana_maxima": 1085.0,
+  "sugestao": 976
+ }
+}

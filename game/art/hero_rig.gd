@@ -9,15 +9,23 @@ const SCENES := {5: "res://assets/models/cc0/hero_knight.scn"}
 const HIDE := ["1H_Sword_Offhand", "Badge_Shield", "Rectangle_Shield", "Spike_Shield", "2H_Sword"]
 const HEIGHT := 1.75
 # Classes da campanha (rodada autônoma de 09/11/2026): cena, peças escondidas, ataque e tom de cada uma.
-const CLASS_SCENE := {"escudeiro": "hero_knight", "arqueira": "hero_rogue_hooded", "mago": "hero_mage", "cleriga": "hero_mage"}
+const CLASS_SCENE := {"escudeiro": "hero_knight", "arqueira": "hero_rogue_hooded", "mago": "hero_mage", "cleriga": "hero_mage",
+	"assassino": "hero_rogue_hooded", "barbaro": "hero_knight", "besteiro": "hero_rogue_hooded", "guardiao": "hero_knight"}
 const CLASS_HIDE := {
 	"escudeiro": ["1H_Sword_Offhand", "Badge_Shield", "Rectangle_Shield", "Spike_Shield", "2H_Sword"],
 	"arqueira": ["Knife_Offhand", "2H_Crossbow", "Knife", "Throwable"],
 	"mago": ["Spellbook", "Spellbook_open", "1H_Wand"],
 	"cleriga": ["Spellbook", "1H_Wand", "2H_Staff"],
+	# Mesmos pacotes das outras classes, com outras peças à mostra (15/11/2026).
+	"assassino": ["2H_Crossbow", "1H_Crossbow", "Throwable"],
+	"barbaro": ["1H_Sword_Offhand", "Badge_Shield", "Rectangle_Shield", "Spike_Shield", "Round_Shield", "1H_Sword"],
+	"besteiro": ["Knife_Offhand", "Knife", "1H_Crossbow", "Throwable"],
+	"guardiao": ["1H_Sword_Offhand", "Badge_Shield", "Spike_Shield", "2H_Sword"],
 }
-const CLASS_ATTACK := {"escudeiro": "1H_Melee_Attack_Slice_Diagonal", "arqueira": "1H_Ranged_Shoot", "mago": "Spellcast_Shoot", "cleriga": "Spellcast_Shoot"}
-const CLASS_TINT := {"cleriga": Color(1.0, 0.92, 0.62)}
+const CLASS_ATTACK := {"escudeiro": "1H_Melee_Attack_Slice_Diagonal", "arqueira": "1H_Ranged_Shoot", "mago": "Spellcast_Shoot", "cleriga": "Spellcast_Shoot",
+	"assassino": "1H_Melee_Attack_Slice_Diagonal", "barbaro": "1H_Melee_Attack_Slice_Diagonal", "besteiro": "1H_Ranged_Shoot", "guardiao": "1H_Melee_Attack_Slice_Diagonal"}
+const CLASS_TINT := {"cleriga": Color(1.0, 0.92, 0.62), "assassino": Color(0.62, 0.55, 0.78), "barbaro": Color(1.0, 0.7, 0.55),
+	"besteiro": Color(0.8, 1.0, 0.75), "guardiao": Color(0.7, 0.82, 1.0)}
 
 var ap: AnimationPlayer
 var view: Node

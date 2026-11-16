@@ -1,5 +1,5 @@
 {
- "_doc": "Gerado por tools/gerar_unlocks.py a partir de tools/desbloqueios.json. free = cartas liberadas desde o início (podem ser sorteadas nas ofertas); challenges = desafio que libera cada carta bloqueada (texto em UNLOCK_<id>). Fase = uma run inteira; contadores 'numa mesma fase' zeram a cada fase.",
+ "_doc": "Gerado por tools/gerar_unlocks.py a partir de tools/desbloqueios.json. free = cartas liberadas desde o início (podem ser sorteadas nas ofertas); challenges = desafio que libera cada carta bloqueada (texto em UNLOCK_<id>). Fase = uma run inteira; contadores 'numa mesma fase' zeram a cada fase. total = soma entre fases (carta de vilão: só as fases com ele; comum: todas); runs = em quantas fases diferentes o feito aconteceu.",
  "free": [
   "barricade",
   "bubonic_plague",
@@ -49,58 +49,67 @@
   "arcane_spark": {
    "kind": "plays",
    "fam": "shadow_spell",
-   "n": 30
+   "n": 120,
+   "total": true
   },
   "ash_phoenix": {
    "kind": "gold_end",
-   "n": 1000
+   "n": 1000,
+   "runs": 4
   },
   "bat_cloud": {
    "kind": "peak",
    "fam": "pack",
-   "n": 12
+   "n": 12,
+   "runs": 2
   },
   "bat_nest": {
    "kind": "peak",
    "fam": "structure",
-   "n": 3
+   "n": 3,
+   "runs": 3
   },
   "black_pestilence": {
    "kind": "plays",
    "fam": "spell",
-   "n": 30
+   "n": 150,
+   "total": true
   },
   "blood_tax": {
-   "kind": "plays_window",
+   "kind": "plays",
    "fam": "spell",
-   "n": 5,
-   "s": 20.0
+   "n": 100,
+   "total": true
   },
   "boiling_oil": {
    "kind": "soaked_time",
-   "s": 20.0
+   "s": 75.0,
+   "total": true
   },
   "bone_colossus": {
    "kind": "died",
    "fam": "monster",
-   "n": 550
+   "n": 3000,
+   "total": true
   },
   "bone_dragon": {
-   "kind": "died",
-   "fam": "monster",
-   "n": 700
+   "kind": "heroes",
+   "n": 35,
+   "total": true
   },
   "bone_totem": {
    "kind": "wins",
    "n": 2
   },
   "brown_bear": {
-   "kind": "heroes_total",
-   "n": 30
+   "kind": "heroes",
+   "n": 20,
+   "total": true
   },
   "burn_village": {
    "kind": "burn_time",
-   "s": 40.0
+   "s": 150.0,
+   "total": true
   },
   "cave_troll": {
    "kind": "win_phase",
@@ -109,7 +118,8 @@
   "corrupt_piper": {
    "kind": "died",
    "fam": "rat",
-   "n": 1000
+   "n": 2000,
+   "total": true
   },
   "devour": {
    "kind": "win_max",
@@ -128,7 +138,8 @@
   "ember_rain": {
    "kind": "plays",
    "fam": "spell",
-   "n": 25
+   "n": 25,
+   "runs": 3
   },
   "eruption": {
    "kind": "win_without",
@@ -137,7 +148,8 @@
   "eternal_army": {
    "kind": "peak",
    "fam": "undead",
-   "n": 12
+   "n": 12,
+   "runs": 5
   },
   "fallen_healer": {
    "kind": "loss_max",
@@ -146,12 +158,14 @@
   "flooded_pit": {
    "kind": "plays",
    "fam": "lair",
-   "n": 5
+   "n": 5,
+   "runs": 4
   },
   "forbidden_library": {
    "kind": "plays",
    "fam": "lair",
-   "n": 30
+   "n": 200,
+   "total": true
   },
   "furnace": {
    "kind": "wins",
@@ -160,81 +174,97 @@
   "ghost": {
    "kind": "peak",
    "fam": "skeleton",
-   "n": 40
+   "n": 40,
+   "runs": 3
   },
   "gold_avalanche": {
    "kind": "gold_earned",
-   "n": 1500
+   "n": 6000,
+   "total": true
   },
   "gold_bait": {
    "kind": "coins",
-   "n": 10
+   "n": 25,
+   "total": true
   },
   "hollow_armor": {
    "kind": "elixir_max",
-   "n": 15
+   "n": 20,
+   "runs": 4
   },
   "hunt_instinct": {
-   "kind": "plays_window",
+   "kind": "plays",
    "fam": "spell",
-   "n": 4,
-   "s": 20.0
+   "n": 40,
+   "total": true
   },
   "life_drain": {
    "kind": "curses",
-   "n": 5
+   "n": 5,
+   "runs": 2
   },
   "magma_golem": {
    "kind": "peak",
    "fam": "monster",
-   "n": 10
+   "n": 10,
+   "runs": 4
   },
   "meteor_storm": {
    "kind": "plays",
    "fam": "fire_spell",
-   "n": 15
+   "n": 80,
+   "total": true
   },
   "mimic": {
    "kind": "plays",
    "fam": "structure",
-   "n": 15
+   "n": 60,
+   "total": true
   },
   "molten_gold": {
    "kind": "elixir_spent",
-   "n": 600
+   "n": 2000,
+   "total": true
   },
   "mother_nest": {
    "kind": "peak_on_spell",
    "fam": "pack",
-   "n": 20
+   "n": 20,
+   "runs": 3
   },
   "ogre": {
    "kind": "plays",
    "fam": "monster",
-   "n": 100
+   "n": 600,
+   "total": true
   },
   "pack_den": {
    "kind": "plays",
    "fam": "structure",
-   "n": 15
+   "n": 40,
+   "total": true
   },
   "plague_carrion": {
    "kind": "peak",
    "fam": "monster",
-   "n": 40
+   "n": 40,
+   "runs": 3
   },
   "primal_beast": {
    "kind": "plays",
    "fam": "pack_card",
-   "n": 100
+   "n": 600,
+   "total": true
   },
   "rat_tide": {
    "kind": "plays_same",
-   "n": 40
+   "n": 40,
+   "runs": 3
   },
   "rat_trap": {
    "kind": "peste",
-   "n": 5
+   "n": 5,
+   "runs": 2
   },
   "ruin_titan": {
    "kind": "win_phase",
@@ -253,7 +283,8 @@
   "shadow_mark": {
    "kind": "plays",
    "fam": "any",
-   "n": 300
+   "n": 1000,
+   "total": true
   },
   "slime": {
    "kind": "peak_multi",
@@ -270,11 +301,13 @@
   "soul_feast": {
    "kind": "plays",
    "fam": "spell",
-   "n": 70
+   "n": 400,
+   "total": true
   },
   "soul_harvest": {
    "kind": "win_without",
-   "fam": "structure"
+   "fam": "structure",
+   "runs": 2
   },
   "soul_storm": {
    "kind": "spells_distinct",
@@ -282,7 +315,8 @@
   },
   "spark": {
    "kind": "soak_ignite",
-   "s": 8.0
+   "s": 8.0,
+   "runs": 2
   },
   "spike_trap": {
    "kind": "plays_window",
@@ -293,11 +327,13 @@
   "spitting_viper": {
    "kind": "plays",
    "fam": "beast",
-   "n": 40
+   "n": 150,
+   "total": true
   },
   "tar_net": {
    "kind": "gold_spent",
-   "n": 450
+   "n": 2000,
+   "total": true
   }
  }
 }

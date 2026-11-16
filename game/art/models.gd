@@ -551,6 +551,10 @@ static func has_dir_prop(id: String) -> bool:
 
 
 static func prop(id: String) -> ArrayMesh:
+	if Looks.g_on():
+		var gm := Looks.g_mesh(id)
+		if gm is ArrayMesh:
+			return gm
 	# Direção com cenário próprio (look de chão com "props_dir", ex.: Blender v2): a peça de lá, se existir.
 	var pd: String = GroundLooks.preset().get("props_dir", "")
 	if pd != "" and pd != "cc0":

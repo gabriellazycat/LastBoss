@@ -205,8 +205,6 @@ static func _units_pass(sim: Sim, st: Dictionary, dt2: float) -> void:
 				for hh: SimHero in heroes:
 					if Vector2(hh.x - U.px[i], hh.y - U.py[i]).length() <= hh.radius + U.rad[i] + float(c.fx["trigger"]):
 						hh.root_t = maxf(hh.root_t, c.fxv("root", int(U.lvl[i])) * sim.cc_mult())
-						if hh == sim.hero:
-							sim._cc()
 						var n2 := int(c.fx["rats"])
 						for q in n2:
 							var a2 := q * TAU / float(n2)
@@ -288,8 +286,6 @@ static func on_unit_hit(sim: Sim, i: int, real: float) -> void:
 		U.timer2[i] = float(c.fx["cd"])
 		hh.knockback(U.px[i], U.py[i], float(c.fx["push"]))
 		hh.petrify_t = maxf(hh.petrify_t, c.fxv("stun", int(U.lvl[i])) * sim.cc_mult())
-		if hh == sim.hero:
-			sim._cc()
 
 
 ## Bônus somado ao dano que o herói `hh` recebe de qualquer fonte (0.0 = nada; 0.15 = +15%).

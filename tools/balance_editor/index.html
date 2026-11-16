@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balanceamento das Cartas</title>
+<style>
+:root {
+  --bg: #f4efe4; --panel: #fffaf0; --ink: #2b2420; --muted: #7a6d60; --line: #ddd2bf;
+  --accent: #8a3b2b; --changed: #fff0b8; --changed-line: #c99a1a; --good: #2f7d3a; --bad: #b0412e;
+  --chip: #ece3d2; --req: #e6f0ff; --req-line: #6b8fc9;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #1b1815; --panel: #25211d; --ink: #ece4d6; --muted: #a59886; --line: #3c352e;
+    --accent: #e08a6a; --changed: #4a3d12; --changed-line: #d9a92a; --good: #79c784; --bad: #ef7d68;
+    --chip: #332d27; --req: #1f2b3d; --req-line: #6b8fc9; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, "Segoe UI", sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 16px; }
+h1 { font-size: 18px; margin: 0 0 8px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+input, select, textarea, button { font: inherit; color: inherit; }
+input[type=search], select { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button:disabled { opacity: .45; cursor: default; }
+.hint { color: var(--muted); font-size: 12px; }
+main { padding: 12px 16px 90px; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; text-align: left; }
+th { position: sticky; top: var(--hdr, 92px); background: var(--chip); font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; z-index: 2; }
+th.num, td.num { text-align: right; }
+th .arrow { color: var(--muted); }
+tr.card-row:hover { background: color-mix(in srgb, var(--chip) 50%, transparent); }
+img.art { width: 46px; height: 62px; object-fit: cover; border-radius: 4px; display: block; background: var(--chip); }
+.name { font-weight: 600; }
+.sub { color: var(--muted); font-size: 12px; }
+.chip { display: inline-block; background: var(--chip); border-radius: 10px; padding: 0 7px; font-size: 11px; margin-right: 3px; }
+input.n { width: 64px; text-align: right; background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 3px 5px; }
+input.n:hover { border-color: var(--line); }
+input.n:focus { border-color: var(--accent); outline: none; background: var(--panel); }
+input.n.changed { background: var(--changed); border-color: var(--changed-line); }
+input.n:disabled { color: var(--muted); }
+.was { color: var(--muted); font-size: 11px; text-decoration: line-through; display: block; text-align: right; }
+.derived { color: var(--muted); font-variant-numeric: tabular-nums; }
+.desc { max-width: 340px; font-size: 13px; }
+.kw { color: var(--accent); font-weight: 600; }
+.toggle { background: none; border: none; padding: 2px 6px; font-size: 16px; color: var(--muted); }
+.req-dot { display: inline-block; background: var(--req-line); color: #fff; border-radius: 8px; font-size: 11px; padding: 0 6px; margin-left: 4px; }
+tr.detail td { background: color-mix(in srgb, var(--chip) 40%, var(--panel)); }
+.detail-grid { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(280px, 1.3fr); gap: 16px; }
+.fx { display: grid; grid-template-columns: auto auto; gap: 4px 10px; align-items: center; justify-content: start; }
+.fx label { font-size: 12px; color: var(--muted); }
+textarea { width: 100%; min-height: 70px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px; resize: vertical; }
+.reqbox { background: var(--req); border: 1px solid var(--req-line); border-radius: 8px; padding: 8px 10px; }
+footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 2px solid var(--changed-line); padding: 10px 16px; display: none; gap: 10px; align-items: center; z-index: 6; }
+footer.on { display: flex; }
+#toast { position: fixed; right: 16px; bottom: 70px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 7; max-width: 420px; }
+#toast.on { opacity: 1; }
+details.pending { margin-top: 8px; }
+details.pending li { margin: 3px 0; }
+@media (max-width: 760px) { .hide-sm { display: none; } .detail-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header id="hdr">
+  <h1>Balanceamento das cartas</h1>
+  <div class="bar">
+    <input type="search" id="q" placeholder="Buscar carta…">
+    <select id="deck"><option value="">Todos os baralhos</option></select>
+    <select id="type"><option value="">Todos os tipos</option></select>
+    <label><input type="checkbox" id="onlyChanged"> só alteradas</label>
+    <span class="hint" id="count"></span>
+    <span class="hint">Números do nível 1 · DPS e vida são de <b>uma</b> unidade · clique ▸ para efeitos e pedidos de texto</span>
+  </div>
+  <details class="pending" id="pendingBox"><summary id="pendingSum"></summary><ul id="pendingList"></ul></details>
+</header>
+<main>
+  <table>
+    <thead><tr id="thead"></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</main>
+<footer id="foot">
+  <b id="nChanges"></b>
+  <span class="hint">Grava em data/cards*.json. Reabra o jogo para ver.</span>
+  <span style="flex:1"></span>
+  <button id="discard">Descartar</button>
+  <button class="primary" id="save">Salvar</button>
+</footer>
+<div id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+let DB = null, rows = [], edits = {}, open = new Set(), sortKey = "deck", sortDir = 1;
+const TYPE_ORDER = { swarm: 0, monster: 1, structure: 2, spell: 3, lair: 4, route: 5 };
+const COLS = [
+  { k: "", label: "" },
+  { k: "", label: "" },
+  { k: "name", label: "Carta" },
+  { k: "cost", label: "Custo", num: 1 },
+  { k: "count", label: "Unid.", num: 1 },
+  { k: "hp", label: "Vida", num: 1 },
+  { k: "dps", label: "DPS", num: 1 },
+  { k: "tdps", label: "DPS total", num: 1, hide: 1, title: "DPS × unidades" },
+  { k: "dpse", label: "DPS/elixir", num: 1, hide: 1, title: "DPS total ÷ custo" },
+  { k: "hpe", label: "Vida/elixir", num: 1, hide: 1, title: "vida × unidades ÷ custo" },
+  { k: "desc", label: "Texto" },
+];
+
+function toast(t, ms = 2600) { const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), ms); }
+function fmt(x) { if (x === "" || x == null || isNaN(x)) return "–"; return Math.abs(x) >= 20 || Number.isInteger(+x) ? String(Math.round(x)) : String(Math.round(x * 10) / 10); }
+function deckName(o) { return o === "common" ? "Comuns (todos)" : (DB.decks[o] || o || "—"); }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+// Valor atual (editado ou do arquivo).
+function val(r, key) {
+  const e = edits[r.card.id];
+  if (e && key in e) return +e[key];
+  if (key.startsWith("fx.")) return +r.card.fx[key.slice(3)];
+  if (key.startsWith("n3.")) return +r.card.n3[key.slice(3)];
+  return +r.card[key];
+}
+function orig(r, key) {
+  if (key.startsWith("fx.")) return r.card.fx[key.slice(3)];
+  if (key.startsWith("n3.")) return r.card.n3[key.slice(3)];
+  return r.card[key];
+}
+function isUnit(r) { return r.card.archetype && r.card.archetype !== "none" && ["monster", "swarm", "structure"].includes(r.card.type); }
+
+// Texto da carta no nível 1, como o jogo monta (UiKit.card_params).
+function descText(r, tpl) {
+  const p = { count: val(r, "count") };
+  for (const [k, v] of Object.entries(r.card.fx || {})) {
+    if (typeof v === "number") { const x = val(r, "fx." + k); p[k + "_pct"] = Math.round(x * 100); p[k] = fmt(x); } else p[k] = v;
+  }
+  for (const [k, v] of Object.entries(r.card.n3 || {})) {
+    if (!(k in p) && typeof v === "number") { const x = val(r, "n3." + k); p[k + "_pct"] = Math.round(x * 100); p[k] = fmt(x); }
+  }
+  let t = esc(tpl).replace(/\{(\w+)\}/g, (m, k) => k in p ? `<b>${p[k]}</b>` : m);
+  t = t.replace(/\[\[([a-z_]+)(?:\|([^\]]+))?\]\]/g, (m, id, shown) => `<span class="kw">${shown || DB.kw[id] || id}</span>`);
+  return t;
+}
+function derived(r) {
+  const n = val(r, "count") || 1, c = val(r, "cost") || 0, unit = isUnit(r);
+  const tdps = unit ? val(r, "dps") * n : NaN, thp = unit ? val(r, "hp") * n : NaN;
+  return { tdps, dpse: c ? tdps / c : NaN, hpe: c ? thp / c : NaN };
+}
+function sortVal(r) {
+  switch (sortKey) {
+    case "deck": return [r.card.owner || "", TYPE_ORDER[r.card.type] ?? 9, val(r, "cost"), r.name];
+    case "name": return [r.name];
+    case "desc": return [r.desc];
+    case "tdps": case "dpse": case "hpe": { const v = derived(r)[sortKey]; return [isNaN(v) ? -1 : v]; }
+    default: return [val(r, sortKey) || 0];
+  }
+}
+function cmp(a, b) { for (let i = 0; i < a.length; i++) { if (a[i] < b[i]) return -1; if (a[i] > b[i]) return 1; } return 0; }
+
+function pendingFor(id) { return DB.requests.filter(q => q.id === id && q.status === "pendente"); }
+
+function numInput(r, key, disabled) {
+  const v = val(r, key), o = orig(r, key), ch = edits[r.card.id] && key in edits[r.card.id];
+  return `<input class="n${ch ? " changed" : ""}" data-id="${r.card.id}" data-k="${key}" value="${fmt(v) === "–" ? "" : v}" ${disabled ? "disabled" : ""} inputmode="decimal">` +
+    (ch ? `<span class="was">${o}</span>` : "");
+}
+
+function render() {
+  const q = $("#q").value.trim().toLowerCase(), dk = $("#deck").value, tp = $("#type").value, oc = $("#onlyChanged").checked;
+  const list = rows.filter(r =>
+    (!q || r.name.toLowerCase().includes(q) || r.card.id.includes(q) || r.desc.toLowerCase().includes(q)) &&
+    (!dk || (r.card.owner || "") === dk) && (!tp || r.card.type === tp) && (!oc || edits[r.card.id]));
+  list.sort((a, b) => cmp(sortVal(a), sortVal(b)) * sortDir);
+  $("#count").textContent = `${list.length} de ${rows.length} cartas`;
+  $("#thead").innerHTML = COLS.map(c => `<th class="${c.num ? "num " : ""}${c.hide ? "hide-sm" : ""}" data-k="${c.k}" title="${c.title || ""}">${c.label}${c.k && c.k === sortKey ? `<span class="arrow"> ${sortDir > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
+  const html = [];
+  for (const r of list) {
+    const id = r.card.id, unit = isUnit(r), d = derived(r), pend = pendingFor(id).length;
+    html.push(`<tr class="card-row" data-id="${id}">
+      <td><button class="toggle" data-open="${id}" title="Efeitos e pedido de texto">${open.has(id) ? "▾" : "▸"}</button></td>
+      <td>${r.art ? `<img class="art" loading="lazy" src="/art/${id}.png" alt="">` : ""}</td>
+      <td><div class="name">${esc(r.name)}${pend ? `<span class="req-dot" title="pedido de texto pendente">pedido</span>` : ""}</div>
+        <div class="sub"><span class="chip">${esc(deckName(r.card.owner))}</span>${esc(DB.types[r.card.type] || r.card.type)} · ${esc(DB.rarity[r.card.rarity] || r.card.rarity || "")}</div></td>
+      <td class="num">${numInput(r, "cost")}</td>
+      <td class="num">${numInput(r, "count", !unit)}</td>
+      <td class="num">${numInput(r, "hp", !unit)}</td>
+      <td class="num">${numInput(r, "dps", !unit)}</td>
+      <td class="num derived hide-sm">${fmt(d.tdps)}</td>
+      <td class="num derived hide-sm">${fmt(d.dpse)}</td>
+      <td class="num derived hide-sm">${fmt(d.hpe)}</td>
+      <td class="desc">${descText(r, r.desc)}</td></tr>`);
+    if (open.has(id)) html.push(detailRow(r));
+  }
+  $("#tbody").innerHTML = html.join("");
+  const n = Object.values(edits).reduce((a, e) => a + Object.keys(e).length, 0);
+  $("#foot").classList.toggle("on", n > 0);
+  $("#nChanges").textContent = `${n} ${n === 1 ? "mudança" : "mudanças"} em ${Object.keys(edits).length} ${Object.keys(edits).length === 1 ? "carta" : "cartas"} sem salvar`;
+  renderPending();
+}
+
+function detailRow(r) {
+  const id = r.card.id, c = r.card;
+  const fxKeys = Object.entries(c.fx || {}).filter(([, v]) => typeof v === "number").map(([k]) => "fx." + k);
+  const n3Keys = Object.entries(c.n3 || {}).filter(([, v]) => typeof v === "number").map(([k]) => "n3." + k);
+  const extra = isUnit(r) ? ["attack_interval", "speed", "range"].filter(k => k in c) : [];
+  const flags = [...Object.entries(c.fx || {}), ...Object.entries(c.n3 || {})].filter(([, v]) => typeof v !== "number").map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+  const NAMES = { attack_interval: "intervalo entre golpes (s)", speed: "velocidade", range: "alcance" };
+  const field = k => `<label>${NAMES[k] || k.replace("fx.", "").replace("n3.", "nível 3 · ")}</label><div>${numInput(r, k)}</div>`;
+  const pend = pendingFor(id);
+  const hit = isUnit(r) ? ` · dano por golpe ≈ ${fmt(val(r, "dps") * val(r, "attack_interval"))}` : "";
+  return `<tr class="detail"><td></td><td colspan="${COLS.length - 1}"><div class="detail-grid">
+    <div>
+      <div class="sub" style="margin-bottom:6px">Números do efeito${hit}</div>
+      <div class="fx">${[...extra, ...fxKeys, ...n3Keys].map(field).join("") || '<span class="hint">sem números de efeito</span>'}</div>
+      ${flags.length ? `<div class="hint" style="margin-top:6px">Ligado/desligado (só por pedido): ${esc(flags.join(", "))}</div>` : ""}
+      ${r.n3 ? `<div class="sub" style="margin-top:8px">Nível 3: ${descText(r, r.n3.replace(/^N3:\s*/, ""))}</div>` : ""}
+      <div class="hint" style="margin-top:6px">id: ${id} · arquivo: data/${r.file}.json · cresce no nível: ${esc((c.lvl || []).join(", ") || "—")}</div>
+    </div>
+    <div class="reqbox">
+      <div class="sub" style="margin-bottom:4px"><b>Pedido para o Claude</b> — descreva o que a carta deve fazer (efeito novo, mudança de regra, texto).</div>
+      <textarea data-req="${id}" placeholder="Ex.: em vez de liberar 6 ratos ao morrer, dá +20% de velocidade ao Bando por 5 s.">${esc(pend[0]?.texto || "")}</textarea>
+      <div class="bar" style="margin-top:6px"><button data-sendreq="${id}">${pend.length ? "Atualizar pedido" : "Enviar pedido"}</button>
+      ${pend.length ? `<button data-delreq="${id}">Apagar pedido</button><span class="hint">enviado ${esc(pend[0].data)}</span>` : ""}</div>
+    </div></div></td></tr>`;
+}
+
+function renderPending() {
+  const p = DB.requests.filter(q => q.status === "pendente");
+  $("#pendingBox").style.display = p.length ? "" : "none";
+  $("#pendingSum").textContent = `${p.length} ${p.length === 1 ? "pedido de texto pendente" : "pedidos de texto pendentes"} (o Claude aplica quando você pedir)`;
+  const nm = id => (rows.find(r => r.card.id === id) || {}).name || id;
+  $("#pendingList").innerHTML = p.map(q => `<li><b>${esc(nm(q.id))}</b>: ${esc(q.texto)}</li>`).join("");
+}
+
+function setEdit(id, key, raw) {
+  const r = rows.find(x => x.card.id === id);
+  const s = String(raw).replace(",", ".").trim();
+  if (s === "" || isNaN(+s)) return false;
+  edits[id] = edits[id] || {};
+  if (+s === +orig(r, key)) delete edits[id][key]; else edits[id][key] = +s;
+  if (!Object.keys(edits[id]).length) delete edits[id];
+  return true;
+}
+
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.matches("input.n")) {
+    if (!setEdit(t.dataset.id, t.dataset.k, t.value)) toast("Número inválido");
+    const focus = document.activeElement?.matches?.("input.n") ? [document.activeElement.dataset.id, document.activeElement.dataset.k] : null;
+    render();
+    if (focus) document.querySelector(`input.n[data-id="${focus[0]}"][data-k="${focus[1]}"]`)?.focus();
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input.n") && e.key === "Enter") { e.target.blur(); }
+  if (e.target.matches("input.n") && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+    e.preventDefault();
+    const step = e.shiftKey ? 10 : (+e.target.value % 1 !== 0 || +e.target.value < 2 ? 0.1 : 1);
+    e.target.value = Math.round((+e.target.value + (e.key === "ArrowUp" ? step : -step)) * 100) / 100;
+    e.target.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+});
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button, th");
+  if (!t) return;
+  if (t.tagName === "TH" && t.dataset.k) { if (sortKey === t.dataset.k) sortDir = -sortDir; else { sortKey = t.dataset.k; sortDir = 1; } render(); return; }
+  if (t.dataset.open) { const id = t.dataset.open; open.has(id) ? open.delete(id) : open.add(id); render(); return; }
+  if (t.dataset.sendreq || t.dataset.delreq) {
+    const id = t.dataset.sendreq || t.dataset.delreq;
+    const text = t.dataset.delreq ? "" : document.querySelector(`textarea[data-req="${id}"]`).value;
+    if (t.dataset.sendreq && !text.trim()) { toast("Escreva o pedido primeiro"); return; }
+    const res = await post("/api/request", { id, text });
+    if (res) { DB.requests = res.requests; render(); toast(text ? "Pedido guardado" : "Pedido apagado"); }
+  }
+});
+$("#save").onclick = async () => {
+  const res = await post("/api/save", { changes: edits });
+  if (!res) return;
+  await load();
+  edits = {};
+  render();
+  toast(`Salvo: ${res.mudou.length} ${res.mudou.length === 1 ? "valor" : "valores"}. Reabra o jogo para ver.`, 4000);
+};
+$("#discard").onclick = () => { if (confirm("Descartar as mudanças sem salvar?")) { edits = {}; render(); } };
+for (const id of ["#q", "#deck", "#type", "#onlyChanged"]) $(id).addEventListener("input", render);
+window.addEventListener("beforeunload", e => { if (Object.keys(edits).length) { e.preventDefault(); e.returnValue = ""; } });
+new ResizeObserver(() => document.documentElement.style.setProperty("--hdr", $("#hdr").offsetHeight + "px")).observe($("#hdr"));
+
+async function post(url, body) {
+  try {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) { toast("Erro: " + (j.erro || r.status), 5000); return null; }
+    return j;
+  } catch (err) { toast("Servidor fora do ar: " + err.message, 5000); return null; }
+}
+async function load() {
+  DB = await (await fetch("/api/cards")).json();
+  rows = DB.cards;
+}
+(async () => {
+  await load();
+  const owners = [...new Set(rows.map(r => r.card.owner || ""))].sort();
+  $("#deck").innerHTML += owners.map(o => `<option value="${o}">${esc(deckName(o))}</option>`).join("");
+  const types = [...new Set(rows.map(r => r.card.type))].sort((a, b) => (TYPE_ORDER[a] ?? 9) - (TYPE_ORDER[b] ?? 9));
+  $("#type").innerHTML += types.map(t => `<option value="${t}">${esc(DB.types[t] || t)}</option>`).join("");
+  render();
+})();
+</script>
+</body>
+</html>

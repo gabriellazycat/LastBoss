@@ -504,25 +504,26 @@ func _fill_group() -> void:
 		if UiSkins.diario():
 			group_row.add_child(_wanted_poster(i, n, P, mult, str(party[i])))
 			continue
+		var pst := _party_stat(i, str(party[i]), mult)
 		var pnl := UiKit.panel(UiKit.BG, UiKit.EDGE, 12)
 		pnl.custom_minimum_size = Vector2(150, 210)
 		var v := VBoxContainer.new()
 		v.add_theme_constant_override("separation", 8)
 		pnl.add_child(v)
 		var num := UiKit.title(20)
-		num.text = tr("UI_HERO_OF").format({"k": i + 1, "n": n}) + " · " + tr("HERO_" + str(party[i]))
+		num.text = _party_ord(pst, i, n) + " · " + tr("HERO_" + str(party[i]))
 		v.add_child(num)
 		var lv := UiKit.label(18, UiKit.TEXT)
-		lv.text = tr("UI_HERO_LEVEL").format({"n": i + 1})
+		lv.text = tr("UI_HERO_LEVEL").format({"n": int(pst["pn"]) + 1})
 		v.add_child(lv)
 		var sk := UiKit.label(16, UiKit.MUTED)
-		sk.text = tr("UI_GROUP_SKILLS").format({"n": i})
+		sk.text = tr("UI_GROUP_SKILLS").format({"n": int(pst["first"])})
 		v.add_child(sk)
 		var hp := UiKit.label(16, UiKit.GOOD)
-		hp.text = tr("UI_GROUP_HP").format({"n": int(round(float(data.hero["hp"]) * pow(float(P["step"]), i) * mult))})
+		hp.text = tr("UI_GROUP_HP").format({"n": int(pst["hp"])})
 		v.add_child(hp)
 		var dm := UiKit.label(16, UiKit.BAD)
-		dm.text = tr("UI_GROUP_DMG").format({"n": int(round(float(data.hero["damage"]) * pow(float(P["step"]), i)))})
+		dm.text = tr("UI_GROUP_DMG").format({"n": int(pst["dm"])})
 		v.add_child(dm)
 		group_row.add_child(pnl)
 
@@ -893,18 +894,18 @@ func _wanted_poster(i: int, n: int, P: Dictionary, mult: float, cls := "escudeir
 	art.custom_minimum_size = Vector2(0, 104)
 	v.add_child(art)
 	var num := UiKit.title(20)
-	num.text = tr("UI_HERO_OF").format({"k": i + 1, "n": n})
+	var st := _party_stat(i, cls, mult)
+	num.text = _party_ord(st, i, n)
 	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(num)
-	var H := data.hero_of(cls)
 	var cl := UiKit.title(18)
 	cl.text = tr("HERO_" + cls)
 	cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(cl)
 	Tips.attach(pnl, func(): return [Tips.entry(tr("HERO_" + cls), tr("HEROD_" + cls))])
-	for spec in [[tr("UI_HERO_LEVEL").format({"n": i + 1}), UiDiario.INK], [tr("UI_GROUP_SKILLS").format({"n": i}), UiDiario.PAL["MUTED"]],
-			[tr("UI_GROUP_HP").format({"n": int(round(float(H["hp"]) * pow(float(P["step"]), i) * mult))}), UiDiario.PAL["GOOD"]],
-			[tr("UI_GROUP_DMG").format({"n": int(round(float(H["damage"]) * pow(float(P["step"]), i)))}), UiDiario.PAL["BAD"]]]:
+	for spec in [[tr("UI_HERO_LEVEL").format({"n": int(st["pn"]) + 1}), UiDiario.INK], [tr("UI_GROUP_SKILLS").format({"n": int(st["first"])}), UiDiario.PAL["MUTED"]],
+			[tr("UI_GROUP_HP").format({"n": int(st["hp"])}), UiDiario.PAL["GOOD"]],
+			[tr("UI_GROUP_DMG").format({"n": int(st["dm"])}), UiDiario.PAL["BAD"]]]:
 		var l := UiKit.label(16, spec[1])
 		l.text = spec[0]
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1097,6 +1098,27 @@ func _fill_villains_parch() -> void:
 		st.add_theme_color_override("font_color", UiParch.INK_SOFT if open else UiParch.BLOOD)
 		(b.find_child("Art", true, false) as Control).modulate = Color.WHITE if open else Color(0.55, 0.52, 0.5)
 	_focus_villain(_default_villain())
+	if not v_measured:
+		_measure_villain_sheet()
+
+
+var v_measured := false
+
+
+## A folha cresce ou encolhe conforme o texto do vilão em foco, e a tela é recentrada a cada frame:
+## passa por todos uma vez, guarda o maior tamanho e o trava como mínimo, para o tamanho nunca mudar.
+func _measure_villain_sheet() -> void:
+	v_measured = true
+	var keep := _default_villain()
+	var best := Vector2.ZERO
+	for id in data.villain_ids:
+		_focus_villain(id)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		best = best.max(deck_screen.get_combined_minimum_size())
+	deck_screen.custom_minimum_size = best
+	deck_screen.reset_size()
+	_focus_villain(keep)
 
 
 ## Detalhe do vilão: retrato grande, passiva e vida dos heróis, combos, baralho inicial e o botão de escolher.
@@ -1311,6 +1333,31 @@ func _fill_group_parch() -> void:
 		g_legend.add_child(_rich("★ " + tr("UI_GROUP_TOGETHER"), 18, UiParch.BLOOD, 1220.0))
 
 
+## Números do herói i da fila de parties da fase escolhida: party dele, membros, habilidades que já tem ao chegar,
+## vida e golpe (a força da party é dividida entre os membros).
+func _party_stat(i: int, cls: String, mult: float) -> Dictionary:
+	var ph: Dictionary = data.phase(pending_phase)
+	var of: Array = ph.get("party_of", [])
+	var pn := int(of[i]) if i < of.size() else i
+	var members := 1
+	var first := i
+	if of.size() > 0:
+		members = of.filter(func(x): return int(x) == pn).size()
+		first = of.find(pn)
+	var P: Dictionary = data.rules["party"]
+	var H := data.hero_of(cls)
+	var share := 1.0 / pow(float(maxi(members, 1)), float(P.get("share_exp", 1.0)))
+	return {"pn": pn, "n": members, "first": first, "k": i - first + 1,
+		"hp": int(round(float(H["hp"]) * pow(float(P["step"]), pn) * mult * share)),
+		"dm": int(round(float(H["damage"]) * pow(float(P["step"]), pn) * share))}
+
+
+func _party_ord(st: Dictionary, i: int, n: int) -> String:
+	if int(st["n"]) > 1:
+		return tr("UI_PARTY_ORD").format({"p": int(st["pn"]) + 1, "k": st["k"], "n": st["n"]})
+	return tr("UI_HERO_OF").format({"k": i + 1, "n": n})
+
+
 ## Carta de um herói da fila: ordem, retrato, classe, vida, golpe e habilidades.
 func _hero_card(i: int, P: Dictionary, mult: float, cls: String, w: float) -> PanelContainer:
 	var pnl := PanelContainer.new()
@@ -1321,7 +1368,8 @@ func _hero_card(i: int, P: Dictionary, mult: float, cls: String, w: float) -> Pa
 	v.add_theme_constant_override("separation", 3)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pnl.add_child(v)
-	var ord := UiParch.label(tr("UI_HERO_ORD").format({"k": i + 1}), "heavy", 16, UiParch.INK_SOFT)
+	var st := _party_stat(i, cls, mult)
+	var ord := UiParch.label(tr("UI_PARTY_ORD").format({"p": int(st["pn"]) + 1, "k": st["k"], "n": st["n"]}) if int(st["n"]) > 1 else tr("UI_HERO_ORD").format({"k": i + 1}), "heavy", 16, UiParch.INK_SOFT)
 	ord.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(ord)
 	var art := UiParch.framed_art(_art_for(cls, "hero"), Vector2(w - 20.0, roundf((w - 20.0) * 0.8)))
@@ -1329,11 +1377,9 @@ func _hero_card(i: int, P: Dictionary, mult: float, cls: String, w: float) -> Pa
 	var cl := UiParch.label(tr("HERO_" + cls), "title", 21, UiParch.BLOOD)
 	cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(cl)
-	var H := data.hero_of(cls)
-	var hp := int(round(float(H["hp"]) * pow(float(P["step"]), i) * mult))
-	var dm := int(round(float(H["damage"]) * pow(float(P["step"]), i)))
-	for spec in [[tr("UI_GROUP_HP").format({"n": hp}), UiParch.HP], [tr("UI_GROUP_DMG").format({"n": dm}), UiParch.INK],
-			[tr("UI_GROUP_SKILL0") if i == 0 else (tr("UI_GROUP_SKILL1") if i == 1 else tr("UI_GROUP_SKILLS").format({"n": i})), UiParch.INK_SOFT]]:
+	var fi: int = int(st["first"])
+	for spec in [[tr("UI_GROUP_HP").format({"n": int(st["hp"])}), UiParch.HP], [tr("UI_GROUP_DMG").format({"n": int(st["dm"])}), UiParch.INK],
+			[tr("UI_GROUP_SKILL0") if fi == 0 else (tr("UI_GROUP_SKILL1") if fi == 1 else tr("UI_GROUP_SKILLS").format({"n": fi})), UiParch.INK_SOFT]]:
 		var l := UiParch.label(spec[0], "bold", 17, spec[1])
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(l)

@@ -209,6 +209,22 @@ static func badge(col: Color, size := 22, w := 40.0, shape := "crystal") -> Pane
 	return g
 
 
+## Ícone da relíquia (15/11/2026): assets/ui/relics/<id>.svg (gerado por tools/art/relic_icons.py).
+## Sem arquivo, devolve um quadrado vazio do mesmo tamanho (o layout não pula).
+static func relic_icon(id: String, px: float) -> TextureRect:
+	var tr_ := TextureRect.new()
+	var path := "res://assets/ui/relics/%s.svg" % id
+	if ResourceLoader.exists(path):
+		tr_.texture = load(path)
+	tr_.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr_.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr_.custom_minimum_size = Vector2(px, px)
+	tr_.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	tr_.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tr_.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return tr_
+
+
 ## Esvazia um contêiner na hora. Só queue_free deixa os filhos velhos contando no tamanho até o fim do quadro,
 ## e um contêiner que cresceu por causa deles não encolhe sozinho.
 static func clear(n: Node) -> void:
@@ -345,14 +361,16 @@ static func card_name(d: CardDef, level := 1) -> String:
 
 
 ## Texto da carta com a marcação de palavras-chave ([[id]]); Tips.rich/plain convertem. No N3, o especial vem junto.
-static func card_desc(d: CardDef, level := 1, mark := false, mids: Array = []) -> String:
+static func card_desc(d: CardDef, level := 1, mark := false, mids: Array = [], stats := true) -> String:
 	var p := card_params(d, level, mark, mids)
 	var t := TranslationServer.translate("DESC_" + d.id).format(p)
 	if level >= 3 and d.n3.size() > 0:
 		var n3 := TranslationServer.translate("N3_" + d.id).format(p)
 		t += (" [color=%s]★ %s[/color]" % [N3_COLOR, n3]) if mark else " " + n3
+	if stats and d.is_unit:
+		t += "\n" + unit_stats(d, level, mark, mids)
 	if mark and level > 1:
-		# Números que o texto não cita (vida e dano das unidades, custo): o antigo riscado, o novo colorido.
+		# Números que o texto não cita (custo; vida e dano das unidades quando a linha de status está fora): o antigo riscado, o novo colorido.
 		var parts: Array = []
 		for k in d.lvl:
 			var a: float
@@ -361,11 +379,11 @@ static func card_desc(d: CardDef, level := 1, mark := false, mids: Array = []) -
 			var arrow := "▲"
 			match str(k):
 				"hp":
-					if not d.is_unit:
+					if not d.is_unit or stats:
 						continue
 					a = d.hp; b = d.hp_at(level)
 				"dps":
-					if not d.is_unit:
+					if not d.is_unit or stats:
 						continue
 					a = d.dps; b = d.dps_at(level)
 				"cost":
@@ -376,6 +394,27 @@ static func card_desc(d: CardDef, level := 1, mark := false, mids: Array = []) -
 		if parts.size() > 0:
 			t += "\n" + " · ".join(parts)
 	return t
+
+
+## Linha de status da unidade: "Vida 75 · DPS 8" (por unidade); bando ganha "×N" ao lado do DPS.
+## Carta upada (mark): o número que cresceu sai em verde com ▲.
+static func unit_stats(d: CardDef, level := 1, mark := false, mids: Array = []) -> String:
+	var hp := str(int(round(d.hp_at(level))))
+	var dv := d.dps_at(level)
+	var dps := str(int(round(dv))) if absf(dv) >= 20.0 or is_equal_approx(dv, round(dv)) else str(snappedf(dv, 0.1))
+	var n := d.count_at(level) + (1 if mids.has("veteran") else 0)
+	if mark and level > 1:
+		if d.scales("hp"):
+			hp = "[color=%s]%s▲[/color]" % [UP_COLOR, hp]
+		if d.scales("dps"):
+			dps = "[color=%s]%s▲[/color]" % [UP_COLOR, dps]
+	var parts: Array = ["%s %s" % [TranslationServer.translate("LVLK_hp"), hp]]
+	if dv > 0.0:
+		parts.append("%s %s" % [TranslationServer.translate("LVLK_dps"), dps])
+	var s := " · ".join(parts)
+	if n > 1:
+		s += " ×%d" % n
+	return s
 
 
 ## Texto da carta como BBCode, com as palavras-chave coloridas (sem link: a carta abre as caixas ao lado).

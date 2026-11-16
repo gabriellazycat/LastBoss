@@ -310,9 +310,13 @@ static func hero_out_mult(sim: Sim) -> float:
 
 ## Soma ao custo da carta c agora (negativo = desconto). O custo final nunca fica abaixo de 0.
 static func card_cost_add(sim: Sim, c: Sim.CardInst) -> int:
+	var add := 0
+	# Ciclo de feitiço (passiva): feitiço e criatura se barateiam um ao outro.
+	if sim.cycle_applies(c):
+		add -= 1
 	# Ritual Profano: os próximos feitiços custam menos.
 	if c.def.is_spell and sim.cstate.has("lich"):
 		var st: Dictionary = sim.cstate["lich"]
 		if int(st["rit"]) > 0:
-			return -int(st["rit_d"])
-	return 0
+			return add - int(st["rit_d"])
+	return add

@@ -6,7 +6,6 @@ Rode de novo depois de mudar os desafios no editor (tools/escolher_base.html -> 
 import json, os, re, csv, io, sys
 
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = json.load(open(os.path.join(R, "tools", "desbloqueios.json"), encoding="utf8"))
 
 # (regex do texto em português, tipo, parâmetros (grupos -> chaves), texto em inglês com {1} {2}...)
 FAM = {  # nome da família no texto -> chave usada pelo jogo
@@ -35,7 +34,11 @@ PATTERNS = [
     (r"Vença a primeira fase", "win_phase", lambda m: {"phase": 1}, "Win the first phase"),
     (r"Vença a segunda fase", "win_phase", lambda m: {"phase": 2}, "Win the second phase"),
     (r"Vença (\d+) fases com este vilão", "wins", lambda m: {"n": int(m[1])}, "Win {1} phases with this villain"),
-    (r"Derrote (\d+) heróis no total", "heroes_total", lambda m: {"n": int(m[1])}, "Defeat {1} heroes in total"),
+    (r"Derrote (\d+) heróis no total", "heroes", lambda m: {"n": int(m[1]), "total": True}, "Defeat {1} heroes in total"),
+    (r"Vença (\d+) fases sem jogar estruturas", "win_without", lambda m: {"fam": "structure", "runs": int(m[1])},
+     "Win {1} phases without playing structures"),
+    (r"Termine (\d+) fases com (\d+) de ouro", "gold_end", lambda m: {"n": int(m[2]), "runs": int(m[1])},
+     "Finish {1} phases with {2} gold"),
     (r"Vença uma fase sem jogar estruturas", "win_without", lambda m: {"fam": "structure"}, "Win a phase without playing structures"),
     (r"Vença uma fase jogando só (\d+) feitiços", "win_max", lambda m: {"fam": "spell", "n": int(m[1])},
      "Win a phase playing only {1} spells"),
@@ -67,7 +70,38 @@ EN_FAM = {"monster": "monsters", "rat": "rats", "bat": "bats", "skeleton": "skel
           "pack": "Pack creatures", "beast": "Beasts", "structure": "structures", "spell": "spells", "fire_spell": "Fire spells",
           "shadow_spell": "Shadow spells", "pack_card": "Pack cards", "lair": "Temporary cards", "any": "cards"}
 
+# Entre fases (15/11/2026). "... no total": soma o valor de todas as fases (só tipos que somam).
+# "... em N fases diferentes": o feito de uma fase, cumprido em N fases.
+ADDITIVE = {"plays", "died", "gold_spent", "gold_earned", "elixir_spent", "soaked_time", "burn_time", "coins"}
+NO_RUNS = {"wins", "win_phase", "heroes"}
+
+
 def parse(text):
+    """Texto do desafio -> (spec, texto em inglês), ou (None, None) se nenhum padrão casa."""
+    spec, en = _parse_base(text)
+    if spec:
+        return spec, en
+    m = re.fullmatch(r"(.+?) no total", text)
+    if m:
+        spec, en = _parse_base(m[1] + " numa mesma fase")
+        if spec and spec["kind"] in ADDITIVE:
+            spec["total"] = True
+            return spec, en.replace(" in a single phase", " in total")
+    m = re.fullmatch(r"(.+?),? em (\d+) fases diferentes", text)
+    if m:
+        spec, en = _parse_base(m[1])
+        if spec and spec["kind"] not in NO_RUNS and int(m[2]) >= 2:
+            spec["runs"] = int(m[2])
+            return spec, en + ", in %s different phases" % m[2]
+    return None, None
+
+
+def cross_run(spec):
+    """Desafio entre runs (impossível numa run só)?"""
+    return bool(spec.get("total") or spec.get("runs") or spec["kind"] == "wins" and spec.get("n", 1) >= 2)
+
+
+def _parse_base(text):
     for rx, kind, f, en in PATTERNS:
         m = re.fullmatch(rx, text)
         if m:
@@ -81,49 +115,61 @@ def parse(text):
             return dict({"kind": kind}, **p), e
     return None, None
 
-# cartas e donos
-owner = {}
-for f in ["cards", "cards_common", "cards_plague", "cards_dragon", "cards_lich"]:
-    for c in json.load(open(os.path.join(R, "data", f + ".json"), encoding="utf8"))["cards"]:
-        owner[c["id"]] = c["owner"]
+def load_src():
+    return json.load(open(os.path.join(R, "tools", "desbloqueios.json"), encoding="utf8"))
 
-free, ch, texts, bad = set(), {}, {}, []
-for vid in ("plague", "dragon", "lich"):
-    base = set(SRC[vid]["start_deck"])
-    for cid, x in SRC[vid]["unlocks"].items():
-        if x == "F":
-            free.add(cid)
-        else:
-            t = x[2:]
-            spec, en = parse(t)
-            if spec is None:
-                bad.append((vid, cid, t)); continue
-            if cid in ch and texts[cid][0] != t:
-                bad.append((vid, cid, "texto diferente entre classes: %r x %r" % (texts[cid][0], t)))
-            ch[cid] = spec; texts[cid] = (t, en)
-# carta comum: mesmo estado nas três classes
-for cid in list(ch):
-    if cid in free: bad.append(("-", cid, "livre e bloqueada ao mesmo tempo"))
-if bad:
-    for b in bad: print("ERRO", *b)
-    sys.exit(1)
 
-base_all = sorted({c for v in ("plague", "dragon", "lich") for c in SRC[v]["start_deck"]})
-out = {"_doc": "Gerado por tools/gerar_unlocks.py a partir de tools/desbloqueios.json. free = cartas liberadas desde o início "
-               "(podem ser sorteadas nas ofertas); challenges = desafio que libera cada carta bloqueada (texto em UNLOCK_<id>). "
-               "Fase = uma run inteira; contadores 'numa mesma fase' zeram a cada fase.",
-       "free": sorted(free), "challenges": {k: ch[k] for k in sorted(ch)}}
-json.dump(out, open(os.path.join(R, "data", "unlocks.json"), "w", encoding="utf8", newline="\n"), ensure_ascii=False, indent=1)
+def main():
+    SRC = load_src()
+    # cartas e donos
+    owner = {}
+    for f in ["cards", "cards_common", "cards_plague", "cards_dragon", "cards_lich"]:
+        for c in json.load(open(os.path.join(R, "data", f + ".json"), encoding="utf8"))["cards"]:
+            owner[c["id"]] = c["owner"]
 
-# strings.csv: troca as linhas UNLOCK_*
-p = os.path.join(R, "locale", "strings.csv")
-raw = open(p, encoding="utf8", newline="").read()
-eol = "\r\n" if "\r\n" in raw else "\n"
-lines = [l for l in raw.split(eol) if not l.startswith("UNLOCK_")]
-while lines and lines[-1] == "": lines.pop()
-for cid in sorted(texts):
-    pt, en = texts[cid]
-    row = io.StringIO(); csv.writer(row, lineterminator="").writerow(["UNLOCK_" + cid, pt, en])
-    lines.append(row.getvalue())
-open(p, "w", encoding="utf8", newline="").write(eol.join(lines) + eol)
-print("ok:", len(free), "livres,", len(ch), "desafios;", len(texts), "textos")
+    free, ch, texts, bad = set(), {}, {}, []
+    for vid in ("plague", "dragon", "lich"):
+        base = set(SRC[vid]["start_deck"])
+        for cid, x in SRC[vid]["unlocks"].items():
+            if x == "F":
+                free.add(cid)
+            else:
+                t = x[2:]
+                spec, en = parse(t)
+                if spec is None:
+                    bad.append((vid, cid, t)); continue
+                if cid in ch and texts[cid][0] != t:
+                    bad.append((vid, cid, "texto diferente entre classes: %r x %r" % (texts[cid][0], t)))
+                ch[cid] = spec; texts[cid] = (t, en)
+    # carta comum: mesmo estado nas três classes
+    for cid in list(ch):
+        if cid in free: bad.append(("-", cid, "livre e bloqueada ao mesmo tempo"))
+    if bad:
+        for b in bad: print("ERRO", *b)
+        return 1
+
+    base_all = sorted({c for v in ("plague", "dragon", "lich") for c in SRC[v]["start_deck"]})
+    out = {"_doc": "Gerado por tools/gerar_unlocks.py a partir de tools/desbloqueios.json. free = cartas liberadas desde o início "
+                   "(podem ser sorteadas nas ofertas); challenges = desafio que libera cada carta bloqueada (texto em UNLOCK_<id>). "
+                   "Fase = uma run inteira; contadores 'numa mesma fase' zeram a cada fase. total = soma entre fases (carta de vilão: "
+                   "só as fases com ele; comum: todas); runs = em quantas fases diferentes o feito aconteceu.",
+           "free": sorted(free), "challenges": {k: ch[k] for k in sorted(ch)}}
+    json.dump(out, open(os.path.join(R, "data", "unlocks.json"), "w", encoding="utf8", newline="\n"), ensure_ascii=False, indent=1)
+
+    # strings.csv: troca as linhas UNLOCK_*
+    p = os.path.join(R, "locale", "strings.csv")
+    raw = open(p, encoding="utf8", newline="").read()
+    eol = "\r\n" if "\r\n" in raw else "\n"
+    lines = [l for l in raw.split(eol) if not l.startswith("UNLOCK_")]
+    while lines and lines[-1] == "": lines.pop()
+    for cid in sorted(texts):
+        pt, en = texts[cid]
+        row = io.StringIO(); csv.writer(row, lineterminator="").writerow(["UNLOCK_" + cid, pt, en])
+        lines.append(row.getvalue())
+    open(p, "w", encoding="utf8", newline="").write(eol.join(lines) + eol)
+    print("ok:", len(free), "livres,", len(ch), "desafios;", len(texts), "textos")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

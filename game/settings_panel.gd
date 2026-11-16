@@ -110,6 +110,7 @@ func _rebuild() -> void:
 			_toggle("vsync")
 			_choice("quality", ["UI_Q_0", "UI_Q_1", "UI_Q_2"], [0, 1, 2])
 			_choice("paint_look", PaintLook.NAMES, range(PaintLook.NAMES.size()))
+			_choice("model_g", Looks.G_NAMES, range(Looks.G_NAMES.size()))
 			var caps: Array = []
 			for f in Settings.FPS_CAPS:
 				caps.append(tr("UI_FPS_NOLIMIT") if f == 0 else str(f))

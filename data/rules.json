@@ -67,20 +67,9 @@
   "options": 3,
   "new_card_weight": 0.7,
   "modifier_weight": 0.3,
-  "contract_options": 2,
   "level_every": 1,
   "location_win": 3,
   "location_lose": 0
- },
- "contracts": {
-  "first_at": [
-   90,
-   150
-  ],
-  "interval": [
-   180,
-   240
-  ]
  },
  "road": {
   "target_length": 1400.0,
@@ -412,6 +401,7 @@
  "party": {
   "size": 7,
   "step": 1.21,
+  "share_exp": 1.0,
   "arrive_s": 8.0
  },
  "gold": {

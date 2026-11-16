@@ -38,8 +38,17 @@ static func part_offsets(villain: String) -> Dictionary:
 ## Malha de uma parte; a do chefe atual se faltar o arquivo.
 static func part(villain: String, id: String) -> ArrayMesh:
 	if has_model(villain):
-		return load(_path(villain, id))
+		return _mesh(villain, id) as ArrayMesh
 	return Models.boss_part(id)
+
+
+## Malha (e material) de uma parte do vilão: a das miniaturas pintadas, se a versão escolhida a tiver.
+static func _mesh(villain: String, id: String) -> Mesh:
+	if Looks.g_on():
+		var gm := Looks.g_mesh("boss_%s_%s" % [villain, id])
+		if gm:
+			return gm
+	return load(_path(villain, id))
 
 
 ## O chefe inteiro, com as partes como filhos chamados pelo id (core, head, left_arm, right_arm) e, no Lich,
@@ -53,16 +62,16 @@ static func boss_full(villain: String) -> Node3D:
 	for id in PARTS:
 		var mi := MeshInstance3D.new()
 		mi.name = id
-		mi.mesh = load(_path(villain, id))
-		mi.material_override = Models.material()
+		mi.mesh = _mesh(villain, id)
+		mi.material_override = Looks.g_material(mi.mesh, Models.material())
 		mi.position = offs[id]
 		n.add_child(mi)
 	for id in EXTRAS.get(villain, []):
 		if ResourceLoader.exists(_path(villain, id)):
 			var mi := MeshInstance3D.new()
 			mi.name = id
-			mi.mesh = load(_path(villain, id))
-			mi.material_override = Models.material()
+			mi.mesh = _mesh(villain, id)
+			mi.material_override = Looks.g_material(mi.mesh, Models.material())
 			n.add_child(mi)
 	return n
 

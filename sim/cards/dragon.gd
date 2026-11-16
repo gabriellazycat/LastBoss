@@ -53,7 +53,7 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 				"root": d.fxv("root", lv), "curse": curse, "soak": fx["soaked"]})
 		"cursed_coins":
 			sim.zones.append({"kind": "coins", "x": x, "y": y, "r": fx["radius"], "t": 30.0, "applied": false,
-				"stop": d.fxv("stop", lv) * vet, "curses": int(fx["curses"]) + curse, "gold": d.fxv("gold", lv)})
+				"stop": d.fxv("stop", lv) * vet, "curses": int(fx["curses"]) + curse, "gold": d.fxv("gold", lv) if fx.has("gold") else 0.0})
 		"burn_village":
 			# Incêndio: marca um local da rota; quando o herói chega, o local pega fogo.
 			var bi := burn_near(sim, x, y)
@@ -177,8 +177,6 @@ static func _avalanche(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> void:
 		sim.hit_hero = hh if hh != sim.hero else null
 		sim.damage_hero(dmg * sim.splash_mult(i), x, y, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
 		hh.root_t = maxf(hh.root_t, d.fxv("stun", k.lv) * sim.cc_mult())
-		if hh == sim.hero:
-			sim._cc()
 		hh.add_curse(k.curse)
 	sim.hit_hero = null
 	sim.emit(K.Ev.EXPLOSION, x, y, float(d.fx["radius"]), 1)
@@ -242,6 +240,14 @@ static func on_tick(sim: Sim) -> void:
 	var fi: int = sim.data.card("furnace").idx
 	var furn: Array = []
 	var u := sim.units
+	# Guarda do Tesouro: cada um vivo gasta gold_per_s de ouro por segundo (o ouro para em 0; ele continua vivo).
+	var gi: int = sim.data.card("treasure_guard").idx
+	var gc: CardDef = sim.data.cards[gi]
+	for j in u.hi:
+		if u.alive[j] == 1 and u.def[j] == gi and sim.gold > 0.0:
+			var g := minf(sim.gold, gc.fxv("gold_per_s", u.lvl[j], 0.0) * sim.dt)
+			sim.gold -= g
+			sim.stats["gold_guard"] = float(sim.stats.get("gold_guard", 0.0)) + g
 	for j in u.hi:
 		if u.alive[j] == 1 and u.def[j] == fi:
 			var c: CardDef = sim.data.cards[fi]

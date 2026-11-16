@@ -3,7 +3,8 @@ extends RefCounted
 ## Desafios que liberam cartas (data/unlocks.json, gerado por tools/gerar_unlocks.py).
 ## Durante a fase o Sim chama os ganchos abaixo e o rastreador só conta (nenhuma regra muda). No fim da fase
 ## `check()` compara os números com cada desafio e devolve o que foi cumprido e o quanto faltou.
-## Fase = uma run inteira: os contadores "numa mesma fase" zeram a cada fase.
+## Fase = uma run inteira: os contadores "numa mesma fase" zeram a cada fase. Desafios entre fases ("total" e
+## "runs", 15/11/2026) somam o que o MetaSave guardou; ver check().
 
 const SAMPLE_EVERY := 8   # amostra o campo a cada N passos (não precisa de todo passo)
 
@@ -246,6 +247,8 @@ func progress(ch: Dictionary, stats: Dictionary, ctx: Dictionary) -> Dictionary:
 			v = float(int(ctx.get("wins_by_villain", {}).get(str(ctx.get("villain", "")), 0)) + (1 if won else 0))
 		"heroes_total":
 			v = float(int(ctx.get("heroes_total", 0)) + int(stats.get("heroes_fallen", 0)))
+		"heroes":
+			v = float(stats.get("heroes_fallen", 0))   # desta fase; "total" soma o acumulado em check()
 		"win_without":
 			v = 1.0 if won and int(t["plays"].get(str(ch["fam"]), 0)) == 0 else 0.0
 			g = 1.0
@@ -286,8 +289,26 @@ func progress(ch: Dictionary, stats: Dictionary, ctx: Dictionary) -> Dictionary:
 	return {"v": v, "g": g, "done": v >= g - 0.0001}
 
 
+## Chave do contador acumulado de um desafio "total" (ex.: "plays|spell", "heroes|").
+static func total_key(ch: Dictionary) -> String:
+	return "%s|%s" % [ch["kind"], ch.get("fam", "")]
+
+
+## Valor desta fase de cada contador acumulado que algum desafio "total" usa (para o MetaSave somar).
+func phase_totals(stats: Dictionary, ctx: Dictionary) -> Dictionary:
+	var out := {}
+	for k in data.unlock_challenges:
+		var ch: Dictionary = data.unlock_challenges[k]
+		if ch.get("total", false):
+			out[total_key(ch)] = float(progress(ch, stats, ctx)["v"])
+	return out
+
+
 ## Cartas desta fase cujo desafio foi cumprido: lista de {"id", "v", "g"}, e o progresso de todas as outras
 ## do pool deste vilão ("near": para a tela de resultado). `locked` = ids ainda bloqueados.
+## Entre fases (15/11/2026): "total" soma o acumulado de antes (ctx "totals_villain" para carta de vilão,
+## "totals_all" para carta comum); "runs" conta as fases em que o feito aconteceu (ctx "runs_done" por carta).
+## Esses dois marcam "acc" (o progresso salvo é sempre o mais recente) e "runs" marca "hit" (cumpriu nesta fase).
 func check(stats: Dictionary, ctx: Dictionary, locked: Array) -> Dictionary:
 	var done: Array = []
 	var near: Array = []
@@ -298,8 +319,37 @@ func check(stats: Dictionary, ctx: Dictionary, locked: Array) -> Dictionary:
 		ch["_id"] = id
 		var p := progress(ch, stats, ctx)
 		p["id"] = id
+		if ch.get("total", false):
+			var cd := data.card(id)
+			var common := cd != null and cd.owner == "common"
+			var tot: Dictionary = ctx.get("totals_all" if common else "totals_villain", {})
+			p["v"] = float(tot.get(total_key(ch), 0.0)) + float(p["v"])
+			p["done"] = float(p["v"]) >= float(p["g"]) - 0.0001
+			p["acc"] = true
+		elif ch.has("runs"):
+			p["hit"] = p["done"]
+			var n := int(ctx.get("runs_done", {}).get(id, 0)) + (1 if p["done"] else 0)
+			p["v"] = float(n)
+			p["g"] = float(ch["runs"])
+			p["done"] = n >= int(ch["runs"])
+			p["acc"] = true
 		if p["done"]:
 			done.append(p)
 		else:
 			near.append(p)
 	return {"done": done, "near": near}
+
+
+## Balanceamento (15/11/2026): o que ESTA run alcançou em TODO desafio de carta (não só os bloqueados), para o lote
+## headless gravar a média por fase/deck/perfil e calibrar as metas. {id_da_carta: {"v", "g", "total", "runs"}}.
+## Usa o contexto neutro de uma fase (sem acumulados): "wins"/"heroes_total" valem só esta run.
+func snapshot(stats: Dictionary, won: bool) -> Dictionary:
+	var out := {}
+	var ctx := {"won": won, "villain": "", "phase": int(stats.get("phase", 1))}
+	for id in data.unlock_challenges:
+		var ch: Dictionary = data.unlock_challenges[id].duplicate()
+		ch["_id"] = id
+		var p := progress(ch, stats, ctx)
+		out[id] = {"v": snappedf(float(p["v"]), 0.01), "g": float(p["g"]), "kind": str(ch["kind"]),
+			"total": bool(ch.get("total", false)), "runs": bool(ch.get("runs", false))}
+	return out

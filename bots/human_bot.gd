@@ -27,6 +27,8 @@ var hands: Object = null
 var stats := {"plays": 0, "retries": 0, "refused": 0, "mistakes": 0, "lapses": 0, "waves": 0,
 	"stuck_dumps": 0, "offer_skips": 0, "route_fallbacks": 0}
 var _stuck_since := -1.0
+var _last_fallen := 0       # heróis caídos vistos (o "tilt" dispara quando sobe)
+var _tilt_until := -1.0     # até quando gasta tudo sem esperar onda (frustração depois de um herói cair)
 var _avoid := {}   # carta -> até quando não tentar de novo (a jogada falhou na interface; a pessoa desiste um pouco)
 
 
@@ -55,7 +57,16 @@ func think(sim: Sim) -> void:
 		return
 	if sim.t < next_t:
 		return
-	next_t = sim.t + rng.randf_range(float(P.get("think_min", 0.35)), float(P.get("think_max", 0.8)))
+	# Perfis (15/11/2026): cansaço deixa a reação mais lenta com o tempo; "tilt" = depois que um herói cai, a pessoa
+	# reage mais rápido e joga tudo sem juntar onda por `tilt_s` s.
+	var fallen := int(sim.stats.get("heroes_fallen", 0))
+	if fallen > _last_fallen:
+		_tilt_until = sim.t + float(P.get("tilt_s", 0.0))
+	_last_fallen = fallen
+	var pace := 1.0 + float(P.get("fatigue", 0.0)) * sim.t / 1500.0
+	if sim.t < _tilt_until:
+		pace *= 0.6
+	next_t = sim.t + rng.randf_range(float(P.get("think_min", 0.35)), float(P.get("think_max", 0.8))) * pace
 	if rng.randf() < float(P.get("lapse", 0.03)):
 		stats["lapses"] += 1
 		return
@@ -71,6 +82,10 @@ func think(sim: Sim) -> void:
 ## Oferta: a escolha do heurístico; se o Sim recusar, pula; se nem pular dá, a primeira opção que entrar.
 func _human_offer(sim: Sim) -> void:
 	var k := _pick_offer(sim)
+	var of: Dictionary = sim.offers[0]
+	# Ruído de decisão do perfil: às vezes escolhe uma opção qualquer (nunca na loja nem em evento, onde há regra própria).
+	if float(P.get("offer_noise", 0.0)) > 0.0 and of["source"] in ["relic", "level", "act_card", "location"] and rng.randf() < float(P.get("offer_noise", 0.0)):
+		k = rng.randi_range(0, of["options"].size() - 1)
 	if hands.choose(k):
 		return
 	stats["offer_skips"] += 1
@@ -107,7 +122,16 @@ func _act(sim: Sim) -> bool:
 		return false
 	var spot: Dictionary = shrine if shrine.size() > 0 and shrine["entered"] else guard
 	# Onda: espera juntar elixir, a menos que haja janela, disputa em andamento ou elixir quase cheio.
-	var urgent := _window(sim) or spot.size() > 0 or not sim.contest.is_empty() or sim.phase == K.Phase.ARENA
+	var urgent := _window(sim) or spot.size() > 0 or not sim.contest.is_empty() or sim.phase == K.Phase.ARENA or sim.t < _tilt_until
+	# Recarga da vaga (15/11/2026): com poucas cartas prontas na mão a pessoa espera repor antes de jogar a próxima
+	# (senão joga a pior carta que sobrou), a não ser que haja urgência ou o elixir esteja cheio.
+	if not urgent and sim.elixir < sim.elixir_max - float(P.get("full_margin", 1.0)):
+		var ready := 0
+		for c0 in sim.hand:
+			if c0 != null:
+				ready += 1
+		if ready < int(P.get("min_ready", 0)):
+			return false
 	var full := sim.elixir >= sim.elixir_max - float(P.get("full_margin", 1.0))
 	if not urgent and not full and sim.elixir < float(P.get("wave", 6.0)) * sim.elixir_max / 10.0 and _engaged(sim) == 0:
 		return false
@@ -136,6 +160,8 @@ func _act(sim: Sim) -> bool:
 	var pos := _human_target(sim, c, spot)
 	if not mistake:
 		pos += Vector2(rng.randfn(0.0, 1.0), rng.randfn(0.0, 1.0)) * float(P.get("aim_error", 0.5))
+	if c.def.category == "field" and not c.def.is_spell and not mistake:
+		pos = sim.clear_of_rings(pos)
 	var r: int = hands.play(best, pos.x, pos.y)
 	if r == K.Block.BAD_TARGET:
 		# Soltou perto demais do herói (ou fora do mapa): tenta de novo um pouco mais longe.
@@ -143,7 +169,7 @@ func _act(sim: Sim) -> bool:
 		var hp := Vector2(h.x, h.y)
 		var dir := (pos - hp)
 		dir = dir.normalized() if dir.length() > 0.1 else -Vector2(h.face_x, h.face_y)
-		pos = hp + dir * (float(sim.R["ring"]["min"]) + 1.0)
+		pos = sim.clear_of_rings(hp + dir * (sim.ring_of(h) + 1.0))
 		r = hands.play(best, pos.x, pos.y)
 	if r != K.Block.OK:
 		stats["refused"] += 1
@@ -197,6 +223,14 @@ func _human_value(sim: Sim, c: Sim.CardInst) -> float:
 		return v
 	var d := c.def
 	var h := sim.hero
+	var fav: Dictionary = P.get("fav", {})
+	if not fav.is_empty():
+		if d.is_spell:
+			v += float(fav.get("spell", 0.0))
+		elif d.arch == K.Arch.STRUCTURE:
+			v += float(fav.get("structure", 0.0))
+		elif d.is_unit:
+			v += float(fav.get("swarm", 0.0)) if d.count >= 4 else float(fav.get("single", 0.0))
 	if d.is_spell and d.category == "field":
 		var n := _spell_hits(sim, c)
 		if n == 0 and needs_hit(d):

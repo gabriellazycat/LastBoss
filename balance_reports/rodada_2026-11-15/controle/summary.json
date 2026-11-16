@@ -1,0 +1,4539 @@
+{
+ "meta": {
+  "stamp": "2026-11-15T14:05:42",
+  "pool": "full",
+  "runs": 60,
+  "workers": 12,
+  "wall_s": 37.129278898239136,
+  "script_errors": []
+ },
+ "rows": [
+  {
+   "bot": "human",
+   "deck": "dragon",
+   "n": 20,
+   "win": 1.0,
+   "win_early": 1.0,
+   "loss": 0.0,
+   "timeout": 0.0,
+   "arena_t": null,
+   "hero_level_arena": null,
+   "heroes_fallen": 7.0,
+   "waste": 0.0,
+   "wall_ms": 4984.1191,
+   "game_s": 749.404999999866,
+   "locs_won": 2.1,
+   "locs_lost": 7.05,
+   "card_levels": 6.2,
+   "deck_n": 17.85,
+   "souls": 142.32156399150142,
+   "gold": 1592.2717561036898,
+   "buys": 1.2,
+   "pace": {
+    "spent_min": [
+     24.92468957769976,
+     36.885288487651906,
+     48.32611249540273
+    ],
+    "plays_min": [
+     10.602571260304565,
+     13.843077117686956,
+     16.72118065639508
+    ],
+    "spend_ratio": 1.9388852304359425,
+    "max_cost": 6.05,
+    "stuck": 0.0011199748534507239,
+    "stages": {
+     "0": 2.65,
+     "1": 1.6,
+     "2": 1.1,
+     "3": 2.0
+    },
+    "contest_frac": 0.3889081202988872,
+    "shuffles": 11.45
+   },
+   "acts": 1.1,
+   "relics": 1.35,
+   "contests": {
+    "ritual": [
+     0.5,
+     1.15
+    ],
+    "shrine": [
+     0.0,
+     1.45
+    ],
+    "tavern": [
+     0.35,
+     0.75
+    ],
+    "bridge": [
+     0.5,
+     0.3
+    ],
+    "fountain": [
+     0.65,
+     1.7
+    ]
+   }
+  },
+  {
+   "bot": "human",
+   "deck": "lich",
+   "n": 20,
+   "win": 1.0,
+   "win_early": 1.0,
+   "loss": 0.0,
+   "timeout": 0.0,
+   "arena_t": null,
+   "hero_level_arena": null,
+   "heroes_fallen": 7.0,
+   "waste": 7.9306333932563e-06,
+   "wall_ms": 6309.348599999999,
+   "game_s": 831.102499999792,
+   "locs_won": 2.55,
+   "locs_lost": 8.0,
+   "card_levels": 11.4,
+   "deck_n": 17.8,
+   "souls": 146.0794256277571,
+   "gold": 778.5442562775787,
+   "buys": 4.4,
+   "pace": {
+    "spent_min": [
+     25.552426846318735,
+     44.203170509806114,
+     57.84198480215972
+    ],
+    "plays_min": [
+     18.494262001927755,
+     25.272401069272323,
+     27.526626645083777
+    ],
+    "spend_ratio": 2.2636591487001105,
+    "max_cost": 5.7,
+    "stuck": 1.4303423285971173e-05,
+    "stages": {
+     "0": 2.7,
+     "1": 2.1,
+     "2": 1.0,
+     "3": 2.55
+    },
+    "contest_frac": 0.439364547623651,
+    "shuffles": 24.15
+   },
+   "acts": 1.35,
+   "relics": 2.0,
+   "contests": {
+    "ritual": [
+     1.35,
+     1.25
+    ],
+    "shrine": [
+     0.1,
+     1.55
+    ],
+    "tavern": [
+     0.1,
+     1.25
+    ],
+    "bridge": [
+     0.6,
+     0.2
+    ],
+    "fountain": [
+     0.4,
+     1.55
+    ]
+   }
+  },
+  {
+   "bot": "human",
+   "deck": "plague",
+   "n": 20,
+   "win": 1.0,
+   "win_early": 0.95,
+   "loss": 0.0,
+   "timeout": 0.0,
+   "arena_t": 1362.69999999931,
+   "hero_level_arena": 4.0,
+   "heroes_fallen": 7.0,
+   "waste": 0.0,
+   "wall_ms": 6289.618450000001,
+   "game_s": 810.5624999998107,
+   "locs_won": 4.4,
+   "locs_lost": 5.25,
+   "card_levels": 10.05,
+   "deck_n": 18.25,
+   "souls": 149.34003875179127,
+   "gold": 879.9003875178645,
+   "buys": 4.3,
+   "pace": {
+    "spent_min": [
+     25.45620506628349,
+     40.29588644510561,
+     48.173996531610385
+    ],
+    "plays_min": [
+     10.337569936443,
+     13.20938712023137,
+     14.794654179014408
+    ],
+    "spend_ratio": 1.89242647936618,
+    "max_cost": 7.2,
+    "stuck": 0.0,
+    "stages": {
+     "0": 1.9,
+     "1": 1.05,
+     "2": 1.15,
+     "3": 4.2
+    },
+    "contest_frac": 0.3203551990907382,
+    "shuffles": 12.6
+   },
+   "acts": 1.2,
+   "relics": 2.5,
+   "contests": {
+    "ritual": [
+     2.25,
+     0.15
+    ],
+    "shrine": [
+     0.15,
+     1.3
+    ],
+    "tavern": [
+     0.75,
+     0.5
+    ],
+    "bridge": [
+     0.6,
+     0.1
+    ],
+    "fountain": [
+     0.45,
+     2.05
+    ]
+   }
+  }
+ ],
+ "cards": {
+  "bubonic_plague": {
+   "offered": 46,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 1,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "buy:bat_cloud": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:mod:explosive": {
+   "offered": 19,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:mod:shadowy": {
+   "offered": 24,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:mother_nest": {
+   "offered": 4,
+   "picked": 4,
+   "runs_picked": 4,
+   "wins_picked": 4,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:pick:remove": {
+   "offered": 106,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:pick:upgrade": {
+   "offered": 106,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:rabid_rats": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:rat_brute": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:rat_trap": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:hand_pocket": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:opening_gambit": {
+   "offered": 5,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.4,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:spitting_viper": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "cave_troll": {
+   "offered": 20,
+   "picked": 15,
+   "runs_picked": 15,
+   "wins_picked": 15,
+   "in_wins": 15,
+   "pick_rate": 0.75,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.25
+  },
+  "corrupt_piper": {
+   "offered": 9,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "devour": {
+   "offered": 40,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:wishing_well:0": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:wishing_well:1": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:wishing_well:2": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "hired_archer": {
+   "offered": 39,
+   "picked": 7,
+   "runs_picked": 7,
+   "wins_picked": 7,
+   "in_wins": 7,
+   "pick_rate": 0.1794871794871795,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.11666666666666667
+  },
+  "hunt_instinct": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "infected_bite": {
+   "offered": 12,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "lone_wolf": {
+   "offered": 18,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 1,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "mod:cheap": {
+   "offered": 152,
+   "picked": 52,
+   "runs_picked": 35,
+   "wins_picked": 35,
+   "in_wins": 0,
+   "pick_rate": 0.34210526315789475,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "mod:cursed": {
+   "offered": 150,
+   "picked": 55,
+   "runs_picked": 36,
+   "wins_picked": 36,
+   "in_wins": 0,
+   "pick_rate": 0.36666666666666664,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "mod:explosive": {
+   "offered": 131,
+   "picked": 38,
+   "runs_picked": 27,
+   "wins_picked": 27,
+   "in_wins": 0,
+   "pick_rate": 0.2900763358778626,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "mod:shadowy": {
+   "offered": 130,
+   "picked": 42,
+   "runs_picked": 32,
+   "wins_picked": 32,
+   "in_wins": 0,
+   "pick_rate": 0.3230769230769231,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "mod:veteran": {
+   "offered": 112,
+   "picked": 38,
+   "runs_picked": 30,
+   "wins_picked": 30,
+   "in_wins": 0,
+   "pick_rate": 0.3392857142857143,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "mother_nest": {
+   "offered": 39,
+   "picked": 32,
+   "runs_picked": 15,
+   "wins_picked": 15,
+   "in_wins": 15,
+   "pick_rate": 0.8205128205128205,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.25
+  },
+  "poison_dart": {
+   "offered": 32,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "rat_horde": {
+   "offered": 21,
+   "picked": 3,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 4,
+   "pick_rate": 0.14285714285714285,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.06666666666666667
+  },
+  "rat_king": {
+   "offered": 36,
+   "picked": 20,
+   "runs_picked": 13,
+   "wins_picked": 13,
+   "in_wins": 13,
+   "pick_rate": 0.5555555555555556,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.21666666666666667
+  },
+  "rat_tide": {
+   "offered": 11,
+   "picked": 8,
+   "runs_picked": 7,
+   "wins_picked": 7,
+   "in_wins": 8,
+   "pick_rate": 0.7272727272727273,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.13333333333333333
+  },
+  "rat_trap": {
+   "offered": 21,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:blood_tithe": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:copper_tap": {
+   "offered": 5,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.2,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:elixir_flask": {
+   "offered": 12,
+   "picked": 8,
+   "runs_picked": 7,
+   "wins_picked": 7,
+   "in_wins": 0,
+   "pick_rate": 0.6666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "remove": {
+   "offered": 1859,
+   "picked": 150,
+   "runs_picked": 59,
+   "wins_picked": 59,
+   "in_wins": 0,
+   "pick_rate": 0.08068854222700376,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "spike_trap": {
+   "offered": 24,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:brood_mother": {
+   "offered": 61,
+   "picked": 25,
+   "runs_picked": 15,
+   "wins_picked": 15,
+   "in_wins": 0,
+   "pick_rate": 0.4098360655737705,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:crow_flock": {
+   "offered": 179,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.00558659217877095,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:hired_archer": {
+   "offered": 88,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.022727272727272728,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:infected_bite": {
+   "offered": 49,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:lone_wolf": {
+   "offered": 73,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:mother_nest": {
+   "offered": 35,
+   "picked": 30,
+   "runs_picked": 12,
+   "wins_picked": 12,
+   "in_wins": 0,
+   "pick_rate": 0.8571428571428571,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:pack_call": {
+   "offered": 76,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:rat_brute": {
+   "offered": 63,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:rat_burrow": {
+   "offered": 77,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.012987012987012988,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:rat_horde": {
+   "offered": 100,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:spitting_viper": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:web": {
+   "offered": 72,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:werewolf": {
+   "offered": 9,
+   "picked": 3,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.3333333333333333,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:wolf_pack": {
+   "offered": 107,
+   "picked": 6,
+   "runs_picked": 4,
+   "wins_picked": 4,
+   "in_wins": 0,
+   "pick_rate": 0.056074766355140186,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "war_banner": {
+   "offered": 53,
+   "picked": 3,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 2,
+   "pick_rate": 0.05660377358490566,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "web": {
+   "offered": 31,
+   "picked": 3,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 3,
+   "pick_rate": 0.0967741935483871,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.05
+  },
+  "werewolf": {
+   "offered": 36,
+   "picked": 10,
+   "runs_picked": 6,
+   "wins_picked": 6,
+   "in_wins": 6,
+   "pick_rate": 0.2777777777777778,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.1
+  },
+  "wolf_pack": {
+   "offered": 8,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 2,
+   "pick_rate": 0.25,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "bat_cloud": {
+   "offered": 15,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.06666666666666667,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "brood_mother": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:barricade": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:devour": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:mod:cheap": {
+   "offered": 25,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:plague_carrion": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:bronze_bell": {
+   "offered": 4,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "crow_flock": {
+   "offered": 30,
+   "picked": 5,
+   "runs_picked": 5,
+   "wins_picked": 5,
+   "in_wins": 5,
+   "pick_rate": 0.16666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.08333333333333333
+  },
+  "ev:profane_altar:0": {
+   "offered": 13,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:profane_altar:1": {
+   "offered": 13,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:profane_altar:2": {
+   "offered": 13,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "gargoyle_tower": {
+   "offered": 14,
+   "picked": 4,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 4,
+   "pick_rate": 0.2857142857142857,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.06666666666666667
+  },
+  "hollow_armor": {
+   "offered": 10,
+   "picked": 4,
+   "runs_picked": 4,
+   "wins_picked": 4,
+   "in_wins": 5,
+   "pick_rate": 0.4,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.08333333333333333
+  },
+  "hyena_scavenger": {
+   "offered": 15,
+   "picked": 4,
+   "runs_picked": 4,
+   "wins_picked": 4,
+   "in_wins": 4,
+   "pick_rate": 0.26666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.06666666666666667
+  },
+  "pack_call": {
+   "offered": 16,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "pack_den": {
+   "offered": 6,
+   "picked": 4,
+   "runs_picked": 4,
+   "wins_picked": 4,
+   "in_wins": 4,
+   "pick_rate": 0.6666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.06666666666666667
+  },
+  "rabid_rats": {
+   "offered": 24,
+   "picked": 6,
+   "runs_picked": 6,
+   "wins_picked": 6,
+   "in_wins": 6,
+   "pick_rate": 0.25,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.1
+  },
+  "rat_brute": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "rat_burrow": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:cracked_hourglass": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:deep_cauldron": {
+   "offered": 15,
+   "picked": 13,
+   "runs_picked": 12,
+   "wins_picked": 12,
+   "in_wins": 0,
+   "pick_rate": 0.8666666666666667,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:forge_hammer": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:grave_call": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:heart_of_well": {
+   "offered": 18,
+   "picked": 11,
+   "runs_picked": 11,
+   "wins_picked": 11,
+   "in_wins": 0,
+   "pick_rate": 0.6111111111111112,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:heavy_grimoire": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:living_library": {
+   "offered": 8,
+   "picked": 3,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 0,
+   "pick_rate": 0.375,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:opening_gambit": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:still_aether": {
+   "offered": 14,
+   "picked": 14,
+   "runs_picked": 13,
+   "wins_picked": 13,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:tally_stick": {
+   "offered": 8,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.125,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:watchful_eye": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "sewer_flood": {
+   "offered": 5,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 2,
+   "pick_rate": 0.2,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "spitting_viper": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 1,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "weakness_curse": {
+   "offered": 33,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:brown_bear": {
+   "offered": 2,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:hyena_scavenger": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:mod:cursed": {
+   "offered": 26,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:pack_call": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:deep_cistern": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:heart_of_well": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:sewer_flood": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "ev:hooded_merchant:0": {
+   "offered": 12,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:hooded_merchant:1": {
+   "offered": 12,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:hooded_merchant:2": {
+   "offered": 12,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:bad_blood": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:overflowing_chalice": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:brown_bear": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:rat_king": {
+   "offered": 21,
+   "picked": 8,
+   "runs_picked": 5,
+   "wins_picked": 5,
+   "in_wins": 0,
+   "pick_rate": 0.38095238095238093,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:sewer_flood": {
+   "offered": 3,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.6666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "barricade": {
+   "offered": 18,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:deep_cauldron": {
+   "offered": 5,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.4,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:werewolf": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "dark_sacrifice": {
+   "offered": 11,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:librarian:0": {
+   "offered": 9,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:librarian:1": {
+   "offered": 9,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:librarian:2": {
+   "offered": 9,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "goblin_scout": {
+   "offered": 25,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "plague_carrion": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 1,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "relic:chain_ring": {
+   "offered": 8,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.125,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:frost_shard": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:brood_mother": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:cave_troll": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:crow_flock": {
+   "offered": 9,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:hired_archer": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:lone_wolf": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:mother_nest": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:pack_call": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:rat_brute": {
+   "offered": 3,
+   "picked": 3,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "transform:rat_burrow": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:rat_horde": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:rat_king": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:web": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:wolf_pack": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:crow_flock": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:rat_burrow": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:victory_mark": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:wolf_pack": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "dark_forge": {
+   "offered": 18,
+   "picked": 16,
+   "runs_picked": 16,
+   "wins_picked": 16,
+   "in_wins": 16,
+   "pick_rate": 0.8888888888888888,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.26666666666666666
+  },
+  "relic:deep_cistern": {
+   "offered": 11,
+   "picked": 9,
+   "runs_picked": 8,
+   "wins_picked": 8,
+   "in_wins": 0,
+   "pick_rate": 0.8181818181818182,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:raider_pack": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:rat_tide": {
+   "offered": 3,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.3333333333333333,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:lone_wolf": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:arcane_ink": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:quick_spring": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:weakness_curse": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:heroes_banquet:0": {
+   "offered": 13,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:heroes_banquet:1": {
+   "offered": 13,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:heroes_banquet:2": {
+   "offered": 13,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "flooded_pit": {
+   "offered": 13,
+   "picked": 12,
+   "runs_picked": 11,
+   "wins_picked": 11,
+   "in_wins": 12,
+   "pick_rate": 0.9230769230769231,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.2
+  },
+  "relic:arcane_ink": {
+   "offered": 5,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.2,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:bronze_bell": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:miser_ledger": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:quick_spring": {
+   "offered": 11,
+   "picked": 8,
+   "runs_picked": 8,
+   "wins_picked": 8,
+   "in_wins": 0,
+   "pick_rate": 0.7272727272727273,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:cave_troll": {
+   "offered": 2,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:mod:veteran": {
+   "offered": 12,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:dark_smith:0": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:dark_smith:1": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:dark_smith:2": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:forgotten_tomb:0": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:forgotten_tomb:1": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:forgotten_tomb:2": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ogre": {
+   "offered": 7,
+   "picked": 6,
+   "runs_picked": 6,
+   "wins_picked": 6,
+   "in_wins": 7,
+   "pick_rate": 0.8571428571428571,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.11666666666666667
+  },
+  "relic:jailer_chains": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:rushing_tide": {
+   "offered": 21,
+   "picked": 16,
+   "runs_picked": 14,
+   "wins_picked": 14,
+   "in_wins": 0,
+   "pick_rate": 0.7619047619047619,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "war_cry": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 2,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "bat_nest": {
+   "offered": 3,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.3333333333333333,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "buy:dark_forge": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:rat_horde": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:elixir_flask": {
+   "offered": 8,
+   "picked": 6,
+   "runs_picked": 6,
+   "wins_picked": 6,
+   "in_wins": 0,
+   "pick_rate": 0.75,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:watchful_eye": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:slime": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "dark_messenger": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:fine_sand": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:hand_pocket": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:tinker_file": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:bubonic_plague": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:rat_tide": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:fine_sand": {
+   "offered": 5,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.2,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:hanged_hand": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:prisoner:0": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:prisoner:1": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ev:prisoner:2": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "slime": {
+   "offered": 5,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.2,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "soul_collector": {
+   "offered": 9,
+   "picked": 9,
+   "runs_picked": 9,
+   "wins_picked": 9,
+   "in_wins": 11,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.18333333333333332
+  },
+  "up:bubonic_plague": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:soul_collector": {
+   "offered": 13,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.07692307692307693,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:blood_tithe": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:hanged_hand": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:dark_forge": {
+   "offered": 7,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.14285714285714285,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:war_boar": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "war_boar": {
+   "offered": 3,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 3,
+   "pick_rate": 0.6666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.05
+  },
+  "buy:poison_dart": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:grave_call": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:war_boar": {
+   "offered": 3,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.6666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:web": {
+   "offered": 11,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:bat_cloud": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:rabid_rats": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "brown_bear": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 3,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.05
+  },
+  "buy:bat_nest": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:victory_mark": {
+   "offered": 7,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.2857142857142857,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:hunt_instinct": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:goblin_scout": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:rushing_tide": {
+   "offered": 5,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.2,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:spike_trap": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:war_banner": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "fallen_healer": {
+   "offered": 9,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.1111111111111111,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "up:gargoyle_tower": {
+   "offered": 8,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.25,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:gargoyle_tower": {
+   "offered": 6,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.16666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:tar_pit": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:heavy_grimoire": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:rift_key": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:ogre": {
+   "offered": 8,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.125,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:pack_den": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:bad_blood": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:black_mortar": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:raider_pack": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "transform:hyena_scavenger": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:infected_bite": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "transform:werewolf": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:hyena_scavenger": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:war_cry": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "alpha_beast": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:black_mortar": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:overflowing_chalice": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "endless_swarm": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "primal_beast": {
+   "offered": 3,
+   "picked": 3,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "relic:pack_howl": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:stamp_ink": {
+   "offered": 6,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.16666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "ruin_titan": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:infected_bite": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:dark_forge": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:hollow_armor": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:pack_den": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:rat_tide": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:hollow_armor": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "blood_tax": {
+   "offered": 42,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "burn_village": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:ember_rain": {
+   "offered": 4,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.25,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:goblin_dynamiter": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:kobold_scavengers": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:living_vault": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "dragon_vault": {
+   "offered": 36,
+   "picked": 35,
+   "runs_picked": 17,
+   "wins_picked": 17,
+   "in_wins": 17,
+   "pick_rate": 0.9722222222222222,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.2833333333333333
+  },
+  "drakeling": {
+   "offered": 10,
+   "picked": 5,
+   "runs_picked": 5,
+   "wins_picked": 5,
+   "in_wins": 5,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.08333333333333333
+  },
+  "ember_rain": {
+   "offered": 44,
+   "picked": 8,
+   "runs_picked": 6,
+   "wins_picked": 6,
+   "in_wins": 7,
+   "pick_rate": 0.18181818181818182,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.11666666666666667
+  },
+  "goblin_dynamiter": {
+   "offered": 16,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.0625,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "gold_bait": {
+   "offered": 17,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "gold_mine": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "kobold_scavengers": {
+   "offered": 13,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "mimic": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:war_drum": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "torch": {
+   "offered": 17,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:ember_rain": {
+   "offered": 6,
+   "picked": 5,
+   "runs_picked": 5,
+   "wins_picked": 5,
+   "in_wins": 0,
+   "pick_rate": 0.8333333333333334,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:fire_imp": {
+   "offered": 29,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.034482758620689655,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:treasure_guard": {
+   "offered": 27,
+   "picked": 18,
+   "runs_picked": 12,
+   "wins_picked": 12,
+   "in_wins": 0,
+   "pick_rate": 0.6666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "boiling_oil": {
+   "offered": 21,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.047619047619047616,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "buy:burn_village": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:oil_splash": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:profane_earth": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:war_drum": {
+   "offered": 3,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.3333333333333333,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:spark": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "cursed_coins": {
+   "offered": 17,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 1,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "gold_merc": {
+   "offered": 14,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 2,
+   "pick_rate": 0.14285714285714285,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "hell_hound": {
+   "offered": 21,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.047619047619047616,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "magma_golem": {
+   "offered": 9,
+   "picked": 4,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 3,
+   "pick_rate": 0.4444444444444444,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.05
+  },
+  "molten_gold": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 1,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "relic:merchant_purse": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "spark": {
+   "offered": 11,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:ash_salamander": {
+   "offered": 29,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.06896551724137931,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:barricade": {
+   "offered": 27,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:cursed_coins": {
+   "offered": 29,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:flooded_pit": {
+   "offered": 10,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.2,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:goblin_dynamiter": {
+   "offered": 36,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.027777777777777776,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:goblin_scout": {
+   "offered": 22,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:kobold_scavengers": {
+   "offered": 35,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:oil_splash": {
+   "offered": 24,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:torch": {
+   "offered": 34,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:cursed_coins": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:dark_messenger": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:gold_bait": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:gold_mine": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:miser_ledger": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:treasure_guard": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "deep_chalice": {
+   "offered": 10,
+   "picked": 10,
+   "runs_picked": 9,
+   "wins_picked": 9,
+   "in_wins": 10,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.16666666666666666
+  },
+  "dragon_exchange": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "furnace": {
+   "offered": 9,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 2,
+   "pick_rate": 0.2222222222222222,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "relic:lucky_coin": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "tar_net": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 1,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "toll": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "trap_chest": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "treasure_guard": {
+   "offered": 6,
+   "picked": 4,
+   "runs_picked": 4,
+   "wins_picked": 4,
+   "in_wins": 4,
+   "pick_rate": 0.6666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.06666666666666667
+  },
+  "up:deep_chalice": {
+   "offered": 17,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 0,
+   "pick_rate": 0.11764705882352941,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:dragon_vault": {
+   "offered": 19,
+   "picked": 7,
+   "runs_picked": 5,
+   "wins_picked": 5,
+   "in_wins": 0,
+   "pick_rate": 0.3684210526315789,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:furnace": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:gold_avalanche": {
+   "offered": 3,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.3333333333333333,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:giant_scale": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "oil_splash": {
+   "offered": 19,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:ash_salamander": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:gold_merc": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:cracked_hourglass": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:soul_collector": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:living_vault": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:ash_salamander": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:barricade": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:cursed_coins": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:dragon_vault": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:fire_imp": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:goblin_dynamiter": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:goblin_scout": {
+   "offered": 3,
+   "picked": 3,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "transform:kobold_scavengers": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:oil_splash": {
+   "offered": 4,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.25,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "transform:soul_collector": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:torch": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:treasure_guard": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "ash_salamander": {
+   "offered": 4,
+   "picked": 2,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "buy:blood_tax": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "fire_imp": {
+   "offered": 5,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.2,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "relic:lair_tithe": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:hired_archer": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:trap_chest": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:profane_earth": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:boiling_oil": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:hell_hound": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:chain_ring": {
+   "offered": 3,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.3333333333333333,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:tar_pit": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "gold_avalanche": {
+   "offered": 4,
+   "picked": 4,
+   "runs_picked": 4,
+   "wins_picked": 4,
+   "in_wins": 5,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.08333333333333333
+  },
+  "relic:torn_banner": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:dragon_exchange": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:dragon_vault": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:torch": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:drakeling": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:shortcut_stone": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:still_aether": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:living_library": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:drakeling": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:fire_imp": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:greedy_seal": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:gold_avalanche": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:merchant_purse": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:rift_key": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:magma_golem": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:victory_horn": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:molten_gold": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:aether_heart": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:shortcut_stone": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "bone_totem": {
+   "offered": 30,
+   "picked": 13,
+   "runs_picked": 11,
+   "wins_picked": 11,
+   "in_wins": 11,
+   "pick_rate": 0.43333333333333335,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.18333333333333332
+  },
+  "buy:acolyte": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:arcane_spark": {
+   "offered": 5,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:bone_legion": {
+   "offered": 7,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:shadow_bolt": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:shadow_mark": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:skeleton_archers": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "forbidden_library": {
+   "offered": 24,
+   "picked": 24,
+   "runs_picked": 14,
+   "wins_picked": 14,
+   "in_wins": 16,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.26666666666666666
+  },
+  "ghost": {
+   "offered": 9,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 2,
+   "pick_rate": 0.2222222222222222,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "ghoul": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "life_drain": {
+   "offered": 23,
+   "picked": 3,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 3,
+   "pick_rate": 0.13043478260869565,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.05
+  },
+  "profane_ritual": {
+   "offered": 6,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.16666666666666666,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "raised_servant": {
+   "offered": 21,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "scrap_golem": {
+   "offered": 30,
+   "picked": 15,
+   "runs_picked": 8,
+   "wins_picked": 8,
+   "in_wins": 8,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.13333333333333333
+  },
+  "shadow_bolt": {
+   "offered": 18,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.05555555555555555,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "shadow_echo": {
+   "offered": 27,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.037037037037037035,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "shadow_mark": {
+   "offered": 13,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "skeleton_archers": {
+   "offered": 27,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 2,
+   "pick_rate": 0.07407407407407407,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "soul_feast": {
+   "offered": 31,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "soul_harvest": {
+   "offered": 27,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:acolyte": {
+   "offered": 71,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:bone_legion": {
+   "offered": 86,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:corpse_blast": {
+   "offered": 74,
+   "picked": 5,
+   "runs_picked": 5,
+   "wins_picked": 5,
+   "in_wins": 0,
+   "pick_rate": 0.06756756756756757,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:cultists": {
+   "offered": 50,
+   "picked": 26,
+   "runs_picked": 14,
+   "wins_picked": 14,
+   "in_wins": 0,
+   "pick_rate": 0.52,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:forbidden_library": {
+   "offered": 31,
+   "picked": 17,
+   "runs_picked": 11,
+   "wins_picked": 11,
+   "in_wins": 0,
+   "pick_rate": 0.5483870967741935,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:open_grave": {
+   "offered": 74,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:poison_dart": {
+   "offered": 78,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:raised_servant": {
+   "offered": 63,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:shadow_bolt": {
+   "offered": 85,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:skeleton_archers": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:weakness_curse": {
+   "offered": 76,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "acolyte": {
+   "offered": 19,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "arcane_spark": {
+   "offered": 18,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:deep_chalice": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:ogre": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:raised_servant": {
+   "offered": 10,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:eternal_fountain": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:soul_storm": {
+   "offered": 4,
+   "picked": 3,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 0,
+   "pick_rate": 0.75,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "cultists": {
+   "offered": 8,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 0.125,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "open_grave": {
+   "offered": 11,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:aether_heart": {
+   "offered": 6,
+   "picked": 6,
+   "runs_picked": 6,
+   "wins_picked": 6,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "relic:eternal_fountain": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:phylactery": {
+   "offered": 6,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:victory_horn": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:bone_totem": {
+   "offered": 15,
+   "picked": 9,
+   "runs_picked": 5,
+   "wins_picked": 5,
+   "in_wins": 0,
+   "pick_rate": 0.6,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:profane_ritual": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:corpse_blast": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:death_knight": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:flooded_pit": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:forbidden_library": {
+   "offered": 5,
+   "picked": 4,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 0,
+   "pick_rate": 0.8,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "corpse_blast": {
+   "offered": 8,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:lucky_coin": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:soul_harvest": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "death_knight": {
+   "offered": 12,
+   "picked": 6,
+   "runs_picked": 6,
+   "wins_picked": 6,
+   "in_wins": 6,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.1
+  },
+  "bone_legion": {
+   "offered": 18,
+   "picked": 2,
+   "runs_picked": 2,
+   "wins_picked": 2,
+   "in_wins": 2,
+   "pick_rate": 0.1111111111111111,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.03333333333333333
+  },
+  "soul_storm": {
+   "offered": 9,
+   "picked": 5,
+   "runs_picked": 5,
+   "wins_picked": 5,
+   "in_wins": 8,
+   "pick_rate": 0.5555555555555556,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.13333333333333333
+  },
+  "buy:bone_colossus": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:scrap_golem": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:soul_feast": {
+   "offered": 4,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "up:scrap_golem": {
+   "offered": 13,
+   "picked": 13,
+   "runs_picked": 6,
+   "wins_picked": 6,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:death_knight": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:dark_sacrifice": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:life_drain": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "relic:giant_scale": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:ghost": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:greedy_seal": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:cultists": {
+   "offered": 3,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:hollow_armor": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:shadow_echo": {
+   "offered": 3,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.3333333333333333,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "up:soul_storm": {
+   "offered": 4,
+   "picked": 4,
+   "runs_picked": 3,
+   "wins_picked": 3,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:bone_totem": {
+   "offered": 2,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:copper_tap": {
+   "offered": 2,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 0.5,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:tinker_file": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "transform:acolyte": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:bone_legion": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:corpse_blast": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:cultists": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:open_grave": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:poison_dart": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:raised_servant": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 0,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.0
+  },
+  "transform:shadow_bolt": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "transform:weakness_curse": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:fallen_healer": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "arcane_apocalypse": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:profane_ritual": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:bone_crown": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:relic:frost_shard": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:war_cry": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "eternal_army": {
+   "offered": 1,
+   "picked": 1,
+   "runs_picked": 1,
+   "wins_picked": 1,
+   "in_wins": 1,
+   "pick_rate": 1.0,
+   "win_when_picked": 1.0,
+   "in_wins_frac": 0.016666666666666666
+  },
+  "buy:ghoul": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  },
+  "buy:shadow_echo": {
+   "offered": 1,
+   "picked": 0,
+   "runs_picked": 0,
+   "wins_picked": 0,
+   "in_wins": 0,
+   "pick_rate": 0.0,
+   "win_when_picked": null,
+   "in_wins_frac": 0.0
+  }
+ },
+ "score": 0.4224,
+ "score_parts": {
+  "arena_time": 0.0,
+  "run_time": 0.42244685990350994,
+  "hero_level": 0.0,
+  "waste": 0.0,
+  "card_dominance": 0.0
+ }
+}

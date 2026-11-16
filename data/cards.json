@@ -297,7 +297,7 @@
    ],
    "archetype": "shooter",
    "rarity": "uncommon",
-   "cost": 3,
+   "cost": 4,
    "count": 3,
    "xp_parts": 3,
    "hp": 90,
@@ -307,7 +307,7 @@
    "range": 6,
    "fx": {
     "spell_discount": 1,
-    "spell_min_cost": 1,
+    "spell_min_cost": 0,
     "projectile": true
    },
    "lvl": [
@@ -1159,11 +1159,10 @@
     "radius": 2.5,
     "stop": 2.0,
     "curses": 2,
-    "gold": 15
+    "gold_cost": 15
    },
    "lvl": [
-    "stop",
-    "gold"
+    "stop"
    ],
    "model": "gold_bait",
    "family": "greed",
@@ -1175,7 +1174,13 @@
       "add": 0.5
      }
     ]
-   }
+   },
+   "ops": [
+    {
+     "op": "pay_gold",
+     "amount": "gold_cost"
+    }
+   ]
   },
   {
    "id": "bone_legion",

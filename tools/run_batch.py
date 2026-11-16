@@ -17,11 +17,13 @@ GODOT = os.environ.get("GODOT", r"C:\Users\gabri\AppData\Local\Microsoft\WinGet\
                        r"\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe")
 
 
-def run_chunk(bot, deck, seeds, out, data, pool="full"):
+def run_chunk(bot, deck, seeds, out, data, pool="full", extra=None):
     dk, _, ph = deck.partition("@")
     cmd = [GODOT, "--headless", "--path", ROOT, "res://headless/batch.tscn", "--",
            f"--bot={bot}", f"--deck={dk}", f"--seeds={seeds}", f"--out={out}", f"--data={data}", f"--phase={ph or 1}",
            f"--pool={pool}"]
+    for k, v in (extra or {}).items():   # force_relic, force_event, draw_delay (experimentos de balanceamento)
+        cmd.append(f"--{k}={v}")
     p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     errs = [l for l in (p.stdout + p.stderr).splitlines() if "SCRIPT ERROR" in l or "Parse Error" in l]
     if p.returncode != 0 or not os.path.exists(out):
@@ -225,7 +227,7 @@ def report_md(s, meta):
     return "\n".join(L) + "\n"
 
 
-def run_all(bots, decks, runs, seed0=1, workers=None, data="res://data", out=None, pool="full"):
+def run_all(bots, decks, runs, seed0=1, workers=None, data="res://data", out=None, pool="full", extra=None):
     workers = workers or os.cpu_count() or 4
     out = out or os.path.join(ROOT, "reports", "tmp")
     os.makedirs(os.path.join(out, "parts"), exist_ok=True)
@@ -242,7 +244,7 @@ def run_all(bots, decks, runs, seed0=1, workers=None, data="res://data", out=Non
                 s = e + 1
     res_runs, errs = [], []
     with cf.ThreadPoolExecutor(max_workers=workers) as ex:
-        for res in ex.map(lambda j: run_chunk(*j, data, pool), jobs):
+        for res in ex.map(lambda j: run_chunk(*j, data, pool, extra), jobs):
             res_runs += res[0]
             errs += res[1]
     return res_runs, errs
@@ -259,12 +261,16 @@ def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--pool", default="full", choices=["full", "start"],
                     help="full = pool inteiro do vilão nas ofertas; start = só a coleção inicial (vilão + comuns)")
+    ap.add_argument("--force_relic", default="", help="relíquia(s) ganhas no início da run (id[,id])")
+    ap.add_argument("--force_event", default="", help="evento que sempre sai, com a opção: id[:opção]")
+    ap.add_argument("--draw_delay", default="1.0", help="multiplicador da recarga da vaga (0 = sem recarga)")
     a = ap.parse_args()
+    extra = {k: v for k, v in {"force_relic": a.force_relic, "force_event": a.force_event, "draw_delay": a.draw_delay}.items() if v not in ("", "1.0")}
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     out = a.out or os.path.join(ROOT, "reports", stamp)
     os.makedirs(os.path.join(out, "parts"), exist_ok=True)
     t0 = time.time()
-    runs, errs = run_all(a.bots.split(","), a.decks.split(","), a.runs, a.seed0, a.workers, a.data, out, a.pool)
+    runs, errs = run_all(a.bots.split(","), a.decks.split(","), a.runs, a.seed0, a.workers, a.data, out, a.pool, extra)
     wall = time.time() - t0
     with open(os.path.join(ROOT, "data", "rules.json"), encoding="utf-8") as f:
         goals = json.load(f)["goals"]

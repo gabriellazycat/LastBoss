@@ -1735,6 +1735,8 @@ func _draw_fair_ficha(foc: Dictionary) -> void:
 		_S()
 	else:
 		var ic := _ftex("node_%s.svg" % _fair_icon(str(foc["kind"])))
+		if foc["kind"] == "relic":
+			ic = _ftex("res://assets/ui/relics/%s.svg" % str(foc["item"]["id"]))   # ícone da própria relíquia (15/11/2026)
 		if ic:
 			draw_texture_rect(ic, Rect2(tc - Vector2(66, 66), Vector2(132, 132)), false)
 	var nm := _fair_name(foc) if foc["kind"] != "card" else str(foc["name"])
@@ -1791,6 +1793,8 @@ func _draw_fair_services(foc: Dictionary) -> void:
 		if hot:
 			_rrect(Rect2(rr.position.x - 4, y - 3, rr.size.x + 8, isz + 6), Color(FAIR_RED, 0.12), 8)
 		var ic := _ftex("node_%s%s.svg" % [_fair_icon(str(r["kind"])), "_hot" if hot else ""])
+		if r["kind"] == "relic":
+			ic = _ftex("res://assets/ui/relics/%s.svg" % str(r["item"]["id"]))
 		if ic:
 			draw_texture_rect(ic, Rect2(rr.position.x + 6, y, isz, isz), false, Color(1, 1, 1, 0.5 if sold else 1.0))
 		var base := y + isz * 0.5 + 8

@@ -183,7 +183,7 @@ func show_card() -> void:
 		body.add_child(_unlock_box(d))
 	body.add_child(_numbers(d))
 	body.add_child(_head("UI_COL_WHAT"))
-	body.add_child(_rich(Tips.rich(UiKit.card_desc(d, 1), false), BODY))
+	body.add_child(_rich(Tips.rich(UiKit.card_desc(d, 1, false, [], false), false), BODY))
 	var words := _keywords(d)
 	if words.size() > 0:
 		body.add_child(_head("UI_COL_WORDS"))

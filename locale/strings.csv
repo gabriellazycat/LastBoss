@@ -70,20 +70,6 @@ MODDESC_cheap,-1 de custo de [[elixir|Elixir]],-1 [[elixir|Elixir]] cost
 MODDESC_explosive,A unidade explode ao morrer,The unit explodes on death
 MODDESC_cursed,O dano aplica [[curse|Maldição]],Damage applies a [[curse|Curse]]
 MODDESC_shadowy,Não conta para a recompensa de queda,Does not count toward the fall reward
-CON_crossfire,Fogo Cruzado,Crossfire
-CON_rat_storm,Tempestade de Ratos,Rat Storm
-CON_no_witnesses,Sem Testemunhas,No Witnesses
-CON_ambush,Emboscada,Ambush
-CON_evil_architecture,Arquitetura do Mal,Evil Architecture
-CON_hunt,Caçada,Hunt
-CON_ritual_interrupted,Ritual Interrompido,Ritual Interrupted
-CONG_tag_damage,Cause {amount} de dano com {tag},Deal {amount} damage with {tag}
-CONG_alive_tag,Tenha {amount} unidades de {tag} vivas,Have {amount} {tag} units alive
-CONG_damage_no_xp,Cause {amount} de dano sem perder nenhum monstro,Deal {amount} damage without losing a single monster
-CONG_burst,Cause {amount} de dano em {window} s,Deal {amount} damage within {window} s
-CONG_structures,Tenha {amount} [[structure|estruturas]] em campo,Have {amount} [[structure|structures]] on the field
-CONG_cc,Aplique [[slow|Lentidão]] ou [[fear|Medo]] {amount} vezes,Apply [[slow|Slow]] or [[fear|Fear]] {amount} times
-CONG_ritual_time,Mantenha o herói num [[ritual|Círculo]] por {amount} s,Keep the hero in a [[ritual|Circle]] for {amount} s
 TAG_pack,Bando,Pack
 TAG_undead,Morto-vivo,Undead
 TAG_fire,Fogo,Fire
@@ -112,7 +98,6 @@ UI_HERO_FALLEN,Herói {n} caído!,Hero {n} fallen!
 UI_HERO_ARRIVING,Herói chegando,Hero arriving
 UI_OFFER_LEVEL,Subiu de nível! Escolha 1,Level up! Pick 1
 UI_OFFER_SHRINE,Santuário defendido! Escolha uma carta rara,Shrine defended! Pick a rare card
-UI_OFFER_CONTRACT,Contrato cumprido! Escolha 1,Contract fulfilled! Pick 1
 UI_OPT_REMOVE,Remover {card},Remove {card}
 UI_RESULT_win,O herói caiu na sua arena.,The hero fell in your arena.
 UI_RESULT_win_early,Vitória antecipada: o herói nem chegou ao covil.,Early victory: the hero never reached the lair.
@@ -150,7 +135,6 @@ UI_SUBTITLE,O herói está a caminho. Molde quem vai bater à sua porta.,The her
 HINT_start,"Jogue cartas em qualquer ponto da tela, a pelo menos 3 m do herói. Derrube os 5 heróis em fila: cada queda dá uma recompensa. Passe o mouse nas palavras coloridas para ler o que significam.","Play cards anywhere on screen, at least 3 m from the hero. Bring down the 5 queued heroes: each fall gives a reward. Hover the colored words to read what they mean."
 HINT_offer,Escolha uma recompensa para o deck (ou recuse). Cada local da estrada dá uma: vencer a disputa do local dá mais opções.,Pick a reward for your deck (or skip it). Every place on the road gives one: winning its contest gives more choices.
 HINT_shrine,[[shrine|Santuário]] à frente! O herói abençoado defende o local: não leva dano e bate mais forte em quem está no círculo. Mantenha monstros vivos lá dentro para ganhar uma carta rara.,[[shrine|Shrine]] ahead! The blessed hero defends it: he takes no damage and hits harder at whoever stands in the circle. Keep monsters alive inside to earn a rare card.
-HINT_contract,Contrato! Cumpra o objetivo no prazo para escolher uma recompensa.,Contract! Meet the goal in time to choose a reward.
 HINT_route,Cartas de [[route|Rota]] são jogadas na faixa de rota à esquerda ou no mapa grande (M): clique no local que quer afetar.,[[route|Route]] cards are played on the route strip on the left or on the big map (M): click the place you want to affect.
 HINT_arena,A arena! Proteja o seu corpo. [[teleport|Teleporte]] o chefe com Q/E ou clicando num [[altar|altar]].,The arena! Protect your body. [[teleport|Teleport]] the boss with Q/E or by clicking an [[altar|altar]].
 SAY_HERO_1,Mais forte a cada passo!,Stronger with every step!
@@ -192,6 +176,7 @@ SET_sfx,Efeitos sonoros,Sound effects
 SET_fullscreen,Tela cheia,Fullscreen
 SET_vsync,Sincronia vertical (VSync),Vertical sync (VSync)
 SET_paint_look,Mundo pintado (guache),Painted world (gouache)
+SET_model_g,Modelos 3D (miniaturas pintadas),3D models (painted miniatures)
 SET_quality,Qualidade gráfica,Graphics quality
 SET_max_fps,Limite de FPS,FPS limit
 SET_ui_scale,Tamanho da interface,Interface size
@@ -266,7 +251,6 @@ UI_ST_hero,Nível do herói,Hero level
 UI_ST_fallen,Heróis caídos,Heroes fallen
 UI_ST_kills,Abates do herói,Hero kills
 UI_ST_shrines,Santuários,Shrines
-UI_ST_contracts,Contratos,Contracts
 UI_ST_parts,Partes perdidas,Parts lost
 UI_ST_top,Carta mais jogada,Most played card
 UI_OPT_NEW,Carta nova · {r},New card · {r}
@@ -386,6 +370,7 @@ UI_OFFER_LOC_fountain,Fonte: tire uma carta do deck,Fountain: remove a card from
 UI_OFFER_LOC_ritual,Ritual: suba o nível de uma carta,Ritual: level up a card
 UI_OFFER_LOC_shrine,Santuário: escolha uma carta rara,Shrine: pick a rare card
 UI_OFFER_LOC_bridge,Ponte: escolha uma carta,Bridge: pick a card
+UI_OFFER_LOC_shop,Tesouro da loja: escolha uma carta de raridade alta,Shop spoils: pick a high-rarity card
 UI_OFFER_WON,Disputa vencida: recompensa completa,Contest won: full reward
 UI_OFFER_LOST,Disputa perdida: recompensa menor,Contest lost: smaller reward
 UI_OFFER_SKIP,Recusar,Skip
@@ -505,7 +490,7 @@ RELD_watchful_eye,"Quando uma habilidade do herói dispara, a primeira carta jog
 REL_pack_howl,Uivo da Matilha,Pack Howl
 RELD_pack_howl,"Com 5 ou mais unidades de bando vivas, os bandos causam +25% de dano.","With 5 or more pack units alive, packs deal +25% damage."
 REL_merchant_purse,Bolsa do Mercador,Merchant's Purse
-RELD_merchant_purse,A loja tem 1 carta a mais e tudo custa 15% menos.,Shops have 1 extra card and everything costs 15% less.
+RELD_merchant_purse,A loja tem 1 carta a mais e tudo custa 25% menos.,Shops have 1 extra card and everything costs 25% less.
 REL_overflowing_chalice,Cálice Transbordante,Overflowing Chalice
 RELD_overflowing_chalice,Cada ato e a arena começam com o elixir cheio.,Each act and the arena start with full elixir.
 REL_shortcut_stone,Pedra do Atalho,Shortcut Stone
@@ -521,7 +506,7 @@ EVT_hooded_merchant_BODY,Um vulto oferece mercadoria roubada de um templo.,A fig
 EVT_hooded_merchant_buy,Comprar (60 de ouro),Buy (60 gold)
 EVT_hooded_merchant_buy_D,Escolha 1 entre 3 cartas raras ou melhores.,Pick 1 of 3 rare or better cards.
 EVT_hooded_merchant_rob,Roubar,Rob
-EVT_hooded_merchant_rob_D,50%: uma carta rara ou melhor. 50%: o próximo herói chega com +10% de vida.,50%: a rare or better card. 50%: the next hero arrives with +10% health.
+EVT_hooded_merchant_rob_D,50%: uma carta rara ou melhor. 50%: o próximo herói chega com +5% de vida.,50%: a rare or better card. 50%: the next hero arrives with +5% health.
 EVT_hooded_merchant_leave,Seguir,Move on
 EVT_hooded_merchant_leave_D,Nada acontece.,Nothing happens.
 EVT_profane_altar,Altar Profano,Profane Altar
@@ -543,8 +528,8 @@ EVT_prisoner_free_D,+40 de ouro.,+40 gold.
 EVT_wishing_well,Poço dos Desejos,Wishing Well
 EVT_wishing_well_BODY,Moedas brilham no fundo.,Coins glitter at the bottom.
 EVT_wishing_well_small,Jogar 30 de ouro,Toss 30 gold
-EVT_wishing_well_small_D,60%: uma carta sorteada sobe de nível. 40%: nada.,60%: a random card levels up. 40%: nothing.
-EVT_wishing_well_big,Jogar 80 de ouro,Toss 80 gold
+EVT_wishing_well_small_D,70%: uma carta sorteada sobe de nível. 30%: nada.,70%: a random card levels up. 30%: nothing.
+EVT_wishing_well_big,Jogar 70 de ouro,Toss 70 gold
 EVT_wishing_well_big_D,Suba o nível de 1 entre 3 cartas.,Level up 1 of 3 cards.
 EVT_wishing_well_leave,Seguir,Move on
 EVT_wishing_well_leave_D,Nada acontece.,Nothing happens.
@@ -658,7 +643,7 @@ DESC_fire_imp,{count} diabretes voadores de [[fire|Fogo]]: rápidos e fortes con
 DESC_tar_net,Teia de piche: deixa o herói [[root|Preso]] por {root} s e [[soaked|Encharcado]]. Prepara o Goblin e a Tocha.,Tar web: leaves the hero [[root|Rooted]] for {root} s and [[soaked|Soaked]]. Sets up the Goblin and the Torch.
 DESC_gold_merc,Goblin de aluguel. Cobiça: +15% de vida e dano para cada {gold_step} de ouro que você tem (até +150%).,Goblin for hire. Greed: +15% health and damage for every {gold_step} gold you have (up to +150%).
 DESC_toll,Paga {gold_cost} de ouro: ganha {elixir} de [[elixir|Elixir]].,Pay {gold_cost} gold: gain {elixir} [[elixir|Elixir]].
-DESC_cursed_coins,"Moedas no chão: o herói que passa por cima para {stop} s para catar, leva {curses} [[curse|Maldições]] e você ganha {gold} de ouro.","Coins on the ground: a hero who walks over them stops {stop} s to pick them up, takes {curses} [[curse|Curses]] and you gain {gold} gold."
+DESC_cursed_coins,Custa {gold_cost} de [[gold|Ouro]]. Moedas no chão: o herói que passa por cima para {stop} s para catar e leva {curses} [[curse|Maldições]].,Costs {gold_cost} [[gold|Gold]]. Coins on the ground: a hero who walks over them stops {stop} s to pick them up and takes {curses} [[curse|Curses]].
 DESC_bone_legion,"{count} esqueletos baratos. Bons para morrer: alimentam o Carniçal, a Colheita e a Explosão de Cadáver.","{count} cheap skeletons. Good at dying: they feed the Ghoul, the Harvest and Corpse Blast."
 DESC_ghoul,Morte: +15% de dano cada vez que um monstro seu morre a até 6 m (até 10 vezes).,Death: +15% damage each time one of your monsters dies within 6 m (up to 10 times).
 DESC_corpse_blast,"Explode o seu monstro mais perto do ponto: dano de {hp_mult}× a vida dele (mínimo {min_damage}) em {radius} m. Sem monstro seu perto, levanta {raise} esqueletos.","Blows up your monster closest to the point: damage equal to {hp_mult}× its health (at least {min_damage}) within {radius} m. With none of your monsters nearby, raises {raise} skeletons."
@@ -687,9 +672,10 @@ DECK_cult,Culto,Cult
 DECK_plague,Rainha da Praga,Plague Queen
 DECK_dragon,Dragão Avarento,Greedy Dragon
 DECK_lich,Lich,Lich
-VILLAIN_plague_PASSIVE,Infestação: criatura de [[pack|Bando]] que morre tem 20% de chance de deixar um rato; [[beast|Fera]] que morre faz a próxima Fera custar 1 a menos.,Infestation: a [[pack|Pack]] creature that dies has a 20% chance to leave a rat behind; a [[beast|Beast]] that dies makes the next Beast cost 1 less.
-VILLAIN_dragon_PASSIVE,Tesouro do Dragão: começa com 30 de ouro; cada 50 de ouro guardado dá +5% de dano de fogo (até +30%).,Dragon's Hoard: start with 30 gold; every 50 gold kept gives +5% fire damage (up to +30%).
-VILLAIN_lich_PASSIVE,"Colheita: a cada 8 mortes de criaturas suas, o próximo feitiço custa 0.","Harvest: every 8 deaths of your creatures, your next spell costs 0."
+VILLAIN_plague_PASSIVE,Infestação: qualquer monstro seu que morre tem 20% de chance de deixar um rato (o rato deixado não gera outro).,Infestation: any of your monsters that dies has a 20% chance to leave a rat behind (that rat does not leave another).
+VILLAIN_dragon_PASSIVE,Avareza: você não compra em lojas. Cada loja por onde passa dá 200 de ouro e uma carta de raridade alta à sua escolha entre 3 sorteadas.,Greed: you can't buy in shops. Every shop you pass gives 200 gold and a high-rarity card of your choice from 3 random ones.
+VILLAIN_lich_PASSIVE,"Ciclo de feitiço: lançar um feitiço faz a próxima criatura custar 1 a menos; uma criatura sua que morre faz o próximo feitiço custar 1 a menos. A carta afetada brilha na mão.","Spell Cycle: casting a spell makes your next creature cost 1 less; one of your creatures dying makes your next spell cost 1 less. The affected card glows in your hand."
+UI_CYCLE_MARK,CICLO −1,CYCLE −1
 UI_PACT_OF_crypt,Pacto da,Pact of the
 UI_PACT_OF_cult,Pacto do,Pact of the
 DECKDESC_crypt,Família Morte: monstros que morrem alimentam os outros. Heróis com +15% de vida.,Death family: monsters that die feed the others. Heroes with +15% health.
@@ -700,10 +686,18 @@ HERO_escudeiro,Escudeiro,Squire
 HERO_arqueira,Arqueira,Archer
 HERO_cleriga,Clériga,Cleric
 HERO_mago,Mago,Mage
+HERO_assassino,Assassino,Assassin
+HERO_barbaro,Bárbaro,Barbarian
+HERO_besteiro,Besteiro,Crossbowman
+HERO_guardiao,Guardião,Guardian
 HEROD_escudeiro,Escudo na frente: ataque pelos lados e por trás.,Shield in front: attack from the sides and behind.
 HEROD_arqueira,Atira de longe e não tem escudo: frágil quando cercada.,Shoots from afar and has no shield: fragile when surrounded.
 HEROD_cleriga,"Cura a si mesma com o tempo e, ao cair, abençoa o próximo herói (+25% de vida).","Heals herself over time and, when she falls, blesses the next hero (+25% health)."
 HEROD_mago,"Golpe que explode em área: destrói bandos, mas é lento e frágil.","Attack that explodes in an area: wrecks packs, but slow and fragile."
+HEROD_assassino,"Corpo a corpo, rápido e frágil: golpe muito forte num alvo só.","Fast, fragile melee: a very strong hit on a single target."
+HEROD_barbaro,"Golpe largo que acerta uma roda de monstros; sem escudo.","Wide swing that hits a ring of monsters; no shield."
+HEROD_besteiro,"Atira de longe, devagar, com tiro pesado num alvo só; sem escudo.","Shoots from afar, slowly, with a heavy shot on one target; no shield."
+HEROD_guardiao,"Muita vida e escudo enorme, quase nenhum dano: segura os monstros para os outros.","Lots of health and a huge shield, almost no damage: holds monsters for the others."
 UI_CAMPAIGN,Campanha,Campaign
 UI_PHASE,Fase {n},Stage {n}
 UI_PHASE_LOCKED,Vença a fase anterior para liberar.,Beat the previous stage to unlock.
@@ -723,6 +717,9 @@ PHASED_2,Escudeiros e arqueiras se alternam: a arqueira atira de longe e não te
 PHASED_3,Clérigas se curam e abençoam quem vem depois. Derrube-as rápido.,Clerics heal themselves and bless whoever comes next. Bring them down fast.
 PHASED_4,"Eles andam juntos: quando um cai, quem chega levanta o caído (uma vez cada). O grupo cresce a cada queda. Enxames sofrem contra o grupo: fogo e mortes funcionam melhor.","They travel together: when one falls, whoever arrives raises the fallen (once each). The party grows with every fall. Swarms struggle against the group: fire and deaths work better."
 UI_HEROES_STANDING,{n} de pé,{n} standing
+UI_PARTY_OF,Party {k} de {n},Party {k} of {n}
+UI_PARTY_ORD,Party {p} · {k} de {n},Party {p} · {k} of {n}
+UI_FALLEN_OF,{k} de {n} caídos,{k} of {n} fallen
 TUT_welcome,"Você é o Lorde das Trevas, hoje com a Rainha da Praga como vilão. Os heróis vêm pela estrada até o seu covil: derrube os 3 antes que cheguem a você.","You are the Dark Lord, today playing the Plague Queen as your villain. Heroes come down the road to your lair: bring down all 3 before they reach you."
 TUT_play,"Arraste uma carta da mão para o chão perto do herói (ou aperte 1 a 5 e clique). Cartas custam [[elixir|Elixir]], que enche sozinho; só as relíquias aumentam o máximo e a velocidade.","Drag a card from your hand onto the ground near the hero (or press 1 to 5 and click). Cards cost [[elixir|Elixir]], which refills on its own; only relics raise its maximum and speed."
 TUT_deck,"A carta jogada vai para o descarte e outra vem da pilha de compra (os montes ficam ao lado da mão; clique para ver a lista). Quando a compra acaba, o descarte é embaralhado e volta.","A played card goes to the discard pile and another comes from the draw pile (the piles sit beside your hand; click one to see its list). When the draw pile runs out, the discard is shuffled and comes back."
@@ -799,7 +796,7 @@ DESC_spark,"{damage} de dano de [[fire|Fogo]]. Detona: no herói [[soaked|Enchar
 DESC_kobold_scavengers,Enxame de kobolds fracos. Cada golpe no herói rende {gold_per_hit} de [[gold|Ouro]].,A swarm of weak kobolds. Each hit on the hero earns you {gold_per_hit} [[gold|Gold]].
 DESC_molten_gold,Precisa de {gold_cost} de [[gold|Ouro]]. Gasta até {gold_max}: cada um vira {fire_per_gold} de dano de [[fire|Fogo]] num raio de {radius} m e deixa o herói com [[slow|Lentidão]] por {slow} s.,Needs {gold_cost} [[gold|Gold]]. Spends up to {gold_max}: each becomes {fire_per_gold} [[fire|Fire]] damage in a {radius} m radius and leaves the hero [[slow|Slowed]] for {slow} s.
 DESC_trap_chest,"Baú que parece um tesouro. Quando o herói o destrói, explode em {boom} de dano de [[fire|Fogo]] e você ganha {gold} de [[gold|Ouro]].","A chest that looks like treasure. When the hero destroys it, it explodes for {boom} [[fire|Fire]] damage and you gain {gold} [[gold|Gold]]."
-DESC_treasure_guard,Guardião de ouro e osso. Ganha {hp_per_gold} de vida por [[gold|Ouro]] que você tem (até +{hp_cap}) quando entra.,"A guardian of gold and bone. When it enters, it gains {hp_per_gold} health per [[gold|Gold]] you hold (up to +{hp_cap})."
+DESC_treasure_guard,"Guardião de ouro e osso. Ganha {hp_per_gold} de vida por [[gold|Ouro]] que você tem (até +{hp_cap}) quando entra. A cada segundo vivo, custa {gold_per_s} de ouro.","A guardian of gold and bone. When it enters, it gains {hp_per_gold} health per [[gold|Gold]] you hold (up to +{hp_cap}). Each second it stays alive costs {gold_per_s} gold."
 DESC_furnace,"Dura {duration} s. A até {radius} m, o herói não seca ([[soaked|Encharcado]] não acaba) e o [[fire|Fogo]] causa +{fire_bonus_pct}% de dano.","Lasts {duration} s. Within {radius} m, the hero does not dry off ([[soaked|Soaked]] never ends) and [[fire|Fire]] deals +{fire_bonus_pct}% damage."
 DESC_dragon_vault,"[[lair|Temporário]]: por {duration} s, todo [[gold|Ouro]] que você ganha vem com +{gold_mult_pct}%.","[[lair|Temporary]]: for {duration} s, all [[gold|Gold]] you earn is increased by {gold_mult_pct}%."
 DESC_blood_tax,Paga {gold_cost} de [[gold|Ouro]]: a próxima carta custa {discount} a menos. Retorna ao baralho uma vez por embaralhada.,Pay {gold_cost} [[gold|Gold]]: the next card costs {discount} less. Returns to the draw pile once per shuffle.
@@ -844,7 +841,7 @@ DESC_bone_colossus,"Absorve mortos por perto (+{absorb_hp} de vida cada, até {h
 DESC_arcane_apocalypse,"Repete os [[spell|feitiços]] que você jogou nos últimos {window} s (até {max_spells}), menos ele mesmo e o Eco.","Repeats the [[spell|spells]] you played in the last {window} s (up to {max_spells}), except itself and Echo."
 DESC_barricade,[[structure|Estrutura]] que bloqueia o caminho do herói.,[[structure|Structure]] that blocks the hero's path.
 DESC_weakness_curse,O herói causa {weak_pct}% menos dano por {duration} s.,The hero deals {weak_pct}% less damage for {duration} s.
-DESC_deep_chalice,[[lair|Temporário]]: +{elixir_max} de [[elixir|elixir]] máximo por {duration} s e {elixir} de elixir na hora.,[[lair|Temporary]]: +{elixir_max} max [[elixir|elixir]] for {duration} s and {elixir} elixir right now.
+DESC_deep_chalice,[[lair|Temporário]]: +{elixir_max} de [[elixir|elixir]] máximo e +{elixir_regen_pct}% de geração de elixir por {duration} s.,[[lair|Temporary]]: +{elixir_max} max [[elixir|elixir]] and +{elixir_regen_pct}% elixir generation for {duration} s.
 DESC_dark_sacrifice,[[sacrifice|Sacrifica]] 1 monstro seu: ganha {refund_frac_pct}% do custo dele em [[elixir|elixir]] (até {refund_cap}).,[[sacrifice|Sacrifices]] 1 of your monsters: gain {refund_frac_pct}% of its cost as [[elixir|elixir]] (up to {refund_cap}).
 DESC_war_banner,[[structure|Estrutura]] por {duration} s: seus monstros a até {radius} m ganham +{dmg_pct}% de dano e +{hp_pct}% de vida.,[[structure|Structure]] for {duration} s: your monsters within {radius} m gain +{dmg_pct}% damage and +{hp_pct}% health.
 DESC_cave_troll,Regenera {regen_pct}% da vida por segundo; arremessa pedras.,Regenerates {regen_pct}% health per second; throws rocks.
@@ -934,7 +931,7 @@ RELD_quick_spring,O elixir enche 40% mais rápido.,Elixir refills 40% faster.
 REL_deep_cauldron,Caldeirão Fundo,Deep Cauldron
 RELD_deep_cauldron,+3 de elixir máximo.,+3 max elixir.
 REL_rushing_tide,Maré Veloz,Rushing Tide
-RELD_rushing_tide,O elixir enche 60% mais rápido.,Elixir refills 60% faster.
+RELD_rushing_tide,O elixir enche 45% mais rápido.,Elixir refills 45% faster.
 REL_victory_mark,Marca da Vitória,Victory Mark
 RELD_victory_mark,Alcançar os 3 marcos de uma disputa dá +1 de elixir máximo até o fim da run (até +4).,Reaching all 3 marks of a contest grants +1 max elixir for the rest of the run (up to +4).
 REL_heart_of_well,Coração do Poço,Heart of the Well
@@ -966,7 +963,7 @@ RELD_forge_hammer,"Ao pegar: 3 cartas do baralho, sorteadas, sobem 1 nível.",On
 REL_tinker_file,Lima do Funileiro,Tinker's File
 RELD_tinker_file,"Ao pegar: 2 cartas do baralho, sorteadas, custam 1 a menos para sempre (nunca uma de custo 0).",On pickup: 2 random cards in your deck cost 1 less for good (never a 0-cost card).
 REL_blood_tithe,Dízimo de Sangue,Blood Tithe
-RELD_blood_tithe,Ao pegar: o herói da vez perde 10% da vida máxima.,On pickup: the current hero loses 10% of his max health.
+RELD_blood_tithe,Ao pegar: o herói da vez perde 5% da vida máxima.,On pickup: the current hero loses 5% of his max health.
 REL_tar_pit,Piche,Tar Pit
 RELD_tar_pit,O herói da vez anda 25% mais devagar até cair (o seguinte vem normal).,The current hero walks 25% slower until he falls (the next one is normal).
 REL_stamp_ink,Tinta de Carimbo,Stamp Ink
@@ -1087,7 +1084,7 @@ CARD_spike_trap,Armadilha de Espinhos,Spike Trap
 DESC_spike_trap,"[[structure|Armadilha]]: quando o herói pisa, leva {damage} de dano e fica [[root|Preso]] por {root} s. Some depois.","[[structure|Trap]]: when the hero steps on it, they take {damage} damage and are [[root|Rooted]] for {root} s. Then it vanishes."
 N3_spike_trap,N3: [[root|Preso]] por {root} s.,L3: [[root|Rooted]] for {root} s.
 CARD_goblin_scout,Batedor Goblin,Goblin Scout
-DESC_goblin_scout,Goblin rápido e frágil: isca barata que o herói persegue.,"Fast, fragile goblin: a cheap lure the hero chases."
+DESC_goblin_scout,Custa {gold_cost} de [[gold|Ouro]]. Goblin rápido e frágil: isca barata que o herói persegue.,"Costs {gold_cost} [[gold|Gold]]. Fast, fragile goblin: a cheap lure the hero chases."
 CARD_hired_archer,Arqueiro de Aluguel,Hired Archer
 DESC_hired_archer,Atira de longe e recua se o herói chega perto.,Shoots from afar and backs away if the hero gets close.
 N3_hired_archer,N3: a flecha atravessa o escudo.,L3: the arrow pierces the shield.
@@ -1119,62 +1116,30 @@ REL_aether_heart,Coração de Éter,Heart of Aether
 RELD_aether_heart,+5 de elixir máximo e o elixir enche 80% mais rápido.,+5 max elixir and elixir refills 80% faster.
 REL_living_library,Biblioteca Viva,Living Library
 RELD_living_library,"Ao embaralhar o baralho, compra 1 carta a mais.","When the deck is reshuffled, draw 1 extra card."
-UNLOCK_alpha_beast,Tenha 30 ratos em campo ao mesmo tempo,Have 30 rats on the field at once
-UNLOCK_arcane_apocalypse,Jogue 7 feitiços em 20 segundos,Play 7 spells within 20 seconds
-UNLOCK_arcane_spark,Jogue 30 feitiços de Sombra numa mesma fase,Play 30 Shadow spells in a single phase
-UNLOCK_ash_phoenix,Termine uma fase com 1000 de ouro,Finish a phase with 1000 gold
-UNLOCK_bat_cloud,Tenha 12 bichos de Bando em campo ao mesmo tempo,Have 12 Pack creatures on the field at once
-UNLOCK_bat_nest,Tenha 3 estruturas em campo ao mesmo tempo,Have 3 structures on the field at once
-UNLOCK_black_pestilence,Jogue 30 feitiços numa mesma fase,Play 30 spells in a single phase
-UNLOCK_blood_tax,Jogue 5 feitiços em 20 segundos,Play 5 spells within 20 seconds
-UNLOCK_boiling_oil,Mantenha o herói Encharcado por 20 segundos numa mesma fase,Keep the hero Soaked for 20 seconds in a single phase
-UNLOCK_bone_colossus,Faça 550 dos seus monstros morrerem numa mesma fase,Have 550 of your monsters die in a single phase
-UNLOCK_bone_dragon,Faça 700 dos seus monstros morrerem numa mesma fase,Have 700 of your monsters die in a single phase
-UNLOCK_bone_totem,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_brown_bear,Derrote 30 heróis no total,Defeat 30 heroes in total
-UNLOCK_burn_village,Queime o herói por 40 segundos numa mesma fase,Burn the hero for 40 seconds in a single phase
-UNLOCK_cave_troll,Vença a primeira fase,Win the first phase
-UNLOCK_corrupt_piper,Faça 1000 ratos morrerem numa mesma fase,Have 1000 of your rats die in a single phase
-UNLOCK_devour,Vença uma fase jogando só 10 feitiços,Win a phase playing only 10 spells
-UNLOCK_dragon_exchange,Encharque o herói e incendeie-o em até 1 segundo,Soak the hero and set them on fire within 1 second(s)
-UNLOCK_elder_dragon,Tenha 5 monstros de Fogo em campo ao mesmo tempo,Have 5 Fire monsters on the field at once
-UNLOCK_ember_rain,Jogue 25 feitiços numa mesma fase,Play 25 spells in a single phase
-UNLOCK_eruption,Vença uma fase sem jogar estruturas,Win a phase without playing structures
-UNLOCK_eternal_army,Tenha 12 mortos-vivos em campo ao mesmo tempo,Have 12 undead on the field at once
-UNLOCK_fallen_healer,Derrote um herói perdendo no máximo 5 monstros,Defeat a hero while losing at most 5 monsters
-UNLOCK_flooded_pit,Jogue 5 cartas Temporárias numa mesma fase,Play 5 Temporary cards in a single phase
-UNLOCK_forbidden_library,Jogue 30 cartas Temporárias numa mesma fase,Play 30 Temporary cards in a single phase
-UNLOCK_furnace,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_ghost,Tenha 40 esqueletos em campo ao mesmo tempo,Have 40 skeletons on the field at once
-UNLOCK_gold_avalanche,Ganhe 1500 de ouro numa mesma fase,Earn 1500 gold in a single phase
-UNLOCK_gold_bait,Faça o herói parar nas Moedas Malditas 10 vezes numa mesma fase,Make the hero stop at the Cursed Coins 10 times in a single phase
-UNLOCK_hollow_armor,Tenha 15 de Elixir máximo,Reach 15 maximum Elixir
-UNLOCK_hunt_instinct,Jogue 4 feitiços em 20 segundos,Play 4 spells within 20 seconds
-UNLOCK_life_drain,Aplique 5 Maldições no herói numa mesma fase,Put 5 Curses on the hero in a single phase
-UNLOCK_magma_golem,Tenha 10 monstros seus em campo ao mesmo tempo,Have 10 monsters on the field at once
-UNLOCK_meteor_storm,Jogue 15 feitiços de Fogo numa mesma fase,Play 15 Fire spells in a single phase
-UNLOCK_mimic,Jogue 15 estruturas numa mesma fase,Play 15 structures in a single phase
-UNLOCK_molten_gold,Gaste 600 de Elixir numa mesma fase,Spend 600 Elixir in a single phase
-UNLOCK_mother_nest,Tenha 20 bichos de Bando em campo ao jogar um feitiço,Have 20 Pack creatures on the field when you play a spell
-UNLOCK_ogre,Jogue 100 monstros numa mesma fase,Play 100 monsters in a single phase
-UNLOCK_pack_den,Jogue 15 estruturas numa mesma fase,Play 15 structures in a single phase
-UNLOCK_plague_carrion,Tenha 40 monstros seus em campo ao mesmo tempo,Have 40 monsters on the field at once
-UNLOCK_primal_beast,Jogue 100 cartas de Bando numa mesma fase,Play 100 Pack cards in a single phase
-UNLOCK_rat_tide,Use a mesma carta de monstro 40 vezes numa mesma fase,Play the same monster card 40 times in a single phase
-UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo,Stack 5 Plague on the hero at once
-UNLOCK_ruin_titan,Vença a segunda fase,Win the second phase
-UNLOCK_sewer_flood,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_shadow_echo,Jogue 5 feitiços de Sombra em 15 segundos,Play 5 Shadow spells within 15 seconds
-UNLOCK_shadow_mark,Jogue 300 cartas numa mesma fase,Play 300 cards in a single phase
-UNLOCK_slime,Tenha 2 Feras e 8 ratos em campo ao mesmo tempo,Have 2 Beasts and 8 rats on the field at once
-UNLOCK_soul_collector,Cause 2000 de dano ao herói em menos de 4 segundos,Deal 2000 damage to the hero in under 4 seconds
-UNLOCK_soul_feast,Jogue 70 feitiços numa mesma fase,Play 70 spells in a single phase
-UNLOCK_soul_harvest,Vença uma fase sem jogar estruturas,Win a phase without playing structures
-UNLOCK_soul_storm,Acerte o herói com 6 feitiços diferentes numa mesma fase,Hit the hero with 6 different spells in a single phase
-UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos,Soak the hero and set them on fire within 8 second(s)
-UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
-UNLOCK_spitting_viper,Jogue 40 Feras numa mesma fase,Play 40 Beasts in a single phase
-UNLOCK_tar_net,Gaste 450 de ouro numa mesma fase,Spend 450 gold in a single phase
+REL_fine_sand,Areia Fina,Fine Sand
+RELD_fine_sand,A vaga da carta jogada recarrega 40% mais rápido.,The slot of a played card refills 40% faster.
+REL_bronze_bell,Sino de Bronze,Bronze Bell
+RELD_bronze_bell,"Quando uma vaga da mão termina de recarregar, +0,3 de elixir.","When a hand slot finishes refilling, +0.3 elixir."
+REL_raider_pack,Mochila do Saqueador,Raider's Pack
+RELD_raider_pack,"+1 carta na mão, mas a vaga demora 50% mais para recarregar.","+1 card in hand, but slots take 50% longer to refill."
+REL_hanged_hand,Mão do Enforcado,Hanged Man's Hand
+RELD_hanged_hand,"+2 cartas na mão, mas o elixir regenera 15% mais devagar.","+2 cards in hand, but elixir regenerates 15% slower."
+REL_arcane_ink,Tinta Arcana,Arcane Ink
+RELD_arcane_ink,Feitiços custam 1 a menos (mínimo 1).,Spells cost 1 less (minimum 1).
+REL_torn_banner,Estandarte Rasgado,Torn Banner
+RELD_torn_banner,Suas unidades causam +10% de dano no herói.,Your units deal +10% damage to the hero.
+REL_giant_scale,Balança do Gigante,Giant's Scale
+RELD_giant_scale,Cartas de custo 6 ou mais custam 1 a menos.,Cards costing 6 or more cost 1 less.
+REL_tally_stick,Talha de Contagem,Tally Stick
+RELD_tally_stick,"A cada 8 cartas jogadas, a 8ª não gasta elixir.",Every 8th card you play costs no elixir.
+REL_chain_ring,Anel Encadeado,Chain Ring
+RELD_chain_ring,Jogar 3 cartas em 4 segundos devolve 1 de elixir.,Playing 3 cards within 4 seconds refunds 1 elixir.
+REL_miser_ledger,Livro do Avarento,Miser's Ledger
+RELD_miser_ledger,"Ouro do dano no herói ×1,25, mas a loja fica 10% mais cara.","Gold from damage to the hero ×1.25, but the shop is 10% pricier."
+REL_frost_shard,Lasca de Gelo,Frost Shard
+RELD_frost_shard,"O herói anda 15% mais devagar, mas seu elixir máximo cai 1.","The hero walks 15% slower, but your max elixir drops by 1."
+REL_rift_key,Chave da Fenda,Rift Key
+RELD_rift_key,"Na arena, o teleporte recarrega 2 s mais rápido e custa 1 a menos.","In the arena, teleport recharges 2 s faster and costs 1 less."
 UI_COL_SUBTITLE,a biblioteca do covil,the lair's library
 UI_COL_COUNT,{a} / {b} cartas,{a} / {b} cards
 UI_COL_HEAD,{a} de {b} cartas · clique numa para ler,{a} of {b} cards · click one to read
@@ -1224,3 +1189,59 @@ UI_FAIR_RELIC,Relíquia: {r},Relic: {r}
 UI_FAIR_COST,custa {n},costs {n}
 UI_FAIR_pick_upgrade,Subir nível de uma carta,Level up a card
 UI_FAIR_pick_remove,Tirar uma carta do baralho,Remove a card from the deck
+UNLOCK_alpha_beast,Tenha 30 ratos em campo ao mesmo tempo,Have 30 rats on the field at once
+UNLOCK_arcane_apocalypse,Jogue 7 feitiços em 20 segundos,Play 7 spells within 20 seconds
+UNLOCK_arcane_spark,Jogue 120 feitiços de Sombra no total,Play 120 Shadow spells in total
+UNLOCK_ash_phoenix,Termine 4 fases com 1000 de ouro,Finish 4 phases with 1000 gold
+UNLOCK_bat_cloud,Tenha 12 bichos de Bando em campo ao mesmo tempo em 2 fases diferentes,"Have 12 Pack creatures on the field at once, in 2 different phases"
+UNLOCK_bat_nest,Tenha 3 estruturas em campo ao mesmo tempo em 3 fases diferentes,"Have 3 structures on the field at once, in 3 different phases"
+UNLOCK_black_pestilence,Jogue 150 feitiços no total,Play 150 spells in total
+UNLOCK_blood_tax,Jogue 100 feitiços no total,Play 100 spells in total
+UNLOCK_boiling_oil,Mantenha o herói Encharcado por 75 segundos no total,Keep the hero Soaked for 75 seconds in total
+UNLOCK_bone_colossus,Faça 3000 dos seus monstros morrerem no total,Have 3000 of your monsters die in total
+UNLOCK_bone_dragon,Derrote 35 heróis no total,Defeat 35 heroes in total
+UNLOCK_bone_totem,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_brown_bear,Derrote 20 heróis no total,Defeat 20 heroes in total
+UNLOCK_burn_village,Queime o herói por 150 segundos no total,Burn the hero for 150 seconds in total
+UNLOCK_cave_troll,Vença a primeira fase,Win the first phase
+UNLOCK_corrupt_piper,Faça 2000 ratos morrerem no total,Have 2000 of your rats die in total
+UNLOCK_devour,Vença uma fase jogando só 10 feitiços,Win a phase playing only 10 spells
+UNLOCK_dragon_exchange,Encharque o herói e incendeie-o em até 1 segundo,Soak the hero and set them on fire within 1 second(s)
+UNLOCK_elder_dragon,Tenha 5 monstros de Fogo em campo ao mesmo tempo,Have 5 Fire monsters on the field at once
+UNLOCK_ember_rain,"Jogue 25 feitiços numa mesma fase, em 3 fases diferentes","Play 25 spells in a single phase, in 3 different phases"
+UNLOCK_eruption,Vença uma fase sem jogar estruturas,Win a phase without playing structures
+UNLOCK_eternal_army,Tenha 12 mortos-vivos em campo ao mesmo tempo em 5 fases diferentes,"Have 12 undead on the field at once, in 5 different phases"
+UNLOCK_fallen_healer,Derrote um herói perdendo no máximo 5 monstros,Defeat a hero while losing at most 5 monsters
+UNLOCK_flooded_pit,"Jogue 5 cartas Temporárias numa mesma fase, em 4 fases diferentes","Play 5 Temporary cards in a single phase, in 4 different phases"
+UNLOCK_forbidden_library,Jogue 200 cartas Temporárias no total,Play 200 Temporary cards in total
+UNLOCK_furnace,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_ghost,Tenha 40 esqueletos em campo ao mesmo tempo em 3 fases diferentes,"Have 40 skeletons on the field at once, in 3 different phases"
+UNLOCK_gold_avalanche,Ganhe 6000 de ouro no total,Earn 6000 gold in total
+UNLOCK_gold_bait,Faça o herói parar nas Moedas Malditas 25 vezes no total,Make the hero stop at the Cursed Coins 25 times in total
+UNLOCK_hollow_armor,Tenha 20 de Elixir máximo em 4 fases diferentes,"Reach 20 maximum Elixir, in 4 different phases"
+UNLOCK_hunt_instinct,Jogue 40 feitiços no total,Play 40 spells in total
+UNLOCK_life_drain,"Aplique 5 Maldições no herói numa mesma fase, em 2 fases diferentes","Put 5 Curses on the hero in a single phase, in 2 different phases"
+UNLOCK_magma_golem,Tenha 10 monstros seus em campo ao mesmo tempo em 4 fases diferentes,"Have 10 monsters on the field at once, in 4 different phases"
+UNLOCK_meteor_storm,Jogue 80 feitiços de Fogo no total,Play 80 Fire spells in total
+UNLOCK_mimic,Jogue 60 estruturas no total,Play 60 structures in total
+UNLOCK_molten_gold,Gaste 2000 de Elixir no total,Spend 2000 Elixir in total
+UNLOCK_mother_nest,Tenha 20 bichos de Bando em campo ao jogar um feitiço em 3 fases diferentes,"Have 20 Pack creatures on the field when you play a spell, in 3 different phases"
+UNLOCK_ogre,Jogue 600 monstros no total,Play 600 monsters in total
+UNLOCK_pack_den,Jogue 40 estruturas no total,Play 40 structures in total
+UNLOCK_plague_carrion,Tenha 40 monstros seus em campo ao mesmo tempo em 3 fases diferentes,"Have 40 monsters on the field at once, in 3 different phases"
+UNLOCK_primal_beast,Jogue 600 cartas de Bando no total,Play 600 Pack cards in total
+UNLOCK_rat_tide,"Use a mesma carta de monstro 40 vezes numa mesma fase, em 3 fases diferentes","Play the same monster card 40 times in a single phase, in 3 different phases"
+UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo em 2 fases diferentes,"Stack 5 Plague on the hero at once, in 2 different phases"
+UNLOCK_ruin_titan,Vença a segunda fase,Win the second phase
+UNLOCK_sewer_flood,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_shadow_echo,Jogue 5 feitiços de Sombra em 15 segundos,Play 5 Shadow spells within 15 seconds
+UNLOCK_shadow_mark,Jogue 1000 cartas no total,Play 1000 cards in total
+UNLOCK_slime,Tenha 2 Feras e 8 ratos em campo ao mesmo tempo,Have 2 Beasts and 8 rats on the field at once
+UNLOCK_soul_collector,Cause 2000 de dano ao herói em menos de 4 segundos,Deal 2000 damage to the hero in under 4 seconds
+UNLOCK_soul_feast,Jogue 400 feitiços no total,Play 400 spells in total
+UNLOCK_soul_harvest,Vença 2 fases sem jogar estruturas,Win 2 phases without playing structures
+UNLOCK_soul_storm,Acerte o herói com 6 feitiços diferentes numa mesma fase,Hit the hero with 6 different spells in a single phase
+UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos em 2 fases diferentes,"Soak the hero and set them on fire within 8 second(s), in 2 different phases"
+UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
+UNLOCK_spitting_viper,Jogue 150 Feras no total,Play 150 Beasts in total
+UNLOCK_tar_net,Gaste 2000 de ouro no total,Spend 2000 gold in total

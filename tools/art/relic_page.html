@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relíquias do Covil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+ --paper:#efe2bf; --paper2:#e3cf9f; --card:#f6ecd0; --ink:#3a2a1c; --ink2:#6b5440; --red:#a8323a; --gold:#c08a2e;
+ --elx:#7a4fd0; --line:rgba(58,42,28,.22);
+ --r0:#8a8270; --r1:#4f8a3c; --r2:#3c64b4; --r3:#7a3cb4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"IM Fell English",Georgia,serif;
+ background-image:radial-gradient(circle at 20% 10%,rgba(255,255,255,.35),transparent 40%),radial-gradient(circle at 80% 90%,rgba(120,80,30,.12),transparent 50%)}
+header{max-width:1200px;margin:0 auto;padding:36px 16px 8px}
+h1{font-family:"IM Fell English SC",serif;font-weight:400;font-size:44px;margin:0;letter-spacing:.5px}
+.sub{color:var(--ink2);font-style:italic;margin:6px 0 18px;font-size:17px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar button{font:inherit;font-size:15px;background:transparent;border:1.5px solid var(--ink);color:var(--ink);border-radius:999px;padding:5px 14px;cursor:pointer}
+.bar button.on{background:var(--ink);color:var(--paper)}
+.bar .sp{flex:1}
+.bar select{font:inherit;background:var(--card);border:1.5px solid var(--ink);border-radius:8px;padding:4px 8px;color:var(--ink)}
+.legend{color:var(--ink2);font-size:14px;margin-top:12px;line-height:1.5}
+main{max-width:1200px;margin:0 auto;padding:8px 16px 60px}
+h2{font-family:"IM Fell English SC",serif;font-weight:400;font-size:28px;margin:28px 0 12px;display:flex;align-items:center;gap:12px}
+h2::after{content:"";flex:1;height:1.5px;background:var(--line)}
+h2 small{font-family:"IM Fell English",serif;font-size:15px;color:var(--ink2);font-style:italic}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.rc{position:relative;background:var(--card);border:1.5px solid var(--ink);border-radius:12px;padding:14px 14px 12px;
+ box-shadow:3px 3px 0 rgba(58,42,28,.18);display:flex;flex-direction:column;gap:8px;transition:transform .12s}
+.rc:hover{transform:translateY(-2px) rotate(-.3deg)}
+.rc .top{display:flex;gap:12px;align-items:center}
+.ico{width:84px;height:84px;flex:none;border-radius:50%;background:var(--paper2);border:2px solid var(--rc);display:grid;place-items:center}
+.ico img{width:70px;height:70px}
+.nm{font-family:"IM Fell English SC",serif;font-size:21px;line-height:1.1}
+.meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.chip{font-size:12px;border-radius:999px;padding:1px 8px;border:1px solid var(--rc);color:var(--rc);background:rgba(255,255,255,.35)}
+.chip.new{background:var(--red);border-color:var(--red);color:#fff4d8}
+.chip.own{border-color:var(--ink2);color:var(--ink2)}
+.desc{font-size:16px;line-height:1.3;min-height:42px}
+.stats{border-top:1px dashed var(--line);padding-top:8px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;font-size:13px;color:var(--ink2)}
+.meter{height:7px;border-radius:4px;background:rgba(58,42,28,.12);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--gold)}
+.meter.pw i{background:var(--red)}
+.stats b{color:var(--ink);font-weight:400;font-variant-numeric:tabular-nums}
+.empty{color:var(--ink2);font-style:italic;padding:20px 0}
+@media (max-width:520px){h1{font-size:34px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+ <h1>Relíquias do Covil</h1>
+ <p class="sub" id="sub"></p>
+ <div class="bar" id="bar">
+  <button data-f="all" class="on">Todas</button>
+  <button data-f="new">Novas (15/11)</button>
+  <button data-f="common">Comuns</button>
+  <button data-f="uncommon">Incomuns</button>
+  <button data-f="rare">Raras</button>
+  <button data-f="legendary">Lendárias</button>
+  <span class="sp"></span>
+  <label>Ordenar <select id="ord"><option value="rarity">raridade</option><option value="weight">peso de sorteio</option><option value="power">força</option><option value="name">nome</option></select></label>
+ </div>
+ <p class="legend"><b>Peso</b> = campo <code>weight</code> de data/relics.json (padrão 1): quanto maior, mais vezes ela aparece. <b>Chance</b> = probabilidade de ela ser a sorteada num sorteio do pool inteiro (comuns + as do vilão da run; nas comuns, média entre os vilões). <b>Força</b> = <code>bot_value</code>, quanto o bot acha que ela vale (0–7). Pesos das novas ainda não balanceados.</p>
+</header>
+<main id="main"></main>
+<script>
+const DATA = /*DATA*/[];
+const RAR = ["common","uncommon","rare","legendary"];
+const RN = {common:"Comum",uncommon:"Incomum",rare:"Rara",legendary:"Lendária"};
+const RC = {common:"var(--r0)",uncommon:"var(--r1)",rare:"var(--r2)",legendary:"var(--r3)"};
+const OWN = {dragon:"Dragão",lich:"Lich",plague:"Praga"};
+let filt = "all", ord = "rarity";
+const maxW = Math.max(...DATA.map(d=>d.weight)), maxC = Math.max(...DATA.map(d=>d.chance));
+document.getElementById("sub").textContent = `${DATA.length} relíquias · ${DATA.filter(d=>d.new).length} novas · ícones em assets/ui/relics/`;
+function card(d){
+ const el = document.createElement("div"); el.className = "rc"; el.style.setProperty("--rc", RC[d.rarity]);
+ const chips = [`<span class="chip">${RN[d.rarity]}</span>`];
+ if (d.new) chips.unshift(`<span class="chip new">nova</span>`);
+ if (d.unique) chips.push(`<span class="chip own">única</span>`);
+ if (d.owner !== "common") chips.push(`<span class="chip own">só ${OWN[d.owner]||d.owner}</span>`);
+ el.innerHTML = `<div class="top"><div class="ico"><img src="../../assets/ui/relics/${d.id}.svg" alt=""></div>
+  <div><div class="nm"></div><div class="meta">${chips.join("")}</div></div></div>
+  <div class="desc"></div>
+  <div class="stats">
+   <span>peso</span><div class="meter"><i style="width:${d.weight/maxW*100}%"></i></div><b>${d.weight.toLocaleString("pt-BR")}</b>
+   <span>chance</span><div class="meter"><i style="width:${d.chance/maxC*100}%"></i></div><b>${d.chance.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}%</b>
+   <span>força</span><div class="meter pw"><i style="width:${d.power/7*100}%"></i></div><b>${d.power.toLocaleString("pt-BR")}</b>
+  </div>`;
+ el.querySelector(".nm").textContent = d.name;
+ el.querySelector(".desc").textContent = d.desc;
+ el.title = d.id;
+ return el;
+}
+function render(){
+ const m = document.getElementById("main"); m.innerHTML = "";
+ let rows = DATA.filter(d => filt==="all" || (filt==="new" ? d.new : d.rarity===filt));
+ const sorters = {rarity:(a,b)=>RAR.indexOf(a.rarity)-RAR.indexOf(b.rarity)||b.new-a.new||a.name.localeCompare(b.name),
+  weight:(a,b)=>b.weight-a.weight||b.chance-a.chance, power:(a,b)=>b.power-a.power, name:(a,b)=>a.name.localeCompare(b.name)};
+ rows.sort(sorters[ord]);
+ if (!rows.length){ m.innerHTML = '<p class="empty">Nada aqui.</p>'; return; }
+ const groups = ord==="rarity" ? RAR.map(r=>[{common:"Comuns",uncommon:"Incomuns",rare:"Raras",legendary:"Lendárias"}[r], rows.filter(d=>d.rarity===r)]) : [["", rows]];
+ for (const [t, list] of groups){
+  if (!list.length) continue;
+  if (t){ const h = document.createElement("h2"); h.innerHTML = `${t} <small>${list.length}</small>`; m.appendChild(h); }
+  const g = document.createElement("div"); g.className = "grid"; list.forEach(d => g.appendChild(card(d))); m.appendChild(g);
+ }
+}
+document.getElementById("bar").addEventListener("click", e => {
+ const b = e.target.closest("button[data-f]"); if (!b) return;
+ filt = b.dataset.f; document.querySelectorAll("#bar button").forEach(x => x.classList.toggle("on", x===b)); render();
+});
+document.getElementById("ord").addEventListener("change", e => { ord = e.target.value; render(); });
+render();
+</script>
+</body>
+</html>

@@ -149,8 +149,6 @@ static func _spikes(sim: Sim, sd: CardDef) -> void:
 				sim.damage_hero(sd.fxv("damage", lv), U.px[i], U.py[i], 0, SimHero.DMG_AREA, sd.id)
 				sim.hit_hero = null
 				hh.root_t = maxf(hh.root_t, sd.fxv("root", lv) * sim.cc_mult())
-				if hh == sim.hero:
-					sim._cc()
 				sim.kill_unit(i, K.Death.EXPIRE)
 				break
 

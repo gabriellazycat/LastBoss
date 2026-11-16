@@ -31,7 +31,7 @@ const ACCENT := {
 	"scrap_golem": Color(1.0, 0.62, 0.2),
 }
 # Câmera: distância base, quanto ela afasta por unidade em campo (até 300) e o extra na arena.
-const CAM_DIST := 36.0  # também é o mínimo: o zoom só afasta (main.gd limita zoom a >= 0)
+const CAM_DIST := 44.0 # também é o mínimo: o zoom só afasta (main.gd limita zoom a >= 0)
 const CAM_PER_UNIT := 0.02
 const CAM_ARENA := 6.0
 ## Figuras maiores na tela (13/11/2026, docs/ARTE_UNIFICADA.md): só o desenho, o raio do jogo não muda.
@@ -116,7 +116,8 @@ var decal_pool: Array = []
 var decal_i := 0
 var fx: Dictionary = {}
 var fireflies: GPUParticles3D
-var ring_min: MeshInstance3D
+var ring_nodes: Array = []   # um círculo vermelho por herói da party (o raio é o dele)
+var ring_rad: Array = []
 var ghost: MeshInstance3D
 var ghost_mat: ShaderMaterial
 var arena_root: Node3D
@@ -169,7 +170,7 @@ func _unshaded(c: Color, emit := 1.0) -> StandardMaterial3D:
 func _mi(mesh: Mesh, pos: Vector3, mat: Material = null, rot_y := 0.0) -> MeshInstance3D:
 	var m := MeshInstance3D.new()
 	m.mesh = mesh
-	m.material_override = mat if mat else Models.material()
+	m.material_override = Looks.g_material(mesh, mat if mat else Models.material())
 	m.position = pos
 	m.rotation.y = rot_y
 	return m
@@ -669,6 +670,7 @@ func _build_scatter() -> void:
 			var sm := Models.glow_material(0.0)
 			Looks.set_param(sm, "sway", 1.0)
 			mat = sm
+		mat = Looks.g_material(mesh, mat)
 		_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"], k in ["tree", "tree_round", "bush", "dead_tree"])
 	for i in 6:
 		var l := _light(Vector3.ZERO, Color(1.0, 0.7, 0.35), 1.6, 9.0)
@@ -921,8 +923,6 @@ func _build_hero() -> void:
 	slash.scale = Vector3(1, 0.05, 1)
 	slash.position = Vector3(0, 1.1, -0.4)
 	hero_root.add_child(slash)
-	ring_min = _circle(3.0, Color(1, 0.4, 0.4, 0.75))
-	add_child(ring_min)
 	ghost = MeshInstance3D.new()
 	var gm := PlaneMesh.new()
 	gm.size = Vector2(2, 2)
@@ -1257,8 +1257,32 @@ func build_arena() -> void:
 	arena_root.add_child(boss_face)
 
 
+## Um círculo proibido por herói: 3 m, ou o alcance de ataque nos heróis à distância.
+func _update_rings(on: bool) -> void:
+	var hs: Array = sim.ring_heroes() if sim != null else []
+	while ring_nodes.size() < hs.size():
+		var n := _circle(3.0, Color(1, 0.4, 0.4, 0.75))
+		add_child(n)
+		ring_nodes.append(n)
+		ring_rad.append(3.0)
+	for i in ring_nodes.size():
+		var n: MeshInstance3D = ring_nodes[i]
+		n.visible = on and i < hs.size()
+		if i >= hs.size():
+			continue
+		var h: SimHero = hs[i]
+		var r: float = sim.ring_of(h)
+		if not is_equal_approx(float(ring_rad[i]), r):
+			var tm := n.mesh as TorusMesh
+			tm.inner_radius = r - 0.07
+			tm.outer_radius = r + 0.07
+			ring_rad[i] = r
+		n.position = Vector3(lerpf(h.ox, h.x, 1.0), 0.06, lerpf(h.oy, h.y, 1.0))
+		n.position.y += surface_y(n.position.x, n.position.z)
+
+
 func show_placement(on: bool, pos: Vector3, valid: bool, radius: float) -> void:
-	ring_min.visible = on
+	_update_rings(on)
 	ghost.visible = on
 	if not on:
 		return
@@ -1579,7 +1603,6 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	hero_mat.set_shader_parameter("emission_boost", 0.0 if h.petrify_t > 0.0 else glow)
 	hero_mat.set_shader_parameter("flash", hero_flash)
 	hero_light.light_energy = 1.0 + h.level * 0.06
-	ring_min.position = p + Vector3(0, 0.06, 0)
 	fireflies.position = p
 
 

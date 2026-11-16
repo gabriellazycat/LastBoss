@@ -203,7 +203,8 @@
    "fx": {
     "hp_per_gold": 5,
     "hp_cap": 600,
-    "taunt": 6.0
+    "taunt": 6.0,
+    "gold_per_s": 10
    },
    "lvl": [
     "hp",

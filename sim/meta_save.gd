@@ -22,6 +22,11 @@ var rare_choices := 0
 var wins_by_villain: Dictionary = {}
 var heroes_total := 0
 var progress: Dictionary = {}
+## Desafios entre fases (15/11/2026): contadores somados por vilão ({vid: {"plays|spell": 412.0}}; a chave "_old"
+## guarda os heróis derrotados de antes, que só contam para cartas comuns) e, por carta, em quantas fases o feito
+## de um desafio "em N fases diferentes" já aconteceu. Runs perdidas também somam.
+var totals: Dictionary = {}
+var runs_done: Dictionary = {}
 ## Para onde salvar. Os modos de teste da janela trocam para outro arquivo: o --menutest gravava o vilão
 ## escolhido no meta do jogador (rodada 09/11/2026).
 var file := PATH
@@ -67,6 +72,11 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 			m.heroes_total = int(v.get("heroes_total", 0))
 			m.wins_by_villain = v.get("wins_by_villain", {})
 			m.progress = v.get("progress", {})
+			m.runs_done = v.get("runs_done", {})
+			if v.has("totals"):
+				m.totals = v["totals"]
+			elif m.heroes_total > 0:
+				m.totals = {"_old": {"heroes|": float(m.heroes_total)}}
 			# Saves antigos (até a versão 2) tinham cartas compradas com Almas: o sistema de desafios recomeça da coleção inicial.
 			if int(v.get("ver", 1)) >= 3:
 				for id in v.get("unlocked", []):
@@ -81,7 +91,8 @@ func save(path := "") -> bool:
 		return false
 	f.store_var({"ver": VERSION, "souls": souls, "unlocked": unlocked, "villain": villain, "villains": villains,
 		"runs": runs, "phases_won": phases_won, "rare_choices": rare_choices,
-		"wins_by_villain": wins_by_villain, "heroes_total": heroes_total, "progress": progress})
+		"wins_by_villain": wins_by_villain, "heroes_total": heroes_total, "progress": progress,
+		"totals": totals, "runs_done": runs_done})
 	return true
 
 
@@ -172,21 +183,48 @@ func apply_unlocks(sim: Sim, won: bool, path := "") -> Dictionary:
 		if data.in_pool(c, vid) and not unlocked.has(c.id) and data.unlock_challenges.has(c.id):
 			locked.append(c.id)
 	var ctx := {"won": won, "villain": vid, "phase": sim.campaign_phase, "wins_by_villain": wins_by_villain,
-		"phases_won": phases_won, "heroes_total": heroes_total}
+		"phases_won": phases_won, "heroes_total": heroes_total, "runs_done": runs_done,
+		"totals_villain": totals_of(vid), "totals_all": totals_all()}
 	var res: Dictionary = sim.track.check(sim.stats, ctx, locked)
 	for p in res["done"]:
 		if not unlocked.has(p["id"]):
 			unlocked.append(p["id"])
 		progress.erase(p["id"])
+		runs_done.erase(p["id"])
 	for p in res["near"]:
 		var old: Dictionary = progress.get(p["id"], {})
-		if float(p["v"]) / maxf(float(p["g"]), 0.001) >= float(old.get("v", 0.0)) / maxf(float(old.get("g", 1.0)), 0.001):
+		if p.get("acc", false) or float(p["v"]) / maxf(float(p["g"]), 0.001) >= float(old.get("v", 0.0)) / maxf(float(old.get("g", 1.0)), 0.001):
 			progress[p["id"]] = {"v": p["v"], "g": p["g"]}
+		if p.get("hit", false):
+			runs_done[p["id"]] = int(runs_done.get(p["id"], 0)) + 1
+	var mine: Dictionary = totals.get(vid, {})
+	var add: Dictionary = sim.track.phase_totals(sim.stats, ctx)
+	for k in add:
+		mine[k] = float(mine.get(k, 0.0)) + float(add[k])
+	totals[vid] = mine
 	if won:
 		wins_by_villain[vid] = int(wins_by_villain.get(vid, 0)) + 1
 	heroes_total += int(sim.stats.get("heroes_fallen", 0))
 	save(path)
 	return res
+
+
+## Contadores acumulados de um vilão (mais os heróis derrotados antes de 15/11/2026, que valem para todos).
+func totals_of(vid: String) -> Dictionary:
+	var out: Dictionary = totals.get(vid, {}).duplicate()
+	var old: Dictionary = totals.get("_old", {})
+	for k in old:
+		out[k] = float(out.get(k, 0.0)) + float(old[k])
+	return out
+
+
+## Contadores acumulados de todos os vilões somados (cartas comuns contam as fases de qualquer vilão).
+func totals_all() -> Dictionary:
+	var out := {}
+	for vid in totals:
+		for k in totals[vid]:
+			out[k] = float(out.get(k, 0.0)) + float(totals[vid][k])
+	return out
 
 
 ## Cartas que as ofertas da run deste vilão podem sortear (coleção dele e comuns).

@@ -5,7 +5,6 @@ extends RefCounted
 var rules: Dictionary
 var hero: Dictionary
 var boss: Dictionary
-var contracts: Array
 var modifiers: Dictionary   # id -> dict
 var cards: Array[CardDef] = []
 var by_id: Dictionary = {}  # id -> CardDef
@@ -30,7 +29,6 @@ static func load_dir(dir := "res://data") -> GameData:
 	g.rules = _read(dir + "/rules.json")
 	g.hero = _read(dir + "/hero_escudeiro.json")
 	g.boss = _read(dir + "/boss_lorde.json")
-	g.contracts = _read(dir + "/contracts.json")["contracts"]
 	for m in _read(dir + "/modifiers.json")["modifiers"]:
 		g.modifiers[m["id"]] = m
 	g.meta = _read(dir + "/meta.json")
@@ -65,6 +63,18 @@ static func load_dir(dir := "res://data") -> GameData:
 		g.upgrades[u["id"]] = u
 	g.hero_classes = _read(dir + "/hero_classes.json").get("classes", {})
 	g.phases = _read(dir + "/campaign.json").get("phases", [])
+	# "parties" (fila de parties) é a fonte; "party" (lista plana de classes) e "party_of" (número da party de cada
+	# herói) saem dela para o menu e os testes.
+	for ph in g.phases:
+		if ph.has("parties"):
+			var flat: Array = []
+			var of: Array = []
+			for gi in ph["parties"].size():
+				for c in ph["parties"][gi]:
+					flat.append(str(c))
+					of.append(gi)
+			ph["party"] = flat
+			ph["party_of"] = of
 	for v in _read(dir + "/villains.json").get("villains", []):
 		g.villains[v["id"]] = v
 		g.villain_ids.append(v["id"])

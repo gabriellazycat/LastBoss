@@ -3,7 +3,7 @@ extends Node
 ## Efeitos com pool e recarga por som (centenas de unidades não viram ruído) e música em camadas.
 
 const SFX := ["card_play", "hit", "hero_hit", "shield_break", "explosion", "death", "spell", "level_hero",
-	"level_player", "reward", "contract", "teleport", "part_destroyed", "ui_click", "victory", "defeat"]
+	"level_player", "reward", "teleport", "part_destroyed", "ui_click", "victory", "defeat"]
 const COOLDOWN := {"hit": 0.06, "death": 0.05, "hero_hit": 0.08, "card_play": 0.05}
 const VOLUME := {"hit": -10.0, "death": -12.0, "hero_hit": -9.0, "card_play": -6.0, "explosion": -3.0}
 
@@ -97,12 +97,6 @@ func handle_events(evs: Array, sim: Sim) -> void:
 				play("part_destroyed", 0.0)
 			K.Ev.SHRINE:
 				play("reward" if float(ev[3]) > 0.0 else "explosion", 0.0)
-			K.Ev.CONTRACT:
-				var v := float(ev[3])
-				if v == 0.0:
-					play("contract", 0.0)
-				elif v > 0.0:
-					play("reward", 0.0)
 			K.Ev.TELEPORT:
 				play("teleport", 0.0)
 			K.Ev.PART_DESTROYED:

@@ -26,6 +26,7 @@ var pad := false                   # o jogador está no controle (o balão fica 
 var hover := -1
 var panels := {}                   # uid -> carta compacta
 var panel_sig := {}                # uid -> "mods" (refaz a carta quando ganha modificador)
+var held_panels := {}              # uid -> miniatura da carta em vigor
 var locale := ""
 var preview: PanelContainer
 var preview_key := ""
@@ -72,6 +73,9 @@ func _clear_all() -> void:
 		panels[uid].queue_free()
 	panels.clear()
 	panel_sig.clear()
+	for uid in held_panels:
+		held_panels[uid].queue_free()
+	held_panels.clear()
 	_close_pile()
 	if sim:
 		last_shuffles = int(sim.stats.get("shuffles", 0))
@@ -193,7 +197,8 @@ func refresh(delta: float) -> void:
 		if ci == null:
 			continue
 		seen[ci.uid] = true
-		var sig := "%d/%d" % [ci.mods, ci.level]
+		# O desconto (gota azul-água) entra na assinatura: ao entrar ou sair um Cultista a carta é refeita.
+		var sig := "%d/%d/%d" % [ci.mods, ci.level, int(sim.card_cost(ci) < ci.def.cost)]
 		if panels.has(ci.uid) and panel_sig[ci.uid] != sig:
 			var old: Control = panels[ci.uid]
 			var p2 := _make_card(ci, k)
@@ -259,10 +264,90 @@ func refresh(delta: float) -> void:
 		dim.a = 0.0 if k == hover else 1.0
 		p.modulate = dim
 		UiKit.card_state(p, k == selected, b == K.Block.OK)
+		_sync_cycle(p, sim.cycle_applies(ci))
+	_refresh_held()
 	_refresh_preview(m, motion)
 	_refresh_balloon(m)
 	_refresh_tips(delta)
 	queue_redraw()
+
+
+## Cartas em vigor (16/11/2026): as de efeito temporário ficam ao lado do descarte, em miniatura e sobrepostas (a mais
+## nova por cima), com um véu branco que esvazia no sentido horário até o efeito acabar.
+const HELD_SCALE := 0.5
+
+func _refresh_held() -> void:
+	var seen := {}
+	var n := sim.held.size()
+	var x0 := disc_pos.x + DECK_BACK.x + 18.0
+	var room := maxf(size.x - x0 - 8.0, 40.0)
+	var cw := CARD.x * HELD_SCALE
+	var step := cw + 4.0 if n <= 1 else minf(cw + 4.0, (room - cw) / float(n - 1))
+	var base_y := size.y - CARD.y * HELD_SCALE - 12.0
+	for i in n:
+		var e: Dictionary = sim.held[i]
+		var ci := sim.held_card(e)
+		if ci == null:
+			continue
+		var uid := int(e["uid"])
+		seen[uid] = true
+		var p: Control = held_panels.get(uid)
+		if p == null:
+			p = _make_held(ci, e)
+			held_panels[uid] = p
+		var frac := clampf((float(e["until"]) - sim.t) / maxf(float(e["until"]) - float(e["from"]), 0.01), 0.0, 1.0)
+		p.set_meta("frac", frac)
+		(p.get_node("Secs") as Label).text = str(int(ceil(float(e["until"]) - sim.t)))
+		p.get_node("Veil").queue_redraw()
+		p.position = p.position.lerp(Vector2(x0 + step * i, base_y), 0.4)
+		p.z_index = 1 + i
+	for uid in held_panels.keys():
+		if not seen.has(uid):
+			held_panels[uid].queue_free()
+			held_panels.erase(uid)
+
+
+func _make_held(ci: Sim.CardInst, e: Dictionary) -> Control:
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.size = CARD * HELD_SCALE
+	var card := UiKit.mini_card(ci.def, sim.card_cost(ci), UiKit.mod_names(ci), "", CARD.x, CARD.y, true, ci.level)
+	UiKit.ignore_mouse(card)
+	card.scale = Vector2(HELD_SCALE, HELD_SCALE)
+	holder.add_child(card)
+	var veil := Control.new()
+	veil.name = "Veil"
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	veil.size = CARD * HELD_SCALE
+	veil.clip_contents = true
+	veil.draw.connect(func():
+		var f: float = holder.get_meta("frac", 1.0)
+		if f <= 0.0:
+			return
+		var c := veil.size * 0.5
+		var r := veil.size.length()
+		var a0 := -PI * 0.5 + TAU * (1.0 - f)    # o que já passou some a partir do topo, no sentido horário
+		var pts := PackedVector2Array([c])
+		var segs := maxi(int(48.0 * f), 2)
+		for s in segs + 1:
+			var a := a0 + (TAU - TAU * (1.0 - f)) * float(s) / float(segs)
+			pts.append(c + Vector2(cos(a), sin(a)) * r)
+		veil.draw_colored_polygon(pts, Color(1, 1, 1, 0.55)))
+	holder.add_child(veil)
+	var secs := Label.new()
+	secs.name = "Secs"
+	secs.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	secs.add_theme_font_size_override("font_size", 18)
+	secs.add_theme_color_override("font_color", Color(1, 1, 1))
+	secs.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.06))
+	secs.add_theme_constant_override("outline_size", 6)
+	secs.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	secs.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	secs.size = CARD * HELD_SCALE
+	holder.add_child(secs)
+	holder.position = Vector2(size.x, size.y)   # entra de fora, deslizando para o lugar
+	add_child(holder)
+	return holder
 
 
 ## Vaga esperando a compra (15/11/2026): contorno tracejado branco e o interior enchendo de baixo para cima
@@ -275,7 +360,7 @@ func _draw() -> void:
 		if sim.hand[k] != null:
 			continue
 		var r: Array = _rest(k, n)
-		var f := clampf(1.0 - sim.wait_left(k) / Sim.DRAW_DELAY, 0.0, 1.0)
+		var f := clampf(1.0 - sim.wait_left(k) / sim.draw_delay(), 0.0, 1.0)
 		draw_set_transform(r[0], r[1], Vector2.ONE)
 		var box := Rect2(-CARD * 0.5, CARD).grow(-6.0)
 		draw_rect(box, Color(1, 1, 1, 0.08))
@@ -304,6 +389,43 @@ func _refresh_tips(delta: float) -> void:
 	var mids := UiKit.mod_ids(ci)
 	var lv := ci.level
 	Tips.hold("hand:%d" % uid, preview.get_global_rect(), func(): return Tips.card_entries(d, mids, false, lv), true)
+
+
+## Passiva do Lich (Ciclo de feitiço): a carta cujo custo caiu 1 por causa dela ganha um aro roxo pulsante e a
+## etiqueta "CICLO −1". Cria o aro uma vez por carta e só liga/desliga (a mão refaz o resto a cada quadro).
+func _sync_cycle(p: Control, on: bool) -> void:
+	var ring := p.get_node_or_null("CycleMark") as Panel
+	if not on:
+		if ring:
+			ring.queue_free()
+			ring.name = "CycleMarkOld"
+		return
+	if ring == null:
+		ring = Panel.new()
+		ring.name = "CycleMark"
+		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.62, 0.3, 0.95, 0.12)
+		sb.set_border_width_all(4)
+		sb.border_color = Color(0.78, 0.5, 1.0)
+		sb.set_corner_radius_all(10)
+		sb.shadow_color = Color(0.7, 0.35, 1.0, 0.75)
+		sb.shadow_size = 12
+		ring.add_theme_stylebox_override("panel", sb)
+		var tag := Label.new()
+		tag.name = "Tag"
+		tag.text = tr("UI_CYCLE_MARK")
+		tag.add_theme_font_size_override("font_size", 13)
+		tag.add_theme_color_override("font_color", Color(1, 0.96, 1))
+		tag.add_theme_color_override("font_outline_color", Color(0.3, 0.08, 0.5))
+		tag.add_theme_constant_override("outline_size", 6)
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tag.set_anchors_preset(Control.PRESET_TOP_WIDE)
+		tag.offset_top = 3.0
+		ring.add_child(tag)
+		p.add_child(ring)
+	ring.modulate.a = 0.72 + 0.28 * sin(Time.get_ticks_msec() * 0.006)
 
 
 func _make_card(ci: Sim.CardInst, k: int) -> PanelContainer:
@@ -337,7 +459,7 @@ func _refresh_preview(m: Vector2, motion: float) -> void:
 		_drop_preview()
 		return
 	var ci: Sim.CardInst = sim.hand[hover]
-	var key := "%d/%d/%d" % [ci.uid, ci.mods, ci.level]
+	var key := "%d/%d/%d/%d" % [ci.uid, ci.mods, ci.level, int(sim.card_cost(ci) < ci.def.cost)]
 	if key != preview_key:
 		_drop_preview()
 		preview_key = key
@@ -358,6 +480,7 @@ func _refresh_preview(m: Vector2, motion: float) -> void:
 	preview.rotation = deg_to_rad(clampf((m.x - c.x) / CARD.x, -1.0, 1.0) * 3.0) * motion
 	(preview.find_child("Cost", true, false) as Label).text = str(sim.card_cost(ci))
 	preview.modulate = Color(1, 1, 1) if sim.can_play(hover) == K.Block.OK else Color(0.7, 0.7, 0.76)
+	_sync_cycle(preview, sim.cycle_applies(ci))
 
 
 func _drop_preview() -> void:

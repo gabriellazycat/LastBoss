@@ -48,6 +48,71 @@
     "regen_seconds": 6
    },
    "ranged": true
+  },
+  "assassino": {
+   "_doc": "Corpo a corpo, frágil e rápido: um alvo só, golpe muito forte (15/11/2026).",
+   "model": "rogue_hooded",
+   "hp_mult": 0.6,
+   "damage_mult": 1.9,
+   "attack_range": 1.6,
+   "attack_interval": 0.7,
+   "cleave_arc": 0.0,
+   "speed": 3.8,
+   "radius": 0.5,
+   "shield": {
+    "hp": 0,
+    "cone": 0.0,
+    "regen_seconds": 5
+   }
+  },
+  "barbaro": {
+   "_doc": "Corpo a corpo de golpe largo: acerta uma roda inteira de monstros, sem escudo (15/11/2026).",
+   "model": "knight",
+   "hp_mult": 1.15,
+   "damage_mult": 0.8,
+   "attack_range": 2.2,
+   "attack_interval": 1.3,
+   "cleave_arc": 220.0,
+   "speed": 2.9,
+   "radius": 0.7,
+   "shield": {
+    "hp": 0,
+    "cone": 0.0,
+    "regen_seconds": 5
+   }
+  },
+  "besteiro": {
+   "_doc": "Longe, devagar, tiro pesado num alvo só (15/11/2026).",
+   "model": "rogue_hooded",
+   "hp_mult": 0.62,
+   "damage_mult": 2.1,
+   "attack_range": 9.0,
+   "attack_interval": 2.1,
+   "cleave_arc": 0.0,
+   "projectile": "arrow",
+   "speed": 2.7,
+   "shield": {
+    "hp": 0,
+    "cone": 0.0,
+    "regen_seconds": 5
+   },
+   "ranged": true
+  },
+  "guardiao": {
+   "_doc": "Muralha lenta: muita vida e escudo enorme, quase nenhum dano. Segura o monstro enquanto os outros batem (15/11/2026).",
+   "model": "knight",
+   "hp_mult": 1.9,
+   "damage_mult": 0.45,
+   "attack_range": 1.8,
+   "attack_interval": 1.2,
+   "cleave_arc": 0.0,
+   "speed": 2.4,
+   "radius": 0.75,
+   "shield": {
+    "hp": 320,
+    "cone": 120.0,
+    "regen_seconds": 4
+   }
   }
  }
 }

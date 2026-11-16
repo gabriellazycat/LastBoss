@@ -46,8 +46,7 @@
     "devour"
    ],
    "rules": {
-    "infestation": 0.2,
-    "wild_infestation": 1
+    "infestation": 0.2
    }
   },
   {
@@ -99,9 +98,7 @@
    ],
    "rules": {
     "start_gold": 45,
-    "hoard_step": 50,
-    "hoard_fire": 0.05,
-    "hoard_fire_max": 0.3
+    "shop_gold": 200
    }
   },
   {
@@ -150,7 +147,7 @@
     "shadow_echo"
    ],
    "rules": {
-    "harvest_every": 8
+    "cycle": 1
    }
   }
  ]

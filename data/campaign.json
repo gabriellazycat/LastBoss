@@ -1,15 +1,19 @@
 {
- "_doc": "Campanha (rodada autônoma de 09/11/2026). Cada fase é uma run com o seu grupo de heróis; vencer libera a próxima; a fase 1 libera o Dragão, a 2 o Lich; as fases 3 e 4 pagam Almas e uma rara à escolha (C3, 10/11/2026). group = o herói que chega levanta o caído (50% da vida, uma vez por herói).",
+ "_doc": "Campanha. Cada fase é uma run; vencer libera a próxima; a fase 1 libera o Dragão, a 2 o Lich; as fases 3 e 4 pagam Almas e uma rara à escolha. parties (15/11/2026) = fila de parties: cada party é um grupo de 1 a 4 heróis que entra junto; a força da party soma a de um herói só (dividida entre os membros) e sobe a cada party; cada herói que cai dá uma recompensa.",
  "phases": [
   {
    "id": 0,
    "key": "PHASE_0",
-   "tutorial": true,
-   "party": [
-    "escudeiro",
-    "escudeiro",
-    "escudeiro"
+   "parties": [
+    [
+     "escudeiro"
+    ],
+    [
+     "escudeiro",
+     "escudeiro"
+    ]
    ],
+   "tutorial": true,
    "hp_mult": 0.135,
    "damage_mult": 0.55,
    "acts": 1,
@@ -19,14 +23,22 @@
   {
    "id": 1,
    "key": "PHASE_1",
-   "party": [
-    "escudeiro",
-    "escudeiro",
-    "escudeiro",
-    "escudeiro",
-    "escudeiro",
-    "escudeiro",
-    "escudeiro"
+   "parties": [
+    [
+     "escudeiro"
+    ],
+    [
+     "escudeiro",
+     "arqueira"
+    ],
+    [
+     "escudeiro"
+    ],
+    [
+     "escudeiro",
+     "escudeiro",
+     "arqueira"
+    ]
    ],
    "unlock_villain": "dragon",
    "hp_mult": 1.4
@@ -34,14 +46,24 @@
   {
    "id": 2,
    "key": "PHASE_2",
-   "party": [
-    "escudeiro",
-    "arqueira",
-    "escudeiro",
-    "arqueira",
-    "escudeiro",
-    "arqueira",
-    "escudeiro"
+   "parties": [
+    [
+     "arqueira"
+    ],
+    [
+     "escudeiro",
+     "barbaro"
+    ],
+    [
+     "besteiro"
+    ],
+    [
+     "assassino",
+     "escudeiro"
+    ],
+    [
+     "arqueira"
+    ]
    ],
    "hp_mult": 2.67,
    "unlock_villain": "lich"
@@ -49,34 +71,46 @@
   {
    "id": 3,
    "key": "PHASE_3",
-   "party": [
-    "cleriga",
-    "escudeiro",
-    "cleriga",
-    "arqueira",
-    "escudeiro",
-    "cleriga",
-    "escudeiro"
+   "parties": [
+    [
+     "cleriga"
+    ],
+    [
+     "guardiao",
+     "besteiro"
+    ],
+    [
+     "assassino"
+    ],
+    [
+     "escudeiro",
+     "cleriga",
+     "mago"
+    ]
    ],
-   "hp_mult": 2.6,
+   "hp_mult": 2.3,
    "unlock_villain": "",
    "reward_souls": 60,
    "rare_choice": true,
-   "damage_mult": 1.4
+   "damage_mult": 1.3
   },
   {
    "id": 4,
    "key": "PHASE_4",
-   "party": [
-    "escudeiro",
-    "arqueira",
-    "cleriga",
-    "mago",
-    "escudeiro",
-    "arqueira"
+   "parties": [
+    [
+     "escudeiro"
+    ],
+    [
+     "guardiao",
+     "cleriga",
+     "mago",
+     "assassino"
+    ],
+    [
+     "arqueira"
+    ]
    ],
-   "group": true,
-   "revive_hp": 0.5,
    "hp_mult": 1.5,
    "unlock_villain": "",
    "reward_souls": 60,

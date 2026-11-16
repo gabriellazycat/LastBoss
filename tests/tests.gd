@@ -50,6 +50,7 @@ func _ready() -> void:
 	t_combos()
 	t_classes()
 	t_group()
+	t_parties()
 	t_group_spells()
 	t_stall_and_overtime()
 	t_human_bot()
@@ -70,17 +71,16 @@ func _ready() -> void:
 func t_data() -> void:
 	check(data.pool.size() == 112, "112 cartas na pool (%d)" % data.pool.size())
 	check(data.upgrades.size() == 15, "15 upgrades")
-	check(data.contracts.size() == 7, "7 contratos (Mão Vazia saiu com o sacrifício da mão)")
 	# Vilões (C3): dono válido em tudo; baralho inicial só com cartas do vilão ou comuns, liberadas com ele.
 	var owners := ["common"] + data.villain_ids
 	var bad: Array = []
 	for c in data.pool:
 		if not owners.has(c.owner):
 			bad.append(c.id)
-	for x in data.relics.values() + data.contracts + data.events_def.values():
+	for x in data.relics.values() + data.events_def.values():
 		if not owners.has(str(x.get("owner", ""))):
 			bad.append(str(x["id"]))
-	check(bad.is_empty() and data.villain_ids == ["plague", "dragon", "lich"], "3 vilões; owner válido em cartas, relíquias, contratos e eventos %s" % str(bad))
+	check(bad.is_empty() and data.villain_ids == ["plague", "dragon", "lich"], "3 vilões; owner válido em cartas, relíquias e eventos %s" % str(bad))
 	for vid in data.villain_ids:
 		var have: Array = data.villain_cards(vid) + data.common_cards()
 		var miss: Array = []
@@ -113,6 +113,28 @@ func t_elixir_and_ring() -> void:
 	check(s.valid_target(rats, h.x + 6.0, h.y), "monstro a 6 m é aceito")
 	check(s.valid_target(rats, h.x + 40.0, h.y), "monstro a 40 m é aceito (sem alcance máximo)")
 	check(s.valid_target(web, h.x + 1.0, h.y), "feitiço ignora a distância mínima")
+	# Um círculo por herói; nos heróis à distância o raio é o alcance de ataque (15/11/2026).
+	if data.phase(94).is_empty():
+		data.phases.append({"id": 94, "key": "TEST_94", "parties": [["arqueira", "escudeiro"]], "hp_mult": 1.0})
+	var rs := Sim.new()
+	rs.setup(data, 5, "horde", [], [], 94)
+	var rrats: Sim.CardInst = rs.hand[0]
+	for ci in rs.hand:
+		if ci != null and ci.def.category == "field" and not ci.def.is_spell:
+			rrats = ci
+			break
+	var lead := rs.hero
+	var fol: SimHero = rs.followers[0]
+	fol.x = lead.x + 40.0
+	fol.y = lead.y
+	check(is_equal_approx(rs.ring_of(lead), float(lead.H["attack_range"])) and rs.ring_of(lead) > 6.0, "Arqueira: o círculo é o alcance de ataque (%.1f m)" % rs.ring_of(lead))
+	check(is_equal_approx(rs.ring_of(fol), 3.0), "Escudeiro: o círculo é de 3 m")
+	check(not rs.valid_target(rrats, lead.x + 5.0, lead.y), "monstro a 5 m do Arqueira é recusado")
+	check(rs.valid_target(rrats, lead.x + 8.0, lead.y), "monstro a 8 m do Arqueira é aceito")
+	check(not rs.valid_target(rrats, fol.x + 1.5, fol.y), "o outro membro da party também tem círculo")
+	check(rs.valid_target(rrats, fol.x + 4.0, fol.y), "fora do círculo do outro membro vale")
+	var pushed := rs.clear_of_rings(Vector2(lead.x + 1.0, lead.y))
+	check(rs.valid_target(rrats, pushed.x, pushed.y), "a mira dos bots sai dos círculos")
 	check(s.hand.size() == 5, "Praga tem mão de 5 como todo vilão")
 
 
@@ -126,22 +148,47 @@ func t_costs() -> void:
 	check(s.card_cost(tw) == 4, "Dragão: Torre (estrutura) continua 4")
 	check(is_equal_approx(s.gold, 45.0), "Dragão começa com 45 de ouro (calibragem de 13/11/2026)")
 	# Passivas dos vilões.
-	s.gold = 120.0
-	check(is_equal_approx(s.hoard_fire(), 0.10), "Tesouro do Dragão: 120 de ouro = +10%% de fogo (%.2f)" % s.hoard_fire())
 	s.gold = 1000.0
-	check(is_equal_approx(s.hoard_fire(), 0.30), "Tesouro do Dragão: teto de +30%")
+	check(is_equal_approx(s.hoard_fire(), 0.0), "Dragão: sem bônus de fogo por ouro (passiva trocada em 15/11/2026)")
+	var g0 := s.gold
+	s._dragon_shop()
+	check(is_equal_approx(s.gold, g0 + 200.0), "Dragão: loja dá 200 de ouro")
+	check(s.offers.size() > 0 and s.offers[0]["source"] == "location", "Dragão: loja abre escolha de carta")
+	var all_hi := s.offers.size() > 0
+	for op in s.offers[0]["options"]:
+		all_hi = all_hi and s.data.card(str(op["id"])).rarity >= 2
+	check(all_hi, "Dragão: as cartas da loja são rara ou lendária")
 	var l := _sim(1, "lich")
 	var bolt := _inst("shadow_bolt")
-	for k in 8:
-		var j := l.units.spawn(data.card("bone_legion"), l.hero.x + 6.0, l.hero.y, 0.0, 0.0, 0, 999)
-		l.kill_unit(j, K.Death.HERO)
-	check(l.harvest_free and l.card_cost(bolt) == 0, "Colheita do Lich: 8 mortes suas = próximo feitiço custa 0")
+	# Ciclo de feitiço (15/11/2026): morte barateia o próximo feitiço; feitiço barateia a próxima criatura.
+	var servant := _inst("raised_servant")
+	var bc := data.card("shadow_bolt").cost
+	var sc := data.card("raised_servant").cost
+	check(not l.cycle_applies(bolt) and not l.cycle_applies(servant), "Ciclo: nada armado no começo")
+	var j := l.units.spawn(data.card("bone_legion"), l.hero.x + 6.0, l.hero.y, 0.0, 0.0, 0, 999)
+	l.kill_unit(j, K.Death.HERO)
+	check(l.cycle_applies(bolt) and not l.cycle_applies(servant) and l.card_cost(bolt) == maxi(0, bc - 1), "Ciclo: criatura morta = próximo feitiço custa 1 a menos")
+	l.cycle_spell = false
+	l.cycle_mon = true
+	check(l.cycle_applies(servant) and not l.cycle_applies(bolt) and l.card_cost(servant) == maxi(0, sc - 1), "Ciclo: feitiço lançado = próxima criatura custa 1 a menos")
 	var p := _sim(1, "plague")
 	var before := p.units.count
 	for k in 200:
-		var j := p.units.spawn(data.card("rat_horde"), p.hero.x + 30.0, p.hero.y, 0.0, 0.0, 0, 999)
-		p.kill_unit(j, K.Death.EXPIRE if k < 0 else K.Death.HERO)
+		var jr := p.units.spawn(data.card("rat_horde"), p.hero.x + 30.0, p.hero.y, 0.0, 0.0, 0, 999)
+		p.kill_unit(jr, K.Death.EXPIRE if k < 0 else K.Death.HERO)
 	var born := p.units.count - before
+	# Cartas em vigor (16/11/2026): efeito temporário segura a carta fora do descarte até acabar.
+	var hs := _sim(1, "dragon")
+	hs.elixir = 10.0
+	hs.hand[0] = _inst("dark_forge")
+	var forge: Sim.CardInst = hs.hand[0]
+	hs.cards.append(forge)   # no jogo a carta da mão sempre está no baralho (`cards`)
+	var nd := hs.discard.size()
+	hs.play(0, hs.hero.x, hs.hero.y)
+	check(hs.held.size() == 1 and hs.discard.size() == nd and not hs.discard.has(forge), "Em vigor: Forja fica retida, fora do descarte")
+	hs.t += 31.0
+	hs._release_held()
+	check(hs.held.is_empty() and hs.discard.has(forge), "Em vigor: acabou o efeito, a carta vai ao descarte")
 	check(born >= 15 and born <= 65, "Infestação da Praga: ~20%% das mortes de Bando deixam um rato (%d de 200)" % born)
 	var ofs := true
 	for k in 20:
@@ -156,8 +203,6 @@ func t_no_hand_sacrifice() -> void:
 	check(not s.has_method("sacrifice") and not s.has_method("sacrifice_ready"), "Sim não tem mais sacrifício da mão")
 	check(not data.rules.has("sacrifice_cooldown") and not data.rules.has("sacrifice_elixir_frac"), "regras do sacrifício saíram de rules.json")
 	check(not data.relics.has("portable_altar"), "Altar Portátil (recarga do sacrifício) saiu")
-	var kinds: Array = data.contracts.map(func(c): return str(c["goal"]["kind"]))
-	check(not kinds.has("sacrifice"), "nenhum contrato pede sacrifício da mão")
 	check(not s.stats.has("sacrifices"), "stats sem contagem de sacrifícios")
 	# O sacrifício de unidades em campo continua (Devorar, Sacrifício Sombrio, Ritual Profano).
 	check(K.Death.SACRIFICE == 2 and data.card("dark_sacrifice") != null, "sacrifício de monstro em campo continua")
@@ -278,7 +323,7 @@ func _spawn_near(s: Sim, id: String, n: int) -> Array:
 
 func t_party() -> void:
 	# Grupo de 5 heróis em fila, sem XP: cada queda traz o próximo (nível +1, uma habilidade, vida cheia).
-	var s := _sim(3)
+	var s := _legacy_sim(3, 95)
 	var bot := PlayerBot.load_bot("greedy", 3)
 	for i in 200:
 		bot.think(s)
@@ -293,7 +338,7 @@ func t_party() -> void:
 	check(s.phase != K.Phase.OVER, "a run continua depois da primeira queda")
 	check(s.offers.size() > 0, "a queda abre uma oferta")
 	# Mais quedas até o último herói: a quinta é vitória.
-	var size := int(data.rules["party"]["size"])
+	var size := s.party_size()
 	for k in range(2, size):
 		s.offers.clear()
 		s.hero.hp = 0.0
@@ -513,18 +558,44 @@ func t_unlock_challenges() -> void:
 	var T: UnlockTrack = s.track
 	var stats := {"heroes_fallen": 5, "gold_end": 0.0, "gold_earned": 0.0, "gold_spent": 0, "spent_act": [10.0, 5.0]}
 	var ctx := {"won": true, "villain": "plague", "phase": 1, "wins_by_villain": {"plague": 1}, "phases_won": [], "heroes_total": 26}
-	var ids := ["ogre", "cave_troll", "sewer_flood", "brown_bear", "alpha_beast", "fallen_healer", "molten_gold", "hollow_armor"]
+	var ids := ["cave_troll", "sewer_flood", "alpha_beast", "fallen_healer"]
 	var r: Dictionary = T.check(stats, ctx, ids)
 	var done: Array = r["done"].map(func(p): return p["id"])
-	check(done.has("cave_troll") and done.has("sewer_flood") and done.has("brown_bear") and not done.has("ogre") and not done.has("alpha_beast"), "desafios: vitória na fase 1, 2ª vitória do vilão e 30 heróis no total cumprem; o resto não (%s)" % str(done))
-	T.t["plays"]["monster"] = 101
+	check(done.has("cave_troll") and done.has("sewer_flood") and not done.has("alpha_beast"), "desafios: vitória na fase 1 e 2ª vitória do vilão cumprem; 30 ratos não (%s)" % str(done))
 	T.t["peak"]["rat"] = 30
 	T.t["min_loss"] = 3
-	T.t["elixir_max"] = 15.0
 	r = T.check(stats, ctx, ids)
 	done = r["done"].map(func(p): return p["id"])
-	check(done.has("ogre") and done.has("alpha_beast") and done.has("fallen_healer") and done.has("hollow_armor"), "desafios: 100 monstros jogados, 30 ratos de uma vez, perdendo até 5 monstros e 15 de Elixir máximo (%s)" % str(done))
-	check(not done.has("molten_gold") and r["near"].any(func(p): return p["id"] == "molten_gold" and absf(float(p["v"]) - 15.0) < 0.01), "desafios: gastar 300 de Elixir mostra o progresso (15)")
+	check(done.has("alpha_beast") and done.has("fallen_healer"), "desafios numa run: 30 ratos de uma vez e perdendo até 5 monstros (%s)" % str(done))
+	# 15/11/2026: 75% dos desafios são entre fases ("no total", "em N fases diferentes", vencer N fases)
+	var cross := 0
+	for k in data.unlock_challenges:
+		var ch: Dictionary = data.unlock_challenges[k]
+		if ch.get("total", false) or ch.has("runs") or (str(ch["kind"]) == "wins" and int(ch.get("n", 1)) >= 2):
+			cross += 1
+	var frac := float(cross) / float(data.unlock_challenges.size())
+	check(absf(frac - 0.75) < 0.03, "desafios: 75%% entre fases (%d de %d)" % [cross, data.unlock_challenges.size()])
+	# "no total": carta comum soma o acumulado de todos os vilões (Ogro: 600 monstros)
+	T.t["plays"]["monster"] = 40
+	ctx["totals_all"] = {"plays|monster": 550.0}
+	r = T.check(stats, ctx, ["ogre"])
+	check(r["done"].is_empty() and absf(float(r["near"][0]["v"]) - 590.0) < 0.01 and r["near"][0].get("acc", false), "no total: 550 de antes + 40 desta fase = 590/600")
+	T.t["plays"]["monster"] = 60
+	r = T.check(stats, ctx, ["ogre"])
+	check(r["done"].size() == 1, "no total: 550 + 60 libera o Ogro")
+	# carta de vilão soma só as fases com ele (Urso: 20 heróis da Praga)
+	ctx["totals_all"] = {"heroes|": 100.0}
+	ctx["totals_villain"] = {"heroes|": 10.0}
+	r = T.check(stats, ctx, ["brown_bear"])
+	check(r["done"].is_empty() and absf(float(r["near"][0]["v"]) - 15.0) < 0.01, "no total: carta de vilão usa só o acumulado dele (10 + 5 = 15/20)")
+	# "em N fases diferentes": Ninho de Morcegos = 3 estruturas de uma vez em 3 fases
+	T.t["peak"]["structure"] = 3
+	ctx["runs_done"] = {"bat_nest": 1}
+	r = T.check(stats, ctx, ["bat_nest"])
+	check(r["done"].is_empty() and r["near"][0].get("hit", false) and int(r["near"][0]["v"]) == 2, "em N fases: cumpriu nesta fase, 2/3")
+	ctx["runs_done"] = {"bat_nest": 2}
+	r = T.check(stats, ctx, ["bat_nest"])
+	check(r["done"].size() == 1, "em N fases: a 3ª fase libera")
 	# derrota não cumpre desafio de vitória
 	ctx["won"] = false
 	r = T.check(stats, ctx, ["cave_troll", "sewer_flood"])
@@ -543,16 +614,25 @@ func t_unlock_challenges() -> void:
 	for i in 40:
 		s3.step()
 	check(int(s3.track.t["peak"].get("monster", 0)) == 0, "desafios: rastreador roda no passo do Sim sem erro")
-	# fim da fase: a meta libera a carta e guarda o progresso
+	# fim de fase: acumula entre fases (perdendo também), separa por vilão e salva
 	var path := "user://test_meta_unlock.save"
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var m := MetaSave.load_or_new(data, path)
-	s3.track.t["plays"]["monster"] = 110
+	s3.track.t["plays"]["monster"] = 400
 	s3.track.t["peak"]["rat"] = 12
-	var res := m.apply_unlocks(s3, false, path)
-	check(m.is_unlocked("ogre") and not m.is_unlocked("alpha_beast") and res["done"].size() > 0, "apply_unlocks: libera a carta cumprida mesmo na derrota")
-	check(m.progress.has("alpha_beast") and float(m.progress["alpha_beast"]["v"]) == 12.0, "apply_unlocks: guarda o melhor progresso (12/30 ratos)")
+	s3.track.t["peak"]["structure"] = 3
+	m.apply_unlocks(s3, false, path)
+	check(not m.is_unlocked("ogre") and float(m.progress["ogre"]["v"]) == 400.0 and float(m.totals["plague"]["plays|monster"]) == 400.0, "apply_unlocks: run perdida soma no total (Ogro 400/600)")
+	check(int(m.runs_done.get("bat_nest", 0)) == 1 and float(m.progress["bat_nest"]["v"]) == 1.0, "apply_unlocks: conta a fase do feito (Ninho 1/3)")
+	check(float(m.progress["alpha_beast"]["v"]) == 12.0, "apply_unlocks: guarda o melhor progresso numa run (12/30 ratos)")
+	var s4 := _sim(7, "dragon")
+	s4.track.t["plays"]["monster"] = 250
+	var res := m.apply_unlocks(s4, false, path)
+	check(m.is_unlocked("ogre") and res["done"].any(func(p): return p["id"] == "ogre"), "apply_unlocks: carta comum soma as fases de outro vilão (400 + 250 libera o Ogro)")
+	check(not m.totals.get("dragon", {}).is_empty() and float(m.totals["plague"]["plays|monster"]) == 400.0, "apply_unlocks: acumulado separado por vilão")
 	var m2 := MetaSave.load_or_new(data, path)
-	check(m2.is_unlocked("ogre") and m2.progress.has("alpha_beast"), "desbloqueio e progresso sobrevivem ao salvar")
+	check(m2.is_unlocked("ogre") and m2.progress.has("alpha_beast") and int(m2.runs_done.get("bat_nest", 0)) == 1 and float(m2.totals_all().get("plays|monster", 0.0)) == 650.0, "desbloqueio, acumulados e fases contadas sobrevivem ao salvar")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
@@ -1205,7 +1285,7 @@ func t_relics_1111() -> void:
 	check(_mods_total(pk) == md0 + 2, "Tinta de Carimbo: 2 modificadores em cartas do baralho")
 	var hp0 := pk.hero.hp
 	pk.gain_relic("blood_tithe")
-	check(is_equal_approx(pk.hero.hp, hp0 - pk.hero.max_hp() * 0.1), "Dízimo de Sangue: o herói perde 10% da vida máxima")
+	check(is_equal_approx(pk.hero.hp, hp0 - pk.hero.max_hp() * 0.05), "Dízimo de Sangue: o herói perde 5% da vida máxima")
 	pk.gain_relic("tar_pit")
 	check(is_equal_approx(pk.hero_speed_mult(pk.hero), 0.75), "Piche: herói da vez 25% mais lento")
 	SaveGame.save(pk, "user://test.save")
@@ -1304,7 +1384,7 @@ func t_offer_single_rarity() -> void:
 				0: s._offer_level()
 				1: s.offers.append({"options": s._card_options(3, func(_cd: CardDef): return true)})
 				2: s.offers.append({"options": s._card_options(3, func(cd: CardDef): return cd.rarity >= 2)})
-				3: s._offer_contract({"kind": "card", "min_rarity": "uncommon"})
+				3: s._offer_level()
 				4: s._offer_relics()
 			for o in s.offers:
 				var rs := {}
@@ -1698,6 +1778,27 @@ func t_combos() -> void:
 	check(hp0 - s.hero.hp > nomark * 1.3, "Marca Sombria aumenta o dano de feitiço (%.0f → %.0f)" % [nomark, hp0 - s.hero.hp])
 
 
+## Fase de teste de fila antiga (cada herói é uma party sozinha), para os testes que olham a queda herói a herói.
+## 95: 5 Escudeiros; 96: Clériga e Escudeiros; 97: Escudeiro e Arqueira alternados (como eram as fases 2 e 3 de antes).
+func _legacy_sim(seed_: int, id: int, deck := "horde") -> Sim:
+	if data.phase(id).is_empty():
+		var lists := {
+			95: ["escudeiro", "escudeiro", "escudeiro", "escudeiro", "escudeiro"],
+			96: ["cleriga", "escudeiro", "cleriga", "arqueira", "escudeiro", "cleriga", "escudeiro"],
+			97: ["escudeiro", "arqueira", "escudeiro", "arqueira", "escudeiro", "arqueira", "escudeiro"],
+			98: ["escudeiro", "arqueira", "cleriga", "mago", "escudeiro", "arqueira"],
+		}
+		var ph := {"id": id, "key": "TEST_%d" % id, "party": lists[id], "hp_mult": 1.5 if id == 98 else 2.6}
+		if id == 98:
+			ph["group"] = true
+			ph["revive_hp"] = 0.5
+		data.phases.append(ph)
+	var s := Sim.new()
+	s.setup(data, seed_, deck, [], [], id)
+	s.auto_route = true
+	return s
+
+
 func _phase_sim(n: int, seed_ := 7) -> Sim:
 	var s := Sim.new()
 	s.setup(data, seed_, "horde", [], [], n)
@@ -1707,7 +1808,7 @@ func _phase_sim(n: int, seed_ := 7) -> Sim:
 
 ## Fase de grupo com dois heróis colados: o da vez e um seguidor a 1 m.
 func _two_heroes() -> Sim:
-	var s := _phase_sim(4)
+	var s := _legacy_sim(7, 98)
 	s.offers.clear()
 	s.hero.hp = 0.0
 	s._check_end()
@@ -1825,8 +1926,8 @@ func t_human_bot() -> void:
 
 
 func t_classes() -> void:
-	var s := _phase_sim(2)
-	check(s.party_size() == 7 and s.party_class(1) == "arqueira", "Fase 2 alterna Escudeiro e Arqueira")
+	var s := _legacy_sim(7, 97)
+	check(s.party_size() == 7 and s.party_class(1) == "arqueira", "fila alterna Escudeiro e Arqueira")
 	s.offers.clear()
 	s.hero.hp = 0.0
 	s._check_end()
@@ -1847,14 +1948,14 @@ func t_classes() -> void:
 				hshots += 1
 		s.events.clear()
 	check(hshots > 0, "Herói à distância emite o projétil (HERO_SHOT) ao atacar (%d)" % hshots)
-	var sh := _phase_sim(2)
+	var sh := _legacy_sim(7, 97)
 	sh.hero.apply_upgrade("tower_shield")
 	var sh_max: float = sh.hero.shield_max
 	check(sh_max > float(sh.hero.H["shield"]["hp"]), "Escudo de Torre aumenta o escudo")
 	sh.hero.next_hero(2)
 	check(is_equal_approx(sh.hero.shield_max, sh_max), "Escudo de Torre (habilidade do grupo) vale também para o herói seguinte com escudo")
-	var s3 := _phase_sim(3)
-	check(s3.hero.cls() == "cleriga", "Fase 3 começa com a Clériga")
+	var s3 := _legacy_sim(7, 96)
+	check(s3.hero.cls() == "cleriga", "fila começa com a Clériga")
 	s3.hero.hp = s3.hero.max_hp() * 0.5
 	for i in 40:
 		s3.hero.update(s3.dt)
@@ -1866,6 +1967,7 @@ func t_classes() -> void:
 	check(s3.hero.max_hp() > base2 * 1.15, "a bênção da Clériga dá vida ao próximo (%.0f > %.0f)" % [s3.hero.max_hp(), base2])
 	var s4 := _phase_sim(4)
 	check(s4.party_class(3) == "mago", "o 4º herói da Fase 4 é o Mago")
+	check(s4.party_mode() and s4.party_count() == 3 and s4.party_size() == 6, "a Fase 4 é uma fila de 3 parties (6 heróis)")
 	var sw := _phase_sim(1)
 	var rats := _spawn(sw, "rat_horde", 2.0)
 	sw.hero.H = data.hero_of("mago")
@@ -1880,12 +1982,89 @@ func t_classes() -> void:
 		alive1 += sw.units.alive[j]
 	check(alive1 < alive0 - 2, "golpe do Mago atinge vários ratos em volta (%d → %d)" % [alive0, alive1])
 	var s0 := _phase_sim(0)
-	check(s0.party_size() == 3 and s0.acts() == 1 and s0.hero.max_hp() < float(data.hero["hp"]) * 0.6, "tutorial: 3 Escudeiros fracos e 1 ato")
+	check(s0.party_size() == 3 and s0.party_count() == 2 and s0.acts() == 1 and s0.hero.max_hp() < float(data.hero["hp"]) * 0.6, "tutorial: 3 Escudeiros fracos e 1 ato")
+
+
+## Fila de parties (15/11/2026): grupos de 1 a 4 heróis; cada queda dá recompensa; a party seguinte chega junta.
+func t_parties() -> void:
+	var s := _phase_sim(4)   # [escudeiro] [guardiao, cleriga, mago, assassino] [arqueira]
+	check(s.party_mode() and s.party_count() == 3 and s.party_size() == 6, "Fase 4: 3 parties, 6 heróis")
+	check(s.followers.size() == 0 and s.hero.cls() == "escudeiro", "a party 1 é só o Escudeiro")
+	check(s.party_n_of(1) == 4 and s.party_n_of(0) == 1 and s.party_n_of(5) == 1, "tamanho de cada party")
+	var solo_hp: float = s.hero.max_hp()
+	s.offers.clear()
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.cur_party == 1 and s.followers.size() == 3, "a party 2 chega inteira: 1 líder e 3 membros (%d)" % s.followers.size())
+	check(s.hero.cls() == "guardiao" and s.followers[0].cls() == "cleriga" and s.followers[1].cls() == "mago" and s.followers[2].cls() == "assassino",
+		"a party 2 vem na ordem escrita")
+	check(s.hero.upgrade_order.size() == 1 and s.followers[2].upgrade_order.size() == 1, "a habilidade nova vale para a party toda")
+	var step := float(data.rules["party"]["step"])
+	var want: float = float(data.hero_of("assassino", s.phase_hp_mult)["hp"]) * step * float(data.rules.get("hero_hp_mult", 1.0)) / 4.0
+	check(absf(s.followers[2].max_hp() - want) < 1.0, "a força da party é dividida entre os 4 membros (%.0f = %.0f)" % [s.followers[2].max_hp(), want])
+	check(s.hero.level == 2 and int(s.stats["heroes_fallen"]) == 1, "party 2 = nível 2; 1 queda contada")
+	check(s.offers.size() > 0, "a queda do último da party 1 abre recompensa")
+	# Um membro cai com gente ainda de pé: recompensa, habilidade e ninguém novo chega.
+	s.offers.clear()
+	var n0 := s.hero.upgrade_order.size()
+	s.followers[1].hp = 0.0   # o Mago
+	s._check_end()
+	check(s.followers.size() == 2 and s.cur_party == 1, "o Mago caiu e a party 2 segue com 3 de pé")
+	check(s.offers.size() > 0 and s.hero.upgrade_order.size() == n0 + 1 and s.followers[0].upgrade_order.size() == n0 + 1,
+		"cada membro que cai dá recompensa e habilidade nova ao resto")
+	check(int(s.stats["heroes_fallen"]) == 2, "queda do membro conta (%d)" % int(s.stats["heroes_fallen"]))
+	# O líder cai: o seguinte assume o lugar dele.
+	s.offers.clear()
+	var next_cls: String = s.followers[0].cls()
+	var next_hp: float = s.followers[0].hp
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.hero.cls() == next_cls and absf(s.hero.hp - next_hp) < 1.0 and s.followers.size() == 1 and s.cur_party == 1,
+		"o líder caiu: o Clériga assume (%s, %d seguidores)" % [s.hero.cls(), s.followers.size()])
+	# Só sobra o Assassino e ele cai também: chega a party 3 (Arqueira), sem seguidores.
+	s.offers.clear()
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.hero.cls() == "assassino" and s.followers.size() == 0, "sobrou o Assassino")
+	s.offers.clear()
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.cur_party == 2 and s.hero.cls() == "arqueira" and s.followers.size() == 0, "a party 3 chega sozinha")
+	check(s.hero.max_hp() > solo_hp * 1.3, "a party 3 é mais forte que a 1 (%.0f > %.0f)" % [s.hero.max_hp(), solo_hp])
+	check(s.phase != K.Phase.OVER, "a run continua")
+	s.offers.clear()
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.phase == K.Phase.OVER and str(s.stats["result"]) in ["win", "win_early"] and int(s.stats["heroes_fallen"]) == 6,
+		"a última party cai: vitória com 6 quedas (%s, %d)" % [str(s.stats["result"]), int(s.stats["heroes_fallen"])])
+	# Salvar e continuar no meio de uma party de 4.
+	var m := _phase_sim(4)
+	m.offers.clear()
+	m.hero.hp = 0.0
+	m._check_end()
+	var path := "user://test_party.save"
+	check(SaveGame.save(m, path), "salva a run no meio da party 2")
+	var ld := SaveGame.load_run(data, path)
+	check(ld != null and ld.followers.size() == 3 and ld.cur_party == 1 and ld.party_n_of(1) == 4 and ld.hero.cls() == "guardiao",
+		"continuar mantém a party (%d seguidores)" % (ld.followers.size() if ld else -1))
+	SaveGame.erase(path)
+	# Run completa de ponta a ponta com o bot, em todas as fases.
+	for ph in [1, 2, 3, 4]:
+		var r := Sim.new()
+		r.setup(data, 31 + ph, "horde", [], [], ph)
+		r.auto_route = true
+		var bot := PlayerBot.load_bot("heuristic", 31 + ph)
+		var k := 0
+		while r.phase != K.Phase.OVER and k < 70000:
+			bot.think(r)
+			r.step()
+			k += 1
+		check(r.phase == K.Phase.OVER, "Fase %d com parties termina com o bot (%s, %d quedas de %d)" % [ph, str(r.stats["result"]), int(r.stats["heroes_fallen"]), r.party_size()])
 
 
 func t_group() -> void:
-	var s := _phase_sim(4)
-	check(s.group_mode(), "Fase 4 é de grupo")
+	var s := _legacy_sim(7, 98)
+	check(s.group_mode(), "fase de grupo antiga (modo de levantar o caído)")
 	s.offers.clear()
 	s.hero.hp = 0.0
 	s._check_end()
@@ -1909,7 +2088,7 @@ func t_group() -> void:
 	var path := "user://test_group.save"
 	check(SaveGame.save(s, path), "salva a run da fase de grupo")
 	var ld := SaveGame.load_run(data, path)
-	check(ld != null and ld.campaign_phase == 4 and ld.followers.size() == s.followers.size() and ld.hero.cls() == s.hero.cls(),
+	check(ld != null and ld.campaign_phase == 98 and ld.followers.size() == s.followers.size() and ld.hero.cls() == s.hero.cls(),
 		"continuar a fase de grupo mantém a fase, a classe e os seguidores (%d)" % (ld.followers.size() if ld else -1))
 	if ld and ld.followers.size() > 0:
 		check(ld.followers[0].cls() == s.followers[0].cls() and absf(ld.followers[0].hp - s.followers[0].hp) < 0.01, "seguidor volta com a classe e a vida")
@@ -1924,7 +2103,7 @@ func t_group() -> void:
 		n += 1
 	check(s.phase == K.Phase.OVER and str(s.stats["result"]) in ["win", "win_early"], "a fase de grupo termina em vitória quando ninguém fica de pé (%s, %d quedas)" % [str(s.stats["result"]), int(s.stats["heroes_fallen"])])
 	var r := Sim.new()
-	r.setup(data, 11, "horde", [], [], 4)
+	r.setup(data, 11, "horde", [], [], 98)
 	r.auto_route = true
 	var bot := PlayerBot.load_bot("heuristic", 11)
 	var k := 0
@@ -1932,7 +2111,7 @@ func t_group() -> void:
 		bot.think(r)
 		r.step()
 		k += 1
-	check(r.phase == K.Phase.OVER, "run completa da Fase 4 com o bot termina (%s em %.0f s, %d quedas)" % [str(r.stats["result"]), r.t, int(r.stats["heroes_fallen"])])
+	check(r.phase == K.Phase.OVER, "run completa da fase de grupo com o bot termina (%s em %.0f s, %d quedas)" % [str(r.stats["result"]), r.t, int(r.stats["heroes_fallen"])])
 
 
 ## Baralho com descarte (C2): nenhuma carta some nem duplica; o descarte vira compra; "Retorna" volta uma vez por
@@ -2107,6 +2286,25 @@ func t_dragon_c6() -> void:
 		if s.units.alive[j] == 1 and s.units.def[j] == data.card("treasure_guard").idx:
 			tg1 = maxf(tg1, s.units.max_hp[j])
 	check(absf(tg0 - 1020.0) < 1.0 and absf(tg1 - 1520.0) < 1.0, "Guarda do Tesouro: 1020 de vida, +500 com 100 de ouro (%.0f → %.0f)" % [tg0, tg1])
+	# Guarda do Tesouro: cada um vivo gasta 10 de ouro por segundo; o ouro para em 0.
+	s.gold = 100.0
+	var gg0 := s.gold
+	s.dt = 0.5
+	CardsDragon.on_tick(s)
+	check(absf((gg0 - s.gold) - 10.0) < 0.01, "Guarda do Tesouro: 2 vivos gastam 10 de ouro em 0,5 s (%.1f)" % (gg0 - s.gold))
+	s.gold = 3.0
+	CardsDragon.on_tick(s)
+	check(s.gold == 0.0, "Guarda do Tesouro: o ouro não fica negativo (%.1f)" % s.gold)
+	# Custo em ouro: Moedas Amaldiçoadas (15) e Batedor Goblin (30) ficam bloqueados sem ouro e cobram ao jogar.
+	for gc in [["cursed_coins", 15.0], ["goblin_scout", 30.0]]:
+		var sg := _sim(5, "dragon")
+		sg.elixir = 20.0
+		sg.hand[0] = _inst(gc[0])
+		sg.gold = gc[1] - 1.0
+		var blocked: bool = sg.can_play(0) == K.Block.CONDITION
+		sg.gold = gc[1] + 5.0
+		var r := sg.play(0, sg.hero.x + 8.0, sg.hero.y)
+		check(blocked and r == K.Block.OK and is_equal_approx(sg.gold, 5.0), "%s: custa %.0f de ouro (bloqueada sem: %s, sobrou %.1f)" % [gc[0], gc[1], blocked, sg.gold])
 	# Fornalha: o herói não seca, o fogo causa +30%, e ela some em 15 s.
 	s = _sim(5, "dragon")
 	var fu := _spawn(s, "furnace", 1.0)
@@ -2219,15 +2417,16 @@ func t_cards_lich_common() -> void:
 	h0 = s4.units.hp[og4[0]]
 	s4.hero_hits_unit(og4[0], 100.0)
 	check(absf((h0 - s4.units.hp[og4[0]]) - normal) < 0.5, "Maldição da Fraqueza acaba em 6 s")
-	# Cálice Profundo: +4 de elixir máximo e 2 de elixir na hora; expira em 40 s.
+	# Cálice Profundo: +4 de elixir máximo e +20% de geração por 40 s (sem elixir na hora).
 	var s5 := _sim(9)
 	var m0 := s5.elixir_max
 	s5.elixir = 3.0
 	s5._apply(_inst("deep_chalice"), s5.hero.x, s5.hero.y)
-	check(is_equal_approx(s5.elixir_max, m0 + 4.0) and is_equal_approx(s5.elixir, 5.0), "Cálice Profundo: máximo %.0f → %.0f, elixir %.1f" % [m0, s5.elixir_max, s5.elixir])
+	check(is_equal_approx(s5.elixir_max, m0 + 4.0) and is_equal_approx(s5.elixir, 3.0) and is_equal_approx(s5.temp_sum("elixir_regen"), 0.2),
+		"Cálice Profundo: máximo %.0f → %.0f, elixir %.1f, geração +%.0f%%" % [m0, s5.elixir_max, s5.elixir, s5.temp_sum("elixir_regen") * 100.0])
 	s5.t += 41.0
 	s5._temps()
-	check(is_equal_approx(s5.elixir_max, m0), "Cálice Profundo expira (máximo %.0f)" % s5.elixir_max)
+	check(is_equal_approx(s5.elixir_max, m0) and is_equal_approx(s5.temp_sum("elixir_regen"), 0.0), "Cálice Profundo expira (máximo %.0f)" % s5.elixir_max)
 	# Ritual Profano: sacrifica 1 monstro; os próximos feitiços custam 1 a menos e depois voltam ao normal.
 	var s6 := _sim(10, "lich")
 	_tough(s6)
@@ -2239,6 +2438,19 @@ func t_cards_lich_common() -> void:
 	for i in 3:
 		CardsLich.on_card_played(s6, bolt, s6.hero.x, s6.hero.y)
 	check(s6.card_cost(bolt) == c0, "Ritual Profano acaba depois de 3 feitiços")
+	# Cultistas: enquanto há algum vivo, todo feitiço custa 1 a menos (fixo, não soma por cultista nem por feitiço).
+	var sc := _sim(12)
+	_tough(sc)
+	var cb := _inst("shadow_bolt")
+	var cc0 := sc.card_cost(cb)
+	_spawn(sc, "cultists")
+	sc.step()
+	check(sc.card_cost(cb) == maxi(0, cc0 - 1), "Cultistas: feitiço custa 1 a menos (%d → %d)" % [cc0, sc.card_cost(cb)])
+	_spawn(sc, "cultists")
+	sc.step()
+	for i in 4:
+		CardsLich.on_card_played(sc, cb, sc.hero.x, sc.hero.y)
+	check(sc.card_cost(cb) == maxi(0, cc0 - 1), "Cultistas: desconto não acumula (2 grupos, 4 feitiços)")
 	# Estandarte de Guerra e Troll: a vida do aliado perto do estandarte sobe; o Troll regenera.
 	var s7 := _sim(11)
 	_tough(s7)
@@ -2589,13 +2801,25 @@ func t_helper() -> void:
 			moved = maxf(moved, Vector2(s.helper.x, s.helper.y).distance_to(spot))
 	check(far <= float(R["locations"]["hold_radius"]) + 1.0 and s.hero.s_max <= s0 + 3.0 and s.contest.get("type", "") == "helper",
 		"Herói Ajudante: o herói da vez fica parado no local durante a disputa (%.1f m do centro)" % far)
-	check(moved < 0.01, "Herói Ajudante: ele não anda (%.2f m)" % moved)
-	# Monstro ao lado do ajudante bate nele (alvo como o herói).
+	var hd := Vector2(s.helper.x, s.helper.y).distance_to(Vector2(s.hero.x, s.hero.y)) if s.helper else INF
+	check(s.helper != null and hd <= 4.5, "Herói Ajudante: fica junto do herói da vez (%.1f m dele; andou %.1f m)" % [hd, moved])
+	# 15/11/2026: monstro a uns metros do ajudante (ao alcance do grupo): ele anda até lá e bate.
 	var hp0: float = s.helper.hp
-	var og := s.units.spawn(data.card("ogre"), s.helper.x + 0.8, s.helper.y, 0.0, 0.0, 0, 999)
+	var hpos := Vector2(s.helper.x, s.helper.y)
+	var away := (hpos - Vector2(s.hero.x, s.hero.y)).normalized()
+	if away.length() < 0.5:
+		away = Vector2(1, 0)
+	var op := hpos + away * 4.0
+	var og := s.units.spawn(data.card("ogre"), op.x, op.y, 0.0, 0.0, 0, 999)
 	s.units.hp[og] = 1.0e6
 	s.units.max_hp[og] = 1.0e6
-	_steps(s, 3.0)
+	var walked := 0.0
+	for i in int(4.0 / s.dt):
+		s.step()
+		if s.helper:
+			walked = maxf(walked, Vector2(s.helper.x, s.helper.y).distance_to(hpos))
+	check(walked > 1.0 and s.units.alive[og] == 1 and s.units.hp[og] < 1.0e6,
+		"Herói Ajudante: anda até o monstro e bate nele (andou %.1f m; ogro %.0f)" % [walked, s.units.hp[og]])
 	check(s.helper != null and s.helper.hp < hp0, "Herói Ajudante: monstro perto dele o ataca (%.0f -> %.0f)" % [hp0, s.helper.hp if s.helper else 0.0])
 	# Salva no meio da disputa: a retomada traz o ajudante de volta.
 	check(SaveGame.save(s, "user://test_helper.save"), "Herói Ajudante: salva no meio da disputa")
@@ -2673,12 +2897,21 @@ func t_round_2026_11_13() -> void:
 	s.step()
 	var d3 := _hit(s, w1[0])
 	check(d3 > d1 * 1.25, "Alcateia: Fera em campo aumenta o dano (%.1f > %.1f)" % [d3, d1])
-	# --- Infestação (Selvagem): Fera que morre faz a próxima Fera custar 1 a menos; só uma vez.
-	var wc := s.card_cost(_inst("brown_bear"))
+	# --- Infestação (15/11/2026): qualquer monstro que morre pode deixar um rato; o rato deixado não gera outro.
+	s.deck_rules["infestation"] = 1.0
+	var n0 := s.units.count
 	s.kill_unit(w1[0], K.Death.HERO)
-	check(s.card_cost(_inst("brown_bear")) == wc - 1 and s.card_cost(_inst("rat_horde")) == data.card("rat_horde").cost, "Infestação: a próxima Fera custa 1 a menos, ratos não")
-	CardsPlague.on_card_played(s, _inst("lone_wolf"), s.hero.x, s.hero.y)
-	check(s.card_cost(_inst("brown_bear")) == wc, "Infestação: o desconto vale para uma Fera só")
+	check(s.units.count == n0, "Infestação: o monstro morre e deixa 1 rato (%d -> %d)" % [n0, s.units.count])
+	var rat_i := -1
+	for ui in s.units.hi:
+		if s.units.alive[ui] != 0 and (s.units.flags[ui] & K.F_INFESTED):
+			rat_i = ui
+	check(rat_i >= 0, "Infestação: o rato deixado nasce marcado")
+	var n1 := s.units.count
+	if rat_i >= 0:
+		s.kill_unit(rat_i, K.Death.HERO)
+	check(s.units.count == n1 - 1, "Infestação: rato deixado pela passiva não gera outro rato")
+	s.deck_rules["infestation"] = 0.0
 	# --- Caçada do Urso: cada golpe soma dano até o teto.
 	s = _sim(5, "plague")
 	_pl_still(s)
@@ -2688,13 +2921,7 @@ func t_round_2026_11_13() -> void:
 		_hit(s, bear[0])
 	var b1 := _hit(s, bear[0])
 	check(b1 > b0 * 1.5 and b1 < b0 * 1.7, "Caçada: dano sobe até o teto de +60%% (%.1f -> %.1f)" % [b0, b1])
-	# --- Sangue: hienas correm mais quando uma Fera morre.
-	var hy := _pl(s, "hyena_scavenger")
-	s.step()
-	var sp0: float = s.units.spd[hy[0]]
-	s.kill_unit(bear[0], K.Death.HERO)
-	s.step()
-	check(s.units.spd[hy[0]] > sp0 * 1.3, "Sangue: hienas correm +40%% (%.1f -> %.1f)" % [sp0, s.units.spd[hy[0]]])
+	# (Sangue das hienas dependia da Infestação de Fera, removida em 15/11/2026.)
 	# --- Bicho Infectado: explode com Peste.
 	s = _sim(5, "plague")
 	_tough(s)

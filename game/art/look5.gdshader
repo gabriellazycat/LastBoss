@@ -24,6 +24,8 @@ uniform float pose_lunge = 0.0;    // fora da MultiMesh: quanto do ataque (0..1)
 uniform vec3 rim_color : source_color = vec3(0.75, 0.82, 1.0);
 uniform float rim_strength = 0.35;
 uniform vec3 tint : source_color = vec3(1.0);
+uniform bool atlas = false;       // a textura é um atlas pintado: sem pinceladas do shader por cima
+uniform float ink = 0.0;          // contorno de tinta (0..1)
 
 varying vec4 custom;
 varying vec3 paint_p;
@@ -77,9 +79,14 @@ void fragment() {
 	if (use_tex && UV.x >= 0.0) {
 		base *= texture(albedo_tex, UV).rgb;
 	}
-	base = paint_albedo(base, paint_p, paint_n, -1, 0.35);
+	// Atlas pintado (rodada de 15/11, tools/art/blender_g): a pincelada já está na textura, a do shader sai.
+	if (!atlas) {
+		base = paint_albedo(base, paint_p, paint_n, -1, 0.35);
+	}
 	float f = clamp(max(custom.x, flash), 0.0, 1.0);
 	ALBEDO = mix(base, vec3(1.0, 0.96, 0.92), f);
+	// Contorno de tinta (só no tratamento "flat"): borda escura onde a superfície vira de lado.
+	ALBEDO = mix(ALBEDO, vec3(0.05, 0.04, 0.07), ink * smoothstep(0.55, 0.85, 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0)));
 	ROUGHNESS = 0.72;
 	SPECULAR = 0.3;
 	// Contorno de céu: fresnel suave, mais forte no alto do modelo (luz que vem de cima).

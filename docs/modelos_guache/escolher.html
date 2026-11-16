@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modelos em guache: escolher</title>
+<style>
+:root{--bg:#1d1b19;--panel:#2a2724;--ink:#f1e9d8;--mute:#a89f8c;--acc:#e0a94a;--ok:#7fc27a;--line:#3d3833}
+@media (prefers-color-scheme: light){:root{--bg:#f3ecdc;--panel:#fffaf0;--ink:#2b2620;--mute:#7a7060;--acc:#b9741c;--ok:#3a8a3a;--line:#d8ccb2}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+h1{font-size:18px;margin:0 12px 0 0}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tabs button{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.tabs button.on{background:var(--acc);color:#1d1b19;border-color:var(--acc);font-weight:600}
+#status{margin-left:auto;color:var(--mute)}
+main{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:12px;overflow:hidden}
+.card.pick{border-color:var(--ok)}
+.card img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;cursor:zoom-in;background:#000}
+.cap{padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.cap .t{flex:1}.cap b{display:block}.cap span{color:var(--mute);font-size:13px}
+.cap button{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.card.pick .cap button{background:var(--ok);color:#102010;border-color:var(--ok);font-weight:600}
+footer{padding:0 16px 40px}
+textarea{width:100%;min-height:90px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;z-index:10;flex-direction:column}
+#lb.on{display:flex}
+#lb .bar{display:flex;flex-wrap:wrap;gap:6px;padding:10px;justify-content:center}
+#lb .bar button{background:#2a2724;color:#f1e9d8;border:1px solid #555;border-radius:8px;padding:6px 12px;cursor:pointer}
+#lb .bar button.on{background:#e0a94a;color:#1d1b19;font-weight:600}
+#lb .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 10px 10px}
+#lb img{max-width:100%;max-height:100%;object-fit:contain}
+#lb .hint{text-align:center;color:#a89f8c;font-size:13px;padding-bottom:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Modelos em guache</h1>
+  <div class="tabs" id="tabs"></div>
+  <div id="status">Nenhuma versão escolhida</div>
+</header>
+<main id="grid"></main>
+<footer>
+  <h3>Comentários</h3>
+  <textarea id="notes" placeholder="O que gostou, o que mudar, o que misturar entre versões (ex.: V2 nos inimigos, V6 nos heróis)."></textarea>
+</footer>
+<div id="lb">
+  <div class="bar" id="lbbar"></div>
+  <div class="stage"><img id="lbimg" alt=""></div>
+  <div class="hint">Teclas 1 a 7 trocam a versão (0 = jogo de antes, nas cenas do jogo) · ← → trocam de cena · Esc fecha · mesmo enquadramento para comparar</div>
+</div>
+<script>
+const V=[
+ ["V1","V1 · Controle","Formas novas, cor por vértice e o guache do shader, como é hoje."],
+ ["V2","V2 · Dabs","Manchas largas de pincel chato, borda dura."],
+ ["V3","V3 · Aguado","Lavagem larga, cor mais clara, borda molhada."],
+ ["V4","V4 · Pincel seco","Veios compridos que só clareiam."],
+ ["V5","V5 · Chapado + contorno","Poucas cores e contorno de tinta."],
+ ["V6","V6 · Gordinha","Cabeça maior e corpo mais largo, com dabs."],
+ ["V7","V7 · Facetada","Planos largos, menos triângulos, com dabs."]];
+const SHOTS=[["estrada","Jogo: estrada"],["horda","Jogo: horda"],["encontro","Jogo: encontro"],["oferta","Jogo: oferta"],["perto","Mundo: perto"],["jogo","Mundo: câmera do jogo"],["detalhe","Mundo: detalhe"],["herois","Mundo: heróis"],["cenario","Mundo: cenário"]];
+const HUD=["estrada","horda","encontro","oferta"];
+let shot=localStorage.getItem("shot2")||"estrada", pick=null, cur=0;
+const $=s=>document.querySelector(s);
+const src=(v,s)=>HUD.includes(s)?`hud/V${v.slice(1)}_${s}.png`:`v/${v}_${s}.png`;
+const base=s=>HUD.includes(s)?`hud/V0_${s}.png`:null;
+function status(){ $("#status").textContent = pick?`Escolhida: ${V.find(x=>x[0]==pick)[1]}`:"Nenhuma versão escolhida"; }
+function tabs(){ $("#tabs").innerHTML=SHOTS.map(([k,n])=>`<button class="${k==shot?'on':''}" data-k="${k}">${n}</button>`).join("");
+  $("#tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{shot=b.dataset.k;localStorage.setItem("shot2",shot);tabs();grid();}); }
+function grid(){
+  const cards=(base(shot)?[`<div class="card"><img data-i="-1" src="${base(shot)}" alt="Antes"><div class="cap"><div class="t"><b>Antes (jogo atual)</b><span>Referência: o jogo como está hoje, mesma cena.</span></div></div></div>`]:[])
+   .concat(V.map(([k,n,d],i)=>`<div class="card ${pick==k?'pick':''}"><img data-i="${i}" src="${src(k,shot)}" alt="${n}" loading="lazy"><div class="cap"><div class="t"><b>${n}</b><span>${d}</span></div><button data-k="${k}">${pick==k?'Escolhida':'Escolher'}</button></div></div>`));
+  $("#grid").innerHTML=cards.join("");
+  $("#grid").querySelectorAll("img").forEach(im=>im.onclick=()=>open(+im.dataset.i));
+  $("#grid").querySelectorAll("button").forEach(b=>b.onclick=()=>choose(b.dataset.k));
+}
+function open(i){cur=i;$("#lb").classList.add("on");show();}
+function show(){
+  $("#lbimg").src = cur<0 ? (base(shot)||src(V[0][0],shot)) : src(V[cur][0],shot);
+  $("#lbbar").innerHTML=`<button data-i="-1" class="${cur<0?'on':''}">0 · Antes</button>`+V.map((v,i)=>`<button data-i="${i}" class="${i==cur?'on':''}">${i+1} · ${v[1].split(" · ")[1]||v[1]}</button>`).join("")+
+    (cur>=0?`<button data-pick="1">Escolher ${V[cur][0]}</button>`:"")+SHOTS.map(([k,n])=>`<button data-s="${k}" class="${k==shot?'on':''}">${n}</button>`).join("");
+  $("#lbbar").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    if(b.dataset.i!==undefined){cur=+b.dataset.i;}
+    else if(b.dataset.s){shot=b.dataset.s;localStorage.setItem("shot2",shot);tabs();grid();}
+    else if(b.dataset.pick){choose(V[cur][0]);}
+    show();});
+}
+function close(){ $("#lb").classList.remove("on"); }
+document.addEventListener("keydown",e=>{
+  if(!$("#lb").classList.contains("on")) return;
+  if(e.key=="Escape") close();
+  else if(e.key>="0"&&e.key<="7"){cur=e.key=="0"?-1:+e.key-1;show();}
+  else if(e.key=="ArrowRight"||e.key=="ArrowLeft"){const i=SHOTS.findIndex(s=>s[0]==shot);shot=SHOTS[(i+(e.key=="ArrowRight"?1:SHOTS.length-1))%SHOTS.length][0];tabs();grid();show();}
+});
+$("#lb").onclick=e=>{ if(e.target.id=="lb"||e.target.classList.contains("stage")) close(); };
+function save(){
+  const body=JSON.stringify({escolhida:pick,comentarios:$("#notes").value,quando:new Date().toISOString()});
+  fetch("/escolher",{method:"POST",headers:{"Content-Type":"application/json"},body}).catch(()=>{});
+  try{localStorage.setItem("escolha",body);}catch(e){}
+}
+function choose(k){pick=k;status();grid();save();}
+$("#notes").oninput=()=>{clearTimeout(window._t);window._t=setTimeout(save,600);};
+fetch("/escolha").then(r=>r.ok?r.json():null).then(j=>{ if(j){pick=j.escolhida||null;$("#notes").value=j.comentarios||"";} status();grid(); }).catch(()=>{ status(); grid(); });
+tabs(); grid();
+</script>
+</body>
+</html>

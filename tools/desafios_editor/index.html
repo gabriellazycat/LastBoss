@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Desafios das cartas</title>
+<style>
+:root{--bg:#f3ead6;--ink:#2b2118;--card:#fffaf0;--line:#c9b68f;--acc:#8a2b1f;--ok:#2f7a3a;--mut:#7a6a52;--run:#8a5a08;--cross:#1f5c8a;--bad:#b3261e}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1812;--ink:#efe4cc;--card:#2a231a;--line:#51442f;--acc:#e0705a;--ok:#4fae5d;--mut:#a39475;--run:#e0a53c;--cross:#6fb4e0;--bad:#ff8a80}}
+:root[data-theme="dark"]{--bg:#1d1812;--ink:#efe4cc;--card:#2a231a;--line:#51442f;--acc:#e0705a;--ok:#4fae5d;--mut:#a39475;--run:#e0a53c;--cross:#6fb4e0;--bad:#ff8a80}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding:10px 16px}
+h1{margin:0 0 6px;font-size:20px}
+.tabs,.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar{margin-top:8px}
+button,select,input,textarea{font:inherit;color:var(--ink)}
+.tab{padding:6px 12px;border:2px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer;font-weight:600}
+.tab.on{border-color:var(--acc);background:var(--acc);color:#fff}
+.meter{display:flex;height:14px;width:min(420px,100%);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%}
+.sum{font-size:13px}.sum b.c{color:var(--cross)}.sum b.r{color:var(--run)}
+.bar label{font-size:13px;display:flex;gap:4px;align-items:center}
+.bar select,.bar input[type=search]{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+main{padding:12px 16px 80px;max-width:1100px;margin:0 auto}
+h2{font-size:16px;margin:20px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.row{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px}
+.row img,.row .ph{width:64px;height:96px;object-fit:cover;border-radius:6px;background:#0002;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--mut)}
+.nm{font-weight:700}.mt{font-size:12px;color:var(--mut)}
+.tx{margin-top:4px}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;color:#fff;margin-right:6px;vertical-align:1px}
+.b-cross{background:var(--cross)}.b-run{background:var(--run)}.b-bad{background:var(--bad)}.b-free{background:var(--ok)}
+.rar{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid #0006;margin-right:4px}
+.r-common{background:#bbb}.r-uncommon{background:#4caf50}.r-rare{background:#3b82f6}.r-legendary{background:#f5a623}
+.edit{padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer}
+.ed{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.ed .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ed select,.ed input,.ed textarea{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.ed input[type=number]{width:90px}
+.ed label{display:flex;gap:6px;align-items:center;max-width:100%;min-width:0}
+.ed select{max-width:100%;min-width:0}
+.ed .line:first-child label{flex:1}.ed .line:first-child select{flex:1;width:100%}
+.ed textarea{width:100%;min-height:44px;resize:vertical}
+.st{font-size:13px}.st.ok{color:var(--ok)}.st.no{color:var(--bad)}
+.pri{background:var(--ok);color:#fff;border:1px solid var(--ok);border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:600}
+.pri:disabled{opacity:.45;cursor:default}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+.note{font-size:12px;color:var(--mut)}
+.req{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1}
+@media(max-width:600px){.row{grid-template-columns:48px 1fr}.row img,.row .ph{width:48px;height:72px}.row>.edit{grid-column:1/-1}}
+</style></head>
+<body>
+<header>
+ <h1>Desafios que liberam cartas</h1>
+ <div class="tabs" id="tabs"></div>
+ <div class="bar">
+  <div class="meter" id="meter"></div>
+  <span class="sum" id="sum"></span>
+ </div>
+ <div class="bar">
+  <label>Tipo <select id="fk"><option value="">todos</option><option value="cross">entre runs</option><option value="run">numa run</option></select></label>
+  <label><input type="checkbox" id="ffree"> mostrar cartas já liberadas</label>
+  <input type="search" id="fq" placeholder="buscar carta ou texto">
+ </div>
+</header>
+<main id="main"></main>
+<div class="toast" id="toast"></div>
+<script>
+// Modelos: {n} {m} {r} {s} = números; {plays} {peak} {died} {win} = listas de famílias.
+const FAM = {
+ plays: ["monstros","estruturas","Feras","feitiços","feitiços de Fogo","feitiços de Sombra","cartas de Bando","cartas Temporárias","cartas"],
+ peak: ["monstros seus","monstros de Fogo","ratos","morcegos","esqueletos","mortos-vivos","estruturas","bichos de Bando"],
+ died: ["ratos","dos seus monstros"],
+ win: ["cartas","feitiços","feitiços de Sombra"],
+};
+const MODELS = [
+ ["Entre runs", [
+  "Jogue {n} {plays} no total",
+  "Faça {n} {died} morrerem no total",
+  "Derrote {n} heróis no total",
+  "Vença {n} fases com este vilão",
+  "Ganhe {n} de ouro no total",
+  "Gaste {n} de ouro no total",
+  "Gaste {n} de Elixir no total",
+  "Mantenha o herói Encharcado por {n} segundos no total",
+  "Queime o herói por {n} segundos no total",
+  "Faça o herói parar nas Moedas Malditas {n} vezes no total",
+  "Tenha {n} {peak} em campo ao mesmo tempo em {r} fases diferentes",
+  "Jogue {n} {plays} numa mesma fase, em {r} fases diferentes",
+  "Jogue {n} {win} em {s} segundos em {r} fases diferentes",
+  "Vença {r} fases sem jogar estruturas",
+  "Termine {r} fases com {n} de ouro",
+  "Tenha {n} de Elixir máximo em {r} fases diferentes",
+ ]],
+ ["Numa run", [
+  "Tenha {n} {peak} em campo ao mesmo tempo",
+  "Tenha {n} Feras e {m} ratos em campo ao mesmo tempo",
+  "Tenha {n} bichos de Bando em campo ao jogar um feitiço",
+  "Jogue {n} {plays} numa mesma fase",
+  "Jogue {n} {win} em {s} segundos",
+  "Use a mesma carta de monstro {n} vezes numa mesma fase",
+  "Cause {n} de dano ao herói em menos de {s} segundos",
+  "Encharque o herói e incendeie-o em até {s} segundos",
+  "Aplique {n} acúmulos de Peste no herói ao mesmo tempo",
+  "Aplique {n} Maldições no herói numa mesma fase",
+  "Acerte o herói com {n} feitiços diferentes numa mesma fase",
+  "Faça {n} {died} morrerem numa mesma fase",
+  "Termine uma fase com {n} de ouro",
+  "Tenha {n} de Elixir máximo",
+  "Vença a primeira fase",
+  "Vença a segunda fase",
+  "Vença uma fase sem jogar estruturas",
+  "Vença uma fase jogando só {n} feitiços",
+  "Derrote um herói perdendo no máximo {n} monstros",
+  "Derrote o herói sem perder nenhum monstro",
+ ]],
+];
+const NUMLBL = {n: "número", m: "ratos", r: "fases", s: "segundos"};
+let D = null, tab = "all", open = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),3500)}
+function prefs(){try{const p=JSON.parse(localStorage.getItem("desafios")||"{}");tab=p.tab||"all";$("#fk").value=p.fk||"";$("#ffree").checked=!!p.free}catch(e){}}
+function savePrefs(){try{localStorage.setItem("desafios",JSON.stringify({tab,fk:$("#fk").value,free:$("#ffree").checked}))}catch(e){}}
+async function api(p, body){const r=await fetch(p,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});return r.json()}
+async function load(){D=await api("/api/data");render()}
+function group(r){return r.owner==="common"?"common":r.owner}
+function kindOf(r){if(r.state!=="L")return "free";if(!r.info||!r.info.ok)return "bad";return r.info.cross?"cross":"run"}
+
+function render(){
+ const tabs=[["all","Todas"],["plague",D.names.plague],["dragon",D.names.dragon],["lich",D.names.lich],["common","Comuns"]];
+ $("#tabs").innerHTML=tabs.map(([k,n])=>`<button class="tab ${k===tab?"on":""}" data-t="${k}">${esc(n)}</button>`).join("");
+ const scope=D.rows.filter(r=>r.state==="L"&&(tab==="all"||group(r)===tab));
+ const c=scope.filter(r=>kindOf(r)==="cross").length, u=scope.filter(r=>kindOf(r)==="run").length, b=scope.length-c-u;
+ const pc=scope.length?Math.round(100*c/scope.length):0;
+ $("#meter").innerHTML=`<i style="width:${scope.length?100*c/scope.length:0}%;background:var(--cross)"></i><i style="width:${scope.length?100*u/scope.length:0}%;background:var(--run)"></i><i style="width:${scope.length?100*b/scope.length:0}%;background:var(--bad)"></i>`;
+ $("#sum").innerHTML=`<b class="c">${c} entre runs (${pc}%)</b> · <b class="r">${u} numa run (${scope.length?100-pc-Math.round(100*b/scope.length):0}%)</b>${b?` · ${b} sem entender`:""} · meta: 75% / 25%`;
+ const fk=$("#fk").value, q=$("#fq").value.trim().toLowerCase(), showFree=$("#ffree").checked;
+ const rows=D.rows.filter(r=>(tab==="all"||group(r)===tab)&&(showFree||r.state==="L")&&(!fk||kindOf(r)===fk)
+   &&(!q||(r.name+" "+r.id+" "+r.text).toLowerCase().includes(q)));
+ const order=["plague","dragon","lich","common"];
+ let h="";
+ for(const g of order){
+  const rs=rows.filter(r=>group(r)===g); if(!rs.length) continue;
+  h+=`<h2>${esc(D.names[g])} <span class="note">(${rs.length})</span></h2>`;
+  for(const r of rs) h+=rowHtml(r);
+ }
+ if(D.requests.length){
+  h+=`<h2>Pedidos para o Claude implementar</h2>`;
+  h+=D.requests.map((p,i)=>`<div class="req"><div><b>${esc(p.id)}</b>: ${esc(p.texto)}${p.nota?` <span class="note">— ${esc(p.nota)}</span>`:""} <span class="note">${esc(p.quando)}${p.feito?" · feito":""}</span></div><button class="sec" data-del="${i}">apagar</button></div>`).join("");
+ }
+ $("#main").innerHTML=h||`<p class="note">Nenhuma carta com esse filtro.</p>`;
+ if(open) mountEditor(open);
+}
+function rowHtml(r){
+ const k=kindOf(r);
+ const badge={cross:'<span class="badge b-cross">entre runs</span>',run:'<span class="badge b-run">numa run</span>',bad:'<span class="badge b-bad">o jogo não entende</span>',free:`<span class="badge b-free">${r.state==="B"?"deck base":"liberada"}</span>`}[k];
+ const img=r.art?`<img src="/art/${esc(r.id)}.png" alt="" loading="lazy">`:`<div class="ph">sem arte</div>`;
+ const vil=r.owner==="common"?"comum aos 3 vilões":esc(D.names[r.owner]||r.owner);
+ return `<div class="row" id="r-${esc(r.id)}">${img}<div><div class="nm"><span class="rar r-${esc(r.rarity)}"></span>${esc(r.name)} <span class="mt">${esc(r.id)} · ${esc(r.rarity)} · ${vil}</span></div>
+  <div class="tx">${badge}${r.state==="L"?esc(r.text):'<span class="note">sem desafio</span>'}</div></div>
+  ${r.state==="L"?`<button class="edit" data-e="${esc(r.id)}">${open===r.id?"Fechar":"Reescrever"}</button>`:"<span></span>"}</div>`;
+}
+function fill(tpl, vals){return tpl.replace(/\{(\w+)\}/g,(m,k)=>vals[k]!==undefined&&vals[k]!==""?vals[k]:m)}
+function mountEditor(id){
+ const row=document.getElementById("r-"+id); if(!row) return;
+ const r=D.rows.find(x=>x.id===id);
+ const opts=MODELS.map(([g,l])=>`<optgroup label="${g}">${l.map(t=>`<option>${esc(t)}</option>`).join("")}</optgroup>`).join("");
+ const ed=document.createElement("div"); ed.className="ed";
+ ed.innerHTML=`<div class="line"><label>Modelo <select class="mdl"><option value="">— escolher um modelo —</option>${opts}</select></label></div>
+  <div class="line fields"></div>
+  <textarea class="txt" spellcheck="false">${esc(r.text)}</textarea>
+  <div class="line"><span class="st"></span></div>
+  <div class="line"><button class="pri sv">Salvar no jogo</button><button class="sec rq">Salvar como pedido</button><input class="nt" placeholder="nota para o pedido (opcional)" style="flex:1;min-width:160px"></div>
+  <div class="note">Salvar no jogo grava tools/desbloqueios.json e regenera data/unlocks.json e os textos. O progresso salvo das runs continua valendo. Um pedido não muda o jogo: fica na lista abaixo para o Claude implementar.</div>`;
+ row.appendChild(ed);
+ const txt=ed.querySelector(".txt"), st=ed.querySelector(".st"), sv=ed.querySelector(".sv"), fields=ed.querySelector(".fields");
+ let t0;
+ const check=()=>{clearTimeout(t0);t0=setTimeout(async()=>{const i=await api("/api/parse",{text:txt.value.trim()});
+   st.className="st "+(i.ok?"ok":"no");
+   st.textContent=i.ok?`✓ o jogo entende: ${i.cross?"entre runs":"numa run"} — “${i.en}”`:"✗ o jogo ainda não entende esse texto (use um modelo, ou salve como pedido)";
+   sv.disabled=!i.ok||txt.value.trim()===r.text},200)};
+ txt.addEventListener("input",check); check();
+ ed.querySelector(".mdl").addEventListener("change",e=>{
+  const tpl=e.target.value; fields.innerHTML=""; if(!tpl) return;
+  const keys=[...new Set([...tpl.matchAll(/\{(\w+)\}/g)].map(m=>m[1]))];
+  for(const k of keys){
+   const w=document.createElement("label");
+   if(FAM[k]){w.innerHTML=`${k==="died"?"quem":"o quê"} <select data-k="${k}">${FAM[k].map(f=>`<option>${esc(f)}</option>`).join("")}</select>`}
+   else{w.innerHTML=`${NUMLBL[k]||k} <input type="number" min="1" data-k="${k}" value="${k==="r"?3:k==="s"?20:10}">`}
+   fields.appendChild(w);
+  }
+  const upd=()=>{const v={};fields.querySelectorAll("[data-k]").forEach(x=>v[x.dataset.k]=x.value);txt.value=fill(tpl,v);check()};
+  fields.querySelectorAll("[data-k]").forEach(x=>x.addEventListener("input",upd)); upd();
+ });
+ sv.addEventListener("click",async()=>{sv.disabled=true;const res=await api("/api/save",{id,text:txt.value.trim()});
+  if(res.ok){toast("Salvo no jogo: "+res.msg);open=null;await load()}else{toast(res.error);sv.disabled=false}});
+ ed.querySelector(".rq").addEventListener("click",async()=>{if(!txt.value.trim())return;
+  const res=await api("/api/request",{id,text:txt.value.trim(),note:ed.querySelector(".nt").value});D.requests=res.requests;toast("Pedido guardado");render()});
+}
+document.addEventListener("click",async e=>{
+ const t=e.target.closest("[data-t]"); if(t){tab=t.dataset.t;open=null;savePrefs();render();return}
+ const ed=e.target.closest("[data-e]"); if(ed){open=open===ed.dataset.e?null:ed.dataset.e;render();return}
+ const dl=e.target.closest("[data-del]"); if(dl){const res=await api("/api/request_delete",{index:+dl.dataset.del});D.requests=res.requests;render()}
+});
+["#fk","#ffree"].forEach(s=>$(s).addEventListener("change",()=>{savePrefs();render()}));
+$("#fq").addEventListener("input",render);
+prefs(); load();
+</script>
+</body></html>

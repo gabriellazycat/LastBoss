@@ -72,30 +72,26 @@ def main():
         vil = load("data/villains.json")
         camp = load("data/campaign.json")
         print(f"\n== ciclo {cyc + 1}")
+        # 15/11/2026: o jogo só lê o hp_mult/damage_mult DA FASE (campaign.json); a vida por vilão (villains.json
+        # rules.hero_hp_mult) e villain_hp não são lidos pelo Sim. O botão é um só por fase e usa a média dos vilões;
+        # a diferença entre vilões se corrige nas cartas/regras do vilão, não aqui.
         for ph in phases:
             line = []
+            ws = []
             for p in pacts:
                 lb = p if ph == 1 else f"{p}@{ph}"
                 rs = [r for r in runs if r["deck"] == lb]
                 w = sum(run_batch.is_win(r) for r in rs) / max(1, len(rs))
+                ws.append(w)
                 to = sum(r["result"] == "timeout" for r in rs)
-                f = factor(w, TARGET[ph], k=1.0 / SLOPE, cap=0.3, tol=0.02) if a.slope else factor(w, TARGET[ph])
-                if ph == 1:
-                    for d in vil["villains"]:
-                        if d["id"] == p:
-                            d["rules"]["hero_hp_mult"] = round(float(d["rules"].get("hero_hp_mult", 1.0)) * f, 3)
-                            nv = d["rules"]["hero_hp_mult"]
-                else:
-                    for phd in camp["phases"]:
-                        if int(phd["id"]) == ph:
-                            ph_hp = phd.setdefault("villain_hp", {})
-                            ph_hp[p] = round(float(ph_hp.get(p, 1.0)) * f, 3)
-                            nv = ph_hp[p]
-                if nv < 0.55 or nv > 1.6:
-                    print(f"  ATENÇÃO {lb}: botão em {nv} (fora de 0.55-1.6): problema de estrutura, não de número")
-                line.append(f"{p}={w:.0%}{'(' + str(to) + 'to)' if to else ''}->{nv}")
-            print(f"fase {ph} (meta {TARGET[ph]:.0%}): " + "  ".join(line))
-        save("data/villains.json", vil)
+                line.append(f"{p}={w:.0%}{'(' + str(to) + 'to)' if to else ''}")
+            m = sum(ws) / len(ws)
+            f = factor(m, TARGET[ph], k=1.0 / SLOPE, cap=0.3, tol=0.02) if a.slope else factor(m, TARGET[ph])
+            for phd in camp["phases"]:
+                if int(phd["id"]) == ph:
+                    phd["hp_mult"] = round(float(phd.get("hp_mult", 1.0)) * f, 3)
+                    nv = phd["hp_mult"]
+            print(f"fase {ph} (meta {TARGET[ph]:.0%}, média {m:.0%}): " + "  ".join(line) + f"  -> hp_mult {nv}")
         save("data/campaign.json", camp)
 
 

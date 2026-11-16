@@ -62,11 +62,66 @@ static func hero() -> int:
 
 ## Malha do look (ou null se não existir: aí vale a arte antiga).
 static func mesh(look: int, id: String) -> Mesh:
+	if look == 7 and g_on():
+		var gm := g_mesh(id)
+		if gm:
+			return gm
 	var key := "%d/%s" % [look, id]
 	if not _mesh.has(key):
 		var p := "res://assets/models/%s/%s.res" % [DIRS.get(look, "look%d" % look), id]
 		_mesh[key] = load(p) if ResourceLoader.exists(p) else null
 	return _mesh[key]
+
+
+# ---------------------------------------------------------------- miniaturas pintadas (Settings "model_g")
+# 1..7 = V1..V7: [geometria (n normal, c gorducha, f facetada), tratamento]. V1 = cor por vértice (controle).
+const G_SETS := {1: ["n", "vc"], 2: ["n", "dabs"], 3: ["n", "wash"], 4: ["n", "dry"], 5: ["n", "flat"], 6: ["c", "dabs"], 7: ["f", "dabs"]}
+
+
+const G_NAMES := ["Desligado (modelos v2)", "V1 · Cor por vértice", "V2 · Dabs", "V3 · Aguado", "V4 · Pincel seco",
+	"V5 · Chapado + contorno", "V6 · Gordinha", "V7 · Facetada"]
+
+
+static func g_on() -> bool:
+	return int(Settings.v.get("model_g", 0)) > 0
+
+
+## Malha da versão escolhida (ou null se o id não faz parte da amostra). Leva o atlas em meta "gtex".
+static func g_mesh(id: String) -> Mesh:
+	var sel: Array = G_SETS.get(int(Settings.v.get("model_g", 0)), [])
+	if sel.is_empty():
+		return null
+	var key := "g/%d/%s" % [int(Settings.v.get("model_g", 0)), id]
+	if _mesh.has(key):
+		return _mesh[key]
+	var geom: String = sel[0]
+	var tex: String = sel[1]
+	var sfx := "" if tex == "vc" else "_a"
+	var p := "res://assets/models/g_%s%s/%s.res" % [geom, sfx, id]
+	if not ResourceLoader.exists(p):
+		geom = "n"
+		p = "res://assets/models/g_n%s/%s.res" % [sfx, id]
+	var m: Mesh = load(p) if ResourceLoader.exists(p) else null
+	if m and tex != "vc":
+		var tp := "res://assets/models/g_tex/%s_%s/%s.png" % [tex, geom, id]
+		if m.has_meta("gtex") == false and ResourceLoader.exists(tp):
+			m.set_meta("gtex", load(tp))
+		m.set_meta("gink", 0.85 if tex == "flat" else 0.0)
+	_mesh[key] = m
+	return m
+
+
+## Material de uma malha com atlas (a base, se não tiver: parâmetros como o vento ficam).
+static func g_material(m: Mesh, base: Material = null) -> Material:
+	if m == null or not m.has_meta("gtex"):
+		return base
+	var mat := material(5, 0.0, false, m)
+	if base is ShaderMaterial and (base as ShaderMaterial).shader == mat.shader:
+		for k in ["sway", "emission_boost"]:
+			var pv = (base as ShaderMaterial).get_shader_parameter(k)
+			if pv != null:
+				mat.set_shader_parameter(k, pv)
+	return mat
 
 
 static func shader(look: int) -> Shader:
@@ -97,6 +152,11 @@ static func material(look: int, emit := 0.0, multimesh := false, src: Mesh = nul
 	if src and src.has_meta("tex"):
 		m.set_shader_parameter("use_tex", true)
 		m.set_shader_parameter("albedo_tex", src.get_meta("tex"))
+	if src and src.has_meta("gtex"):
+		m.set_shader_parameter("use_tex", true)
+		m.set_shader_parameter("albedo_tex", src.get_meta("gtex"))
+		m.set_shader_parameter("atlas", true)
+		m.set_shader_parameter("ink", float(src.get_meta("gink", 0.0)))
 	return m
 
 
@@ -181,4 +241,10 @@ static func hero_material(emit: float) -> ShaderMaterial:
 ## Herói com esqueleto do look escolhido (ou null: as peças de sempre).
 static func hero_rig(mat: Material, cls := "escudeiro") -> HeroRig:
 	var lk := hero()
-	return HeroRig.make(lk, mat, cls) if HeroRig.has_rig(lk) else null
+	if not HeroRig.has_rig(lk):
+		return null
+	if g_on():
+		var gm := g_mesh(cls)  # só Escudeiro e Mago foram refeitos; as outras classes seguem com o KayKit
+		if gm and gm.has_meta("vat"):
+			return HeroVat.make_vat(gm, cls)
+	return HeroRig.make(lk, mat, cls)

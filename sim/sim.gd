@@ -32,6 +32,8 @@ var helper: SimHero = null         # Herói Ajudante em disputa (11/11/2026): pa
 var revived: Array = []            # índices da fila já levantados uma vez
 var hit_hero: SimHero = null       # herói que a unidade da vez acerta (null = o da vez)
 var group_falls := 0
+var party_of: Array = []            # número da party de cada herói da fila (parties de 1 a 4, 15/11/2026)
+var cur_party := 0                  # party em campo
 var road := SimRoad.new()
 var arena := SimArena.new()
 var zones: Array = []
@@ -115,11 +117,11 @@ var relic_max_gain := 0.0       # Marca da Vitória e Cofre Vivo: elixir máximo
 var victory_gain := 0.0         # parte da Marca da Vitória (teto contest_max_cap)
 var vault_gain := 0.0           # parte do Cofre Vivo (teto shop_max_cap)
 var vault_spent := 0.0          # ouro gasto na loja ainda não convertido pelo Cofre Vivo
-var gambit_hero := -1           # Abertura: herói (pidx) contra quem a 1ª carta grátis já saiu
+var tally_plays := 0            # Talha de Contagem: cartas jogadas desde a última grátis
+var chain_times: Array = []     # Anel Encadeado: instantes das últimas cartas jogadas
+var gambit_hero := -1          # Abertura: herói (pidx) contra quem a 1ª carta grátis já saiu
 var phyl_hero := -1             # Filactério: herói (pidx) em que a volta já foi usada
 var slow_hero := -1             # Piche: herói (pidx) mais lento até cair (-1 = nenhum)
-var contract: Dictionary = {}
-var contract_next := 0.0
 var last_teleport_t := -100.0
 var ritual_mult := 1.0
 ## Efeitos Temporários em andamento (C4: as antigas cartas de Covil): {"kind", "v", "until", "src"}.
@@ -133,6 +135,8 @@ var _elixir_act_seen := -1
 var cstate: Dictionary = {}
 var harvest_deaths := 0         # Lich (Colheita): mortes de criaturas suas desde o último feitiço grátis
 var harvest_free := false       # Lich: o próximo feitiço custa 0
+var cycle_spell := false        # Lich (Ciclo de feitiço): uma criatura sua morreu, o próximo feitiço custa 1 a menos
+var cycle_mon := false          # Lich (Ciclo de feitiço): um feitiço saiu, a próxima criatura custa 1 a menos
 var act_elixir_bonus := 0.0     # eventos: elixir máximo a mais até o fim do ato (Altar Profano)
 var tax_cards := 0              # eventos: quantas das próximas cartas custam `tax_add` a mais
 var tax_add := 0
@@ -149,10 +153,21 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	R = d.rules
 	campaign_phase = phase_n
 	phase_cfg = d.phase(phase_n)
-	party = phase_cfg.get("party", []).duplicate()
-	if party.is_empty():
+	# Fila de parties (15/11/2026): "parties" = lista de grupos de 1 a 4 heróis que entram juntos. Sem ela, cada
+	# herói de "party" é uma party sozinha (comportamento antigo).
+	party = []
+	party_of = []
+	var groups: Array = phase_cfg.get("parties", [])
+	if groups.is_empty():
+		for c in phase_cfg.get("party", []):
+			groups.append([c])
+	if groups.is_empty():
 		for k in int(R["party"]["size"]):
-			party.append("escudeiro")
+			groups.append(["escudeiro"])
+	for gi in groups.size():
+		for c in groups[gi]:
+			party.append(str(c))
+			party_of.append(gi)
 	phase_hp_mult = float(phase_cfg.get("hp_mult", 1.0))
 	phase_dmg_mult = float(phase_cfg.get("damage_mult", 1.0))
 	run_seed = seed_
@@ -166,6 +181,12 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	deck_rules = dk["rules"]
 	gold = float(deck_rules.get("start_gold", 0.0))
 	hero.setup(self)
+	# A primeira party já entra inteira: os outros membros andam junto do primeiro.
+	var first: Array = party_members(0)
+	for k in range(1, first.size()):
+		var nf := SimHero.new()
+		nf.init_follower(self, int(first[k]), hero, 1.0)
+		followers.append(nf)
 	hand_size = int(deck_rules.get("hand_size", R["hand_size"]))
 	elixir = float(deck_rules.get("elixir_start", R["elixir"]["start"]))
 	act_elixir_base = float(R["elixir"]["max"])
@@ -174,7 +195,7 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	stats = {"seed": run_seed, "deck": deck_id, "result": "none", "t_end": 0.0, "arena_t": -1.0,
 		"heroes_fallen": 0, "hero_level_arena": 0, "player_level_arena": 0, "hero_level": 1, "player_level": 1,
 		"waste_s": 0.0, "offered": {}, "picked": {}, "played": {}, "dmg_by_card": {}, "deck_final": [],
-		"upgrades": [], "shrines_won": 0, "shrines_lost": 0, "contracts_ok": 0, "contracts_fail": 0,
+		"upgrades": [], "shrines_won": 0, "shrines_lost": 0,
 		"parts_lost": 0, "kills": 0, "units_peak": 0, "teleports": 0, "shield_breaks": 0,
 		"route_len": 0.0, "hero_hp_arena": 0.0, "locs_visited": 0, "locs_won": 0, "locs_lost": 0,
 		"skipped": 0, "card_levels": 0, "gold_earned": 0.0, "gold_spent": 0, "shop_buys": 0, "route": {},
@@ -191,8 +212,6 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	for id in list:
 		queue.append(_new_inst(d.card(id)))
 	_refill_hand()
-	var fa: Array = R["contracts"]["first_at"]
-	contract_next = rng.randf_range(fa[0], fa[1])
 
 
 func acts() -> int:
@@ -205,6 +224,40 @@ func party_size() -> int:
 
 func party_class(i: int) -> String:
 	return str(party[clampi(i, 0, party.size() - 1)]) if party.size() > 0 else "escudeiro"
+
+
+## Quantas parties tem a fila.
+func party_count() -> int:
+	return (int(party_of[party_of.size() - 1]) + 1) if party_of.size() > 0 else 1
+
+
+## Número (0 a count-1) da party do herói i da fila.
+func party_number(i: int) -> int:
+	return int(party_of[clampi(i, 0, party_of.size() - 1)]) if party_of.size() > 0 else i
+
+
+## Índices (na fila) dos heróis da party p.
+func party_members(p: int) -> Array:
+	var out: Array = []
+	for i in party_of.size():
+		if int(party_of[i]) == p:
+			out.append(i)
+	return out
+
+
+## Tamanho da party do herói i.
+func party_n_of(i: int) -> int:
+	return maxi(1, party_members(party_number(i)).size())
+
+
+## Alguma party tem mais de um herói: os membros andam juntos e as quedas contam uma a uma.
+func party_mode() -> bool:
+	return party.size() > party_count()
+
+
+## Quantos heróis já caíram (qualquer modo).
+func fallen_count() -> int:
+	return group_falls if (party_mode() or group_mode()) else party_idx
 
 
 func _act_cfg(k: int) -> Dictionary:
@@ -245,11 +298,20 @@ func step() -> void:
 	_tick_draws()
 	_meter()
 	_temps()
+	_release_held()
 	_elixir()
 	hero.update(dt)
 	for f in followers:
 		f.update(dt)
 		_follow(f)
+	if helper != null:
+		# Herói Ajudante (15/11/2026): até aqui ele nunca era atualizado (ficava parado e não batia).
+		# Espera ao lado do herói da vez, vai nos monstros que chegam perto e a coleira de _follow o traz de volta.
+		var ha := float(helper.pidx) * 2.4
+		helper.hold_x = hero.x + cos(ha) * 3.6
+		helper.hold_y = hero.y + sin(ha) * 3.6
+		helper.update(dt)
+		_follow(helper)
 	if tick % 4 == 0:
 		units.apply_auras()
 	units.update(dt)
@@ -268,7 +330,6 @@ func step() -> void:
 		_road()
 	elif phase == K.Phase.ARENA:
 		arena.update(dt)
-	_contract()
 	_check_end()
 
 
@@ -348,6 +409,7 @@ func temp_sum(kind: String) -> float:
 
 ## Começa um efeito Temporário (op "temp" de CardFxLib).
 func add_temp(kind: String, v: float, duration: float, src: String) -> void:
+	note_linger(t + duration)
 	temps.append({"kind": kind, "v": v, "until": t + duration, "src": src})
 	match kind:
 		"hand":
@@ -355,6 +417,43 @@ func add_temp(kind: String, v: float, duration: float, src: String) -> void:
 			_refill_hand()
 		"elixir_max":
 			recalc_elixir_max()
+
+
+## Cartas em vigor (16/11/2026): a carta jogada com efeito temporário (op temp/buff) sai da mão mas só vai ao descarte
+## quando o efeito acaba. `held` guarda só {uid, from, until} (o save é de variáveis simples); a carta vem de `cards`.
+var held: Array = []
+var _linger_until := 0.0   # maior fim de efeito visto durante a carta que está sendo aplicada
+
+
+func note_linger(until: float) -> void:
+	_linger_until = maxf(_linger_until, until)
+
+
+func held_card(e: Dictionary) -> CardInst:
+	for ci in cards:
+		if ci.uid == int(e["uid"]):
+			return ci
+	return null
+
+
+## Depois de aplicar a carta: se o efeito dura, tira do descarte e segura até `until`.
+func _hold_if_lingering(c: CardInst, t0: float) -> void:
+	if _linger_until <= t + 0.05 or discard.is_empty() or discard.back() != c:
+		return
+	discard.pop_back()
+	held.append({"uid": c.uid, "from": t, "until": _linger_until})
+
+
+## Cartas em vigor que acabaram voltam ao descarte (ou à compra, se "retornam").
+func _release_held() -> void:
+	var i := held.size() - 1
+	while i >= 0:
+		if t >= float(held[i]["until"]):
+			var c := held_card(held[i])
+			held.remove_at(i)
+			if c != null:
+				_to_discard(c)
+		i -= 1
 
 
 ## Temporários que acabaram: a mão extra só deixa de ser reposta (nenhuma carta é expulsa); o elixir acima do
@@ -451,7 +550,10 @@ func _arrive(li: int) -> void:
 	match ty:
 		"shop":
 			loc["state"] = SimRoad.LocState.USED
-			_open_shop()
+			if float(deck_rules.get("shop_gold", 0.0)) > 0.0:
+				_dragon_shop()
+			else:
+				_open_shop()
 			return
 		"event":
 			loc["state"] = SimRoad.LocState.USED
@@ -591,8 +693,6 @@ func _contest_tick() -> void:
 	match str(contest["type"]):
 		"ritual":
 			ritual_mult = float(P["elixir_mult"])
-			if contract.size() > 0 and contract["goal"]["kind"] == "ritual_time":
-				contract["progress"] += dt
 			if var_ == "expel":
 				_expel(p, float(contest["r"]), float(P["expel_s"]))
 		"shrine":
@@ -860,10 +960,6 @@ func _end_act() -> void:
 			if units.alive[i] == 1:
 				kill_unit(i, K.Death.EXPIRE)
 		zones.clear()
-		if contract.size() > 0:
-			stats["contracts_fail"] += 1
-			emit(K.Ev.CONTRACT, hero.x, hero.y, -1, 0)
-			contract = {}
 	emit(K.Ev.ACT_END, hero.x, hero.y, act, 0)
 	_offer_act_card()
 	offer_relic_choice("act")
@@ -897,8 +993,6 @@ func _next_act() -> void:
 	hero.face_x = 0.0
 	hero.face_y = -1.0
 	regroup()
-	var fa: Array = R["contracts"]["first_at"]
-	contract_next = t + rng.randf_range(fa[0], fa[1])
 	emit(K.Ev.ACT_START, p0.x, p0.y, act, 0)
 
 
@@ -987,7 +1081,7 @@ func _relic_pool() -> Array:
 	return pool
 
 
-## Relíquia, contrato ou evento deste vilão ou comum.
+## Relíquia ou evento deste vilão ou comum.
 func _owner_ok(x: Dictionary) -> bool:
 	var o := str(x.get("owner", "common"))
 	return o == "common" or o == deck_id
@@ -1038,7 +1132,8 @@ func _offer_relics(source := "act") -> void:
 		pool = by[best]
 		if source == "act":
 			# Uma oferta de fim de ato sempre traz relíquia de elixir (13/11/2026), na raridade sorteada.
-			var elx: Array = pool.filter(func(rid): return data.relics[rid]["fx"].has("elixir_max") or data.relics[rid]["fx"].has("elixir_regen"))
+			# Só as que DÃO elixir (15/11/2026): Grimório Pesado, Mão do Enforcado e Lasca de Gelo tiram e não contam.
+			var elx: Array = pool.filter(func(rid): return float(data.relics[rid]["fx"].get("elixir_max", 0.0)) > 0.0 or float(data.relics[rid]["fx"].get("elixir_regen", 0.0)) > 0.0)
 			if elx.size() > 0:
 				var pick := _pick_relic(elx)
 				pool.erase(pick)
@@ -1102,6 +1197,8 @@ func _offer_event() -> void:
 	if pool.is_empty():
 		return
 	var id: String = pool[rng.randi_range(0, pool.size() - 1)]
+	if force_event != "" and data.events_def.has(force_event):
+		id = force_event
 	events_seen.append(id)
 	var opts: Array = []
 	var ev: Dictionary = data.events_def[id]
@@ -1187,6 +1284,9 @@ func _check_end() -> void:
 	if group_mode():
 		_group_check()
 		return
+	if party_mode():
+		_party_check()
+		return
 	if hero.hp <= 0.0:
 		if party_idx < party_size() - 1:
 			_hero_fell()
@@ -1242,6 +1342,74 @@ func _group_check() -> void:
 	else:
 		stats["heroes_fallen"] = group_falls
 		_finish(K.Result.WIN_EARLY if phase == K.Phase.ROAD else K.Result.WIN)
+
+
+## Fila de parties (15/11/2026): os membros da party andam juntos; cada um que cai conta como uma queda
+## (recompensa e habilidade nova para quem ficou). Quando o último cai, a party seguinte chega inteira.
+func _party_check() -> void:
+	var k := followers.size() - 1
+	while k >= 0:
+		var f: SimHero = followers[k]
+		if f.hp <= 0.0:
+			followers.remove_at(k)
+			_member_down(f.pidx, f.x, f.y, 1)
+		k -= 1
+	if hero.hp <= 0.0:
+		if followers.size() > 0:
+			# O líder caiu: o membro seguinte assume o lugar dele, com a vida que tinha.
+			var fx := hero.x
+			var fy := hero.y
+			var fp := hero.pidx
+			var f: SimHero = followers.pop_front()
+			hero.take_over(f)
+			_member_down(fp, fx, fy, 0)
+		elif cur_party < party_count() - 1:
+			_hero_fell()   # party inteira no chão: chega a seguinte (inclui a recompensa da última queda)
+		else:
+			group_falls += 1
+			stats["heroes_fallen"] = group_falls
+			emit(K.Ev.HERO_FALL, hero.x, hero.y, group_falls, 0)
+			_finish(K.Result.WIN_EARLY if phase == K.Phase.ROAD else K.Result.WIN)
+	elif t >= float(R["sim"]["max_run_seconds"]):
+		_finish(K.Result.TIMEOUT)
+
+
+## Um membro da party caiu e ainda sobra gente: conta a queda, a bênção da Clériga vai para a party seguinte
+## e quem ficou aprende uma habilidade e escolhe uma recompensa.
+func _member_down(pidx_: int, x_: float, y_: float, e: int) -> void:
+	track.on_hero_fall(self)
+	group_falls += 1
+	stats["heroes_fallen"] = group_falls
+	if pidx_ == slow_hero:
+		slow_hero = -1
+	var cls_ := party_class(pidx_)
+	var bless: float = float(data.hero_classes.get(cls_, {}).get("bless_next", 0.0))
+	if bless > 0.0:
+		next_hp_mult *= 1.0 + bless
+	emit(K.Ev.HERO_FALL, x_, y_, group_falls, e)
+	_learn_ability()
+	emit(K.Ev.HERO_LEVEL, hero.x, hero.y, hero.level, 0)
+	_offer_level()
+	if rv("fall_mod_offer") > 0.0:
+		var mo: Array = []
+		var ex: Array = []
+		for j in int(R["offers"]["options"]):
+			var m := _mod_option(ex)
+			if m.size() > 0:
+				ex.append(str(m["uid"]) + str(m["mod"]))
+				mo.append(m)
+		_push_offer("level", mo)
+
+
+## Habilidade nova do grupo: 3 sorteadas, vale a que melhor responde ao que mais feriu; todos de pé a recebem.
+func _learn_ability() -> void:
+	for extra in (2 if next_extra_ability else 1):
+		var opts := _upgrade_options(3)
+		if opts.size() > 0:
+			var id := hero.choose_upgrade(opts)
+			for hh in [hero] + followers:
+				hh.apply_upgrade(id)
+	next_extra_ability = false
 
 
 func _revive(fallen: SimHero) -> void:
@@ -1308,7 +1476,7 @@ func splash_mult(k: int) -> float:
 
 ## Mais de um herói em campo (fase de grupo ou Herói Ajudante): feitiços de "o mais perto" escolhem o alvo.
 func multi_heroes() -> bool:
-	return group_mode() or helper != null
+	return group_mode() or party_mode() or helper != null
 
 
 ## Todos os heróis de pé (o da vez primeiro).
@@ -1359,7 +1527,7 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 	if real > 0.0:
 		emit(K.Ev.DAMAGE_HERO, hh.x, hh.y, real, tags)
 	if hh == helper:
-		return real   # Herói Ajudante: o dano só conta para a disputa (sem ouro, contrato nem estatística de carta)
+		return real   # Herói Ajudante: o dano só conta para a disputa (sem ouro nem estatística de carta)
 	if contest.size() > 0 and contest["type"] in ["bridge", "fountain"]:
 		var pm := float(R["locations"]["bridge"]["shield_mult"]) if contest.get("variant", "") == "shield" else 1.0
 		contest["progress"] += real * pm
@@ -1367,16 +1535,6 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 	_earn_gold(gain / float(R["gold"]["damage_per_gold"]) * (1.0 + rv("gold")))
 	var dbc: Dictionary = stats["dmg_by_card"]
 	dbc[card_id] = float(dbc.get(card_id, 0.0)) + gain
-	if contract.size() > 0:
-		var g: Dictionary = contract["goal"]
-		match str(g["kind"]):
-			"tag_damage":
-				if tags & int(K.TAG_BY_NAME[g["tag"]]):
-					contract["progress"] += real
-			"damage_no_xp":
-				contract["progress"] += real
-			"burst":
-				contract["window"].append([t, real])
 	return real
 
 
@@ -1390,6 +1548,7 @@ func unit_hits_hero(i: int) -> void:
 	var amount := units.dmg[i] * (1.0 + units.buff[i] + units.rage[i])
 	if (units.tags[i] & K.TAG_PACK) and rv("pack_min") > 0.0 and units.n_pack >= int(rv("pack_min")):
 		amount *= 1.0 + rv("pack_dmg")
+	amount *= 1.0 + rv("unit_dmg")   # Estandarte Rasgado
 	if c.fx.has("pack_bonus"):
 		# Bando: mais forte quanto mais bicho de bando seu há em campo.
 		amount *= 1.0 + minf(float(c.fx.get("pack_cap", 1.0)), float(c.fx["pack_bonus"]) * units.n_pack)
@@ -1494,8 +1653,6 @@ func kill_unit(i: int, cause: int) -> void:
 	CardsPlague.on_unit_death(self, i, cause)
 	CardsDragon.on_unit_death(self, i, cause)
 	CardsLich.on_unit_death(self, i, cause)
-	if cause == K.Death.HERO and contract.size() > 0 and contract["goal"]["kind"] == "damage_no_xp":
-		contract["progress"] = 0.0   # "Sem Testemunhas": causar dano sem perder nenhum monstro
 	if cause == K.Death.HERO or cause == K.Death.SELF:
 		if cause == K.Death.HERO:
 			stats["kills"] += 1
@@ -1507,7 +1664,7 @@ func kill_unit(i: int, cause: int) -> void:
 		_death_in_contest(x, y, c, f)
 	if cause != K.Death.EXPIRE and c.arch != K.Arch.STRUCTURE:
 		_death_payoffs(i, x, y)
-		_villain_on_death(c, x, y)
+		_villain_on_death(c, x, y, f)
 	if cause == K.Death.HERO or cause == K.Death.SELF:
 		if f & K.F_EXPLOSIVE:
 			var M: Dictionary = data.modifiers["explosive"]["p"]
@@ -1562,13 +1719,17 @@ func _death_payoffs(i: int, x: float, y: float) -> void:
 
 ## Morte de um monstro seu (pelo herói ou explodindo): Ritual, Terra Profana e Coroa de Ossos.
 ## Passivas de morte dos vilões: Praga (Infestação) e Lich (Colheita).
-func _villain_on_death(c: CardDef, x: float, y: float) -> void:
+func _villain_on_death(c: CardDef, x: float, y: float, uf := 0) -> void:
 	var inf := float(deck_rules.get("infestation", 0.0))
-	if inf > 0.0 and (c.tags & K.TAG_PACK) and rng.randf() < inf:
-		units.spawn(data.card("rat"), x, y, 0.0, 0.0, 0, 0)
+	# Infestação (15/11/2026): qualquer monstro que morre tem `infestation` de chance de deixar um rato;
+	# o rato deixado pela passiva (F_INFESTED) não gera outro.
+	if inf > 0.0 and not (uf & K.F_INFESTED) and rng.randf() < inf:
+		units.spawn(data.card("rat"), x, y, 0.0, 0.0, K.F_INFESTED, 0)
 	if c.beast and deck_rules.has("wild_infestation"):
-		# Infestação, parte 2 (Selvagem): Fera que morre faz a próxima Fera custar menos; o Sangue acelera as hienas.
+		# (legado) Fera que morre faz a próxima Fera custar menos; o Sangue acelera as hienas.
 		CardsPlague.on_beast_death(self, c)
+	if int(deck_rules.get("cycle", 0)) > 0 and c.arch != K.Arch.STRUCTURE:
+		cycle_spell = true   # Ciclo de feitiço: criatura morta barateia o próximo feitiço
 	var every := int(deck_rules.get("harvest_every", 0))
 	if every > 0 and not harvest_free:
 		harvest_deaths += 1
@@ -1699,13 +1860,7 @@ func hero_fear(x: float, y: float, dur := -1.0) -> void:
 	if dur <= 0.0:
 		dur = float(R["status"]["fear"])
 	hero.fear(x, y, dur * cc_mult())
-	_cc()
 	emit(K.Ev.FEAR, hero.x, hero.y, 0, 0)
-
-
-func _cc() -> void:
-	if contract.size() > 0 and contract["goal"]["kind"] == "cc":
-		contract["progress"] += 1
 
 
 func on_shield_break() -> void:
@@ -1722,6 +1877,9 @@ func hero_gain_xp(_v: float) -> void:
 func _hero_fell() -> void:
 	track.on_hero_fall(self)
 	var fell := party_idx + 1
+	if party_mode():
+		group_falls += 1
+		fell = group_falls
 	stats["heroes_fallen"] = fell
 	if hero.pidx == slow_hero:
 		slow_hero = -1   # Piche: vale até o herói cair
@@ -1730,11 +1888,16 @@ func _hero_fell() -> void:
 		# Clériga: a bênção dela fica para o próximo herói.
 		next_hp_mult *= 1.0 + bless
 	emit(K.Ev.HERO_FALL, hero.x, hero.y, fell, 0)
-	party_idx += 1
+	var arriving: Array = [party_idx + 1]   # quem chega (fila de parties: a party seguinte inteira)
+	if party_mode():
+		cur_party += 1
+		arriving = party_members(cur_party)
+	party_idx = int(arriving[0])
 	var back := float(R["party"]["arrive_s"]) * float(hero.H["speed"])
 	hero.next_hero(party_idx)
-	if next_hp_mult != 1.0:
-		hero.base_hp *= next_hp_mult
+	var bless_mult := next_hp_mult
+	if bless_mult != 1.0:
+		hero.base_hp *= bless_mult
 		hero.hp = hero.base_hp
 		next_hp_mult = 1.0
 	# Caiu no meio da disputa: o local fica perdido (sem recompensa).
@@ -1757,11 +1920,16 @@ func _hero_fell() -> void:
 		hero.y = gate_pos.y
 	hero.ox = hero.x
 	hero.oy = hero.y
-	for extra in (2 if next_extra_ability else 1):
-		var opts := _upgrade_options(3)
-		if opts.size() > 0:
-			hero.apply_upgrade(hero.choose_upgrade(opts))
-	next_extra_ability = false
+	_learn_ability()
+	# A party seguinte chega junta: os outros membros nascem atrás do primeiro, com as habilidades do grupo.
+	followers.clear()
+	for k in range(1, arriving.size()):
+		var nf := SimHero.new()
+		nf.init_follower(self, int(arriving[k]), hero, 1.0)
+		if bless_mult != 1.0:
+			nf.base_hp *= bless_mult
+			nf.hp = nf.base_hp
+		followers.append(nf)
 	emit(K.Ev.HERO_LEVEL, hero.x, hero.y, hero.level, 0)
 	_offer_level()
 	if rv("fall_mod_offer") > 0.0:
@@ -1834,8 +2002,6 @@ func _zones() -> void:
 					hh.note("slow", 2.0)
 					if not z["applied"].has(hh.pidx):
 						z["applied"].append(hh.pidx)
-						if hh == hero:
-							_cc()
 						hh.root_t = maxf(hh.root_t, float(z.get("root", 0.0)) * cc_mult())
 						hh.add_curse(int(z.get("curse", 0)))
 						if float(z.get("soak", 0.0)) > 0.0:
@@ -1879,8 +2045,6 @@ func _zones() -> void:
 					hc.root_t = maxf(hc.root_t, float(z["stop"]))
 					hc.add_curse(int(z["curses"]))
 					_earn_gold(float(z["gold"]))
-					if hc == hero:
-						_cc()
 					z["t"] = 0.0
 			"army":
 				if z["t"] <= 0.0:
@@ -1915,11 +2079,31 @@ func card_cost(c: CardInst) -> int:
 	if tax_cards > 0:
 		cost += tax_add
 	cost += CardsCommon.card_cost_add(self, c) + CardsPlague.card_cost_add(self, c) + CardsDragon.card_cost_add(self, c) + CardsLich.card_cost_add(self, c)
+	# Balança do Gigante: cartas de custo base 6+ saem mais baratas.
+	if rv("big_discount") > 0.0 and d.cost_at(c.level) >= 6:
+		cost -= int(rv("big_discount"))
+	# Tinta Arcana: feitiços mais baratos, sem descer abaixo de 1 (um feitiço que já custava 0 continua 0).
+	if d.is_spell and rv("spell_discount") > 0.0 and cost > 0:
+		cost = maxi(1, cost - int(rv("spell_discount")))
 	cost = maxi(0, cost)
 	# Pedra do Atalho: a primeira carta de cada disputa sai mais barata.
 	if contest.size() > 0 and not contest.get("first", false):
 		cost = maxi(0, cost - int(rv("contest_first_discount")))
 	return cost
+
+
+## Carta de criatura (monstro ou enxame; estrutura e feitiço não).
+func cycle_is_creature(d: CardDef) -> bool:
+	return d.category == "field" and (d.type == "monster" or d.type == "swarm")
+
+
+## Ciclo de feitiço: o desconto de 1 está armado para esta carta agora? (a mão destaca a carta)
+func cycle_applies(c: CardInst) -> bool:
+	if int(deck_rules.get("cycle", 0)) <= 0:
+		return false
+	if c.def.is_spell:
+		return cycle_spell
+	return cycle_mon and cycle_is_creature(c.def)
 
 
 ## Abertura: a 1ª carta contra o herói da vez ainda não saiu (sai de graça).
@@ -1951,16 +2135,53 @@ func can_play(hi_: int) -> int:
 	return K.Block.OK
 
 
+## Raio do círculo em que não se solta monstro, um por herói da party (15/11/2026): 3 m; o herói à distância
+## (Arqueira, Mago, Besteiro) usa o alcance de ataque dele.
+func ring_of(h: SimHero) -> float:
+	var m := float(R["ring"]["min"])
+	if bool(h.H.get("ranged", false)):
+		return maxf(m, float(h.H.get("attack_range", m)))
+	return m
+
+
+## Heróis que têm círculo: o líder e os outros membros da party (o Herói Ajudante, parado no local, não).
+func ring_heroes() -> Array:
+	return [hero] + followers
+
+
+## (x, y) cai dentro do círculo de algum herói?
+func in_any_ring(x: float, y: float) -> bool:
+	for hh: SimHero in ring_heroes():
+		if Vector2(x - hh.x, y - hh.y).length() < ring_of(hh):
+			return true
+	return false
+
+
+## Empurra (x, y) para fora de todos os círculos, para a mira dos bots.
+func clear_of_rings(p: Vector2) -> Vector2:
+	for _k in 4:
+		var moved := false
+		for hh: SimHero in ring_heroes():
+			var v := p - Vector2(hh.x, hh.y)
+			var r := ring_of(hh)
+			if v.length() < r:
+				v = v.normalized() if v.length() > 0.05 else Vector2(1, 0)
+				p = Vector2(hh.x, hh.y) + v * (r + 0.3)
+				moved = true
+		if not moved:
+			break
+	return p
+
+
 ## Onde a carta pode ser solta. Devolve true se (x, y) é válido.
 func valid_target(c: CardInst, x: float, y: float) -> bool:
 	var d := c.def
 	if d.category == "field":
-		var dist := Vector2(x - hero.x, y - hero.y).length()
 		var ring: Dictionary = R["ring"]
 		# Sem alcance máximo: vale qualquer ponto que o jogador enxerga na tela.
 		if d.is_spell and ring["spells_ignore_min"]:
 			return true
-		if dist >= float(ring["min"]):
+		if not in_any_ring(x, y):
 			return true
 		return phase == K.Phase.ARENA and Vector2(x - arena.bx, y - arena.by).length() <= 6.0
 	if d.id == "gold_bait":
@@ -1984,7 +2205,21 @@ func play(hi_: int, x: float, y: float) -> int:
 	if paid > 0 and rv("free_play_chance") > 0.0 and rng.randf() < rv("free_play_chance"):
 		paid = 0
 		stats["lucky_free"] = int(stats.get("lucky_free", 0)) + 1
+	# Talha de Contagem: a cada N cartas jogadas, a N-ésima não gasta elixir.
+	if rv("nth_free") > 0.0:
+		tally_plays += 1
+		if tally_plays >= int(rv("nth_free")):
+			tally_plays = 0
+			paid = 0
 	elixir -= paid
+	# Anel Encadeado: 3 cartas em 4 s devolvem elixir (a corrente recomeça depois).
+	if rv("chain_elixir") > 0.0:
+		chain_times.append(t)
+		while chain_times.size() > 0 and t - float(chain_times[0]) > 4.0:
+			chain_times.pop_front()
+		if chain_times.size() >= 3:
+			chain_times.clear()
+			elixir = minf(elixir_max, elixir + rv("chain_elixir"))
 	var slot := _act_slot()
 	stats["spent_act"][slot] += paid
 	stats["plays_act"][slot] += 1
@@ -1995,12 +2230,21 @@ func play(hi_: int, x: float, y: float) -> int:
 		tax_cards -= 1
 	if c.def.is_spell and harvest_free:
 		harvest_free = false
+	if int(deck_rules.get("cycle", 0)) > 0:
+		# Ciclo de feitiço (Lich): gasta o desconto que a carta usou e arma o da outra metade do baralho.
+		if c.def.is_spell:
+			cycle_spell = false
+			cycle_mon = true
+		elif cycle_is_creature(c.def):
+			cycle_mon = false
 	if contest.size() > 0:
 		contest["first"] = true
 	_cycle(hi_)
 	var pl: Dictionary = stats["played"]
 	pl[c.def.id] = int(pl.get(c.def.id, 0)) + 1
+	_linger_until = 0.0
 	_apply(c, x, y)
+	_hold_if_lingering(c, t)
 	if c.def.is_spell:
 		_after_spell(c)
 	CardsCommon.on_card_played(self, c, x, y)
@@ -2040,7 +2284,7 @@ func _cycle(hi_: int) -> void:
 	else:
 		# A vaga fica vazia por DRAW_DELAY s (a mão mostra o tracejado enchendo); _tick_draws compra depois.
 		hand[hi_] = null
-		_set_wait(hi_, DRAW_DELAY)
+		_set_wait(hi_, draw_delay())
 	_refill_hand()
 
 
@@ -2049,6 +2293,7 @@ func _tick_draws() -> void:
 	var i := 0
 	while i < hand.size():
 		if hand[i] == null:
+			stats["empty_s"] = float(stats.get("empty_s", 0.0)) + dt   # segundos-vaga vazios (métrica da recarga)
 			var left := wait_left(i) - dt
 			if left > 0.0:
 				_set_wait(i, left)
@@ -2059,7 +2304,20 @@ func _tick_draws() -> void:
 					continue
 				hand[i] = nc
 				_set_wait(i, 0.0)
+				if rv("refill_elixir") > 0.0:
+					elixir = minf(elixir_max, elixir + rv("refill_elixir"))   # Sino de Bronze
 		i += 1
+
+
+## Recarga da vaga com relíquias (Areia Fina, Mochila do Saqueador): DRAW_DELAY × (1 + soma de "draw_delay").
+func draw_delay() -> float:
+	return DRAW_DELAY * draw_delay_mult * maxf(0.15, 1.0 + rv("draw_delay"))
+
+
+## Experimentos de balanceamento (headless/batch.gd): multiplicador da recarga e evento forçado. Só o lote mexe.
+var draw_delay_mult := 1.0
+var force_event := ""        # id do evento que sempre sai nos locais de evento ("" = sorteio normal)
+var force_event_opt := -1    # índice da opção que o bot escolhe nesse evento (-1 = escolha normal)
 
 
 ## Segundos que faltam para a vaga i da mão receber carta (0 = sem espera).
@@ -2417,6 +2675,15 @@ func _open_shop() -> void:
 	_push_offer("shop", items, {"won": true})
 
 
+## Dragão Avarento (15/11/2026): não compra em loja. Cada loja que passa dá `shop_gold` de ouro e 3 cartas de
+## raridade alta (rara ou lendária) sorteadas, das quais escolhe 1 (recusável, como as outras ofertas de carta).
+func _dragon_shop() -> void:
+	_earn_gold(float(deck_rules["shop_gold"]))
+	var minr := K.RARITIES.find("rare")
+	var cnt := int(R["offers"]["location_win"])
+	_push_offer("location", _card_options(cnt, func(cd: CardDef): return cd.rarity >= minr), {"loc": "shop", "won": true, "mark": 3})
+
+
 ## Escolha do ramo pelo jogador: o herói vai passar pelo nó n (precisa estar à frente, no caminho).
 func choose_route(n: int) -> bool:
 	if phase != K.Phase.ROAD or not road.plan_to(n):
@@ -2539,42 +2806,6 @@ func _offer_level() -> void:
 				ex.append(str(m["uid"]) + str(m["mod"]))
 				opts.append(m)
 	_push_offer("level", opts)
-
-
-func _offer_contract(rw: Dictionary) -> void:
-	var n := int(R["offers"]["contract_options"])
-	var opts: Array = []
-	var ex: Array = []
-	var extra := {}
-	match str(rw["kind"]):
-		"card":
-			var minr := K.RARITIES.find(str(rw.get("min_rarity", "common")))
-			var tag := int(K.TAG_BY_NAME.get(str(rw.get("tag", "")), 0))
-			var cat := str(rw.get("category", ""))
-			var f1 := func(cd: CardDef): return (tag == 0 or (cd.tags & tag)) and (cat == "" or cd.category == cat) and cd.rarity >= minr
-			var f2 := func(cd: CardDef): return (tag == 0 or (cd.tags & tag)) and (cat == "" or cd.category == cat)
-			# Raridade única: primeiro dentro da raridade mínima do contrato; sem carta assim, sem o mínimo.
-			var fsel: Callable = f1
-			var one := _single_rarity(f1, n)
-			if one < 0:
-				fsel = f2
-				one = _single_rarity(f2, n)
-			var lv := roll_offer_level()
-			for k in n:
-				var c := _pick_card(func(cd: CardDef): return cd.rarity == one and fsel.call(cd), ex)
-				if c:
-					ex.append(c.id)
-					opts.append({"kind": "card", "id": c.id, "level": lv})
-		"modifier":
-			for k in n:
-				var m := _mod_option(ex)
-				if m.size() > 0:
-					ex.append(str(m["uid"]) + str(m["mod"]))
-					opts.append(m)
-		"remove":
-			opts = _remove_options(n)
-			extra = {"elixir": rw.get("elixir", 0)}
-	_push_offer("contract", opts, extra)
 
 
 const SKIP := -1
@@ -2752,62 +2983,6 @@ func _remove_uid(u: int) -> void:
 			var hi_ := hand.find(ci)
 			if hi_ >= 0:
 				hand[hi_] = draw_card()
-
-
-# ================================================================ contratos
-
-func _contract() -> void:
-	if contract.is_empty():
-		if t >= contract_next and phase == K.Phase.ROAD:
-			var cand: Array = []
-			var ritual_ahead := false
-			for loc in road.locations:
-				if loc["type"] == "ritual" and loc["state"] == SimRoad.LocState.ACTIVE and road.is_on_route(loc) and not loc["entered"]:
-					ritual_ahead = true
-			for c in data.contracts:
-				if (c["goal"]["kind"] != "ritual_time" or ritual_ahead) and _owner_ok(c):
-					cand.append(c)
-			var c: Dictionary = cand[rng.randi_range(0, cand.size() - 1)]
-			var dl := float(c["deadline"])
-			if dl < 0.0:
-				dl = 120.0
-			contract = {"id": c["id"], "goal": c["goal"], "reward": c["reward"], "t": dl, "deadline": dl,
-				"progress": 0.0, "window": []}
-			emit(K.Ev.CONTRACT, hero.x, hero.y, 0, 0)
-		return
-	var g: Dictionary = contract["goal"]
-	match str(g["kind"]):
-		"alive_tag":
-			contract["progress"] = maxf(contract["progress"], units.n_pack)
-		"structures":
-			contract["progress"] = maxf(contract["progress"], units.n_struct)
-		"burst":
-			var w: Array = contract["window"]
-			while w.size() > 0 and t - float(w[0][0]) > float(g["window"]):
-				w.pop_front()
-			var s := 0.0
-			for e in w:
-				s += float(e[1])
-			contract["progress"] = maxf(contract["progress"], s)
-	if float(contract["progress"]) >= float(g["amount"]):
-		stats["contracts_ok"] += 1
-		emit(K.Ev.CONTRACT, hero.x, hero.y, 1, 0)
-		var rw: Dictionary = contract["reward"]
-		contract = {}
-		_schedule_contract()
-		_offer_contract(rw)
-		return
-	contract["t"] -= dt
-	if contract["t"] <= 0.0 or phase != K.Phase.ROAD:
-		stats["contracts_fail"] += 1
-		emit(K.Ev.CONTRACT, hero.x, hero.y, -1, 0)
-		contract = {}
-		_schedule_contract()
-
-
-func _schedule_contract() -> void:
-	var iv: Array = R["contracts"]["interval"]
-	contract_next = t + rng.randf_range(iv[0], iv[1])
 
 
 # ================================================================ consultas

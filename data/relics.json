@@ -82,7 +82,7 @@
    "bot_value": 1.5,
    "fx": {
     "shop_cards": 1,
-    "shop_price": -0.15
+    "shop_price": -0.25
    },
    "owner": "dragon"
   },
@@ -173,10 +173,10 @@
    "bot_value": 4.5,
    "fx": {
     "elixir_max": 1,
-    "elixir_regen": 0.6
+    "elixir_regen": 0.45
    },
    "owner": "common",
-   "weight": 2.5
+   "weight": 2.0
   },
   {
    "id": "victory_mark",
@@ -196,7 +196,7 @@
    "bot_value": 4.5,
    "fx": {
     "elixir_max": 4,
-    "elixir_regen": 0.3
+    "elixir_regen": 0.5
    },
    "owner": "common",
    "weight": 2.5
@@ -330,7 +330,7 @@
    "rarity": "common",
    "bot_value": 2.0,
    "fx": {
-    "pickup_hero_dmg": 0.1
+    "pickup_hero_dmg": 0.05
    },
    "owner": "common"
   },
@@ -357,7 +357,7 @@
    "rarity": "uncommon",
    "bot_value": 4.5,
    "fx": {
-    "elixir_max": 3
+    "elixir_max": 4
    },
    "owner": "common",
    "weight": 1.5
@@ -403,6 +403,133 @@
    },
    "owner": "common",
    "weight": 2.0
+  },
+  {
+   "id": "fine_sand",
+   "rarity": "uncommon",
+   "bot_value": 3.0,
+   "fx": {
+    "draw_delay": -0.4
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "bronze_bell",
+   "rarity": "common",
+   "bot_value": 2.5,
+   "fx": {
+    "refill_elixir": 0.3
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "raider_pack",
+   "rarity": "uncommon",
+   "bot_value": 3.0,
+   "fx": {
+    "hand": 1,
+    "draw_delay": 0.5
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "hanged_hand",
+   "rarity": "rare",
+   "bot_value": 3.5,
+   "fx": {
+    "hand": 2,
+    "elixir_regen": -0.15
+   },
+   "owner": "common",
+   "new": "2026-11-15",
+   "unique": true
+  },
+  {
+   "id": "arcane_ink",
+   "rarity": "rare",
+   "bot_value": 3.0,
+   "fx": {
+    "spell_discount": 1
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "torn_banner",
+   "rarity": "common",
+   "bot_value": 2.5,
+   "fx": {
+    "unit_dmg": 0.1
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "giant_scale",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "big_discount": 1
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "tally_stick",
+   "rarity": "uncommon",
+   "bot_value": 3.0,
+   "fx": {
+    "nth_free": 8
+   },
+   "owner": "common",
+   "new": "2026-11-15",
+   "unique": true
+  },
+  {
+   "id": "chain_ring",
+   "rarity": "uncommon",
+   "bot_value": 2.5,
+   "fx": {
+    "chain_elixir": 1
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "miser_ledger",
+   "rarity": "common",
+   "bot_value": 1.5,
+   "fx": {
+    "gold": 0.25,
+    "shop_price": 0.1
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "frost_shard",
+   "rarity": "rare",
+   "bot_value": 3.0,
+   "fx": {
+    "hero_slow": 0.15,
+    "elixir_max": -1
+   },
+   "owner": "common",
+   "new": "2026-11-15"
+  },
+  {
+   "id": "rift_key",
+   "rarity": "uncommon",
+   "bot_value": 2.0,
+   "fx": {
+    "teleport_cd": -2,
+    "teleport_cost": -1
+   },
+   "owner": "common",
+   "new": "2026-11-15"
   }
  ]
 }

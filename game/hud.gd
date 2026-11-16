@@ -25,6 +25,8 @@ var hero_badge: PanelContainer
 var hero_hp: ProgressBar
 var hero_hp_label: Label
 var hero_of_label: Label
+var party_box: VBoxContainer         # uma linha por herói de pé da party (nome e vida de cada um)
+var party_rows: Array = []           # [{h: SimHero, bar: ProgressBar, lab: Label}]
 var upg_row: HBoxContainer         # ícones das habilidades do herói (mouse em cima explica)
 var upg_none: Label
 var upg_shown := 0
@@ -39,17 +41,11 @@ var hold_offers := false             # cena da morte do herói: a recompensa e a
 var banner: BigBanner                  # letreiro grande: objetivo do local, resultado, ato (rodada 09/11/2026)
 var relic_row: BoxContainer           # relíquias do covil ganhas na run (Diário: coluna de etiquetas à direita)
 var curse_label: Label
-# Esquerda: run e contrato.
+# Esquerda: run.
 var run_panel: PanelContainer
 var time_label: Label
 var road_label: Label
 var road_bar: ProgressBar
-var contract_panel: PanelContainer
-var contract_name: Label
-var contract_goal: RichTextLabel
-var contract_text := ""
-var contract_bar: ProgressBar
-var contract_time: Label
 # Faixa de rota (estrada) e mapa grande (M ou carta de rota).
 var strip: RouteStrip
 var minimap: Minimap
@@ -174,6 +170,11 @@ func _build_top() -> void:
 	hv.add_child(hero_hp)
 	hero_of_label = UiKit.label(13, UiKit.MUTED, 3)
 	hv.add_child(hero_of_label)
+	party_box = VBoxContainer.new()
+	party_box.add_theme_constant_override("separation", 2)
+	party_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	party_box.visible = false
+	hv.add_child(party_box)
 	upg_row = HBoxContainer.new()
 	upg_row.add_theme_constant_override("separation", 3)
 	upg_row.custom_minimum_size = Vector2(340, 30)
@@ -207,24 +208,6 @@ func _build_left() -> void:
 	road_bar = UiKit.bar(Color(0.8, 0.25, 0.9), 276, 8)
 	v.add_child(road_bar)
 	add_child(run_panel)
-	contract_panel = UiKit.panel(Color(0.1, 0.06, 0.04, 0.85), UiKit.GOLD.darkened(0.25), 10)
-	contract_panel.custom_minimum_size = Vector2(300, 0)
-	contract_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var cv := VBoxContainer.new()
-	cv.add_theme_constant_override("separation", 4)
-	contract_panel.add_child(cv)
-	var ch := HBoxContainer.new()
-	contract_name = UiKit.label(17, UiKit.GOLD)
-	contract_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	contract_time = UiKit.label(17, UiKit.TEXT)
-	ch.add_child(contract_name)
-	ch.add_child(contract_time)
-	cv.add_child(ch)
-	contract_goal = Tips.label("", 15, Color(1, 0.92, 0.8), 276.0)
-	cv.add_child(contract_goal)
-	contract_bar = UiKit.bar(UiKit.GOLD, 276, 10)
-	cv.add_child(contract_bar)
-	add_child(contract_panel)
 
 
 func _build_right() -> void:
@@ -589,9 +572,7 @@ func _layout() -> void:
 	# Faixa de rota em pé na borda esquerda, do painel da run até acima das legendas de rodapé.
 	strip.position = Vector2(m, run_panel.position.y + run_panel.size.y + 12)
 	strip.size = Vector2(strip.custom_minimum_size.x, maxf(info_label.position.y - 16.0 - strip.position.y, 120.0))
-	var below := top + 10
-	var left := strip.position.x + strip.size.x + 12 if strip.visible else m
-	contract_panel.position = Vector2(left, below)
+	var below := top + 10   # (a linha foi apagada junto com o painel de contrato e o aviso ainda a usa)
 	# O mapa grande cobre a tela inteira (como o mapa do Slay the Spire); a run fica parada por trás.
 	if minimap.size != vs:
 		minimap.size = vs
@@ -644,7 +625,6 @@ func bind(s: Sim) -> void:
 	minimap.setup(s)
 	strip.setup(s)
 	fan.bind(s)
-	contract_text = ""
 	_sync_upgrades()
 	Tips.close_all()
 
@@ -757,8 +737,6 @@ func _hints() -> void:
 		hint("fork")
 	if sim.offers.size() > 0:
 		hint("offer")
-	if sim.contract.size() > 0:
-		hint("contract")
 	if sim.phase == K.Phase.ARENA:
 		hint("arena")
 	var h := Vector2(sim.hero.x, sim.hero.y)
@@ -873,6 +851,9 @@ func _refresh_top() -> void:
 	hero_hp.value = h.hp
 	hero_hp_label.text = "%d / %d" % [int(h.hp), int(h.max_hp())]
 	hero_of_label.text = tr("UI_HERO_OF").format({"k": sim.party_idx + 1, "n": sim.party_size()}) + " · " + tr("HERO_" + sim.hero.cls())
+	if sim.party_mode():
+		hero_of_label.text = tr("UI_PARTY_OF").format({"k": sim.cur_party + 1, "n": sim.party_count()}) + " · " + tr("UI_FALLEN_OF").format({"k": sim.group_falls, "n": sim.party_size()})
+	_refresh_party()
 	if sim.group_mode():
 		hero_of_label.text += " · " + tr("UI_HEROES_STANDING").format({"n": 1 + sim.followers.size()})
 		var fl: Array = []
@@ -882,6 +863,44 @@ func _refresh_top() -> void:
 			hero_of_label.text += " (" + ", ".join(fl) + ")"
 	_refresh_upgrades()
 	curse_label.text = tr("UI_CURSES").format({"n": h.curses}) if h.curses > 0 else ""
+
+
+## Vida de cada herói da party em campo: uma linha por herói de pé, o líder primeiro. Só aparece com mais de um.
+func _refresh_party() -> void:
+	var members: Array = [sim.hero] + sim.followers
+	party_box.visible = members.size() > 1
+	var same := party_rows.size() == members.size()
+	if same:
+		for i in members.size():
+			if party_rows[i]["h"] != members[i]:
+				same = false
+				break
+	if not same:
+		UiKit.clear(party_box)
+		party_rows.clear()
+		if members.size() > 1:
+			for i in members.size():
+				var row := HBoxContainer.new()
+				row.add_theme_constant_override("separation", 6)
+				row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				var nm := UiKit.label(13, UiKit.TEXT if i == 0 else UiKit.MUTED, 3)
+				nm.custom_minimum_size = Vector2(84, 0)
+				nm.text = ("▶ " if i == 0 else "") + tr("HERO_" + (members[i] as SimHero).cls())
+				row.add_child(nm)
+				var bar := UiKit.bar(UiKit.HERO_HP, 200, 14)
+				var lab := UiKit.label(12, Color.WHITE, 3)
+				lab.set_anchors_preset(Control.PRESET_FULL_RECT)
+				lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+				bar.add_child(lab)
+				row.add_child(bar)
+				party_box.add_child(row)
+				party_rows.append({"h": members[i], "bar": bar, "lab": lab})
+	for r in party_rows:
+		var h: SimHero = r["h"]
+		(r["bar"] as ProgressBar).max_value = h.max_hp()
+		(r["bar"] as ProgressBar).value = h.hp
+		(r["lab"] as Label).text = "%d" % int(h.hp)
 
 
 ## Fileira de ícones das habilidades. Habilidade nova: ícone pulsa e o aviso aparece (sem pausar).
@@ -968,28 +987,6 @@ func _refresh_left() -> void:
 	road_bar.visible = false
 	road_label.visible = sim.phase != K.Phase.ROAD
 	road_label.text = tr("UI_IN_ARENA")
-	var c := sim.contract
-	contract_panel.visible = c.size() > 0 and sim.phase != K.Phase.OVER
-	if c.is_empty():
-		return
-	var g: Dictionary = c["goal"]
-	var gp := {}
-	for k2 in g:
-		gp[k2] = g[k2]
-	if g.has("tag"):
-		gp["tag"] = "[[%s]]" % str(g["tag"])
-	if typeof(gp.get("amount")) == TYPE_FLOAT:
-		gp["amount"] = int(gp["amount"])
-	contract_name.text = tr("CON_" + str(c["id"]))
-	var goal := tr("CONG_" + str(g["kind"])).format(gp)
-	if goal != contract_text:
-		contract_text = goal
-		Tips.set_text(contract_goal, goal)
-	contract_bar.max_value = maxf(float(g["amount"]), 1.0)
-	contract_bar.value = float(c["progress"])
-	var tl := int(c["t"])
-	contract_time.text = "%d s" % tl
-	contract_time.add_theme_color_override("font_color", UiKit.BAD if tl <= 10 else UiKit.TEXT)
 
 
 func _refresh_contest() -> void:
@@ -1073,17 +1070,22 @@ func _refresh_relics() -> void:
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 6)
 			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			row.add_child(UiParch.label("◆", "bold", 13, UiParch.GOLD))
+			row.add_child(UiKit.relic_icon(rid, 26.0))
 			row.add_child(UiParch.label(tr("REL_" + rid), "bold", 15, UiParch.INK))
 			tag.add_child(row)
 			Tips.attach(tag, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
 			relic_row.add_child(tag)
 			continue
+		var hb := HBoxContainer.new()
+		hb.add_theme_constant_override("separation", 4)
+		hb.mouse_filter = Control.MOUSE_FILTER_STOP
+		hb.add_child(UiKit.relic_icon(rid, 24.0))
 		var b := UiKit.label(14, UiKit.GOLD, 3)
-		b.text = "◆ " + tr("REL_" + str(id))
-		b.mouse_filter = Control.MOUSE_FILTER_STOP
-		Tips.attach(b, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
-		relic_row.add_child(b)
+		b.text = tr("REL_" + str(id))
+		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hb.add_child(b)
+		Tips.attach(hb, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
+		relic_row.add_child(hb)
 
 
 ## Eventos da simulação que viram aviso na tela (disputa, ato).
@@ -1180,12 +1182,14 @@ func offer_ready() -> bool:
 
 
 ## Carta só de texto (relíquia, opção de evento): título e descrição numa moldura.
-func _text_card(title: String, body: String, w: float, edge: Color) -> PanelContainer:
+func _text_card(title: String, body: String, w: float, edge: Color, relic_id := "") -> PanelContainer:
 	var cp := UiKit.panel(UiKit.BG, edge, 14)
 	cp.custom_minimum_size = Vector2(w, 246.0 * w / 168.0)
 	var pv := VBoxContainer.new()
 	pv.alignment = BoxContainer.ALIGNMENT_CENTER
 	pv.add_theme_constant_override("separation", 12)
+	if relic_id != "":
+		pv.add_child(UiKit.relic_icon(relic_id, w * 0.42))   # ícone da relíquia em cima do nome (15/11/2026)
 	var pt := UiKit.title(24, edge.lightened(0.3))
 	pt.text = title
 	pt.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -1217,7 +1221,7 @@ func _offer_heading(o: Dictionary) -> String:
 		return tr("UI_OFFER_ACT_CARD").format({"a": int(o.get("act", 0)) + 1})
 	if o["source"] == "event":
 		return tr("EVT_" + str(o["event"])) if o.has("event") else tr("UI_OFFER_EVENT_STEP")
-	return tr({"level": "UI_OFFER_LEVEL", "shrine": "UI_OFFER_SHRINE", "contract": "UI_OFFER_CONTRACT"}[o["source"]])
+	return tr({"level": "UI_OFFER_LEVEL", "shrine": "UI_OFFER_SHRINE"}[o["source"]])
 
 
 func _inst_level(uid: int) -> int:
@@ -1333,7 +1337,7 @@ func _build_offer_options(o: Dictionary) -> void:
 				var ri := K.RARITIES.find(str(rel.get("rarity", "common")))
 				head.text = tr("RARITY_" + K.RARITIES[maxi(ri, 0)])
 				head.add_theme_color_override("font_color", UiKit.RARITY_COLORS[maxi(ri, 0)].lightened(0.4))
-				cp = _text_card(tr("REL_" + str(op["id"])), tr("RELD_" + str(op["id"])), w, UiKit.RARITY_COLORS[maxi(ri, 0)])
+				cp = _text_card(tr("REL_" + str(op["id"])), tr("RELD_" + str(op["id"])), w, UiKit.RARITY_COLORS[maxi(ri, 0)], str(op["id"]))
 			"event_opt":
 				var ek := "EVT_%s_%s" % [op["event"], sim.data.events_def[op["event"]]["options"][int(op["opt"])]["id"]]
 				head.text = key
@@ -1511,7 +1515,7 @@ func _show_result() -> void:
 			top = cid
 	UiKit.clear(result_grid)
 	var tiles := [["UI_ST_time", _clock(sim.t)], ["UI_ST_hero", str(sim.hero.level)], ["UI_ST_you", str(int(st.get("heroes_fallen", 0)))],
-		["UI_ST_kills", str(st["kills"])], ["UI_ST_shrines", str(st["shrines_won"])], ["UI_ST_contracts", str(st["contracts_ok"])],
+		["UI_ST_kills", str(st["kills"])], ["UI_ST_shrines", str(st["shrines_won"])],
 		["UI_ST_parts", str(st["parts_lost"])], ["UI_ST_top", tr("CARD_" + top) if top != "" else "—"],
 		["UI_ST_souls", "+%d" % souls_gained]]
 	for tdef in tiles:

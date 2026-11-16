@@ -8,7 +8,8 @@ const FPS_CAPS := [0, 30, 60, 120, 144, 240]
 ## 1: direção D vira o padrão (09/11/2026). 2: a interface Diário (papel e fita) vira a padrão.
 ## 4: o mundo pintado em guache S1 (guache chapado) vira o padrão (13/11/2026).
 ## 5: a interface "Mapa aberto" (look_hud 7) vira a padrão (13/11/2026).
-const ART_REV := 5
+## 6: as miniaturas pintadas em pincel seco (model_g 4, docs/MODELOS_GUACHE.md) viram o padrão (15/11/2026).
+const ART_REV := 6
 
 static var v := defaults()
 # Chaves trocadas só nesta execução (--set=...), com o valor que estava salvo: save() grava o salvo, não o da execução.
@@ -32,6 +33,8 @@ static func defaults() -> Dictionary:
 		# Mundo pintado em guache nos materiais (13/11/2026, docs/MUNDO_PINTADO.md): 0 = desligado, 1..9 = variações
 		# S1-S3, T1-T3, C1-C3 (game/art/paint_look.gd). Escolhida pelo designer em 13/11: S1, guache chapado.
 		"paint_look": 1,
+		# Miniaturas pintadas (15/11/2026, docs/MODELOS_GUACHE.md): 0 = desligado, 1..7 = versões V1..V7.
+		"model_g": 4,
 		# Versão do padrão de arte: quando sobe, quem já tinha configuração salva recebe a direção nova uma vez.
 		"art_rev": ART_REV,
 	}
@@ -56,6 +59,8 @@ static func load_all() -> void:
 			keys += ["look_ground", "look_hero", "look_enemies"]
 		if rev < 4:
 			keys += ["paint_look"]
+		if rev < 6:
+			keys += ["model_g"]
 		for k in keys:
 			v[k] = d[k]
 		v["art_rev"] = ART_REV

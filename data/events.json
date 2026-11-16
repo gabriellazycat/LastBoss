@@ -38,7 +38,7 @@
        "else": [
         {
          "kind": "next_hero_hp",
-         "mult": 1.1
+         "mult": 1.05
         }
        ]
       }
@@ -140,7 +140,7 @@
       },
       {
        "kind": "chance",
-       "p": 0.6,
+       "p": 0.7,
        "then": [
         {
          "kind": "upgrade",
@@ -155,12 +155,12 @@
     {
      "id": "big",
      "requires": {
-      "gold": 80
+      "gold": 70
      },
      "do": [
       {
        "kind": "gold",
-       "amount": -80
+       "amount": -70
       },
       {
        "kind": "upgrade",
