@@ -25,12 +25,39 @@ var lair_dir := Vector2(0, -1)
 
 
 var shop_row := -1          # fileira de um nó só com a Loja: toda rota passa por ela (rodada 09/11/2026)
+var rivers: Array = []      # rios do ato (SimRivers, 15/11/2026): {"kind", "bridges": [nó], "ctrl": [ponto], "pts"}
 
 
 ## `cfg` sobrepõe rules.road (cada ato tem o seu comprimento e número de locais).
 func generate(rng: RandomNumberGenerator, rules: Dictionary, cfg: Dictionary = {}) -> void:
 	var R: Dictionary = rules["road"].duplicate()
 	R.merge(cfg, true)
+	# Rios (15/11/2026): se a estrada sorteada não comporta nenhum rio, sorteia outra (mesmo rng: determinístico).
+	var row_nodes: Array = []
+	for attempt in int(R.get("river", {}).get("road_attempts", 6)):
+		nodes = []
+		legs = []
+		row_nodes = _build_graph(rng, R)
+		# river.enabled = false: estrada como antes dos rios (comparação de balanço); a Ponte volta ao sorteio.
+		if not bool(R.get("river", {}).get("enabled", true)):
+			rivers = []
+			break
+		rivers = SimRivers.generate(self, R, row_nodes)
+		if not rivers.is_empty():
+			break
+	var last: PackedVector2Array = legs[nodes[-1]["in"][0]]["pts"][0]
+	lair = nodes[-1]["pos"]
+	lair_dir = (lair - last[last.size() - 2]).normalized()
+	_place_locations(rng, rules, R)
+	path = [0]
+	head = 0
+	route.append(Vector2.ZERO)
+	cum.append(0.0)
+	_refresh()
+
+
+## Nós em fileiras e as ligações entre elas (sem os locais). Devolve os nós por nível (início, fileiras, covil).
+func _build_graph(rng: RandomNumberGenerator, R: Dictionary) -> Array:
 	rows = rng.randi_range(int(R["route_locations"][0]), int(R["route_locations"][1]))
 	shop_row = rng.randi_range(2, maxi(2, rows - 3)) if int(R["shops"][1]) > 0 else -1
 	var lanes := int(R["lanes"])
@@ -78,15 +105,7 @@ func generate(rng: RandomNumberGenerator, rules: Dictionary, cfg: Dictionary = {
 	# Saídas da esquerda para a direita (as teclas 1, 2, 3 seguem essa ordem).
 	for n in nodes:
 		n["out"].sort_custom(func(a, b): return nodes[legs[a]["b"]]["lane"] < nodes[legs[b]["b"]]["lane"])
-	var last: PackedVector2Array = legs[nodes[-1]["in"][0]]["pts"][0]
-	lair = nodes[-1]["pos"]
-	lair_dir = (lair - last[last.size() - 2]).normalized()
-	_place_locations(rng, rules, R)
-	path = [0]
-	head = 0
-	route.append(Vector2.ZERO)
-	cum.append(0.0)
-	_refresh()
+	return row_nodes
 
 
 func _node(row: int, lane: int, pos: Vector2) -> Dictionary:
@@ -218,7 +237,14 @@ static func _point_on(pts: PackedVector2Array, d: float) -> Vector2:
 ## Um local por nó. Os nós da mesma fileira têm tipos diferentes (a escolha é de prêmio); toda rota passa
 ## por `shrines` Santuários e por exatamente uma Loja (a fileira `shop_row` tem um nó só).
 func _place_locations(rng: RandomNumberGenerator, rules: Dictionary, R: Dictionary) -> void:
-	var w: Dictionary = R["location_weights"]
+	# A Ponte só nasce do rio (15/11/2026): sai do sorteio, e os nós por onde um rio passa já são Ponte.
+	var w: Dictionary = R["location_weights"].duplicate()
+	if bool(R.get("river", {}).get("enabled", true)):
+		w.erase("bridge")
+	var fixed := {}
+	for rv in rivers:
+		for n in rv["bridges"]:
+			fixed[n] = "bridge"
 	var members: Array = []
 	for r in rows:
 		members.append([])
@@ -240,7 +266,9 @@ func _place_locations(rng: RandomNumberGenerator, rules: Dictionary, R: Dictiona
 			var used: Array = []
 			for ni in m:
 				var t := ""
-				if shop_rows.has(row) and not used.has("shop"):
+				if fixed.has(ni):
+					t = fixed[ni]
+				elif shop_rows.has(row) and not used.has("shop"):
 					t = "shop"
 				elif row > 0 and not used.has("shrine") and rng.randf() < shrine_p:
 					t = "shrine"
@@ -320,7 +348,7 @@ func _place_helpers(rng: RandomNumberGenerator, R: Dictionary, types: Dictionary
 			if has_helper:
 				continue
 			for ni in members[row]:
-				if not types.get(ni, "") in ["shop", "shrine", "helper"]:
+				if not types.get(ni, "") in ["shop", "shrine", "helper", "bridge"]:
 					cand.append(ni)
 		if cand.is_empty():
 			return

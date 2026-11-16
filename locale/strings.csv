@@ -176,6 +176,9 @@ SET_sfx,Efeitos sonoros,Sound effects
 SET_fullscreen,Tela cheia,Fullscreen
 SET_vsync,Sincronia vertical (VSync),Vertical sync (VSync)
 SET_paint_look,Mundo pintado (guache),Painted world (gouache)
+SET_mundo_cor,A · Cor das cartas no chão (F6),A · Card colours on the ground (F6)
+SET_mundo_escuro,B · Sombras fundas (F7),B · Deep shadows (F7)
+SET_mundo_papel,C · Papel das cartas (F8),C · Card paper grain (F8)
 SET_model_g,Modelos 3D (miniaturas pintadas),3D models (painted miniatures)
 SET_quality,Qualidade gráfica,Graphics quality
 SET_max_fps,Limite de FPS,FPS limit
@@ -460,15 +463,15 @@ UI_COMP_MODS,Modificadores,Modifiers
 UI_COMP_LOCS,Locais,Locations
 UI_COMP_HERO,Herói,Hero
 UI_COMP_LOCKED,Bloqueada · {c} Almas,Locked · {c} Souls
-UI_CHALLENGE,"Desafio: {t}","Challenge: {t}"
+UI_CHALLENGE,Desafio: {t},Challenge: {t}
 UI_UNLOCK_TITLE,Cartas desbloqueadas,Cards unlocked
-UI_UNLOCK_SUB,"Novas na sua coleção: {n}","New in your collection: {n}"
+UI_UNLOCK_SUB,Novas na sua coleção: {n},New in your collection: {n}
 UI_UNLOCK_GOAL,DESAFIO,CHALLENGE
 UI_UNLOCK_DONE,Cumprido,Done
-UI_UNLOCK_DID,"Você chegou a {v} (meta: {g})","You reached {v} (goal: {g})"
+UI_UNLOCK_DID,Você chegou a {v} (meta: {g}),You reached {v} (goal: {g})
 UI_UNLOCK_FLIP,Virar carta,Flip card
 UI_UNLOCK_CONT,Continuar,Continue
-UI_UNLOCK_NEAR,"Quase lá: {l}","Almost there: {l}"
+UI_UNLOCK_NEAR,Quase lá: {l},Almost there: {l}
 UI_COMP_COUNTER,Contra-ataque: {t},Counter: {t}
 UI_COMP_CD,Recarga: {s} s,Cooldown: {s} s
 UI_COMP_PASSIVE,Passiva,Passive
@@ -674,7 +677,7 @@ DECK_dragon,Dragão Avarento,Greedy Dragon
 DECK_lich,Lich,Lich
 VILLAIN_plague_PASSIVE,Infestação: qualquer monstro seu que morre tem 20% de chance de deixar um rato (o rato deixado não gera outro).,Infestation: any of your monsters that dies has a 20% chance to leave a rat behind (that rat does not leave another).
 VILLAIN_dragon_PASSIVE,Avareza: você não compra em lojas. Cada loja por onde passa dá 200 de ouro e uma carta de raridade alta à sua escolha entre 3 sorteadas.,Greed: you can't buy in shops. Every shop you pass gives 200 gold and a high-rarity card of your choice from 3 random ones.
-VILLAIN_lich_PASSIVE,"Ciclo de feitiço: lançar um feitiço faz a próxima criatura custar 1 a menos; uma criatura sua que morre faz o próximo feitiço custar 1 a menos. A carta afetada brilha na mão.","Spell Cycle: casting a spell makes your next creature cost 1 less; one of your creatures dying makes your next spell cost 1 less. The affected card glows in your hand."
+VILLAIN_lich_PASSIVE,Ciclo de feitiço: lançar um feitiço faz a próxima criatura custar 1 a menos; uma criatura sua que morre faz o próximo feitiço custar 1 a menos. A carta afetada brilha na mão.,Spell Cycle: casting a spell makes your next creature cost 1 less; one of your creatures dying makes your next spell cost 1 less. The affected card glows in your hand.
 UI_CYCLE_MARK,CICLO −1,CYCLE −1
 UI_PACT_OF_crypt,Pacto da,Pact of the
 UI_PACT_OF_cult,Pacto do,Pact of the
@@ -695,7 +698,7 @@ HEROD_arqueira,Atira de longe e não tem escudo: frágil quando cercada.,Shoots 
 HEROD_cleriga,"Cura a si mesma com o tempo e, ao cair, abençoa o próximo herói (+25% de vida).","Heals herself over time and, when she falls, blesses the next hero (+25% health)."
 HEROD_mago,"Golpe que explode em área: destrói bandos, mas é lento e frágil.","Attack that explodes in an area: wrecks packs, but slow and fragile."
 HEROD_assassino,"Corpo a corpo, rápido e frágil: golpe muito forte num alvo só.","Fast, fragile melee: a very strong hit on a single target."
-HEROD_barbaro,"Golpe largo que acerta uma roda de monstros; sem escudo.","Wide swing that hits a ring of monsters; no shield."
+HEROD_barbaro,Golpe largo que acerta uma roda de monstros; sem escudo.,Wide swing that hits a ring of monsters; no shield.
 HEROD_besteiro,"Atira de longe, devagar, com tiro pesado num alvo só; sem escudo.","Shoots from afar, slowly, with a heavy shot on one target; no shield."
 HEROD_guardiao,"Muita vida e escudo enorme, quase nenhum dano: segura os monstros para os outros.","Lots of health and a huge shield, almost no damage: holds monsters for the others."
 UI_CAMPAIGN,Campanha,Campaign
@@ -710,12 +713,12 @@ PHASE_0,Tutorial: O Primeiro Invasor,Tutorial: The First Intruder
 PHASE_1,Os Escudeiros,The Squires
 PHASE_2,A Patrulha,The Patrol
 PHASE_3,A Cruzada,The Crusade
-PHASE_4,A Companhia,The Company
-PHASED_0,"Três escudeiros fracos e um ato só. Aprenda a jogar cartas, combinar o Bando e defender o covil.","Three weak squires and a single act. Learn to play cards, combine the Pack and defend the lair."
-PHASED_1,"Sete escudeiros em fila, cada um mais forte que o anterior.","Seven squires in a row, each stronger than the last."
-PHASED_2,Escudeiros e arqueiras se alternam: a arqueira atira de longe e não tem escudo.,Squires and archers take turns: the archer shoots from afar and has no shield.
-PHASED_3,Clérigas se curam e abençoam quem vem depois. Derrube-as rápido.,Clerics heal themselves and bless whoever comes next. Bring them down fast.
-PHASED_4,"Eles andam juntos: quando um cai, quem chega levanta o caído (uma vez cada). O grupo cresce a cada queda. Enxames sofrem contra o grupo: fogo e mortes funcionam melhor.","They travel together: when one falls, whoever arrives raises the fallen (once each). The party grows with every fall. Swarms struggle against the group: fire and deaths work better."
+PHASE_4,A Muralha,The Wall
+PHASED_0,"Na fazenda ao pé do covil, escudeiros novatos ouviram falar de você. Um ato só, para aprender a jogar cartas, combinar o Bando e defender o covil.","At the farm below the lair, rookie squires heard about you. A single act to learn to play cards, combine the Pack and defend the lair."
+PHASED_1,"A vila manda os seus escudeiros, com uma arqueira de apoio. O escudo absorve golpes: cerque o herói e ataque por vários lados.","The village sends its squires, with an archer in support. The shield soaks blows: surround the hero and strike from several sides."
+PHASED_2,"Caçadores da mata vêm em grupos pequenos: atiradores de longe, um bárbaro de golpe largo e um assassino rápido.","Forest hunters come in small groups: ranged shooters, a barbarian with a wide swing and a fast assassin."
+PHASED_3,"Os monges mandam clérigas que se curam e abençoam a party seguinte, protegidas por um guardião. Derrube as clérigas primeiro.","The monks send clerics who heal themselves and bless the next party, guarded by a guardian. Bring the clerics down first."
+PHASED_4,A guarnição do forte é uma muralha: guardiões e bárbaros que aguentam muito e batem em área. Enxames apanham; fogo e mortes rendem mais.,The fort's garrison is a wall: guardians and barbarians who take a lot and hit in an area. Swarms suffer; fire and deaths pay off more.
 UI_HEROES_STANDING,{n} de pé,{n} standing
 UI_PARTY_OF,Party {k} de {n},Party {k} of {n}
 UI_PARTY_ORD,Party {p} · {k} de {n},Party {p} · {k} of {n}
@@ -1245,3 +1248,30 @@ UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos em 2 fases dife
 UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
 UNLOCK_spitting_viper,Jogue 150 Feras no total,Play 150 Beasts in total
 UNLOCK_tar_net,Gaste 2000 de ouro no total,Spend 2000 gold in total
+UI_SCENE_REWARDS,{n} recompensa(s) para escolher,{n} reward(s) to choose
+UI_SCENE_RELIC,1 relíquia para escolher,1 relic to choose
+UI_SCENE_NONE,Sem recompensa,No reward
+UI_SCENE_SKIP,clique ou espaço para continuar,click or space to continue
+REGION_fazenda,Fazenda do Vale,Valley Farm
+REGION_vila,Vila de Pedravau,Pedravau Village
+REGION_floresta,Floresta de Ramagris,Ramagris Forest
+REGION_mosteiro,Mosteiro da Colina,Hill Monastery
+REGION_forte,Forte da Fronteira,Border Fort
+REGION_torre,Torre dos Arcanos,Tower of the Arcane
+REGION_capital,Capital de Aurévia,"Aurevia, the Capital"
+PHASE_5,O Círculo Arcano,The Arcane Circle
+PHASE_6,A Companhia Real,The Royal Company
+PHASED_5,"Os magos da torre atacam de longe e em área, com clérigas curando. São frágeis: chegue perto antes que eles limpem o campo.","The tower's mages strike from afar and in an area, with clerics healing. They are frail: close in before they clear the field."
+PHASED_6,"A capital manda a companhia real: parties grandes, com todas as classes juntas. É a última defesa do reino.",The capital sends the royal company: large parties with every class together. It is the kingdom's last defence.
+UI_CAMPAIGN_FACE,Você vai enfrentar,You will face
+UI_CAMPAIGN_PARTY,Party {n},Party {n}
+UI_CAMPAIGN_COUNT,{p} parties · {h} heróis,{p} parties · {h} heroes
+UI_CAMPAIGN_UNSEEN,Você ainda não enfrentou este herói.,You have not faced this hero yet.
+UI_CAMPAIGN_MYSTERY,Os heróis desta região ainda são um mistério.,The heroes of this region are still a mystery.
+UI_CAMPAIGN_DEFEND,Defender o covil,Defend the lair
+UI_CAMPAIGN_EXIT,Saída: {r},Setting out: {r}
+UI_CAMPAIGN_FINAL,Recompensa: o reino é seu,Reward: the kingdom is yours
+UI_CAMPAIGN_PREV,Fase anterior,Previous stage
+UI_CAMPAIGN_NEXT,Próxima fase,Next stage
+UI_CAMPAIGN_KINGDOM,Reino de Aurévia,Kingdom of Aurevia
+UI_CAMPAIGN_LEAGUES,léguas,leagues

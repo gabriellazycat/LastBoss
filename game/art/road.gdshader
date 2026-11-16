@@ -90,6 +90,7 @@ void fragment() {
 	c = mix(edge_color * c * 1.4, c, smoothstep(0.2, 0.9, ea));
 	c = paint_albedo(c, wp, vec3(0.0, 1.0, 0.0), 1, 1.2);
 	ALBEDO = c;
+	PAINT_PAPER
 	NORMAL_MAP = texture(nor, uv).rgb;
 	NORMAL_MAP_DEPTH = normal_strength;
 	ROUGHNESS = 0.85;

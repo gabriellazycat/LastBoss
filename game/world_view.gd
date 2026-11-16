@@ -59,6 +59,18 @@ var corpse: Node3D
 const CINE_FOCUS := 1.6           # no corpo, em câmera lenta
 const CINE_TRAVEL := 1.2          # recuando até o herói novo
 const CINE_SLOW := 0.3            # Engine.time_scale no foco
+## Cena do local (15/11/2026): no fim de uma disputa, e ao chegar na loja ou na encruzilhada, o mundo desacelera
+## como na queda, a câmera vai até o local e um efeito próprio dele mostra o resultado (completa, parcial ou
+## falha). A recompensa (e depois o mapa) só abre quando a cena acaba; um clique ou espaço depois de 1 s pula.
+## Só apresentação: a simulação já resolveu tudo; bots e testes sem janela não têm cena (cine_enabled).
+const SCENE_END := 3.0             # fim de disputa, em tempo real
+const SCENE_ARRIVE := 1.5          # chegada na loja e na encruzilhada
+const SCENE_BACK := 0.6            # últimos segundos: a câmera volta ao herói e o mundo à velocidade normal
+const SCENE_SKIP_AFTER := 1.0
+## {"li", "type", "tier" (-1 chegada, 0 falha, 1 parcial, 2 completa), "won_n", "marks", "hard", "t", "dur",
+## "pos", "beat"}; vazio sem cena.
+var scene: Dictionary = {}
+var scene_helper: Node3D = null    # o Herói Ajudante da disputa que acabou (tomba ou some na cena)
 var mm_by_def: Dictionary = {}
 var flash := PackedFloat32Array()
 var kx := PackedFloat32Array()
@@ -195,6 +207,7 @@ func build_empty() -> void:
 func build(s: Sim, camera: Camera3D) -> void:
 	# Run nova ou ato novo: nenhuma cena de queda pela metade (o mundo volta à velocidade normal).
 	cine_t = -1.0
+	_end_scene()
 	look_hold = false
 	Engine.time_scale = 1.0
 	build_empty()
@@ -208,6 +221,10 @@ func build(s: Sim, camera: Camera3D) -> void:
 	mm_by_def.clear()
 	surf_fields.clear()
 	house_nodes.clear()
+	# Círculos dos heróis: os nós foram liberados com o resto (build_empty); sem limpar, _update_rings usava nós
+	# mortos a cada quadro depois da troca de ato ("previously freed instance").
+	ring_nodes.clear()
+	ring_rad.clear()
 	fx.clear()
 	follower_nodes.clear()
 	helper_node = null
@@ -231,6 +248,7 @@ func build(s: Sim, camera: Camera3D) -> void:
 	soft_tex.height = 64
 	_build_ground()
 	_build_road()
+	_build_rivers()
 	_build_scatter()
 	_build_locations()
 	_build_lair()
@@ -335,7 +353,7 @@ func _build_ground_look() -> void:
 								if p.distance_squared_to(q) < 9.0:
 									ok = false
 									break
-					if not ok:
+					if not ok or sim.terra().is_water(p.x, p.y):
 						continue
 					var cell := Vector2i(int(floor(p.x / 6.0)), int(floor(p.y / 6.0)))
 					if int(per_cell.get(cell, 0)) >= cap:
@@ -556,6 +574,91 @@ func _build_road() -> void:
 			barricades.append([bn, li])
 
 
+## Rios do ato (16/11/2026): uma fita por rio com o shader de água pintada (água + margens de terra).
+const RIVER_HW := 5.0          # meia largura da água (a mesma da simulação, rules.road.river.half_width)
+const RIVER_BANK := 1.8        # margem de terra de cada lado
+
+
+## Ponte no eixo da estrada, do tamanho do tabuleiro da simulação (comprimento = rio + cabeceiras; largura de
+## uma carroça), seja qual for o modelo: o eixo comprido do modelo vai na direção da estrada.
+func _bridge_mesh(yaw: float) -> MeshInstance3D:
+	var RV: Dictionary = sim.data.rules["road"].get("river", {})
+	var length := 2.0 * (float(RV.get("half_width", RIVER_HW)) + float(RV.get("deck_overhang", 2.5)))
+	var width := 2.0 * float(RV.get("deck_half_width", 2.6))
+	var mesh: Mesh = Models.prop("bridge")
+	var ab := mesh.get_aabb()
+	var long_x := ab.size.x > ab.size.z
+	var sl := length / maxf(ab.size.x if long_x else ab.size.z, 0.01)
+	var sw := width / maxf(ab.size.z if long_x else ab.size.x, 0.01)
+	var sc := Vector3(sl, sw, sw) if long_x else Vector3(sw, sw, sl)
+	var basis := Basis(UP, yaw + (PI * 0.5 if long_x else 0.0)).scaled_local(sc)
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = Looks.g_material(mesh, Models.material())
+	var c := ab.position + ab.size * 0.5
+	mi.transform = Transform3D(basis, -(basis * Vector3(c.x, 0.0, c.z)))
+	return mi
+
+
+func _build_rivers() -> void:
+	var hw := float(sim.data.rules["road"].get("river", {}).get("half_width", RIVER_HW))
+	for rv in sim.road.rivers:
+		var mat := ShaderMaterial.new()
+		mat.shader = load("res://game/art/river_paint.gdshader")
+		mat.set_shader_parameter("water_frac", hw / (hw + RIVER_BANK))
+		var mi := MeshInstance3D.new()
+		mi.mesh = _river_ribbon(rv["pts"], hw + RIVER_BANK)
+		mi.material_override = mat
+		mi.position = Vector3(0, 0.035, 0)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.layers = GROUND_LAYER
+		add_child(mi)
+
+
+## Fita do rio com UV: x de -1 a 1 através, y em metros ao longo.
+func _river_ribbon(pts: PackedVector2Array, half: float) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n := pts.size()
+	var L: Array = []
+	var R: Array = []
+	var acc := PackedFloat32Array()
+	var s := 0.0
+	for i in n:
+		var d := Vector2.ZERO
+		if i > 0:
+			d += (pts[i] - pts[i - 1]).normalized()
+			s += pts[i].distance_to(pts[i - 1])
+		if i < n - 1:
+			d += (pts[i + 1] - pts[i]).normalized()
+		var o := d.normalized().orthogonal()
+		L.append(pts[i] + o * half)
+		R.append(pts[i] - o * half)
+		acc.append(s)
+	for i in n - 1:
+		var quad := [[L[i], -1.0, acc[i]], [L[i + 1], -1.0, acc[i + 1]], [R[i], 1.0, acc[i]], [R[i], 1.0, acc[i]], [L[i + 1], -1.0, acc[i + 1]], [R[i + 1], 1.0, acc[i + 1]]]
+		for v in quad:
+			var p: Vector2 = v[0]
+			st.set_normal(UP)
+			st.set_uv(Vector2(v[1], v[2]))
+			st.add_vertex(Vector3(p.x, 0.0, p.y))
+	return st.commit()
+
+
+## Ponto a menos de `margin` m da água (para o cenário não nascer dentro do rio).
+func _near_water(p: Vector2, margin: float) -> bool:
+	var T := sim.terra()
+	if not T.ok:
+		return false
+	if T.is_water(p.x, p.y):
+		return true
+	for k in 8:
+		var a := TAU * k / 8.0
+		if T.is_water(p.x + cos(a) * margin, p.y + sin(a) * margin):
+			return true
+	return false
+
+
 func _road_cells() -> Dictionary:
 	var cells := {}
 	for leg in sim.road.legs:
@@ -617,6 +720,8 @@ func _build_scatter() -> void:
 		var p := Vector2(rng.randf_range(b.position.x, b.end.x), rng.randf_range(b.position.y, b.end.y))
 		if cells.has(Vector2i(int(floor(p.x / 6.0)), int(floor(p.y / 6.0)))):
 			continue
+		if _near_water(p, 2.0):
+			continue
 		var f := wood.get_noise_2dv(p)
 		var st := stones.get_noise_2dv(p)
 		var r := rng.randf()
@@ -657,6 +762,20 @@ func _build_scatter() -> void:
 					var yaw := atan2(-o.x * side, -o.y * side) + PI * 0.5
 					sets["lantern"].append(Transform3D(Basis(UP, yaw), Vector3(q2.x, 0, q2.y)))
 					lanterns.append(Vector3(q2.x, 0, q2.y) + Basis(UP, yaw) * Vector3(0.5, 2.15, 0))
+	# Beira do rio: pedras, arbustos e flores soltos na margem (longe das pontes e da estrada).
+	for rv in sim.road.rivers:
+		var rp: PackedVector2Array = rv["pts"]
+		for i in range(1, rp.size() - 1, 2):
+			if rng.randf() > 0.4:
+				continue
+			var o := (rp[i + 1] - rp[i - 1]).normalized().orthogonal() * (1.0 if rng.randf() < 0.5 else -1.0)
+			var q: Vector2 = rp[i] + o * (RIVER_HW + rng.randf_range(0.6, 2.2))
+			if cells.has(Vector2i(int(floor(q.x / 6.0)), int(floor(q.y / 6.0)))) or sim.terra().is_water(q.x, q.y):
+				continue
+			var r2 := rng.randf()
+			var kk := "rock" if r2 < 0.45 else ("bush" if r2 < 0.7 else ("flowers" if r2 < 0.85 else "grass"))
+			var sc := rng.randf_range(0.6, 1.2)
+			sets[kk].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3.ONE * sc), Vector3(q.x, 0, q.y)))
 	for k in sets:
 		var mat: Material = Models.material()
 		var mesh: Mesh = Models.prop(k)
@@ -726,12 +845,10 @@ func _build_locations() -> void:
 			"shrine":
 				n.add_child(_mi(Models.prop("shrine"), off * 3.5))
 			"bridge":
-				var wmi := _mi(Models.prop("water"), Vector3.ZERO, Models.glow_material(0.2), yaw + PI * 0.5)
-				# O tabuleiro segue a estrada (o rio cruza com yaw + 90°); com yaw ele ficava paralelo ao rio.
-				var bmi := _mi(Models.prop("bridge"), Vector3.ZERO, null, yaw + PI * 0.5)
-				n.add_child(wmi)
+				# A água é o rio de verdade (_build_rivers); aqui só a ponte, no eixo da estrada.
+				var bmi := _bridge_mesh(yaw)
 				n.add_child(bmi)
-				_add_surface(p, [wmi, bmi])
+				_add_surface(p, [bmi])
 			"event":
 				# Encruzilhada "?": placa, pedras e lanterna.
 				n.add_child(_mi(Models.prop("fence"), off * 3.5, null, yaw))
@@ -1445,7 +1562,7 @@ func _add_surface(center: Vector2, mis: Array) -> void:
 		var mesh: Mesh = mi.mesh
 		if mesh == null:
 			continue
-		var xf := Transform3D(Basis(Vector3.UP, mi.rotation.y), Vector3(center.x, 0.0, center.y))
+		var xf := Transform3D(mi.transform.basis, Vector3(center.x, 0.0, center.y) + mi.position)
 		for si in mesh.get_surface_count():
 			var arr := mesh.surface_get_arrays(si)
 			var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
@@ -1844,11 +1961,12 @@ func _tick_pools(delta: float, alpha: float) -> void:
 
 
 func cine_active() -> bool:
-	return cine_t >= 0.0
+	return cine_t >= 0.0 or not scene.is_empty()
 
 
 ## Começa a cena da queda: um corpo do herói fica no lugar e tomba; o mundo desacelera.
 func fall_cinematic(p: Vector3) -> void:
+	_end_scene()   # a queda manda: a cena do local que estiver rodando acaba aqui
 	if corpse and is_instance_valid(corpse):
 		corpse.queue_free()
 	corpse = hero_root.duplicate() as Node3D
@@ -1887,6 +2005,213 @@ func _cine(delta: float) -> void:
 			tw.tween_callback(c.queue_free)
 
 
+## Começa a cena do local li. code: o do Ev.CONTEST no fim da disputa (1 completa, 10+n parcial, -1 falha);
+## 0 = chegada (loja, encruzilhada).
+func start_scene(li: int, code: int) -> void:
+	if not cine_enabled or cine_t >= 0.0 or li < 0 or li >= sim.road.locations.size():
+		return
+	_end_scene()
+	var loc: Dictionary = sim.road.locations[li]
+	var ty := str(loc["type"])
+	var tier := -1
+	var won_n := 0
+	if code == 1:
+		tier = 2
+		won_n = 1 if ty == "helper" else 3
+	elif code >= 11:
+		tier = 1
+		won_n = code - 10
+	elif code < 0:
+		tier = 0
+	var p: Vector2 = loc["pos"]
+	scene = {"li": li, "type": ty, "tier": tier, "won_n": won_n, "marks": 1 if ty == "helper" else 3,
+		"hard": bool(loc.get("hard", false)) and ty != "helper", "t": 0.0,
+		"dur": SCENE_END if tier >= 0 else SCENE_ARRIVE, "pos": Vector3(p.x, 0.0, p.y), "beat": 0}
+	if ty == "helper" and helper_node != null:
+		# O ajudante já saiu da simulação: o nó fica com a cena (tomba ou some nela).
+		scene_helper = helper_node
+		helper_node = null
+		helper_of = null
+	look_hold = true
+	look_off = Vector3.ZERO
+	Engine.time_scale = CINE_SLOW
+	_scene_beat(0)
+
+
+func scene_skippable() -> bool:
+	return not scene.is_empty() and float(scene["t"]) >= SCENE_SKIP_AFTER
+
+
+func skip_scene() -> void:
+	if scene_skippable():
+		_end_scene()
+
+
+func _scene_tick(real_dt: float) -> void:
+	scene["t"] = float(scene["t"]) + real_dt
+	var st := float(scene["t"])
+	var dur := float(scene["dur"])
+	# Batidas do efeito: 0 na largada, 1 e 2 ao longo da cena (a chegada só tem a 0 e a 1).
+	var beats := [0.0, 0.55, 1.2] if int(scene["tier"]) >= 0 else [0.0, 0.5]
+	while int(scene["beat"]) + 1 < beats.size() and st >= float(beats[int(scene["beat"]) + 1]):
+		scene["beat"] = int(scene["beat"]) + 1
+		_scene_beat(int(scene["beat"]))
+	var tier := int(scene["tier"])
+	var k := clampf((st - 0.25) / 1.6, 0.0, 1.0)
+	var e := k * k * (3.0 - 2.0 * k)
+	# Taverna vencida: as casas que sobraram afundam tortas.
+	if str(scene["type"]) == "tavern" and tier >= 1:
+		var pre := "%d:" % int(scene["li"])
+		for key in house_nodes:
+			if str(key).begins_with(pre):
+				var hn: MeshInstance3D = house_nodes[key]
+				if hn.visible and not hn.has_meta("y0"):
+					hn.set_meta("y0", hn.position.y)
+				if hn.has_meta("y0"):
+					hn.position.y = float(hn.get_meta("y0")) - 1.3 * e
+					hn.rotation.z = 0.18 + 0.25 * e
+	# Ajudante: vencido, tomba de lado como o herói caído; falha, encolhe e some num brilho.
+	if scene_helper and is_instance_valid(scene_helper):
+		if tier == 2:
+			scene_helper.rotation.z = PI * 0.5 * e - sin(clampf((k - 0.8) / 0.2, 0.0, 1.0) * PI) * 0.1
+			scene_helper.position.y = 0.3 * e
+		else:
+			scene_helper.scale = Vector3.ONE * HERO_SCALE * maxf(0.01, 1.0 - clampf((st - 0.6) / 0.6, 0.0, 1.0))
+	if st >= dur - SCENE_BACK:
+		Engine.time_scale = lerpf(CINE_SLOW, 1.0, clampf((st - (dur - SCENE_BACK)) / SCENE_BACK, 0.0, 1.0))
+	if st >= dur:
+		_end_scene()
+
+
+## Termina a cena do local (no fim, no pulo, na queda do herói ou numa run nova).
+func _end_scene() -> void:
+	if scene.is_empty():
+		return
+	var ty := str(scene["type"])
+	var li := int(scene["li"])
+	scene = {}
+	look_hold = false
+	if cine_t < 0.0:
+		Engine.time_scale = 1.0
+	if ty == "tavern":
+		var pre := "%d:" % li
+		for key in house_nodes:
+			if str(key).begins_with(pre):
+				house_nodes[key].visible = false
+	if scene_helper and is_instance_valid(scene_helper):
+		var c := scene_helper
+		var tw := c.create_tween()
+		tw.tween_interval(1.0)
+		tw.tween_property(c, "scale", Vector3.ONE * 0.01, 0.5)
+		tw.tween_callback(c.queue_free)
+	scene_helper = null
+
+
+## Um momento do efeito do local (ver a lista combinada em docs/CENA_DO_LOCAL.md).
+func _scene_beat(b: int) -> void:
+	var ty := str(scene["type"])
+	var tier := int(scene["tier"])
+	var p: Vector3 = scene["pos"]
+	var hp := hero_pos(1.0)
+	var big := 1.0 if tier == 2 else 0.6     # parcial: o mesmo efeito, menor
+	var r := float(sim.road.locations[int(scene["li"])].get("r", 4.0))
+	if tier < 0:
+		match ty:
+			"shop":
+				if b == 0:
+					light_flash(p, Color(1, 0.85, 0.4))
+					emit_fx("level", p + Vector3(0, 0.8, 0), 1.3)
+					ring_burst(p, 3.0, Color(1, 0.8, 0.3))
+				else:
+					emit_fx("spark", p + Vector3(0, 1.4, 0), 1.6)
+					emit_fx("level", p + Vector3(0, 1.6, 0), 0.8)
+			_:
+				# Encruzilhada: névoa e um brilho de pergaminho no local.
+				if b == 0:
+					emit_fx("smoke", p + Vector3(0, 0.6, 0), 2.2)
+					emit_fx("magic", p + Vector3(0, 1.6, 0), 1.2)
+					light_flash(p, Color(0.8, 0.7, 1.0))
+				else:
+					emit_fx("smoke", p + Vector3(1.2, 0.4, 0.6), 1.6)
+					emit_fx("magic", p + Vector3(0, 2.4, 0), 0.8)
+					ring_burst(p, 2.6, Color(0.85, 0.75, 1.0))
+		return
+	if tier == 0:
+		# Falha: o local se volta para o herói.
+		match ty:
+			"tavern":
+				if b == 0:
+					light_flash(p, Color(1, 0.8, 0.4))
+				emit_fx("level", hp + Vector3(0, 0.8, 0), 0.9)
+				if b == 1:
+					emit_fx("heal", hp + Vector3(0, 0.8, 0), 1.4)
+			"fountain":
+				if b == 0:
+					emit_fx("shield", p + Vector3(0, 0.5, 0), 2.0)
+					light_flash(p, Color(0.5, 0.75, 1.0))
+				elif b == 1:
+					emit_fx("shield", p + Vector3(0, 2.0, 0), 1.6)
+				else:
+					emit_fx("heal", hp + Vector3(0, 0.8, 0), 1.4)
+			"ritual":
+				emit_fx("smoke", p + Vector3(0, 0.4, 0), 1.6 + 0.5 * b)
+				if b == 0:
+					ring_burst(p, r, Color(0.35, 0.3, 0.4))
+			"shrine":
+				if b == 0:
+					light_flash(p, Color(1, 0.95, 0.7))
+					screen_flash = Color(1, 0.95, 0.7, 0.25)
+				emit_fx("level", p + Vector3(0, 0.5 + 1.5 * b, 0), 1.4)
+			"bridge":
+				emit_fx("level", hp + Vector3(0, 0.8, 0), 0.9)
+				if b == 0:
+					light_flash(hp, Color(1, 0.9, 0.6))
+			"helper":
+				if scene_helper and is_instance_valid(scene_helper):
+					emit_fx("level", scene_helper.position + Vector3(0, 1.0, 0), 1.0)
+					if b == 2:
+						emit_fx("smoke", scene_helper.position + Vector3(0, 1.0, 0), 1.2)
+		return
+	# Completa ou parcial: o local desaba a favor do vilão.
+	match ty:
+		"tavern":
+			var pre := "%d:" % int(scene["li"])
+			for key in house_nodes:
+				if str(key).begins_with(pre) and house_nodes[key].visible:
+					var hpos: Vector3 = house_nodes[key].position
+					emit_fx("fire", Vector3(hpos.x, 1.0, hpos.z), 1.3 * big)
+					emit_fx("smoke", Vector3(hpos.x, 1.4, hpos.z), 1.3 * big)
+			if b == 0:
+				add_trauma(0.3 * big)
+		"fountain":
+			emit_fx("smoke", p + Vector3(0, 0.8 + 0.6 * b, 0), 1.6 * big)
+			emit_fx("magic", p + Vector3(0, 0.6, 0), 1.4 * big)
+			if b == 0:
+				ring_burst(p, 3.0, Color(0.5, 0.2, 0.7))
+		"ritual":
+			if b == 0:
+				ring_burst(p, r, Color(0.75, 0.35, 1.0))
+				light_flash(p, Color(0.75, 0.35, 1.0))
+			emit_fx("magic", p + Vector3(0, 0.6 + 1.8 * b, 0), 1.8 * big)
+		"shrine":
+			emit_fx("fire", p + Vector3(0, 1.0, 0), 1.5 * big)
+			emit_fx("smoke", p + Vector3(0, 1.6, 0), 1.5 * big)
+			if b == 0:
+				add_trauma(0.25 * big)
+		"bridge":
+			emit_fx("spark", p + Vector3(0, 1.0, 0), 1.8 * big)
+			emit_fx("death", p + Vector3(0, 1.2, 0), 1.6 * big)
+			emit_fx("smoke", p + Vector3(0, 0.8, 0), 1.4 * big)
+			if b == 0:
+				add_trauma(0.35 * big)
+		"helper":
+			if scene_helper and is_instance_valid(scene_helper) and b <= 1:
+				ring_burst(scene_helper.position, 3.0, Color(1, 0.8, 0.3))
+				emit_fx("hit", scene_helper.position + Vector3(0, 1.0, 0), 1.5)
+	if b == 2 and tier == 2:
+		emit_fx("level", p + Vector3(0, 1.5, 0), 1.2)
+
+
 func _camera(alpha: float, delta: float) -> void:
 	var target := hero_pos(alpha)
 	if sim.phase == K.Phase.ARENA:
@@ -1894,7 +2219,17 @@ func _camera(alpha: float, delta: float) -> void:
 	var close := 0.0
 	if cine_t >= 0.0:
 		_cine(delta)
-	if cine_t >= 0.0:
+	if not scene.is_empty():
+		_scene_tick(delta / maxf(Engine.time_scale, 0.01))
+	if not scene.is_empty():
+		# Vai até o local (0,35 s), fica nele e volta para o herói no fim.
+		var st := float(scene["t"])
+		var w := smoothstep(0.0, 0.35, st) * (1.0 - smoothstep(float(scene["dur"]) - SCENE_BACK, float(scene["dur"]), st))
+		# O local fica um pouco abaixo do meio da tela: o letreiro e os selos ficam acima dele, sem cobrir o efeito.
+		var focus: Vector3 = target.lerp(scene["pos"] + Vector3(0, 0, -3.0), w)
+		close = w * (4.0 if int(scene["tier"]) >= 0 else 2.5)
+		cam_pos = cam_pos.lerp(focus, clampf(delta / Engine.time_scale * 6.0, 0.0, 1.0))
+	elif cine_t >= 0.0:
 		# Foco no corpo (aproxima), depois recua deslizando até o herói novo.
 		var j := clampf((cine_t - CINE_FOCUS) / CINE_TRAVEL, 0.0, 1.0)
 		var e := j * j * (3.0 - 2.0 * j)
@@ -2051,8 +2386,11 @@ func orb(from: Vector3) -> void:
 ## Casas da Taverna em disputa: aparecem na chegada do herói, afundam e somem quando quebram.
 func _draw_houses() -> void:
 	if sim.contest.is_empty() or sim.contest["type"] != "tavern":
+		# Na cena do fim da taverna as casas dela ficam (afundam ou ficam de pé) até a cena acabar.
+		var keep := "%d:" % int(scene["li"]) if scene.get("type", "") == "tavern" else "-"
 		for k in house_nodes:
-			house_nodes[k].visible = false
+			if not str(k).begins_with(keep):
+				house_nodes[k].visible = false
 		return
 	var li := int(sim.contest["li"])
 	var hs: Array = sim.road.locations[li]["houses"]
@@ -2236,8 +2574,18 @@ func handle_events(evs: Array) -> void:
 						emit_fx("magic", p + Vector3(0, 0.3, 0), 0.5)
 			K.Ev.CURSE:
 				emit_fx("magic", p + Vector3(0, 1.4, 0), 0.6)
+			K.Ev.CONTEST:
+				var cc := int(ev[4])
+				if cc == 1 or cc == -1 or cc >= 11:
+					start_scene(int(ev[3]), cc)
+			K.Ev.LOCATION:
+				var lli := int(ev[3])
+				if lli >= 0 and lli < sim.road.locations.size() and str(sim.road.locations[lli]["type"]) in ["shop", "event"]:
+					start_scene(lli, 0)
 			K.Ev.SHRINE:
-				if float(ev[3]) > 0.0:
+				if cine_enabled:
+					pass   # a cena do local mostra o resultado do santuário
+				elif float(ev[3]) > 0.0:
 					emit_fx("level", p + Vector3(0, 1.0, 0), 1.5)
 					screen_flash = Color(0.4, 1, 0.6, 0.3)
 				else:

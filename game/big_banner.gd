@@ -58,7 +58,8 @@ func show_banner(head: String, line := "", color := UiKit.GOLD, to := Vector2(-1
 func _process(delta: float) -> void:
 	if t < 0.0:
 		return
-	t += delta
+	# Tempo real: nas cenas em câmera lenta (queda, fim de disputa) o letreiro não se arrasta.
+	t += delta / maxf(Engine.time_scale, 0.01)
 	var vs := get_viewport_rect().size
 	var bs := box.get_combined_minimum_size()
 	box.size = bs

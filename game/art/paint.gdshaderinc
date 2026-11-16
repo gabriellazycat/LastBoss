@@ -22,6 +22,15 @@ global uniform sampler2D paint_t_fur : hint_default_white, filter_linear_mipmap,
 global uniform sampler2D paint_t_metal : hint_default_white, filter_linear_mipmap, repeat_enable;
 global uniform sampler2D paint_t_wood : hint_default_white, filter_linear_mipmap, repeat_enable;
 global uniform sampler2D paint_t_cloth : hint_default_white, filter_linear_mipmap, repeat_enable;
+// Mundo como as cartas (15/11/2026, docs/MUNDO_COMO_CARTAS.md), três chaves independentes (Settings mundo_*, F6/F7/F8):
+//   paint_cor     A: chão e cenário nos fundos das cartas (menta -> sálvia, salmão -> ocre, croma menor);
+//                    as unidades (look5 define PAINT_UNIT) mantêm a cor;
+//   paint_escuro  B: sombra mais funda e fria (o ambiente perde névoa e brilho em PaintLook.apply_env);
+//   paint_papel   C: o grão do papel das cartas (assets/textures/paint/papel.png), preso ao mundo, só clareando.
+global uniform bool paint_cor;
+global uniform bool paint_escuro;
+global uniform bool paint_papel;
+global uniform sampler2D paint_t_papel : hint_default_white, filter_linear_mipmap, repeat_enable;
 
 float pt_hash(vec3 p) {
 	p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
@@ -123,12 +132,69 @@ vec3 pt_palette(vec3 lin) {
 	return g * g;
 }
 
+// CIELab (D65) a partir de linear e de volta, para mexer em matiz e croma como na simulação (docs/simulacao_mundo).
+vec3 pt_lab(vec3 lin) {
+	vec3 xyz = mat3(vec3(0.4124, 0.2126, 0.0193), vec3(0.3576, 0.7152, 0.1192), vec3(0.1805, 0.0722, 0.9505)) * lin;
+	xyz /= vec3(0.9505, 1.0, 1.089);
+	vec3 f = mix(7.787 * xyz + 16.0 / 116.0, pow(max(xyz, vec3(1e-6)), vec3(1.0 / 3.0)), step(vec3(0.008856), xyz));
+	return vec3(116.0 * f.y - 16.0, 500.0 * (f.x - f.y), 200.0 * (f.y - f.z));
+}
+
+vec3 pt_unlab(vec3 lab) {
+	float fy = (lab.x + 16.0) / 116.0;
+	vec3 f = vec3(fy + lab.y / 500.0, fy, fy - lab.z / 200.0);
+	vec3 f3 = f * f * f;
+	vec3 xyz = mix((f - 16.0 / 116.0) / 7.787, f3, step(vec3(0.008856), f3)) * vec3(0.9505, 1.0, 1.089);
+	return max(mat3(vec3(3.2406, -0.9689, 0.0557), vec3(-1.5372, 1.8758, -0.2040), vec3(-0.4986, 0.0415, 1.0570)) * xyz, vec3(0.0));
+}
+
+// A · cor dos fundos das cartas: menta/petróleo (matiz Lab 120-230) -> sálvia (118-131), salmão (15-90) -> ocre/areia
+// (65-84), croma x0,62. Mesmos números da simulação aprovada.
+vec3 pt_card_ground(vec3 lin) {
+	vec3 lab = pt_lab(lin);
+	float C = length(lab.yz);
+	float h = mod(degrees(atan(lab.z, lab.y)) + 360.0, 360.0);
+	if (h >= 120.0 && h <= 230.0) {
+		h = 118.0 + (h - 120.0) * 0.12;
+	} else if (h >= 15.0 && h < 90.0) {
+		h = 65.0 + (h - 15.0) * 0.25;
+	}
+	C *= 0.62;
+	return pt_unlab(vec3(lab.x, C * cos(radians(h)), C * sin(radians(h))));
+}
+
+// C · papel das cartas, projetado no mundo pelos três planos. `wp`/`wn` em espaço do mundo.
+// Manchas macias de papel de aquarela (16/11: o grão de 1 px de 15/11 lia como ruído digital).
+vec3 paint_paper(vec3 c, vec3 pw_pos, vec3 pw_nrm) {
+	if (!paint_on || !paint_papel) {
+		return c;
+	}
+	vec3 w = pow(abs(pw_nrm), vec3(4.0));
+	w /= max(w.x + w.y + w.z, 1e-4);
+	float s = 1.0 / 32.0;                                // a folha (1024 px) cobre 32 m: manchas de ~6-12 px na tela
+	float g = texture(paint_t_papel, pw_pos.zy * s).r * w.x + texture(paint_t_papel, pw_pos.xz * s).r * w.y
+		+ texture(paint_t_papel, pw_pos.xy * s).r * w.z;
+	g = (g - 0.5) * 4.0;                                  // a folha guarda 0,5 + grão (desvio ~0,12; tools/art/make_papel.py)
+	g = g > 0.0 ? g * 0.55 : g * 0.18;                   // clareia mais do que escurece (manchas grandes: mais fraco)
+	// Com o B ligado, a LUT estica o valor ~1,7x e o grão junto: compensa para ficar no grão das cartas (~8).
+	g *= paint_escuro ? 0.55 : 1.0;
+	return c * (1.0 + g);
+}
+
+// Fim do fragment() de cada material do mundo: aplica o papel (C) ao ALBEDO já pronto.
+#define PAINT_PAPER ALBEDO = paint_paper(ALBEDO, (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+
 // Cor final do material. `size` = largura do pincel em metros (no espaço de `p`).
 vec3 paint_albedo(vec3 lin, vec3 p, vec3 n, int kind, float size) {
 	if (!paint_on) {
 		return lin;
 	}
 	vec3 c = pt_palette(lin);
+#ifndef PAINT_UNIT
+	if (paint_cor) {
+		c = pt_card_ground(c);
+	}
+#endif
 	int k = kind < 0 ? pt_guess(sqrt(max(lin, vec3(0.0)))) : kind;
 	float v;
 	if (paint_tex > 0) {
@@ -154,6 +220,9 @@ vec3 paint_diffuse(vec3 N, vec3 L, vec3 V, float atten, vec3 lcol, vec3 pp, bool
 	float a = clamp(atten, 0.0, 1.0);
 	float edge = pt_noise(pp * 1.6) - 0.5;              // borda da mancha tremida como pincel
 	vec3 shade = vec3(0.52, 0.56, 0.7);                // sombra cinza fria das cartas (fração da luz)
+	if (paint_escuro) {
+		shade = vec3(0.26, 0.25, 0.42);                // B: sombra funda lilás-acinzentada, como a mancha das cartas
+	}
 	float lit;
 	if (paint_light == 1) {
 		// Guache chapado: duas manchas (luz e sombra) com borda curta e tremida.
@@ -172,7 +241,8 @@ vec3 paint_diffuse(vec3 N, vec3 L, vec3 V, float atten, vec3 lcol, vec3 pp, bool
 	vec3 k = mix(shade, vec3(1.0), lit);
 	// A parte em sombra ainda recebe a luz difusa da cena pela cor fria; a iluminada, a luz inteira.
 	// Luz pontual (lanternas, brilhos) cai com a distância: o preenchimento da sombra só existe perto dela.
-	float fill = directional ? 0.28 : 0.28 * clamp(atten * 3.0, 0.0, 1.0);
+	float f0 = paint_escuro ? 0.16 : 0.28;
+	float fill = directional ? f0 : f0 * clamp(atten * 3.0, 0.0, 1.0);
 	return lcol * k * (fill + (1.0 - fill) * lit) / PI;
 }
 

@@ -26,6 +26,7 @@ void fragment() {
 	vec3 c = mix(base_color, tip_color, paint_on ? 0.55 + 0.45 * hgt : hgt) * tint;
 	c = paint_albedo(c, paint_p, vec3(0.0, 1.0, 0.0), 0, 0.6);
 	ALBEDO = c;
+	PAINT_PAPER
 	ROUGHNESS = 0.8;
 	SPECULAR = 0.15;
 	BACKLIGHT = vec3(translucency) * c;

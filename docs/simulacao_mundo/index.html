@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mundo como as cartas</title>
+<style>
+  :root { --bg:#ece4d4; --ink:#3a2f24; --line:#b9a98d; --red:#9b2a22; --card:#f6f0e3; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.4 Georgia, serif; }
+  header { padding:14px 20px 6px; }
+  h1 { margin:0 0 4px; font-size:22px; }
+  .sub { opacity:.75; font-size:13px; }
+  .bar { display:flex; flex-wrap:wrap; gap:14px; align-items:center; padding:8px 20px 12px; border-bottom:1px solid var(--line); }
+  .grp { display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+  .grp b { margin-right:4px; font-size:13px; }
+  button { font:inherit; font-size:13px; padding:5px 10px; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:4px; cursor:pointer; }
+  button.on { background:var(--ink); color:var(--card); border-color:var(--ink); }
+  button.onR { background:var(--red); color:#fff; border-color:var(--red); }
+  main { padding:14px 20px 30px; }
+  .cmp { position:relative; width:100%; max-width:1600px; margin:0 auto; aspect-ratio:16/9; overflow:hidden; border:1px solid var(--line); background:#222; user-select:none; cursor:ew-resize; }
+  .cmp img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .cmp .top { clip-path: inset(0 0 0 50%); }
+  .cmp .div { position:absolute; top:0; bottom:0; width:2px; background:#fff; left:50%; box-shadow:0 0 4px #0008; }
+  .tag { position:absolute; top:8px; padding:3px 8px; background:#000a; color:#fff; font-size:13px; border-radius:3px; }
+  .tag.l { left:8px; } .tag.r { right:8px; }
+  table { margin:14px auto 0; border-collapse:collapse; font-size:13px; }
+  td, th { padding:4px 10px; border-bottom:1px solid var(--line); text-align:right; }
+  td:first-child, th:first-child { text-align:left; }
+  tr.alvo td { font-weight:bold; }
+  tr.sel td { background:#fff6; }
+  .hint { text-align:center; font-size:12px; opacity:.7; margin-top:6px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(360px,1fr)); gap:10px; max-width:1600px; margin:20px auto 0; }
+  .grid figure { margin:0; cursor:pointer; }
+  .grid img { width:100%; display:block; border:1px solid var(--line); }
+  .grid figcaption { font-size:13px; padding:3px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mundo como as cartas: simulação sobre fotos do jogo</h1>
+  <div class="sub">Prévia em imagem, o jogo não foi alterado. Arraste a linha branca para comparar. A = cor, B = escuros, C = papel das cartas.</div>
+</header>
+<div class="bar">
+  <div class="grp"><b>Cena</b><span id="cenas"></span></div>
+  <div class="grp"><b>Esquerda</b><span id="esq"></span></div>
+  <div class="grp"><b>Direita</b><span id="dir"></span></div>
+</div>
+<main>
+  <div class="cmp" id="cmp">
+    <img id="imgL" alt="">
+    <img id="imgR" class="top" alt="">
+    <div class="div" id="div"></div>
+    <span class="tag l" id="tagL"></span><span class="tag r" id="tagR"></span>
+  </div>
+  <div class="hint">Teclas: ← → movem a linha · 1 a 8 trocam a direita</div>
+  <table>
+    <thead><tr><th>Versão</th><th>Croma mediano</th><th>Escuros (L p5)</th><th>Textura</th></tr></thead>
+    <tbody id="tab"></tbody>
+  </table>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+const V = [
+  ["0_hoje","Hoje",16.8,53,1.4],["A_cor","A · só cor",11.0,53,1.4],["B_escuros","B · só escuros",16.8,37,2.4],
+  ["C_papel","C · só papel",16.9,52,8.2],["AB","A+B",11.0,37,2.4],["AC","A+C",11.0,52,8.3],
+  ["BC","B+C",16.8,36,8.7],["ABC","A+B+C · tudo",11.0,36,8.7]];
+const CENAS = [["V4_encontro","Encontro"],["V4_estrada","Estrada"]];
+let st = { cena:"V4_encontro", l:"0_hoje", r:"ABC", x:50 };
+try { Object.assign(st, JSON.parse(localStorage.getItem("simmundo") || "{}")); } catch(e) {}
+const $ = id => document.getElementById(id);
+function btns(el, list, key, cls) {
+  el.innerHTML = "";
+  list.forEach(([k, n]) => { const b = document.createElement("button"); b.textContent = n;
+    b.className = st[key] === k ? cls : ""; b.onclick = () => { st[key] = k; render(); }; el.appendChild(b); });
+}
+function src(t) { return `full/${st.cena}_${t}.png`; }
+function render() {
+  btns($("cenas"), CENAS, "cena", "on");
+  btns($("esq"), V.map(v => [v[0], v[1]]), "l", "on");
+  btns($("dir"), V.map(v => [v[0], v[1]]), "r", "onR");
+  $("imgL").src = src(st.l); $("imgR").src = src(st.r);
+  $("tagL").textContent = V.find(v => v[0] === st.l)[1];
+  $("tagR").textContent = V.find(v => v[0] === st.r)[1];
+  $("imgR").style.clipPath = `inset(0 0 0 ${st.x}%)`; $("div").style.left = st.x + "%";
+  $("tab").innerHTML = `<tr class="alvo"><td>Cartas (alvo)</td><td>8–13</td><td>20–36</td><td>~8</td></tr>` +
+    V.map(v => `<tr class="${v[0] === st.l || v[0] === st.r ? "sel" : ""}"><td>${v[1]}</td><td>${v[2]}</td><td>${v[3]}</td><td>${v[4]}</td></tr>`).join("");
+  $("grid").innerHTML = V.map(v => `<figure data-k="${v[0]}"><figcaption>${v[1]}</figcaption><img loading="lazy" src="${src(v[0])}" alt="${v[1]}"></figure>`).join("");
+  document.querySelectorAll(".grid figure").forEach(f => f.onclick = () => { st.r = f.dataset.k; render(); window.scrollTo({top:0, behavior:"smooth"}); });
+  try { localStorage.setItem("simmundo", JSON.stringify(st)); } catch(e) {}
+}
+const cmp = $("cmp"); let drag = false;
+function setX(e) { const r = cmp.getBoundingClientRect(); const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+  st.x = Math.max(0, Math.min(100, (cx - r.left) / r.width * 100)); $("imgR").style.clipPath = `inset(0 0 0 ${st.x}%)`; $("div").style.left = st.x + "%"; }
+cmp.addEventListener("mousedown", e => { drag = true; setX(e); });
+window.addEventListener("mousemove", e => { if (drag) setX(e); });
+window.addEventListener("mouseup", () => { if (drag) { drag = false; render(); } });
+cmp.addEventListener("touchstart", e => setX(e)); cmp.addEventListener("touchmove", e => { setX(e); e.preventDefault(); }, {passive:false});
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") { st.x = Math.max(0, st.x - 5); render(); }
+  if (e.key === "ArrowRight") { st.x = Math.min(100, st.x + 5); render(); }
+  const n = parseInt(e.key); if (n >= 1 && n <= 8) { st.r = V[n - 1][0]; render(); }
+});
+render();
+</script>
+</body>
+</html>

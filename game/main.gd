@@ -16,6 +16,9 @@ var cursor := Vector2.ZERO        # cursor virtual do controle (tela)
 var pad_active := false
 var arena_built := false
 var map_auto := false             # o mapa grande abriu sozinho numa bifurcação (fecha quando o herói volta a andar)
+var map_after := false            # um local acabou: o mapa abre depois da cena e das recompensas (15/11/2026)
+var map_after_t := 0.0
+var map_after_open := false       # o mapa aberto agora é o do fim do local (replanejar a rota fecha ele)
 var route_sel := 0                 # ramo destacado pelo controle na bifurcação
 var status_ov: StatusOverlay
 var was_blocking := false           # oferta/bifurcação/mapa abertos no quadro anterior (solta a carta selecionada)
@@ -30,6 +33,7 @@ const ESTILOS := {"A": [5, 4, 3], "B": [6, 2, 2], "C": [2, 4, 3], "D": [7, 5, 5]
 
 
 var overtime_said := false   # aviso da prorrogação da arena já mostrado
+var seen_party := -1         # party da fila já marcada como vista no meta (mapa da campanha, 16/11/2026)
 
 
 func _ready() -> void:
@@ -39,6 +43,10 @@ func _ready() -> void:
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
 			auto_args[kv[0]] = kv[1]
+	# --hud=N: troca a pele da interface só nesta execução, sem gravar (capturas das peles, 16/11/2026).
+	if auto_args.has("hud"):
+		Settings.v["look_hud"] = int(auto_args["hud"])
+		Settings.apply(get_tree())
 	# --liberar: jogo de teste com todas as fases e pactos liberados e 9999 Almas, em saves próprios
 	# (user://liberar_*.save); o seu save e o seu meta ficam intactos. Não é modo de teste: rota, Almas e
 	# coleção funcionam como no jogo normal (10/11/2026).
@@ -57,6 +65,9 @@ func _ready() -> void:
 	# --mapstyle=N (0 a 4): variação dos rios, montanhas e árvores do mapa grande (propostas de 15/11/2026).
 	if auto_args.has("mapstyle"):
 		Minimap.FS = int(auto_args["mapstyle"])
+	# --mapvar=N (0 a 9): estilo das construções do mapa da campanha (propostas de 16/11/2026).
+	if auto_args.has("mapvar"):
+		CampaignArt.VARIANT = int(auto_args["mapvar"])
 	if auto_args.has("mapfog"):
 		Minimap.FOG = auto_args["mapfog"] != "0"
 	# Testes e capturas salvam num arquivo próprio: nunca tocam na run salva do jogador.
@@ -210,6 +221,12 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		_route_test()
 	if auto_args.has("menutest"):
 		_menu_test()
+	if auto_args.has("campaignshot"):
+		_campaign_shot()
+	if auto_args.has("mapvars"):
+		_map_variants()
+	if auto_args.has("mapicons"):
+		_map_icons()
 	if auto_args.has("tiptest"):
 		_start("horde")
 		_tip_test()
@@ -411,6 +428,9 @@ func _cycle_speed() -> void:
 func _on_settings(key: String) -> void:
 	if key in ["quality", "all"]:
 		Settings.apply_quality(world_env, sun, get_viewport())
+	if key.begins_with("mundo_") or key == "all":
+		PaintLook.apply()
+		PaintLook.apply_env(world_env)
 	# Variação de arte: o tema, o chão e as malhas são montados na criação, então recarrega a cena.
 	# O guache troca os materiais da mesa do menu na criação: recarrega como os looks.
 	if key.begins_with("look_") or key == "paint_look":
@@ -615,13 +635,33 @@ func _start(deck: String) -> void:
 	_begin(s)
 
 
+## A party que está em campo passa a ser "vista": o mapa da campanha revela essas classes (16/11/2026). Grava na
+## hora, para sair no meio da run não perder. Os modos de teste gravam no meta de teste.
+func _mark_heroes_seen() -> void:
+	if sim == null or meta == null:
+		return
+	var p := sim.party_number(sim.party_idx)
+	if p == seen_party:
+		return
+	seen_party = p
+	var fresh := false
+	for i in sim.party_members(p) if sim.party_of.size() > 0 else [sim.party_idx]:
+		fresh = meta.see_hero(sim.party_class(int(i))) or fresh
+	if fresh:
+		meta.save()
+
+
 func _begin(s: Sim) -> void:
 	if menu_root:
 		menu_root.queue_free()
 		menu_root = null
 	sim = s
 	sim.record_events = true
+	seen_party = -1
 	result_played = false
+	map_after = false   # o mapa pós-local pendente da run anterior não abre na nova
+	map_after_t = 0.0
+	map_after_open = false
 	audio.music("music_road")
 	audio.set_intensity(0.0)
 	_apply_act_look(sim)
@@ -692,6 +732,36 @@ func _process(delta: float) -> void:
 		var pw := str(auto_args["pile"])
 		auto_args.erase("pile")
 		hud.fan._open_pile(pw)
+	# --contestend=<s>:<n>: com uma disputa rodando (--offer=contest:<tipo>), termina ela nesse instante com n marcos
+	# (0 = falha; no ajudante, n > 0 = vencido). Capturas da cena do local (15/11/2026).
+	if auto_args.has("contestend") and sim.contest.size() > 0:
+		var cw := str(auto_args["contestend"]).split(":")
+		if life >= float(cw[0]):
+			auto_args.erase("contestend")
+			var cn := int(cw[1]) if cw.size() > 1 else 3
+			var cty := str(sim.contest["type"])
+			if cty == "helper":
+				sim._resolve_helper(cn > 0)
+			else:
+				if cn >= 3 and cw.size() > 2 and cw[2] == "hard":
+					sim.road.locations[int(sim.contest["li"])]["hard"] = true
+				sim._resolve_contest(cn)
+			world.handle_events(sim.events)
+			hud.handle_events(sim.events)
+			audio.handle_events(sim.events, sim)
+			sim.events.clear()
+			_scene_gates()
+	# --skipkey=<s>: aperta espaço de verdade nesse instante (pulo da cena do local); --pick=<s>: a partir desse
+	# instante escolhe a 1ª opção de cada oferta que aparecer na tela (o mapa do fim do local abre depois).
+	if auto_args.has("skipkey") and life >= float(auto_args["skipkey"]):
+		auto_args.erase("skipkey")
+		var ke := InputEventKey.new()
+		ke.keycode = KEY_SPACE
+		ke.pressed = true
+		Input.parse_input_event(ke)
+		print("cena: espaço apertado; cena ativa=%s, t=%.2f" % [not world.scene.is_empty(), float(world.scene.get("t", -1.0))])
+	if auto_args.has("pick") and life >= float(auto_args["pick"]) and sim.offers.size() > 0 and not hud.hold_offers:
+		hud.choose_offer(0, true)
 	# --shopbuy=<s>: com a loja aberta (--offer=shop), compra pela Hud a 1ª carta e o modificador nesse instante;
 	# --shopgold=<n> deixa esse ouro depois (captura do livro-caixa com vendidos, registro e falta de ouro).
 	if auto_args.has("shopbuy") and life >= float(auto_args["shopbuy"]) and sim.offers.size() > 0 and sim.offers[0]["source"] == "shop":
@@ -757,8 +827,9 @@ func _process(delta: float) -> void:
 	if status_ov.sim != sim:
 		status_ov.setup(sim, world, cam)
 	status_ov.visible = not world.cine_active()
-	# Cena da morte do herói: a recompensa só abre quando a câmera chega no herói novo; cartas travadas.
-	hud.hold_offers = world.cine_active()
+	# Cena da morte do herói e cena do local: a recompensa só abre quando a cena acaba; cartas travadas.
+	_scene_gates()
+	_map_after_location(delta)
 	# --spawn=<id>,<id>: coloca essas criaturas em campo, em arco diante do herói, 2 s depois do início (fotos do mapa).
 	if auto_args.has("spawn") and life >= 2.0:
 		var sp_ids: PackedStringArray = str(auto_args["spawn"]).split(",", false)
@@ -801,9 +872,14 @@ func _process(delta: float) -> void:
 		if not hud.minimap.visible:
 			_toggle_map()
 		if auto_args.has("mapscroll"):
-			hud.minimap.scroll_to_design(float(auto_args["mapscroll"]))
-	# Bifurcação sem escolha: o jogo espera e o mapa grande abre sozinho.
-	if sim.route_wait and not hud.minimap.visible and sim.offers.is_empty():
+			# --mapscroll=river[N]: centra no N-ésimo rio do ato (capturas dos rios, 16/11/2026).
+			var ms := str(auto_args["mapscroll"])
+			if ms.begins_with("river"):
+				hud.minimap.scroll_to_design(hud.minimap.river_y(int(ms.trim_prefix("river"))) - 540.0)
+			else:
+				hud.minimap.scroll_to_design(float(ms))
+	# Bifurcação sem escolha: o jogo espera e o mapa grande abre sozinho (nunca por cima da cena do local).
+	if sim.route_wait and not hud.minimap.visible and sim.offers.is_empty() and not world.cine_active():
 		map_auto = true
 		_toggle_map()
 	_close_auto_map()
@@ -830,9 +906,12 @@ func _process(delta: float) -> void:
 			hud.handle_events(sim.events)
 			audio.handle_events(sim.events, sim)
 			sim.events.clear()
-			if sim.offers.size() > 0:
+			# A cena do local começou neste passo: segura a oferta já, sem ela piscar por um quadro.
+			_scene_gates()
+			if sim.offers.size() > 0 and world.scene.is_empty():
 				acc = 0.0
 				break
+	_mark_heroes_seen()
 	# Ato novo: estrada nova, chão e luz do ato.
 	if sim.phase == K.Phase.ROAD and sim.act != built_act:
 		_apply_act_look(sim)
@@ -1187,7 +1266,15 @@ func _menu_test() -> void:
 		if not cond:
 			fails.append(name)
 	await _click(_button(menu, "UI_NEW_RUN"))
-	step.call("Nova run abre a escolha de vilão", menu.screen == "decks")
+	step.call("Nova run abre o mapa da campanha", menu.screen == "campaign")
+	await get_tree().create_timer(1.2).timeout
+	_ui_shot("menu_campaign")
+	# Defender numa fase aberta (a 1, com o tutorial vencido) leva à escolha do vilão.
+	var won0: Array = meta.phases_won.duplicate()
+	meta.phases_won = [0]
+	menu.campaign.open(1)
+	await _click(_button(menu.campaign, "UI_CAMPAIGN_DEFEND"))
+	step.call("Defender abre a escolha de vilão", menu.screen == "decks" and menu.pending_phase == 1)
 	# Capturas esperam a folha subir da mesa; depois, com os 3 vilões liberados (o teste não grava o meta do jogo).
 	await get_tree().create_timer(1.2).timeout
 	_ui_shot("menu_decks")
@@ -1201,7 +1288,10 @@ func _menu_test() -> void:
 	menu.show_screen("decks")
 	await get_tree().create_timer(0.3).timeout
 	await _key(KEY_ESCAPE)
+	step.call("Esc volta ao mapa da campanha", menu.screen == "campaign")
+	await _key(KEY_ESCAPE)
 	step.call("Esc volta ao título", menu.screen == "title")
+	meta.phases_won = won0
 	if UiSkins.mapa() and menu.title_root is MapMenu:
 		# Pele "Mapa aberto": os papéis da mesa saem; o clique no lugar "Compêndio" do mapa abre a tela.
 		await _click((menu.title_root as MapMenu).buttons["compendium"])
@@ -1264,26 +1354,33 @@ func _menu_test() -> void:
 	_ui_shot("menu_rare")
 	await _click(_button(menu, "UI_RARE_PICK"))
 	step.call("Escolher a rara grava na coleção", meta.rare_choices == 0 and meta.unlocked.size() == had_unlocked + 1 and menu.screen == "title")
-	await _click(_button(menu, "UI_NEW_RUN"))
-	await _click(_button(menu, "UI_PICK_VILLAIN"))
-	step.call("Escolher o vilão abre o grupo de heróis", menu.screen == "group")
-	await get_tree().create_timer(1.2).timeout
-	_ui_shot("menu_group")
-	# A fase 3 aberta mostra o que ela libera (vilão, Almas, rara à escolha).
+	# Mapa da campanha: fases vencidas escuras, a aberta, as trancadas sob névoa; a seta anda e a câmera passa pelo covil.
 	var won_before: Array = meta.phases_won.duplicate()
+	var seen_before: Array = meta.heroes_seen.duplicate()
 	meta.phases_won = [0, 1, 2]
-	menu.pending_phase = 3
-	menu._fill_group()
-	await get_tree().create_timer(0.3).timeout
-	_ui_shot("menu_phases")
-	menu.pending_phase = -1
-	meta.phases_won = won_before
-	menu._fill_group()
-	await _key(KEY_ESCAPE)
-	step.call("Esc volta à escolha de vilão", menu.screen == "decks")
+	meta.heroes_seen = ["escudeiro", "arqueira", "barbaro"]
+	await _click(_button(menu, "UI_NEW_RUN"))
+	step.call("o mapa abre na próxima fase a vencer", menu.screen == "campaign" and menu.campaign.phase == 3)
+	await get_tree().create_timer(1.2).timeout
+	_ui_shot("menu_campaign_3")
+	await _key(KEY_RIGHT)
+	step.call("seta para a direita vai à fase 4", menu.campaign.phase == 4 and menu.campaign.animating())
+	await get_tree().create_timer(0.75).timeout
+	_ui_shot("menu_campaign_move")
+	await get_tree().create_timer(1.0).timeout
+	_ui_shot("menu_campaign_locked")
+	step.call("fase trancada: Defender desligado", menu.campaign.go_b.disabled)
+	await _key(KEY_LEFT)
+	await _key(KEY_LEFT)
+	await _key(KEY_LEFT)
+	step.call("seta para a esquerda volta (fase 1)", menu.campaign.phase == 1)
+	await get_tree().create_timer(1.7).timeout
+	await _click(_button(menu.campaign, "UI_CAMPAIGN_DEFEND"))
+	step.call("Defender a fase 1 abre a escolha de vilão", menu.screen == "decks" and menu.pending_phase == 1)
 	await _click(_button(menu, "UI_PICK_VILLAIN"))
-	await _click(_button(menu, "UI_START_RUN"))
-	step.call("Começar a run com o vilão e o grupo", running and sim != null and sim.deck_id == "plague" and not menu.visible)
+	step.call("Começar a run com o vilão na fase do mapa", running and sim != null and sim.deck_id == "plague" and sim.campaign_phase == 1 and not menu.visible)
+	meta.phases_won = won_before
+	meta.heroes_seen = seen_before
 	await get_tree().create_timer(0.3).timeout
 	await _key(KEY_ESCAPE)
 	step.call("Esc pausa", paused and hud.pause_layer.visible)
@@ -1312,6 +1409,88 @@ func _menu_test() -> void:
 		SaveGame.erase()
 	print("menutest resultado: ", "OK" if fails.is_empty() else "FALHOU " + str(fails))
 	get_tree().quit(0 if fails.is_empty() else 1)
+
+
+## Capturas do mapa da campanha (16/11/2026), para comparar as peles (--hud=N): fases 0 a 2 vencidas, a 3 aberta,
+## a câmera no meio da viagem para a 4 (trancada) e parada nela. Usa o meta de teste; não mexe nas configurações.
+func _campaign_shot() -> void:
+	meta.phases_won = [0, 1, 2]
+	meta.heroes_seen = ["escudeiro", "arqueira", "barbaro", "assassino"]
+	await get_tree().create_timer(0.5).timeout
+	menu.show_screen("campaign")
+	await get_tree().create_timer(1.6).timeout
+	_ui_shot("campaign_hud%s_open" % str(auto_args.get("hud", "")))
+	menu.campaign.step(1)
+	await get_tree().create_timer(0.7).timeout
+	_ui_shot("campaign_hud%s_move" % str(auto_args.get("hud", "")))
+	await get_tree().create_timer(1.2).timeout
+	_ui_shot("campaign_hud%s_locked" % str(auto_args.get("hud", "")))
+	menu.campaign.select(2)
+	await get_tree().create_timer(1.8).timeout
+	_ui_shot("campaign_hud%s_won" % str(auto_args.get("hud", "")))
+	if auto_args.has("out") and menu.campaign.bg != null:
+		menu.campaign.bg.get_image().save_png(str(auto_args["out"]) + "campaign_fundo.png")
+	print("campaignshot ok")
+	get_tree().quit(0)
+
+
+## --mapicons=1: desenha no estilo escolhido do reino (CampaignArt.VARIANT) os ícones das construções do menu, da
+## loja e do fim da run e salva em assets/ui/map/ como PNG (icon_<s>.png, node_<s>.png e node_<s>_hot.png, com o
+## anel do lugar); o jogo prefere o PNG ao SVG antigo (CampaignArt.map_tex).
+func _map_icons() -> void:
+	await get_tree().create_timer(0.3).timeout
+	var jobs := [["m-lair", "lair"], ["m-library", "hall"], ["m-tower", "tower"], ["m-mill", "mill"], ["m-boat", "boat"],
+		["m-tent", "tent"], ["m-house", "house"]]
+	for j in jobs:
+		for mode in ["icon", "node", "node_hot"]:
+			var vp := SubViewport.new()
+			vp.disable_3d = true
+			vp.transparent_bg = true
+			vp.size = Vector2i(256, 256) if mode == "icon" else Vector2i(240, 240)
+			vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+			var cv := Node2D.new()
+			var kind: String = j[1]
+			var m: String = mode
+			cv.draw.connect(func():
+				var a := CampaignArt.drawer(cv)
+				if m == "icon":
+					a.icon(kind, Transform2D.IDENTITY, Vector2(128, 136), 2.85, 7)
+					return
+				var hot := m == "node_hot"
+				cv.draw_circle(Vector2(120, 120), 112.0, Color("e8d6a8"))
+				cv.draw_arc(Vector2(120, 120), 112.0, 0.0, TAU, 96, Color("a8323a") if hot else CampaignArt.INK, 10.0 if hot else 8.0, true)
+				cv.draw_arc(Vector2(120, 120), 94.0, 0.0, TAU, 96, CampaignArt.INK, 4.0, true)
+				a.icon(kind, Transform2D.IDENTITY, Vector2(120, 124), 2.05, 7))
+			vp.add_child(cv)
+			add_child(vp)
+			await RenderingServer.frame_post_draw
+			await RenderingServer.frame_post_draw
+			var name_ := ("icon_%s.png" if mode == "icon" else ("node_%s_hot.png" if mode == "node_hot" else "node_%s.png")) % j[0]
+			vp.get_texture().get_image().save_png("res://assets/ui/map/" + name_)
+			if auto_args.has("out"):
+				vp.get_texture().get_image().save_png(str(auto_args["out"]) + name_)
+			vp.queue_free()
+	print("mapicons ok")
+	get_tree().quit(0)
+
+
+## --mapvars=1 --out=pasta/: desenha as 10 variações do fundo da campanha e salva cada uma (mapa_var_N.png).
+func _map_variants() -> void:
+	await get_tree().create_timer(0.3).timeout
+	for n in CampaignArt.count():
+		var holder := Node.new()
+		add_child(holder)
+		var tex := CampaignArt.bake(holder, data, n)
+		for i in 4:
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		if auto_args.has("out"):
+			tex.get_image().save_png(str(auto_args["out"]) + "mapa_var_%d.png" % n)
+		print("mapvar ", n, " ", CampaignArt.style_name(n))
+		holder.queue_free()
+		await get_tree().process_frame
+	print("mapvars ok")
+	get_tree().quit(0)
 
 
 ## Teste das caixas de explicação com entrada real: habilidade nova na HUD, caixa do ícone, caixa aninhada
@@ -1577,6 +1756,8 @@ func _route_click(n: int) -> void:
 	if sim.choose_route(n):
 		audio.play("card_play", 0.0)
 		_close_auto_map()
+		if map_after_open and hud.minimap.visible:
+			_toggle_map()   # mapa do fim do local: replanejou, segue
 
 
 ## Opção k da bifurcação em que o herói espera (da esquerda para a direita).
@@ -1588,6 +1769,39 @@ func _route_option(k: int) -> bool:
 		return false
 	_route_click(sim.road.legs[outs[k]]["b"])
 	return true
+
+
+## Cenas (queda do herói, local): a HUD segura a oferta e esmaece as cartas; os selos dos marcos leem a cena.
+## Na cena do local o mundo segue em câmera lenta mesmo com a recompensa já pronta na simulação (sem isso ele
+## congelaria assim que a oferta entra); sem cena, a oferta pausa a simulação como sempre.
+func _scene_gates() -> void:
+	hud.hold_offers = world.cine_active()
+	sim.pause_on_offer = world.scene.is_empty() or sim.offers.is_empty()
+	hud.seals.show_scene(world.scene)
+
+
+## Depois de todo local (15/11/2026), o mapa grande abre quando a cena e as recompensas acabam e o jogo espera:
+## numa bifurcação ele já abre sozinho (escolha obrigatória); com o caminho decidido ou único, o jogador olha e
+## fecha (botão, Esc ou M) ou replaneja clicando num local. Sem cena (bots, testes sem janela) não abre.
+func _map_after_location(delta: float) -> void:
+	if not world.scene.is_empty():
+		map_after = true
+		map_after_t = 0.0
+		return
+	if not map_after or world.cine_active() or not sim.offers.is_empty() or sim.act_pending:
+		map_after_t = 0.0
+		return
+	if sim.phase != K.Phase.ROAD or hud.minimap.visible or sim.route_wait or sim.road.complete:
+		map_after = false   # fora da estrada, mapa já aberto, ou a bifurcação abre o dela
+		return
+	# Alguns passos da simulação antes: numa bifurcação, route_wait chega e o mapa dela abre no lugar deste.
+	map_after_t += delta / maxf(Engine.time_scale, 0.01)
+	if map_after_t >= 0.25:
+		map_after = false
+		map_after_open = true
+		_toggle_map()
+		if not auto_args.is_empty():
+			print("cena: mapa aberto depois do local (t=%.1f)" % sim.t)
 
 
 ## O mapa que abriu sozinho na bifurcação fecha quando o herói volta a andar.
@@ -1631,6 +1845,17 @@ func _unhandled_input(e: InputEvent) -> void:
 	if not running or sim == null:
 		return
 	if world and world.cine_active() and not (e is InputEventMouseMotion):
+		# Cena do local: depois de 1 s, clique, espaço ou A do controle pulam para a recompensa (e o evento
+		# morre aqui, sem escolher nada nem pausar).
+		var skip_ev: bool = (e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT) \
+			or (e is InputEventKey and e.pressed and not e.echo and (e.keycode == KEY_SPACE or e.keycode == KEY_ENTER)) \
+			or e.is_action_pressed("pad_confirm")
+		if skip_ev and world.scene_skippable():
+			world.skip_scene()
+			hud.banner.t = -1.0   # o letreiro do resultado não fica por trás da recompensa
+			hud.banner.visible = false
+			_scene_gates()
+			get_viewport().set_input_as_handled()
 		return
 	if e is InputEventMouseMotion:
 		pad_active = false
@@ -1678,6 +1903,13 @@ func _unhandled_input(e: InputEvent) -> void:
 				_altar_step(-1)
 			KEY_E:
 				_altar_step(1)
+			# Mundo como as cartas (docs/MUNDO_COMO_CARTAS.md): A cor, B escuros, C papel, na hora.
+			KEY_F6:
+				hud.say(PaintLook.toggle("mundo_cor", world_env))
+			KEY_F7:
+				hud.say(PaintLook.toggle("mundo_escuro", world_env))
+			KEY_F8:
+				hud.say(PaintLook.toggle("mundo_papel", world_env))
 	_pad_input(e)
 
 
@@ -1696,6 +1928,8 @@ func _toggle_map() -> void:
 	mm.visible = not mm.visible
 	if mm.visible:
 		mm.setup(sim)
+	else:
+		map_after_open = false
 
 
 # ---------------------------------------------------------------- controle

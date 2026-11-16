@@ -33,6 +33,8 @@ static func defaults() -> Dictionary:
 		# Mundo pintado em guache nos materiais (13/11/2026, docs/MUNDO_PINTADO.md): 0 = desligado, 1..9 = variações
 		# S1-S3, T1-T3, C1-C3 (game/art/paint_look.gd). Escolhida pelo designer em 13/11: S1, guache chapado.
 		"paint_look": 1,
+		# Mundo como as cartas (15/11/2026, docs/MUNDO_COMO_CARTAS.md): A cor, B escuros, C papel; F6/F7/F8 no jogo.
+		"mundo_cor": true, "mundo_escuro": true, "mundo_papel": true,
 		# Miniaturas pintadas (15/11/2026, docs/MODELOS_GUACHE.md): 0 = desligado, 1..7 = versões V1..V7.
 		"model_g": 4,
 		# Versão do padrão de arte: quando sobe, quem já tinha configuração salva recebe a direção nova uma vez.
@@ -100,6 +102,10 @@ static func apply_quality(env: Environment, sun: DirectionalLight3D, vp: Viewpor
 	env.glow_enabled = q >= 1
 	sun.shadow_enabled = q >= 1
 	vp.msaa_3d = Viewport.MSAA_2X if q >= 2 else Viewport.MSAA_DISABLED
+	# Sombra pontilhada (15/11): o filtro suave do sol usa poucas amostras com ruído e, sem TAA, a borda vira pontos.
+	# Mais amostras na qualidade alta; a penumbra por ângulo (PCSS) saiu dos chãos (ground_looks.gd).
+	RenderingServer.directional_soft_shadow_filter_set_quality(
+		RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM if q >= 2 else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
 
 
 static func _bus(name: String) -> void:

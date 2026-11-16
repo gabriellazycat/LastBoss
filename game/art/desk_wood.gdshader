@@ -52,6 +52,7 @@ void fragment() {
 	col = mix(col, col * 1.35, scr * 0.5);
 	col *= 1.0 - smoothstep(0.6, 0.85, fbm(p * 2.2 + 11.0)) * 0.35;
 	ALBEDO = paint_albedo(col, wp * 6.0, vec3(0.0, 1.0, 0.0), 6, 0.5);
+	PAINT_PAPER
 	ROUGHNESS = mix(0.45, 0.8, g);
 	SPECULAR = 0.35;
 }

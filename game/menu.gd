@@ -24,13 +24,9 @@ var deck_screen: Control
 var deck_row: HBoxContainer
 var preview_head: Label
 var preview_row: HBoxContainer
-var group_screen: Control
-var group_row: HBoxContainer
-var group_deck: Label
 var pending_villain := ""
 var pending_phase := -1     # fase da campanha escolhida (-1 = a próxima a vencer)
-var phase_row: HBoxContainer
-var phase_info: Label
+var campaign: CampaignMap    # mapa da campanha (16/11/2026): Nova run abre aqui, antes do vilão
 var rare_screen: Control
 var rare_row: HBoxContainer
 var rare_sub: Label
@@ -76,7 +72,7 @@ func _ready() -> void:
 		shade.visible = false
 	_build_title()
 	_build_decks()
-	_build_group()
+	_build_campaign()
 	_build_rare()
 	collection = CollectionScreen.new()
 	collection.setup(data, meta)
@@ -182,7 +178,7 @@ func _build_title() -> void:
 	else:
 		title_box.add_child(main_buttons)
 	continue_btn = _menu_btn("UI_CONTINUE", func(): continue_run.emit())
-	new_run_btn = _menu_btn("UI_NEW_RUN", func(): show_screen("decks"))
+	new_run_btn = _menu_btn("UI_NEW_RUN", func(): show_screen("campaign"))
 	_menu_btn("UI_COLLECTION", func(): show_screen("collection"))
 	_menu_btn("UI_COMPENDIUM", func(): show_screen("compendium"))
 	_menu_btn("UI_SETTINGS", func(): show_screen("settings"))
@@ -194,7 +190,7 @@ func _on_map_choice(id: String) -> void:
 	if id == "continue":
 		continue_run.emit()
 	elif id == "new_run":
-		show_screen("decks")
+		show_screen("campaign")
 	elif id == "quit":
 		get_tree().quit()
 	else:
@@ -271,7 +267,7 @@ func _build_decks() -> void:
 	back.text = "UI_BACK"
 	back.custom_minimum_size = Vector2(200, 48)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	back.pressed.connect(func(): show_screen("title"))
+	back.pressed.connect(func(): show_screen("campaign"))
 	deck_screen.add_child(back)
 
 
@@ -349,7 +345,7 @@ func _fill_decks() -> void:
 		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		b.pressed.connect(func():
 			pending_villain = id
-			show_screen("group"))
+			_start_villain())
 		# Material próprio: acender este vilão não pode acender os painéis que dividem o mesmo material.
 		if p.material:
 			p.material = p.material.duplicate()
@@ -438,94 +434,30 @@ func _fill_rare() -> void:
 		rare_row.add_child(col)
 
 
-func _build_group() -> void:
-	if UiSkins.diario():
-		_build_group_parch()
-		return
-	group_screen = VBoxContainer.new()
-	group_screen.add_theme_constant_override("separation", 18)
-	add_child(group_screen)
-	var h := UiKit.title(44)
-	h.text = "UI_CHOOSE_GROUP"
-	group_screen.add_child(UiDiario.tape_title(h) if UiSkins.diario() else h)
-	var hs := UiKit.label(18, UiKit.MUTED)
-	hs.text = "UI_CHOOSE_GROUP_SUB"
-	group_screen.add_child(hs)
-	group_deck = UiKit.label(22, UiKit.GOLD)
-	group_screen.add_child(group_deck)
-	phase_row = HBoxContainer.new()
-	phase_row.add_theme_constant_override("separation", 10)
-	group_screen.add_child(phase_row)
-	phase_info = UiKit.label(18, UiKit.TEXT)
-	phase_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	phase_info.custom_minimum_size = Vector2(900, 0)
-	group_screen.add_child(phase_info)
-	group_row = HBoxContainer.new()
-	group_row.add_theme_constant_override("separation", 8)
-	group_screen.add_child(group_row)
-	var btns := HBoxContainer.new()
-	btns.add_theme_constant_override("separation", 14)
-	var back := Button.new()
-	back.text = "UI_BACK"
-	back.custom_minimum_size = Vector2(200, 56)
-	back.pressed.connect(func(): show_screen("decks"))
-	btns.add_child(back)
-	var go := Button.new()
-	go.name = "Go"
-	go.text = "UI_START_RUN"
-	go.custom_minimum_size = Vector2(320, 56)
-	go.add_theme_font_size_override("font_size", 24)
-	go.pressed.connect(func():
-		meta.villain = pending_villain
-		meta.save()
-		deck_chosen.emit(pending_villain))
-	btns.add_child(go)
-	group_screen.add_child(btns)
+## Mapa da campanha: escolher a fase (região) leva à escolha do vilão; o tutorial tem vilão fixo e começa direto.
+func _build_campaign() -> void:
+	campaign = CampaignMap.new()
+	campaign.setup(data, meta)
+	campaign.visible = false
+	campaign.chosen.connect(func(k: int):
+		pending_phase = k
+		var ph: Dictionary = data.phase(k)
+		if ph.has("deck"):
+			pending_villain = data.villain_id(str(ph["deck"]))
+			deck_chosen.emit(pending_villain)
+		else:
+			show_screen("decks"))
+	campaign.back.connect(func(): show_screen("title"))
+	add_child(campaign)
 
 
-## O grupo que o Pacto vai enfrentar: a fila de heróis, com nível, habilidades e força de cada um.
-func _fill_group() -> void:
+## Vilão escolhido: a run começa na fase escolhida no mapa.
+func _start_villain() -> void:
 	if pending_villain == "" or not meta.villains.has(pending_villain):
-		pending_villain = _default_villain()
-	if UiSkins.diario():
-		_fill_group_parch()
 		return
-	group_deck.text = tr("UI_GROUP_VILLAIN").format({"name": tr("DECK_" + pending_villain)})
-	if pending_phase < 0 or not meta.phase_open(pending_phase):
-		pending_phase = _next_phase()
-	_fill_phases()
-	UiKit.clear(group_row)
-	var P: Dictionary = data.rules["party"]
-	var ph: Dictionary = data.phase(pending_phase)
-	var party: Array = ph.get("party", [])
-	var n := party.size()
-	var mult := float(data.rules.get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0))
-	for i in n:
-		if UiSkins.diario():
-			group_row.add_child(_wanted_poster(i, n, P, mult, str(party[i])))
-			continue
-		var pst := _party_stat(i, str(party[i]), mult)
-		var pnl := UiKit.panel(UiKit.BG, UiKit.EDGE, 12)
-		pnl.custom_minimum_size = Vector2(150, 210)
-		var v := VBoxContainer.new()
-		v.add_theme_constant_override("separation", 8)
-		pnl.add_child(v)
-		var num := UiKit.title(20)
-		num.text = _party_ord(pst, i, n) + " · " + tr("HERO_" + str(party[i]))
-		v.add_child(num)
-		var lv := UiKit.label(18, UiKit.TEXT)
-		lv.text = tr("UI_HERO_LEVEL").format({"n": int(pst["pn"]) + 1})
-		v.add_child(lv)
-		var sk := UiKit.label(16, UiKit.MUTED)
-		sk.text = tr("UI_GROUP_SKILLS").format({"n": int(pst["first"])})
-		v.add_child(sk)
-		var hp := UiKit.label(16, UiKit.GOOD)
-		hp.text = tr("UI_GROUP_HP").format({"n": int(pst["hp"])})
-		v.add_child(hp)
-		var dm := UiKit.label(16, UiKit.BAD)
-		dm.text = tr("UI_GROUP_DMG").format({"n": int(pst["dm"])})
-		v.add_child(dm)
-		group_row.add_child(pnl)
+	meta.villain = pending_villain
+	meta.save()
+	deck_chosen.emit(pending_villain)
 
 
 ## Fase que libera o vilão (para o aviso do vilão bloqueado).
@@ -544,41 +476,13 @@ func _next_phase() -> int:
 	return 1
 
 
-## Botões das fases da campanha: as fechadas ficam desligadas; a escolhida mostra o grupo.
-func _fill_phases() -> void:
-	UiKit.clear(phase_row)
-	for ph in data.phases:
-		var k := int(ph["id"])
-		var b := Button.new()
-		var gift := "  ★" if str(ph.get("unlock_villain", "")) != "" or ph.get("rare_choice", false) else ""
-		b.text = "%s · %s%s%s" % [tr("UI_PHASE").format({"n": k}), tr(str(ph["key"])), gift, "  ✓" if meta.phases_won.has(k) else ""]
-		b.custom_minimum_size = Vector2(0, 44)
-		b.toggle_mode = true
-		b.button_pressed = k == pending_phase
-		b.disabled = not meta.phase_open(k)
-		if b.disabled:
-			b.tooltip_text = tr("UI_PHASE_LOCKED")
-		b.pressed.connect(func():
-			pending_phase = k
-			_fill_group())
-		phase_row.add_child(b)
-	var ph: Dictionary = data.phase(pending_phase)
-	var txt := tr("PHASED_%d" % pending_phase)
-	if str(ph.get("unlock_villain", "")) != "":
-		txt += "\n" + tr("UI_PHASE_UNLOCKS_V").format({"p": tr("DECK_" + str(ph["unlock_villain"]))})
-	if int(ph.get("reward_souls", 0)) > 0:
-		txt += "\n" + tr("UI_PHASE_SOULS").format({"n": int(ph["reward_souls"])})
-	if ph.get("rare_choice", false):
-		txt += "\n" + tr("UI_PHASE_RARE")
-	phase_info.text = txt
-
-
 func show_screen(s: String) -> void:
 	if s == "title" and _rare_pending():
 		s = "rare"
 	if UiSkins.diario() and s != screen and is_node_ready():
 		prev_screen = screen
 		prev_fade = 0.0
+	var came_from := screen
 	screen = s
 	fade = 0.0
 	if is_instance_valid(desk):
@@ -586,7 +490,7 @@ func show_screen(s: String) -> void:
 		desk.set_continue(SaveGame.exists())
 	title_root.visible = s == "title" or (prev_screen == "title" and prev_fade < 1.0)
 	deck_screen.visible = s == "decks"
-	group_screen.visible = s == "group"
+	campaign.visible = s == "campaign"
 	rare_screen.visible = s == "rare"
 	collection.visible = s == "collection"
 	compendium.visible = s == "compendium"
@@ -603,9 +507,11 @@ func show_screen(s: String) -> void:
 	elif s == "decks":
 		_fill_decks()
 		_focus_first_deck.call_deferred()
-	elif s == "group":
-		_fill_group()
-		(group_screen.find_child("Go", true, false) as Button).grab_focus.call_deferred()
+	elif s == "campaign":
+		# Vindo do título, o mapa abre na próxima fase a vencer; voltando do vilão, na que estava escolhida.
+		if came_from != "decks" or pending_phase < 0 or not meta.phase_open(pending_phase):
+			pending_phase = _next_phase()
+		campaign.open(pending_phase)
 	elif s == "rare":
 		_fill_rare()
 		for b in rare_screen.find_children("*", "Button", true, false):
@@ -630,8 +536,8 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
 		if screen == "decks":
 			_fill_decks.call_deferred()
-		elif screen == "group":
-			_fill_group.call_deferred()
+		elif screen == "campaign":
+			campaign.refresh.call_deferred()
 		elif screen == "rare":
 			_fill_rare.call_deferred()
 		elif screen == "collection":
@@ -649,11 +555,11 @@ func _unhandled_input(e: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_skip_rare()
 		return
-	if visible and screen == "group" and e.is_action_pressed("ui_cancel"):
-		get_viewport().set_input_as_handled()
-		show_screen("decks")
-		return
 	if visible and screen == "decks" and e.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		show_screen("campaign")
+		return
+	if visible and screen == "campaign" and e.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		show_screen("title")
 
@@ -676,8 +582,10 @@ func _process(delta: float) -> void:
 	title_box.modulate.a = fade
 	deck_screen.position = Vector2((vs.x - deck_screen.size.x) * 0.5, (vs.y - deck_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
 	deck_screen.modulate.a = fade
-	group_screen.position = Vector2((vs.x - group_screen.size.x) * 0.5, (vs.y - group_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
-	group_screen.modulate.a = fade
+	var cfit := minf(1.0, minf(vs.y * 0.96 / maxf(campaign.size.y, 1.0), vs.x * 0.98 / maxf(campaign.size.x, 1.0)))
+	campaign.scale = Vector2.ONE * cfit
+	campaign.position = (vs - campaign.size * cfit) * 0.5 + Vector2(0, (1.0 - fade) * 24.0)
+	campaign.modulate.a = fade
 	rare_screen.position = Vector2((vs.x - rare_screen.size.x) * 0.5, (vs.y - rare_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
 	rare_screen.modulate.a = fade
 	collection.position = Vector2((vs.x - collection.size.x) * 0.5, (vs.y - collection.size.y) * 0.5 + (1.0 - fade) * 24.0)
@@ -687,13 +595,14 @@ func _process(delta: float) -> void:
 	settings.position = (vs - settings.size) * 0.5
 	footer.text = VERSION + "   ·   " + tr("UI_MENU_KEYS")
 	footer.position = Vector2(m, vs.y - 34)
+	footer.visible = screen != "campaign"   # o mapa da campanha ocupa a tela até embaixo
 
 
 # ---------------------------------------------------------------- pele Diário
 
 ## Papel da mesa que cada tela usa (o grupo sai do mesmo maço do vilão; a rara é coisa da coleção).
 func _desk_id(s: String) -> String:
-	return {"group": "decks", "rare": "collection"}.get(s, s)
+	return {"campaign": "decks", "rare": "collection"}.get(s, s)
 
 
 func _screen_node(s: String) -> Control:
@@ -702,8 +611,8 @@ func _screen_node(s: String) -> Control:
 			return title_root
 		"decks":
 			return deck_screen
-		"group":
-			return group_screen
+		"campaign":
+			return campaign
 		"rare":
 			return rare_screen
 		"collection":
@@ -729,7 +638,7 @@ func _process_desk(delta: float) -> void:
 	fade = minf(fade + delta * 2.6, 1.0)
 	prev_fade = minf(prev_fade + delta * 3.2, 1.0)
 	var vs := get_viewport_rect().size
-	for s in ["title", "decks", "group", "rare", "collection", "compendium"]:
+	for s in ["title", "decks", "campaign", "rare", "collection", "compendium"]:
 		var c := _screen_node(s)
 		if c == null:
 			continue
@@ -858,7 +767,7 @@ func _fill_contracts() -> void:
 		b.add_theme_font_size_override("font_size", 21)
 		b.pressed.connect(func():
 			pending_villain = id
-			show_screen("group"))
+			_start_villain())
 		var lit := func(on: bool): UiKit.set_hot(p, on)
 		b.focus_entered.connect(_fill_preview.bind(id))
 		b.focus_entered.connect(lit.bind(true))
@@ -868,49 +777,6 @@ func _fill_contracts() -> void:
 		v.add_child(b)
 		p.rotation_degrees = [-1.2, 0.6, 1.4][data.villain_ids.find(id) % 3]
 		deck_row.add_child(p)
-
-
-## Herói do grupo como cartaz de "procura-se".
-func _wanted_poster(i: int, n: int, P: Dictionary, mult: float, cls := "escudeiro") -> PanelContainer:
-	var pnl := PanelContainer.new()
-	UiDiario.dress(pnl, "paper", 20.0, {"grime": 0.75, "seed": 0.13 * (i + 1), "shadow": 8.0, "rough": 2.6})
-	pnl.custom_minimum_size = Vector2(186, 0)
-	pnl.rotation_degrees = [-2.0, 1.5, -0.8, 2.2, -1.6][i % 5]
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 4)
-	pnl.add_child(v)
-	var h := Label.new()
-	h.text = "UI_WANTED"
-	h.add_theme_font_override("font", UiDiario.font("fell"))
-	h.add_theme_font_size_override("font_size", 26)
-	h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(h)
-	var art := TextureRect.new()
-	# Um desenho por classe (assets/cards/hero_<classe>.png); sem ele, o cartaz genérico.
-	var hero_tex := UiDiario.card_tex("hero_" + cls)
-	art.texture = hero_tex if hero_tex != null else UiDiario.card_tex("hero_wanted")
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.custom_minimum_size = Vector2(0, 104)
-	v.add_child(art)
-	var num := UiKit.title(20)
-	var st := _party_stat(i, cls, mult)
-	num.text = _party_ord(st, i, n)
-	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(num)
-	var cl := UiKit.title(18)
-	cl.text = tr("HERO_" + cls)
-	cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(cl)
-	Tips.attach(pnl, func(): return [Tips.entry(tr("HERO_" + cls), tr("HEROD_" + cls))])
-	for spec in [[tr("UI_HERO_LEVEL").format({"n": int(st["pn"]) + 1}), UiDiario.INK], [tr("UI_GROUP_SKILLS").format({"n": int(st["first"])}), UiDiario.PAL["MUTED"]],
-			[tr("UI_GROUP_HP").format({"n": int(st["hp"])}), UiDiario.PAL["GOOD"]],
-			[tr("UI_GROUP_DMG").format({"n": int(st["dm"])}), UiDiario.PAL["BAD"]]]:
-		var l := UiKit.label(16, spec[1])
-		l.text = spec[0]
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		v.add_child(l)
-	return pnl
 
 
 # ---------------------------------------------------------------- telas em pergaminho (rodada de UI 13/11/2026)
@@ -927,14 +793,6 @@ var v_status: Label
 var v_rules: VBoxContainer
 var v_combos: VBoxContainer
 var v_pick: Button
-var g_villain_art: Control
-var g_villain_name: Label
-var g_phase_title: Label
-var g_phase_desc: RichTextLabel
-var g_rewards: HBoxContainer
-var g_heroes: HBoxContainer
-var g_legend: VBoxContainer
-var g_count: Label
 
 const P_TEXT_W := 560.0
 const LOCK := ""
@@ -1027,7 +885,7 @@ func _build_villains_parch() -> void:
 		b.pressed.connect(func():
 			if meta.villains.has(id):
 				pending_villain = id
-				show_screen("group"))
+				_start_villain())
 		list.add_child(b)
 		v_tabs[id] = b
 	# Detalhe do vilão em foco.
@@ -1068,7 +926,7 @@ func _build_villains_parch() -> void:
 	btns.add_theme_constant_override("separation", 16)
 	root.add_child(btns)
 	var back := _paper_btn("UI_BACK", 180, 52)
-	back.pressed.connect(func(): show_screen("title"))
+	back.pressed.connect(func(): show_screen("campaign"))
 	btns.add_child(back)
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1080,7 +938,7 @@ func _build_villains_parch() -> void:
 	v_pick.mouse_entered.connect(func(): v_pick.grab_focus())
 	v_pick.pressed.connect(func():
 		pending_villain = v_focus
-		show_screen("group"))
+		_start_villain())
 	btns.add_child(v_pick)
 
 
@@ -1162,226 +1020,3 @@ func _focus_villain(id: String) -> void:
 	_fill_preview(id)
 	v_pick.disabled = not open
 	v_pick.text = "UI_PICK_VILLAIN" if open else LOCK + tr("UI_VILLAIN_LOCKED").format({"n": _phase_unlocking(id)})
-
-
-# ---- grupo de heróis
-
-func _build_group_parch() -> void:
-	group_screen = _sheet(30.0)
-	add_child(group_screen)
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 12)
-	group_screen.add_child(root)
-	root.add_child(UiParch.ribbon_title(tr("UI_CHOOSE_GROUP"), 34))
-	# Fases da campanha em abas; a escolhida na fita vermelha.
-	phase_row = HBoxContainer.new()
-	phase_row.add_theme_constant_override("separation", 8)
-	phase_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_child(phase_row)
-	# Cartão da fase: nome, descrição e recompensas; à direita, o vilão escolhido.
-	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel", UiParch.box("ink", 16.0))
-	card.set_meta("paper", true)
-	root.add_child(card)
-	var ch := HBoxContainer.new()
-	ch.add_theme_constant_override("separation", 20)
-	card.add_child(ch)
-	var pc := VBoxContainer.new()
-	pc.add_theme_constant_override("separation", 6)
-	pc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ch.add_child(pc)
-	g_phase_title = UiParch.label("", "title", 32, UiParch.BLOOD)
-	pc.add_child(g_phase_title)
-	g_phase_desc = _rich("", 19, UiParch.INK, 960.0)
-	pc.add_child(g_phase_desc)
-	g_rewards = HBoxContainer.new()
-	g_rewards.add_theme_constant_override("separation", 10)
-	pc.add_child(g_rewards)
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 4)
-	vb.alignment = BoxContainer.ALIGNMENT_CENTER
-	ch.add_child(vb)
-	var vt := UiParch.label(tr("UI_GROUP_VS"), "italic", 16, UiParch.INK_SOFT)
-	vt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(vt)
-	g_villain_art = Control.new()
-	g_villain_art.custom_minimum_size = Vector2(124, 100)
-	g_villain_art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vb.add_child(g_villain_art)
-	g_villain_name = UiParch.label("", "title", 20, UiParch.BLOOD)
-	g_villain_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(g_villain_name)
-	# A fila de heróis.
-	var qh := HBoxContainer.new()
-	qh.add_theme_constant_override("separation", 14)
-	root.add_child(qh)
-	g_count = UiParch.label("", "title", 24, UiParch.INK)
-	g_count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	qh.add_child(g_count)
-	var qs := _rich(tr("UI_CHOOSE_GROUP_SUB"), 17, UiParch.INK_SOFT, 900.0)
-	qs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	qh.add_child(qs)
-	g_heroes = HBoxContainer.new()
-	g_heroes.add_theme_constant_override("separation", 10)
-	g_heroes.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_child(g_heroes)
-	# Legenda das classes que aparecem nesta fase (o que cada uma faz).
-	g_legend = VBoxContainer.new()
-	g_legend.add_theme_constant_override("separation", 6)
-	root.add_child(g_legend)
-	var btns := HBoxContainer.new()
-	btns.add_theme_constant_override("separation", 16)
-	root.add_child(btns)
-	var back := _paper_btn("UI_BACK", 180, 52)
-	back.pressed.connect(func(): show_screen("decks"))
-	btns.add_child(back)
-	var gap := Control.new()
-	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btns.add_child(gap)
-	var go := Button.new()
-	go.name = "Go"
-	go.text = "UI_START_RUN"
-	go.custom_minimum_size = Vector2(400, 62)
-	UiParch.ribbon_button(go, "monster", 28)
-	go.mouse_entered.connect(func(): go.grab_focus())
-	go.pressed.connect(func():
-		meta.villain = pending_villain
-		meta.save()
-		deck_chosen.emit(pending_villain))
-	btns.add_child(go)
-
-
-func _fill_group_parch() -> void:
-	if pending_phase < 0 or not meta.phase_open(pending_phase):
-		pending_phase = _next_phase()
-	# Abas das fases.
-	UiKit.clear(phase_row)
-	for ph in data.phases:
-		var k := int(ph["id"])
-		var won: bool = meta.phases_won.has(k)
-		var gift: bool = str(ph.get("unlock_villain", "")) != "" or ph.get("rare_choice", false)
-		var label := tr("UI_PHASE_TUTORIAL") if ph.get("tutorial", false) else tr("UI_PHASE").format({"n": k})
-		var b := _paper_btn(label + ("  ✓" if won else ("  ★" if gift else "")), 150, 46, 20)
-		b.disabled = not meta.phase_open(k)
-		if k == pending_phase:
-			UiParch.ribbon_button(b, "monster", 20)
-		if b.disabled:
-			b.text = LOCK + b.text
-			b.tooltip_text = tr("UI_PHASE_LOCKED")
-		b.pressed.connect(func():
-			pending_phase = k
-			_fill_group())
-		phase_row.add_child(b)
-	var ph: Dictionary = data.phase(pending_phase)
-	g_phase_title.text = tr(str(ph["key"]))
-	Tips.set_text(g_phase_desc, tr("PHASED_%d" % pending_phase))
-	UiKit.clear(g_rewards)
-	var chips: Array = []
-	if str(ph.get("unlock_villain", "")) != "":
-		chips.append(tr("UI_PHASE_UNLOCKS_V").format({"p": tr("DECK_" + str(ph["unlock_villain"]))}))
-	if int(ph.get("reward_souls", 0)) > 0:
-		chips.append(tr("UI_PHASE_SOULS").format({"n": int(ph["reward_souls"])}))
-	if ph.get("rare_choice", false):
-		chips.append(tr("UI_PHASE_RARE"))
-	if meta.phases_won.has(pending_phase):
-		chips.append("✓ " + tr("UI_PHASE_WON"))
-	for t in chips:
-		var chip := PanelContainer.new()
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(UiParch.GOLD, 0.16)
-		sb.border_color = Color(UiParch.GOLD, 0.8)
-		sb.set_border_width_all(1)
-		sb.set_corner_radius_all(12)
-		sb.content_margin_left = 12
-		sb.content_margin_right = 12
-		sb.content_margin_top = 3
-		sb.content_margin_bottom = 4
-		chip.add_theme_stylebox_override("panel", sb)
-		chip.add_child(UiParch.label(("" if t.begins_with("✓") else "★ ") + t, "bold", 16, UiParch.INK))
-		g_rewards.add_child(chip)
-	# Vilão escolhido.
-	for c in g_villain_art.get_children():
-		c.queue_free()
-	g_villain_art.add_child(UiParch.framed_art(_art_for(pending_villain, "villain"), g_villain_art.custom_minimum_size))
-	g_villain_name.text = tr("DECK_" + pending_villain)
-	# Fila.
-	var P: Dictionary = data.rules["party"]
-	var party: Array = ph.get("party", [])
-	var n := party.size()
-	g_count.text = tr("UI_GROUP_QUEUE").format({"n": n})
-	var mult := float(data.rules.get("hero_hp_mult", 1.0)) * float(ph.get("hp_mult", 1.0))
-	UiKit.clear(g_heroes)
-	var cw := clampf(floorf((1240.0 - 10.0 * (n - 1)) / maxf(n, 1)), 150.0, 200.0)
-	for i in n:
-		g_heroes.add_child(_hero_card(i, P, mult, str(party[i]), cw))
-	UiKit.clear(g_legend)
-	var seen: Array = []
-	for cls in party:
-		if seen.has(cls):
-			continue
-		seen.append(cls)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		row.alignment = BoxContainer.ALIGNMENT_BEGIN
-		var nm := UiParch.label(tr("HERO_" + str(cls)), "title", 20, UiParch.BLOOD)
-		nm.custom_minimum_size = Vector2(130, 0)
-		nm.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		row.add_child(nm)
-		row.add_child(_rich(tr("HEROD_" + str(cls)), 18, UiParch.INK, 1080.0))
-		g_legend.add_child(row)
-	if ph.get("group", false):
-		g_legend.add_child(_rich("★ " + tr("UI_GROUP_TOGETHER"), 18, UiParch.BLOOD, 1220.0))
-
-
-## Números do herói i da fila de parties da fase escolhida: party dele, membros, habilidades que já tem ao chegar,
-## vida e golpe (a força da party é dividida entre os membros).
-func _party_stat(i: int, cls: String, mult: float) -> Dictionary:
-	var ph: Dictionary = data.phase(pending_phase)
-	var of: Array = ph.get("party_of", [])
-	var pn := int(of[i]) if i < of.size() else i
-	var members := 1
-	var first := i
-	if of.size() > 0:
-		members = of.filter(func(x): return int(x) == pn).size()
-		first = of.find(pn)
-	var P: Dictionary = data.rules["party"]
-	var H := data.hero_of(cls)
-	var share := 1.0 / pow(float(maxi(members, 1)), float(P.get("share_exp", 1.0)))
-	return {"pn": pn, "n": members, "first": first, "k": i - first + 1,
-		"hp": int(round(float(H["hp"]) * pow(float(P["step"]), pn) * mult * share)),
-		"dm": int(round(float(H["damage"]) * pow(float(P["step"]), pn) * share))}
-
-
-func _party_ord(st: Dictionary, i: int, n: int) -> String:
-	if int(st["n"]) > 1:
-		return tr("UI_PARTY_ORD").format({"p": int(st["pn"]) + 1, "k": st["k"], "n": st["n"]})
-	return tr("UI_HERO_OF").format({"k": i + 1, "n": n})
-
-
-## Carta de um herói da fila: ordem, retrato, classe, vida, golpe e habilidades.
-func _hero_card(i: int, P: Dictionary, mult: float, cls: String, w: float) -> PanelContainer:
-	var pnl := PanelContainer.new()
-	pnl.add_theme_stylebox_override("panel", UiParch.box("ink", 10.0))
-	pnl.set_meta("paper", true)
-	pnl.custom_minimum_size = Vector2(w, 0)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 3)
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pnl.add_child(v)
-	var st := _party_stat(i, cls, mult)
-	var ord := UiParch.label(tr("UI_PARTY_ORD").format({"p": int(st["pn"]) + 1, "k": st["k"], "n": st["n"]}) if int(st["n"]) > 1 else tr("UI_HERO_ORD").format({"k": i + 1}), "heavy", 16, UiParch.INK_SOFT)
-	ord.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(ord)
-	var art := UiParch.framed_art(_art_for(cls, "hero"), Vector2(w - 20.0, roundf((w - 20.0) * 0.8)))
-	v.add_child(art)
-	var cl := UiParch.label(tr("HERO_" + cls), "title", 21, UiParch.BLOOD)
-	cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(cl)
-	var fi: int = int(st["first"])
-	for spec in [[tr("UI_GROUP_HP").format({"n": int(st["hp"])}), UiParch.HP], [tr("UI_GROUP_DMG").format({"n": int(st["dm"])}), UiParch.INK],
-			[tr("UI_GROUP_SKILL0") if fi == 0 else (tr("UI_GROUP_SKILL1") if fi == 1 else tr("UI_GROUP_SKILLS").format({"n": fi})), UiParch.INK_SOFT]]:
-		var l := UiParch.label(spec[0], "bold", 17, spec[1])
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		v.add_child(l)
-	Tips.attach(pnl, func(): return [Tips.entry(tr("HERO_" + cls), tr("HEROD_" + cls))])
-	return pnl

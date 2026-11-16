@@ -39,6 +39,7 @@ var contest_text := ""
 var contest_stages: Control           # marcadores e barra das etapas da disputa
 var hold_offers := false             # cena da morte do herói: a recompensa e as cartas esperam
 var banner: BigBanner                  # letreiro grande: objetivo do local, resultado, ato (rodada 09/11/2026)
+var seals: LocSeals                    # selos dos marcos na cena do fim da disputa (15/11/2026)
 var relic_row: BoxContainer           # relíquias do covil ganhas na run (Diário: coluna de etiquetas à direita)
 var curse_label: Label
 # Esquerda: run.
@@ -349,6 +350,8 @@ func _build_messages() -> void:
 	add_child(contest_panel)
 	banner = BigBanner.new()
 	add_child(banner)
+	seals = LocSeals.new()
+	add_child(seals)
 	# Relíquias do covil ganhas na run, em fila no canto de baixo à direita.
 	relic_row = VBoxContainer.new() if UiSkins.diario() else HBoxContainer.new()
 	relic_row.add_theme_constant_override("separation", 6)
@@ -1112,6 +1115,13 @@ func handle_events(evs: Array) -> void:
 					if lloc.get("type", "") == "helper":
 						lost_sub = tr("UI_HELPER_LOST")
 					banner.show_banner(tr("UI_BANNER_LOST"), lost_sub, Color(1.0, 0.45, 0.4), Vector2(-1, -1), 0.6)
+			K.Ev.LOCATION:
+				# Chegada na loja e na encruzilhada: o nome do local bate no meio durante a cena de chegada.
+				var ali := int(e[3])
+				if ali >= 0 and ali < sim.road.locations.size():
+					var aty := str(sim.road.locations[ali]["type"])
+					if aty == "shop" or aty == "event":
+						banner.show_banner(tr("LOC_" + aty).replace("?", "").strip_edges(), "", UiKit.GOLD, Vector2(-1, -1), 0.6)
 			K.Ev.ACT_START:
 				banner.show_banner(tr("UI_ACT_OF").format({"n": int(e[3]) + 1, "m": sim.acts()}), "", UiKit.GOLD, Vector2(-1, -1), 1.0)
 
@@ -1503,7 +1513,7 @@ func _show_result() -> void:
 	result_title.text = tr("UI_RESULT_TITLE_" + r)
 	UiKit.title_color(result_title, UiKit.GOLD if won else Color(0.9, 0.24, 0.18))
 	if result_icon:
-		result_icon.texture = load("res://assets/ui/map/node_m-lair%s.svg" % ("_hot" if won else ""))
+		result_icon.texture = CampaignArt.map_tex("res://assets/ui/map/node_m-lair%s.svg" % ("_hot" if won else ""))
 		result_icon.modulate = Color.WHITE if won else Color(0.78, 0.7, 0.62)
 		UiKit.title_color(result_title, UiParch.INK if won else UiParch.BLOOD)
 	result_sub.text = tr("UI_RESULT_" + r)
@@ -1554,7 +1564,7 @@ func _show_result() -> void:
 func _map_doodle(panel: Control, icon: String, sz: Vector2, from_corner: Vector2, on_top := false, left := false) -> void:
 	if not UiSkins.mapa():
 		return
-	var tex: Texture2D = load("res://assets/ui/map/icon_%s.svg" % icon)
+	var tex: Texture2D = CampaignArt.map_tex("res://assets/ui/map/icon_%s.svg" % icon)
 	if tex == null:
 		return
 	panel.draw.connect(func():

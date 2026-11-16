@@ -17,6 +17,7 @@ var events_def: Dictionary = {}  # id -> dict (data/events.json): eventos de tex
 var event_ids: Array = []
 var hero_classes: Dictionary = {}  # id -> overlay (data/hero_classes.json)
 var phases: Array = []             # fases da campanha (data/campaign.json)
+var campaign_map: Dictionary = {}  # papel e covil do mapa da campanha (data/campaign.json "map", 16/11/2026)
 var villains: Dictionary = {}      # id -> dict (data/villains.json): os 3 vilões (C3, 10/11/2026)
 var villain_ids: Array = []
 var free_cards: Array = []         # liberadas desde o início (data/unlocks.json)
@@ -62,7 +63,9 @@ static func load_dir(dir := "res://data") -> GameData:
 	for u in g.hero["upgrades"]:
 		g.upgrades[u["id"]] = u
 	g.hero_classes = _read(dir + "/hero_classes.json").get("classes", {})
-	g.phases = _read(dir + "/campaign.json").get("phases", [])
+	var camp := _read(dir + "/campaign.json")
+	g.phases = camp.get("phases", [])
+	g.campaign_map = camp.get("map", {})
 	# "parties" (fila de parties) é a fonte; "party" (lista plana de classes) e "party_of" (número da party de cada
 	# herói) saem dela para o menu e os testes.
 	for ph in g.phases:

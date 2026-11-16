@@ -18,6 +18,7 @@ void vertex() {
 
 void fragment() {
 	ALBEDO = paint_albedo(albedo.rgb, paint_p, paint_n, -1, brush);
+	PAINT_PAPER
 	ROUGHNESS = roughness;
 	METALLIC = paint_on ? 0.0 : metallic;
 }

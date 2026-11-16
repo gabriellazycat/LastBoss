@@ -83,8 +83,8 @@ func _node_button(id: String, sym: String, key: String, sz: float, at: Vector2, 
 	b.text = key
 	b.set_meta("no_frame", true)
 	b.set_meta("no_ink", true)
-	var n: Texture2D = load(MAP + "node_%s.svg" % sym)
-	var hot: Texture2D = load(MAP + "node_%s_hot.svg" % sym)
+	var n: Texture2D = CampaignArt.map_tex(MAP + "node_%s.svg" % sym)
+	var hot: Texture2D = CampaignArt.map_tex(MAP + "node_%s_hot.svg" % sym)
 	b.icon = hot if main else n
 	b.expand_icon = true
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -7,9 +7,9 @@ const PATH := "user://run.save"
 ## Arquivo em uso. Os modos de teste e de captura da janela (main.gd com argumentos) trocam para outro
 ## arquivo: antes, o salvamento automático deles sobrescrevia a run salva do jogador (rodada 09/11/2026).
 static var current := PATH
-const VERSION := 6                  # 6: fila de parties (15/11/2026); 5: vilões no lugar dos Pactos; 4: baralho com descarte (10/11/2026)
+const VERSION := 7                  # 7: campanha em 7 fases (16/11/2026; a fase 4 mudou de parties); 6: fila de parties (15/11/2026); 5: vilões no lugar dos Pactos; 4: baralho com descarte (10/11/2026)
 const _V3 := 3                  # 3: run em 3 atos, disputas e relíquias (09/11/2026); 2: estrada em rede de nós
-const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script", "followers", "hit_hero", "helper"]
+const SKIP := ["sim", "data", "R", "H", "AI", "A", "tmp", "events", "script", "followers", "hit_hero", "helper", "terrain", "_terrain_road"]
 const PARTS := ["units", "hero", "road", "arena"]
 
 
@@ -87,6 +87,9 @@ static func load_run(data: GameData, path := "") -> Sim:
 		var pd: Dictionary = d["__" + part]
 		for k in pd:
 			obj.set(k, pd[k])
+	# Save de antes dos rios (16/11/2026): a estrada salva não tem rio (os do setup seriam de outra estrada).
+	if not (d["__road"] as Dictionary).has("rivers"):
+		sim.road.rivers = []
 	var by_uid := {}
 	var cards: Array = []
 	for c in d["cards"]:

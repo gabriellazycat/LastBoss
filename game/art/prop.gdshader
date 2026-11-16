@@ -20,6 +20,7 @@ void fragment() {
 	vec3 base = pow(clamp(COLOR.rgb, vec3(0.0), vec3(1.0)), vec3(2.2));
 	base = paint_albedo(base, paint_p, paint_n, -1, 0.5);
 	ALBEDO = base;
+	PAINT_PAPER
 	ROUGHNESS = 0.85;
 	SPECULAR = 0.2;
 	BACKLIGHT = base * 0.3;

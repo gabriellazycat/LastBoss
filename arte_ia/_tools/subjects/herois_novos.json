@@ -1,0 +1,34 @@
+{
+ "hero_assassino": {
+  "subject": "A lean human assassin in a plain dark purple cloak with a deep hood whose whole face opening is one flat solid black shadow, crouching low in a three-quarter stance as if about to spring forward. He holds one short curved dagger low and forward in his right hand, his left hand flat on the ground. A single low stone wall stands behind him, and a few wisps of dark smoke trail behind his cloak.",
+  "bg": "ochre"
+ },
+ "hero_barbaro": {
+  "subject": "A broad, muscular human barbarian with bare arms, a plain grey wolf pelt over his shoulders and a plain dark iron helmet whose whole face opening is one flat solid black shadow, standing with his feet wide apart. He holds one huge two-handed sword with both hands raised over his right shoulder, ready to swing. A single broken wooden fence stands behind him, and a cloud of dust rises behind his boots.",
+  "bg": "teal"
+ },
+ "hero_besteiro": {
+  "subject": "A sturdy human crossbowman in a plain green padded coat and a wide-brimmed brown hat whose shadow covers his whole face in one flat solid black shape, kneeling on one knee. He aims one big wooden crossbow forward at shoulder height with both hands, one short bolt loaded on it. A single wooden stake barricade stands behind him, and a few puffs of dust rise from his knee.",
+  "bg": "rose"
+ },
+ "hero_guardiao": {
+  "subject": "A huge human guardian in plain smooth blue-grey steel armor made of a few large plates and a plain closed steel helmet whose whole face opening is one flat solid black shadow, standing planted behind one tall rectangular tower shield held in his left hand, the shield covering him from chin to knees. One short straight sword rests in his right gauntlet, pointing down at his side. A single stone pillar stands behind him, and dust swirls low behind his feet.",
+  "bg": "sand"
+ },
+ "hero_escudeiro": {
+  "subject": "A lone human knight in plain steel armor made of a few large smooth plates with a faded blue tabard and a plain round steel helmet whose whole face opening is one flat solid black shadow, holding a straight steel sword in his right gauntlet and one plain round blue shield on his left arm, standing in a steady three-quarter stance with the shield raised to his chest and the sword held ready at his side. A single milestone stands behind him on a dirt road, and a little dust rises behind his boots.",
+  "bg": "ochre"
+ },
+ "hero_arqueira": {
+  "subject": "A slender human archer woman in a plain green tunic and a plain green cloak with a deep hood whose whole face opening is one flat solid black shadow, a long red braid falling over her shoulder. She stands side-on drawing one big wooden longbow, her left hand holding the bow out in front and her right hand pulling the string back to her cheek, one arrow resting on it. A single birch tree stands behind her, and a few leaves drift past behind her back.",
+  "bg": "rose"
+ },
+ "hero_cleriga": {
+  "subject": "A human cleric woman in a plain white robe with a plain blue mantle and a deep white hood whose whole face opening is one flat solid black shadow, standing upright and facing us. She raises one plain wooden mace in her right hand and holds her open left palm forward with a soft round glow of warm golden light above it. A single small stone shrine stands behind her, and a few motes of golden light drift up behind her shoulders.",
+  "bg": "slate"
+ },
+ "hero_mago": {
+  "subject": "An old human wizard in a plain dark blue robe and a tall pointed blue hat whose wide brim casts one flat solid black shadow over his whole face, a long plain white beard falling to his chest. He holds one tall wooden staff in his left hand and lifts his right hand high with a ball of orange fire floating above the open palm. A single leaning standing stone stands behind him, and a few sparks drift up behind his hat.",
+  "bg": "sand"
+ }
+}

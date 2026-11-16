@@ -26,7 +26,7 @@ const VARIANTS := {
 	"rat_brute": {"base": "rat", "scale": 1.55, "tint": Color(0.82, 0.7, 0.6)},
 	"bat_cloud": {"base": "bat", "scale": 0.8, "tint": Color(0.7, 0.85, 0.55)},
 	"rat_trap": {"base": "bone_totem", "scale": 0.7, "tint": Color(1.0, 0.8, 0.55)},
-	"brood_mother": {"base": "slime", "scale": 1.5, "tint": Color(1.0, 0.65, 0.8)},
+	"brood_mother": {"base": "rat", "scale": 1.6, "tint": Color(1.0, 0.8, 0.85)},
 	"corrupt_piper": {"base": "cultists", "scale": 0.95, "tint": Color(0.75, 1.0, 0.5)},
 	"sewer_flood": {"base": "bat_nest", "scale": 0.6, "tint": Color(0.5, 0.95, 0.9)},
 	"kobold_scavengers": {"base": "goblin_dynamiter", "scale": 0.7, "tint": Color(1.0, 0.65, 0.45)},
@@ -46,7 +46,7 @@ const LEGACY := {
 	"wolf_pack": "werewolf", "war_boar": "werewolf", "alpha_beast": "werewolf", "treasure_guard": "ogre",
 	"elder_dragon": "bat", "cave_troll": "ogre", "death_knight": "ogre", "bone_colossus": "scrap_golem",
 	"ruin_titan": "ogre", "rat_brute": "rat_horde", "bat_cloud": "bat_nest", "rat_trap": "bat_nest",
-	"brood_mother": "slime", "corrupt_piper": "rat_king", "sewer_flood": "bat_nest", "kobold_scavengers": "rat_horde",
+	"brood_mother": "rat_horde", "corrupt_piper": "rat_king", "sewer_flood": "bat_nest", "kobold_scavengers": "rat_horde",
 	"trap_chest": "mimic", "furnace": "bone_totem", "raised_servant": "skeleton", "barricade": "gargoyle_tower",
 	"war_banner": "gargoyle_tower", "rat_burrow": "bat_nest", "ghoul": "skeleton", "fire_imp": "bat",
 }
@@ -243,8 +243,6 @@ static func hero_rig(mat: Material, cls := "escudeiro") -> HeroRig:
 	var lk := hero()
 	if not HeroRig.has_rig(lk):
 		return null
-	if g_on():
-		var gm := g_mesh(cls)  # só Escudeiro e Mago foram refeitos; as outras classes seguem com o KayKit
-		if gm and gm.has_meta("vat"):
-			return HeroVat.make_vat(gm, cls)
+	# Heróis: o jogador preferiu o modelo antigo (KayKit) ao refeito em guache (15/11); todas as classes usam o HeroRig.
+	# O HeroVat e os modelos g_*/escudeiro etc. continuam no repositório, desligados.
 	return HeroRig.make(lk, mat, cls)

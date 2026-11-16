@@ -29,6 +29,8 @@ func _ready() -> void:
 	t_card_levels()
 	t_location_rewards()
 	t_route()
+	t_rivers()
+	t_water()
 	t_shop()
 	t_fountain_and_fire()
 	t_contests()
@@ -654,13 +656,17 @@ func t_meta() -> void:
 	f.close()
 	var mo := MetaSave.load_or_new(data, old)
 	check(mo.souls == 77 and mo.villains == ["plague", "dragon"] and mo.villain == "dragon" and not mo.is_unlocked("cosmic_ray") and not mo.is_unlocked("ogre"), "save antigo: Pactos viram vilões, Almas ficam, cartas antigas somem")
+	check(mo.heroes_seen.has("escudeiro") and mo.heroes_seen.has("arqueira") and not mo.heroes_seen.has("mago"), "save antigo: os heróis das fases já vencidas contam como vistos (%s)" % str(mo.heroes_seen))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(old))
 	var st := {"dmg_by_card": {"a": 4000.0}, "locs_visited": 9, "result": "win"}
 	var per_loc := int(data.meta["souls"]["per_location"])
 	check(MetaSave.souls_for(data, st) == 10 + 9 * per_loc + 40, "Almas: dano, locais e vitória (%d)" % MetaSave.souls_for(data, st))
+	check(m.see_hero("besteiro") and not m.see_hero("besteiro"), "herói visto só conta na primeira vez")
+	check(not m.phase_open(5) and m.phase_open(4) == m.phases_won.has(3), "fase 5 fechada até vencer a 4")
 	m.add_run(st, path)
 	var m2 := MetaSave.load_or_new(data, path)
 	check(m2.souls == m.souls and m2.is_unlocked("rat_king") and m2.runs == 1, "meta salva e carrega")
+	check(m2.heroes_seen.has("besteiro"), "heróis vistos salvam e carregam")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	# Nível da carta sobrevive ao salvamento da run.
 	var s := _sim(5)
@@ -737,7 +743,8 @@ func t_route() -> void:
 		for n in road.nodes:
 			if n["loc"] >= 0:
 				var key := str(n["row"]) + str(road.locations[n["loc"]]["type"])
-				if by_row.has(key):
+				# Exceção: um rio que corta uma fileira inteira faz todos os locais dela Ponte (15/11/2026).
+				if by_row.has(key) and road.locations[n["loc"]]["type"] != "bridge":
 					bad_rows += 1
 				by_row[key] = true
 		for e1 in road.legs:
@@ -801,6 +808,189 @@ func t_route() -> void:
 	check(r.phase == K.Phase.OVER and int(r.stats["locs_visited"]) >= 6,
 		"Heurístico escolhe a rota e termina (%s, %d locais, %s)" % [r.stats["result"], r.stats["locs_visited"], str(r.stats["route"])])
 
+
+## Rios (15/11/2026, docs/RIO_E_PONTES.md): sementes × atos, com as regras conferidas por fora do gerador.
+func t_rivers() -> void:
+	var RV: Dictionary = data.rules["road"]["river"]
+	var need: float = float(RV["half_width"]) + float(RV["clearance"]) - 0.05
+	var maps := 0
+	var no_river := 0
+	var two := 0
+	var kinds := {"cross": 0, "u": 0}
+	var nb_hist := {}
+	var bad_cap := 0
+	var bad_type := 0
+	var bad_route := 0
+	var bad_clear := 0
+	var bad_len := 0
+	var bad_shop := 0
+	var t0 := Time.get_ticks_msec()
+	for seed_ in range(1, 121):
+		for act in 3:
+			var road := SimRoad.new()
+			var rng := RandomNumberGenerator.new()
+			rng.seed = seed_ * 7919 + act * 104729
+			var cfg: Dictionary = data.rules["acts"][mini(act, data.rules["acts"].size() - 1)].get("road", {})
+			road.generate(rng, data.rules, cfg)
+			maps += 1
+			if road.rivers.is_empty():
+				no_river += 1
+			if road.rivers.size() == 2:
+				two += 1
+			var total := 0
+			var is_b := {}
+			for rv in road.rivers:
+				kinds[rv["kind"]] += 1
+				if rv["kind"] == "cross":
+					kinds["diagonal" if int(rv.get("slope", 0)) != 0 else "reto"] = int(kinds.get("diagonal" if int(rv.get("slope", 0)) != 0 else "reto", 0)) + 1
+				total += rv["bridges"].size()
+				for n in rv["bridges"]:
+					is_b[n] = true
+					if int(road.nodes[n]["row"]) == road.shop_row:
+						bad_shop += 1
+			nb_hist[total] = int(nb_hist.get(total, 0)) + 1
+			if total > int(RV["max_bridges"]):
+				bad_cap += 1
+			for li in road.locations.size():
+				var loc: Dictionary = road.locations[li]
+				if (loc["type"] == "bridge") != is_b.has(int(loc["node"])):
+					bad_type += 1
+			var paths := _all_paths(road)
+			var l0 := _path_len(road, paths[0])
+			for p in paths:
+				if absf(_path_len(road, p) - l0) > 1.0:
+					bad_len += 1
+				for rv in road.rivers:
+					var c := 0
+					for n in p:
+						if rv["bridges"].has(n):
+							c += 1
+					if (rv["kind"] == "cross" and c != 1) or (rv["kind"] == "u" and c != 0 and c != 2):
+						bad_route += 1
+			# Distância do rio à estrada, na força bruta (fora do trecho reto de cada ponte).
+			for rv in road.rivers:
+				var pts: PackedVector2Array = rv["pts"]
+				for g in road.legs:
+					var lp: PackedVector2Array = g["pts"][0]
+					for i in lp.size() - 1:
+						var skip := false
+						for n in rv["bridges"]:
+							var bp: Vector2 = road.nodes[n]["pos"]
+							if lp[i].distance_to(bp) <= float(RV["stub"]) + 0.05 and lp[i + 1].distance_to(bp) <= float(RV["stub"]) + 0.05:
+								skip = true
+						if skip:
+							continue
+						for q in pts:
+							if Geometry2D.get_closest_point_to_segment(q, lp[i], lp[i + 1]).distance_to(q) < need:
+								bad_clear += 1
+								break
+	print("  rios: %d mapas, %d sem rio, %d com 2 rios, formatos %s, pontes por ato %s, %d ms" % [maps, no_river, two, str(kinds), str(nb_hist), Time.get_ticks_msec() - t0])
+	check(no_river * 10 <= maps, "quase todo ato tem rio (%d de %d sem)" % [no_river, maps])
+	check(bad_cap == 0, "no máximo %d pontes por ato (%d acima)" % [int(RV["max_bridges"]), bad_cap])
+	check(bad_type == 0, "toda Ponte está num rio e todo nó-ponte é Ponte (%d erros)" % bad_type)
+	check(bad_shop == 0, "a fileira da Loja nunca vira ponte (%d)" % bad_shop)
+	check(bad_route == 0, "rota passa por 1 ponte do rio que atravessa e 0 ou 2 do vai e volta (%d erros)" % bad_route)
+	check(bad_clear == 0, "o rio só toca a estrada nas pontes (%d trechos perto demais)" % bad_clear)
+	check(bad_len == 0, "com as pontes, todas as rotas seguem do mesmo comprimento (%d fora)" % bad_len)
+
+
+## Água dos rios na simulação (16/11/2026, docs/RIO_E_PONTES.md passo 3): carta, unidade, ponte, alvo e save.
+func t_water() -> void:
+	var s := _sim(5)
+	var T := s.terra()
+	check(T.ok and T.bridges.size() > 0, "terreno do rio montado (%d pontes)" % T.bridges.size())
+	if not T.ok or T.bridges.is_empty():
+		return
+	# Um ponto no meio da água, longe das pontes.
+	var wet := Vector2.INF
+	for rv in s.road.rivers:
+		for p in rv["pts"]:
+			var near_bridge := false
+			for b in T.bridges:
+				if p.distance_to(b["c"]) < 15.0:
+					near_bridge = true
+			if not near_bridge and T.is_water(p.x, p.y) and T.region_at(p.x, p.y) == SimTerrain.UNKNOWN:
+				wet = p
+				break
+		if wet != Vector2.INF:
+			break
+	check(wet != Vector2.INF, "achou um ponto na água")
+	var ground: CardDef = null
+	var flyer: CardDef = null
+	var spell: CardDef = null
+	for c in data.cards:
+		if c.category != "field":
+			continue
+		if c.is_spell and spell == null:
+			spell = c
+		elif not c.is_spell and c.fly and flyer == null:
+			flyer = c
+		elif not c.is_spell and not c.fly and c.arch == K.Arch.CHASER and ground == null:
+			ground = c
+	var gi := s._new_inst(ground)
+	check(not s.valid_target(gi, wet.x, wet.y), "monstro de chão não pode ser solto na água (%s)" % ground.id)
+	if flyer:
+		check(s.valid_target(s._new_inst(flyer), wet.x, wet.y) or s.in_any_ring(wet.x, wet.y), "voador pode ser solto na água (%s)" % flyer.id)
+	if spell:
+		check(s.valid_target(s._new_inst(spell), wet.x, wet.y), "feitiço pode ser solto na água (%s)" % spell.id)
+	# Unidade que nasce (ou é empurrada) para a água volta para a margem no passo seguinte.
+	var j := s.units.spawn(ground, wet.x, wet.y, 0.0, 0.0, K.F_NO_XP, 0)
+	s.step()
+	check(s.units.alive[j] == 0 or not T.is_water(s.units.px[j], s.units.py[j]), "unidade na água volta para a margem")
+	# Travessia: herói parado numa cabeceira, monstro na outra margem; ele vai pela ponte e nunca entra na água.
+	var b: Dictionary = T.bridges[0]
+	var c: Vector2 = b["c"]
+	var ea: Vector2 = b["a"]
+	var eb: Vector2 = b["b"]
+	var s2 := _sim(5)
+	var T2 := s2.terra()
+	s2.offers.clear()
+	s2.hero.base_hp = 1.0e6
+	s2.hero.hp = 1.0e6
+	var hp_ := ea + (ea - c).normalized() * 3.0
+	s2.hero.x = hp_.x
+	s2.hero.y = hp_.y
+	s2.hero.hold = true
+	s2.hero.hold_x = hp_.x
+	s2.hero.hold_y = hp_.y
+	var up := eb + (eb - c).normalized() * 3.0 + (eb - c).normalized().orthogonal() * 6.0
+	if T2.is_water(up.x, up.y):
+		up = T2.nearest_dry(up.x, up.y)
+	var k := s2.units.spawn(ground, up.x, up.y, 0.0, 0.0, K.F_NO_XP, 0)
+	var wet_steps := 0
+	var crossed := false
+	for st in int(25.0 / s2.dt):
+		s2.hero.x = hp_.x
+		s2.hero.y = hp_.y
+		s2.step()
+		if s2.units.alive[k] == 0:
+			break
+		if T2.is_water(s2.units.px[k], s2.units.py[k]):
+			wet_steps += 1
+		if T2.same_side(s2.units.px[k], s2.units.py[k], hp_.x, hp_.y) and T2.region_at(s2.units.px[k], s2.units.py[k]) != SimTerrain.ON_DECK:
+			crossed = true
+			break
+	check(wet_steps == 0, "o monstro nunca termina um passo na água (%d)" % wet_steps)
+	check(crossed, "o monstro do outro lado chega ao herói pela ponte")
+	# Herói: monstro do outro lado da água não vira alvo, mesmo perto.
+	var s3 := _sim(5)
+	var T3 := s3.terra()
+	s3.offers.clear()
+	s3.hero.x = hp_.x
+	s3.hero.y = hp_.y
+	var other := eb + (eb - c).normalized() * 3.0
+	var m := s3.units.spawn(ground, other.x, other.y, 0.0, 0.0, K.F_NO_XP, 0)
+	check(not T3.same_side(hp_.x, hp_.y, other.x, other.y) or T3.region_at(other.x, other.y) == SimTerrain.ON_DECK, "os dois pontos estão em margens diferentes")
+	s3.hero.AI = s3.hero.AI.duplicate()
+	s3.hero.AI["engage_radius"] = 60.0
+	s3.hero._choose_target()
+	check(not (s3.hero.target_kind == SimHero.TGT_UNIT and s3.hero.target == m), "herói ignora monstro do outro lado do rio")
+	# Save e load: os rios voltam iguais e a água funciona.
+	check(SaveGame.save(s, "user://test_rio.save"), "salvou com rio")
+	var r := SaveGame.load_run(data, "user://test_rio.save")
+	check(r != null and r.road.rivers.size() == s.road.rivers.size() and r.terra().ok and r.terra().is_water(wet.x, wet.y),
+		"carregou com os mesmos rios e a água no lugar")
+	check(r != null and r.state_hash() == s.state_hash(), "save com rio: mesmo estado")
 
 func t_shop() -> void:
 	var s := _sim(4)
@@ -938,6 +1128,11 @@ func t_contests() -> void:
 	p = s.road.locations[int(s.contest["li"])]["pos"]
 	var g0 := s.gold
 	_kills(s, p, int(rm[0]))
+	# O que nasce das mortes (um passivo sorteado, como "+1 rato ao morrer") bateria no herói e daria ouro de dano:
+	# este teste é só da recompensa do local, então tira as sobras (o resultado não depende mais do sorteio).
+	for i in s.units.hi:
+		if s.units.alive[i] == 1:
+			s.units.release(i)
 	_steps(s, float(L["ritual"]["window"]) + 0.5)
 	check(s.contest.is_empty() and s.offers.size() == 1 and s.offers[0]["options"].size() == maxi(1, roundi(s.cards.size() * 0.25)) and is_equal_approx(s.gold - g0, 0.0),
 		"Ritual: só o marco 1 → 1 carta entre 25%% do deck, sem ouro (%.0f)" % (s.gold - g0))
@@ -1799,6 +1994,14 @@ func _legacy_sim(seed_: int, id: int, deck := "horde") -> Sim:
 	return s
 
 
+## Fase de teste com a fila da antiga Fase 4 (a Companhia, 15/11/2026): a campanha de 16/11/2026 mudou a fase 4,
+## e os testes de parties precisam desta fila fixa.
+func _companhia() -> int:
+	if data.phase(93).is_empty():
+		data.phases.append({"id": 93, "key": "TEST_93", "parties": [["escudeiro"], ["guardiao", "cleriga", "mago", "assassino"], ["arqueira"]], "hp_mult": 1.5})
+	return 93
+
+
 func _phase_sim(n: int, seed_ := 7) -> Sim:
 	var s := Sim.new()
 	s.setup(data, seed_, "horde", [], [], n)
@@ -1965,7 +2168,7 @@ func t_classes() -> void:
 	s3.hero.hp = 0.0
 	s3._check_end()
 	check(s3.hero.max_hp() > base2 * 1.15, "a bênção da Clériga dá vida ao próximo (%.0f > %.0f)" % [s3.hero.max_hp(), base2])
-	var s4 := _phase_sim(4)
+	var s4 := _phase_sim(_companhia())
 	check(s4.party_class(3) == "mago", "o 4º herói da Fase 4 é o Mago")
 	check(s4.party_mode() and s4.party_count() == 3 and s4.party_size() == 6, "a Fase 4 é uma fila de 3 parties (6 heróis)")
 	var sw := _phase_sim(1)
@@ -1983,11 +2186,23 @@ func t_classes() -> void:
 	check(alive1 < alive0 - 2, "golpe do Mago atinge vários ratos em volta (%d → %d)" % [alive0, alive1])
 	var s0 := _phase_sim(0)
 	check(s0.party_size() == 3 and s0.party_count() == 2 and s0.acts() == 1 and s0.hero.max_hp() < float(data.hero["hp"]) * 0.6, "tutorial: 3 Escudeiros fracos e 1 ato")
+	# Campanha em mapa (16/11/2026): 7 fases com ids seguidos (phase_open depende disso), cada uma com região e mapa.
+	var ids: Array = []
+	var maps_ok := true
+	for ph in data.phases:
+		if int(ph["id"]) >= 90:
+			continue
+		ids.append(int(ph["id"]))
+		var m: Dictionary = ph.get("map", {})
+		maps_ok = maps_ok and str(ph.get("region", "")) != "" and m.has("pos") and m.has("exit") and m.get("road", []).size() >= 2
+	check(ids == [0, 1, 2, 3, 4, 5, 6], "a campanha tem as fases 0 a 6 em ordem (%s)" % str(ids))
+	check(maps_ok, "toda fase tem região, posição, saída e estrada no mapa")
+	check(data.phase(6).get("final", false) and data.phase(6)["party"].size() > data.phase(5)["party"].size(), "a Capital é a fase final e a maior fila")
 
 
 ## Fila de parties (15/11/2026): grupos de 1 a 4 heróis; cada queda dá recompensa; a party seguinte chega junta.
 func t_parties() -> void:
-	var s := _phase_sim(4)   # [escudeiro] [guardiao, cleriga, mago, assassino] [arqueira]
+	var s := _phase_sim(_companhia())   # [escudeiro] [guardiao, cleriga, mago, assassino] [arqueira]
 	check(s.party_mode() and s.party_count() == 3 and s.party_size() == 6, "Fase 4: 3 parties, 6 heróis")
 	check(s.followers.size() == 0 and s.hero.cls() == "escudeiro", "a party 1 é só o Escudeiro")
 	check(s.party_n_of(1) == 4 and s.party_n_of(0) == 1 and s.party_n_of(5) == 1, "tamanho de cada party")
@@ -2038,7 +2253,7 @@ func t_parties() -> void:
 	check(s.phase == K.Phase.OVER and str(s.stats["result"]) in ["win", "win_early"] and int(s.stats["heroes_fallen"]) == 6,
 		"a última party cai: vitória com 6 quedas (%s, %d)" % [str(s.stats["result"]), int(s.stats["heroes_fallen"])])
 	# Salvar e continuar no meio de uma party de 4.
-	var m := _phase_sim(4)
+	var m := _phase_sim(_companhia())
 	m.offers.clear()
 	m.hero.hp = 0.0
 	m._check_end()

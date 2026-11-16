@@ -409,7 +409,9 @@ func _move(dt: float) -> void:
 			road_dir = (sim.road.point_at(s + 5.0) - Vector2(x, y)).normalized()
 	else:
 		road_dir = (Vector2(sim.arena.bx, sim.arena.by) - Vector2(x, y)).normalized()
-	mv += road_dir * float(AI["road_weight"]) * (0.25 if attacking else 1.0)
+	# Disputa da Ponte (16/11/2026): ele fica no tabuleiro mesmo brigando (a briga é na ponte).
+	var firm := hold and sim.contest.size() > 0 and str(sim.contest.get("type", "")) == "bridge" 		and bool(sim.data.rules["road"].get("river", {}).get("enabled", true))
+	mv += road_dir * float(AI["road_weight"]) * (0.25 if attacking and not firm else 1.0)
 	if target_kind != TGT_NONE and (closing or not attacking):
 		mv += (tpos - Vector2(x, y)).normalized() * float(AI["target_weight"])
 	if lure_on:
@@ -782,8 +784,12 @@ func _choose_target() -> void:
 	lure_unit = -1
 	var nose := has("treasure_nose") or push_t > 0.0
 	var lure_d := INF
+	# Rio (16/11/2026): alvo do outro lado da água é ignorado (o herói não corre até a ponte por um monstro).
+	var water: SimTerrain = sim.terra() if not arena else null
 	for i in U.hi:
 		if U.alive[i] == 0:
+			continue
+		if water != null and water.ok and not water.same_side(x, y, U.px[i], U.py[i]):
 			continue
 		var dx := U.px[i] - x
 		var dy := U.py[i] - y

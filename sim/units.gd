@@ -358,6 +358,13 @@ func _house_attack(i: int, a: int, houses: Array, aggro: float, dt: float) -> bo
 
 
 func _step(i: int, tx: float, ty: float, speed: float, dt: float) -> void:
+	# Rio (16/11/2026): monstro de chão em outra margem vai primeiro à cabeceira da ponte do caminho.
+	if sim.phase == K.Phase.ROAD and not (flags[i] & K.F_FLY):
+		var water := sim.terra()
+		if water.ok:
+			var wp := water.waypoint(px[i], py[i], tx, ty)
+			tx = wp.x
+			ty = wp.y
 	var vx := tx - px[i]
 	var vy := ty - py[i]
 	var l := sqrt(vx * vx + vy * vy)

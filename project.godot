@@ -66,6 +66,22 @@ paint_t_cloth={
 "type": "sampler2D",
 "value": ""
 }
+paint_cor={
+"type": "bool",
+"value": false
+}
+paint_escuro={
+"type": "bool",
+"value": false
+}
+paint_papel={
+"type": "bool",
+"value": false
+}
+paint_t_papel={
+"type": "sampler2D",
+"value": ""
+}
 ui_px={
 "type": "float",
 "value": 1.0

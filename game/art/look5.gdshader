@@ -6,6 +6,8 @@ shader_type spatial;
 // por instância; senão, a animação procedural dos outros looks (anim.gdshaderinc).
 render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 #include "res://game/art/anim.gdshaderinc"
+// Unidades: a cor dos fundos das cartas (paint_cor) não vale aqui; a cor fica no personagem, como nas cartas.
+#define PAINT_UNIT
 #include "res://game/art/paint.gdshaderinc"
 
 uniform float emission_boost = 0.0;
@@ -83,10 +85,15 @@ void fragment() {
 	if (!atlas) {
 		base = paint_albedo(base, paint_p, paint_n, -1, 0.35);
 	}
+	// A · cor dos fundos das cartas só no cenário (modelos parados, sem VAT); as unidades animadas mantêm a cor.
+	if (paint_on && paint_cor && !use_vat) {
+		base = pt_card_ground(base);
+	}
 	float f = clamp(max(custom.x, flash), 0.0, 1.0);
 	ALBEDO = mix(base, vec3(1.0, 0.96, 0.92), f);
 	// Contorno de tinta (só no tratamento "flat"): borda escura onde a superfície vira de lado.
 	ALBEDO = mix(ALBEDO, vec3(0.05, 0.04, 0.07), ink * smoothstep(0.55, 0.85, 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0)));
+	PAINT_PAPER
 	ROUGHNESS = 0.72;
 	SPECULAR = 0.3;
 	// Contorno de céu: fresnel suave, mais forte no alto do modelo (luz que vem de cima).

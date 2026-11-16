@@ -6,7 +6,7 @@ extends RefCounted
 ## lendárias. Custos e fórmula das Almas em data/meta.json.
 
 const PATH := "user://meta.save"
-const VERSION := 3                 # 2: vilões no lugar dos Pactos (10/11/2026); 3: cartas liberadas por desafio (13/11/2026)
+const VERSION := 4                 # 2: vilões no lugar dos Pactos (10/11/2026); 3: cartas liberadas por desafio (13/11/2026); 4: campanha em 7 fases e heróis vistos (16/11/2026)
 
 var data: GameData
 var souls := 0
@@ -15,6 +15,9 @@ var villain := "plague"            # vilão escolhido para a próxima run
 var villains: Array = ["plague"]   # vilões liberados
 var runs := 0
 var phases_won: Array = []
+## Classes de herói que o jogador já enfrentou numa run (16/11/2026): o mapa da campanha só revela essas; as
+## outras aparecem como "?". Saves de antes da versão 4 começam com as classes das fases que já venceram.
+var heroes_seen: Array = []
 ## Fases 3 e 4 pagam uma rara à escolha: quantas escolhas o jogador ainda tem para fazer no menu.
 var rare_choices := 0
 ## Desafios de desbloqueio (data/unlocks.json): fases vencidas por vilão, heróis derrotados no total e o melhor
@@ -66,6 +69,14 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 			for ph in v.get("phases_won", []):
 				if not m.phases_won.has(int(ph)):
 					m.phases_won.append(int(ph))
+			for cls in v.get("heroes_seen", []):
+				m.see_hero(str(cls))
+			# Campanha de 16/11/2026: a fase 4 antiga (Companhia) virou a Capital (6) e a 4 é o Forte; quem tinha a 4
+			# vencida fica com o Forte vencido. Heróis vistos: os das fases já vencidas.
+			if int(v.get("ver", 1)) < 4:
+				for ph in m.phases_won:
+					for cls in d.phase(int(ph)).get("party", []):
+						m.see_hero(str(cls))
 			m.villain = d.villain_id(str(v.get("villain", v.get("pact", m.villain))))
 			if not m.villains.has(m.villain):
 				m.villain = d.villain_ids[0]
@@ -90,7 +101,7 @@ func save(path := "") -> bool:
 	if f == null:
 		return false
 	f.store_var({"ver": VERSION, "souls": souls, "unlocked": unlocked, "villain": villain, "villains": villains,
-		"runs": runs, "phases_won": phases_won, "rare_choices": rare_choices,
+		"runs": runs, "phases_won": phases_won, "heroes_seen": heroes_seen, "rare_choices": rare_choices,
 		"wins_by_villain": wins_by_villain, "heroes_total": heroes_total, "progress": progress,
 		"totals": totals, "runs_done": runs_done})
 	return true
@@ -147,6 +158,14 @@ func choose_rare(id: String) -> bool:
 		return false
 	rare_choices -= 1
 	unlocked.append(id)
+	return true
+
+
+## Marca a classe como enfrentada (o mapa da campanha passa a mostrá-la). Devolve true se é nova.
+func see_hero(cls: String) -> bool:
+	if cls == "" or heroes_seen.has(cls):
+		return false
+	heroes_seen.append(cls)
 	return true
 
 

@@ -424,6 +424,7 @@ func _draw() -> void:
 	else:
 		draw_rect(dst, BG)
 	draw_set_transform(Vector2(ox, -scroll), 0.0, Vector2(k, k))
+	tf_live = Transform2D(0.0, Vector2(k, k), 0.0, Vector2(ox, -scroll))
 	var view := Rect2(0.0, scroll / k - 120.0, W, size.y / k + 240.0)
 	_draw_current(view)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -534,6 +535,8 @@ func _draw_current(view: Rect2) -> void:
 	if view.has_point(p0):
 		_badge(self, p0, 1.0, 0.92)
 		_icon(self, p0, "start", 1.0, 1.0)
+		if a == 0 and _exit_name() != "":
+			_label(self, p0 + Vector2(0, 66), _exit_name(), 25, ACC)
 	var pe := _dpos(a, road, road.nodes.size() - 1)
 	if view.has_point(pe):
 		var last := a + 1 >= _acts()
@@ -658,6 +661,14 @@ func _plate(r: Rect2, fill := BG) -> void:
 	draw_rect(r, fill)
 	draw_rect(r, INK, false, 3.0)
 	draw_rect(r.grow(-5.0), INK, false, 1.2)
+
+
+## De onde a party saiu (mapa da campanha, 16/11/2026): "Saída: Floresta de Ramagris" no começo do Ato I.
+func _exit_name() -> String:
+	if sim == null or sim.data == null:
+		return ""
+	var region := str(sim.data.phase(sim.campaign_phase).get("region", ""))
+	return tr("UI_CAMPAIGN_EXIT").format({"r": tr("REGION_" + region)}) if region != "" else ""
 
 
 func _act_name(a: int) -> String:
@@ -802,6 +813,7 @@ func _paint_terrain(ci: CanvasItem) -> void:
 	if sim == null or lay.is_empty():
 		return
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2(kt, kt))
+	tf_bake = Transform2D(0.0, Vector2(kt, kt), 0.0, Vector2.ZERO)
 	var r := RandomNumberGenerator.new()
 	r.seed = _seed(0) + 101
 	# Papel: cor de fundo, manchas e a textura do grão.
@@ -830,6 +842,8 @@ func _paint_terrain(ci: CanvasItem) -> void:
 				_mark(BL, c[i], 62.0)
 				_mark(BL2, c[i], 38.0)
 		_block_rect(Rect2(Vector2(W * 0.5 - 340, float(lay[a]["cart"]) - 100), Vector2(680, 200)))
+	# Rios de verdade e as suas fozes antes do mar: a praia é desenhada já aberta na boca de cada rio.
+	_build_river_geo()
 	# Mar e costa, de cima a baixo.
 	_paint_sea(ci, r)
 	# Terreno de cada ato (rios primeiro; as feições por altura, de trás para a frente).
@@ -889,10 +903,14 @@ func _paint_sea(ci: CanvasItem, r: RandomNumberGenerator) -> void:
 		for p in cr:
 			rl.append(Vector2(p.x + i * 14 + sin(p.y / 60.0 + i) * 3.0, p.y))
 		var col := Color(INK, 0.7 - i * 0.13)
-		ci.draw_polyline(_smooth(ll, false, 3), col, 2.0 - i * 0.3, true)
-		ci.draw_polyline(_smooth(rl, false, 3), col, 2.0 - i * 0.3, true)
-	ci.draw_polyline(_smooth(_wob(cl, r, 10.0), false, 3), INK, 3.4, true)
-	ci.draw_polyline(_smooth(_wob(cr, r, 10.0), false, 3), INK, 3.4, true)
+		for piece in _split_at_mouths(ll, -1, 40.0 + i * 16.0):
+			if piece.size() >= 4:
+				ci.draw_polyline(_smooth(piece, false, 3), col, 2.0 - i * 0.3, true)
+		for piece in _split_at_mouths(rl, 1, 40.0 + i * 16.0):
+			if piece.size() >= 4:
+				ci.draw_polyline(_smooth(piece, false, 3), col, 2.0 - i * 0.3, true)
+	_coast_line(ci, cl, r, -1)
+	_coast_line(ci, cr, r, 1)
 	# Ilhotas e rochedos.
 	for i in int(H / 400.0):
 		var yy := r.randf_range(200, H - 200)
@@ -949,14 +967,23 @@ func _paint_act(ci: CanvasItem, a: int, ap: Dictionary) -> void:
 	# Rios: atravessam as pontes do ato (ou passam em lugares de enfeite nos atos sem estrada).
 	var cross: Array = []
 	var road := _road_of(a)
-	if road != null:
+	var real: Array = river_geo.get(a, [])
+	if real.size() > 0:
+		# Rios de verdade (15/11/2026): o mesmo traçado do mundo, pelos mesmos pontos de controle.
+		for g in real:
+			for p in g["land"]:
+				_mark(BL2, p, 30.0)
+				_mark(OC, p, 34.0)
+				_mark(BL, p, 24.0)
+			_river_to_sea(ci, g, r)
+	if road != null and real.is_empty():
 		var nb := 0
 		for loc in road.locations:
 			if loc["type"] == "bridge":
 				if nb % 2 == 0:
 					cross.append(_dpos(a, road, loc["node"]))
 				nb += 1
-	if cross.is_empty():
+	if cross.is_empty() and real.is_empty():
 		cross.append(Vector2(r.randf_range(700, 1220), r.randf_range(y0 + 400, y1 - 400)))
 	var rivers: Array = []
 	for i in mini(cross.size(), 2):
@@ -1391,7 +1418,30 @@ func _marsh(ci: CanvasItem, c: Vector2, r: RandomNumberGenerator) -> void:
 		ci.draw_line(p, p + Vector2(r.randf_range(6, 14), 0), INK, 1.3, true)
 
 
+## Casas, torres e ícones de construções no traço escolhido para o reino (CampaignArt, estilo Nórdico desde
+## 16/11/2026): o mapa da run, o mapa da campanha e o menu usam o mesmo desenho. Só na gravura (FS=1).
+const ART_ICONS := {"tavern": "tavern", "shrine": "shrine", "gate": "gate", "lair": "lair", "shop": "shop", "start": "tent"}
+var tf_live := Transform2D.IDENTITY
+var tf_bake := Transform2D.IDENTITY
+var art_of := {}
+
+
+func _art(ci: CanvasItem) -> CampaignArt:
+	var id := ci.get_instance_id()
+	if not art_of.has(id):
+		art_of[id] = CampaignArt.drawer(ci)
+	return art_of[id]
+
+
 func _house(ci: CanvasItem, x: float, y: float, w: float, h: float, steeple: bool, r: RandomNumberGenerator) -> void:
+	if FS == 1:
+		var a := _art(ci)
+		a.r.seed = r.randi()
+		if steeple:
+			a._church(Vector2(x, y), 0.72)
+		else:
+			a._house(Vector2(x, y), w * 1.15, h, w * 0.85, "tile", a.r.randf() < 0.5, 1)
+		return
 	_shape(ci, PackedVector2Array([Vector2(x - w / 2, y), Vector2(x - w / 2, y - h), Vector2(x + w / 2, y - h), Vector2(x + w / 2, y)]), BG, 1.8)
 	_shape(ci, PackedVector2Array([Vector2(x - w / 2 - 3, y - h), Vector2(x, y - h - w * 0.7), Vector2(x + w / 2 + 3, y - h)]), BG2, 1.8)
 	var top := y - h - w * 0.55
@@ -1450,6 +1500,11 @@ func _ruin(ci: CanvasItem, x: float, y: float) -> void:
 
 
 func _tower(ci: CanvasItem, x: float, y: float) -> void:
+	if FS == 1:
+		var a := _art(ci)
+		a.r.seed = hash(Vector2i(int(x), int(y)))
+		a._tower(Vector2(x, y), 13, 30, "", true)
+		return
 	var o := Vector2(x, y)
 	_shape(ci, _offs(o, [Vector2(-7, 0), Vector2(-6, -30), Vector2(6, -30), Vector2(7, 0)]), BG, 1.9)
 	_shape(ci, _offs(o, [Vector2(-8, -30), Vector2(-8, -36), Vector2(-5, -36), Vector2(-5, -33), Vector2(-2, -33), Vector2(-2, -36), Vector2(2, -36), Vector2(2, -33), Vector2(5, -33), Vector2(5, -36), Vector2(8, -36), Vector2(8, -30)]), BG, 1.8)
@@ -1525,6 +1580,8 @@ func _paint_past(ci: CanvasItem, a: int, ap: Dictionary) -> void:
 		_label(ci, p + Vector2(0, 58), tr("LOC_" + str(loc["type"])), 22, Color(INK, 0.8 if on else 0.45))
 	_badge(ci, _dpos(a, road, 0), 0.9, 0.85)
 	_icon(ci, _dpos(a, road, 0), "start", 0.9, 0.8)
+	if a == 0 and _exit_name() != "":
+		_label(ci, _dpos(a, road, 0) + Vector2(0, 60), _exit_name(), 22, Color(INK, 0.8))
 	var pe := _dpos(a, road, road.nodes.size() - 1)
 	_badge(ci, pe, 1.0, 0.9)
 	_icon(ci, pe, "gate", 1.0, 0.9)
@@ -1611,6 +1668,11 @@ func _tick(ci: CanvasItem, p: Vector2) -> void:
 
 ## Ícone a tinta de cada tipo de local (o mesmo desenho do mapa.html, estilo A).
 func _icon(ci: CanvasItem, c: Vector2, ty: String, s: float, alpha: float) -> void:
+	if FS == 1 and ART_ICONS.has(ty):
+		_art(ci).icon(ART_ICONS[ty], tf_live if ci == self else tf_bake, c, s * 0.85, hash(ty) ^ hash(Vector2i(c)))
+		if alpha < 0.99:
+			ci.draw_circle(c, 34.0 * s, Color(BG, (1.0 - alpha) * 0.85))
+		return
 	var ink := Color(INK, alpha)
 	var f1 := Color(F1, alpha)
 	var f2 := Color(F2, alpha)
@@ -2222,6 +2284,417 @@ static func _offset_var(pts: PackedVector2Array, d0: float, d1: float) -> Packed
 		var tg := (b - a).normalized()
 		out.append(pts[i] + Vector2(-tg.y, tg.x) * lerpf(d0, d1, float(i) / maxf(n - 1, 1)))
 	return out
+
+
+## Rios do ato a (SimRoad.rivers) em unidades de desenho: os pontos de controle passam pelos nós (_dpos) e pelo
+## meio das trilhas desenhadas (_curve); as pontas saem pelas bordas do papel.
+func _real_rivers(a: int, road: SimRoad) -> Array:
+	var out: Array = []
+	var npos := func(n): return _dpos(a, road, n)
+	var lmid := func(e):
+		var c := _curve(a, road, e)
+		return c[c.size() / 2]
+	# Trilhas desenhadas (para o meandro não encostar nelas).
+	var trail := PackedVector2Array()
+	for e in road.legs.size():
+		trail.append_array(_curve(a, road, e))
+	for n in road.nodes.size():
+		if road.nodes[n]["loc"] < 0 or road.locations[road.nodes[n]["loc"]]["type"] != "bridge":
+			trail.append(_dpos(a, road, n))
+	for k in road.rivers.size():
+		var rv: Dictionary = road.rivers[k]
+		var line := SimRivers.untangle(SimRivers.polyline(rv["ctrl"], npos, lmid, 520.0, 34.0, 22.0))
+		var anchors: Array = rv["bridges"].map(func(n): return _dpos(a, road, n))
+		# Rio natural (16/11/2026): curvas alternadas, calmas nas pontes, sem chegar a 22 unidades de uma trilha.
+		var room := func(p: Vector2) -> float:
+			var dmin := INF
+			for q in trail:
+				dmin = minf(dmin, p.distance_squared_to(q))
+			return sqrt(dmin) - 30.0
+		var m := SimRivers.meander(line, anchors, 62.0, 470.0, _seed(a) * 13 + k, 46.0, 8.0, room)
+		out.append(Array(SimRivers.untangle(m)))
+	return out
+
+
+## Altura (unidades de desenho) do meio do rio k do ato atual; 0 se não houver.
+func river_y(k := 0) -> float:
+	if sim == null or lay.is_empty() or k >= sim.road.rivers.size():
+		return 0.0
+	var ys := 0.0
+	var bs: Array = sim.road.rivers[k]["bridges"]
+	for n in bs:
+		ys += _dpos(sim.act, sim.road, n).y
+	return ys / bs.size()
+
+
+## Parte do rio em terra: corta a linha onde ela passa da costa (coast_l / coast_r) e termina no ponto da costa.
+func _river_land(w: Array) -> Array:
+	var inside := func(p: Vector2) -> bool: return p.x > coast_l(p.y) and p.x < coast_r(p.y)
+	var i0 := 0
+	while i0 < w.size() and not inside.call(w[i0]):
+		i0 += 1
+	var i1 := w.size() - 1
+	while i1 > i0 and not inside.call(w[i1]):
+		i1 -= 1
+	if i0 >= i1:
+		return w
+	var out: Array = w.slice(i0, i1 + 1)
+	if i0 > 0:
+		out.push_front(_on_coast(w[i0 - 1], w[i0]))
+	if i1 < w.size() - 1:
+		out.append(_on_coast(w[i1 + 1], w[i1]))
+	return out
+
+
+## Ponto da costa entre `outp` (no mar) e `inp` (em terra), por bissecção.
+func _on_coast(outp: Vector2, inp: Vector2) -> Vector2:
+	var a := outp
+	var b := inp
+	for k in 20:
+		var m := (a + b) * 0.5
+		if m.x > coast_l(m.y) and m.x < coast_r(m.y):
+			b = m
+		else:
+			a = m
+	return (a + b) * 0.5
+
+
+## Rios de verdade de cada ato com estrada (atual ou já feito): parte em terra e fozes. Calculado uma vez por
+## desenho do terreno, antes do mar (a praia precisa saber onde abrir).
+var river_geo: Dictionary = {}   # ato -> [{"land": [Vector2], "mouths": [{"side", "lft", "rgt", "a", "b"}]}]
+const FLARE_LEN := 120.0
+
+
+func _build_river_geo() -> void:
+	river_geo.clear()
+	for a in lay.size():
+		var road := _road_of(a)
+		if road == null or road.rivers.is_empty():
+			continue
+		var list: Array = []
+		for w in _real_rivers(a, road):
+			var land := _river_land(w)
+			var mouths: Array = []
+			if land.size() >= 6 and (land[0] as Vector2).distance_to(w[0]) > 1.0:
+				mouths.append(_mouth(land, 0))
+			if land.size() >= 6 and (land[-1] as Vector2).distance_to(w[-1]) > 1.0:
+				mouths.append(_mouth(land, land.size() - 1))
+			list.append({"land": land, "mouths": mouths.filter(func(m): return not m.is_empty())})
+		river_geo[a] = list
+
+
+func _coast_x(side: int, y: float) -> float:
+	return coast_l(y) if side < 0 else coast_r(y)
+
+
+## Foz na ponta `mi` da parte em terra: as margens se abrem num estuário e terminam em cima da costa
+## (`a` e `b`, as pontas da praia).
+func _mouth(land: Array, mi: int) -> Dictionary:
+	var dir := -1 if mi == 0 else 1
+	var seg: Array = []
+	var acc := 0.0
+	var i: int = mi
+	while i >= 0 and i < land.size() and acc <= FLARE_LEN:
+		seg.append([land[i], acc])
+		var j := i - dir
+		if j >= 0 and j < land.size():
+			acc += (land[i] as Vector2).distance_to(land[j])
+		i = j
+	if seg.size() < 4:
+		return {}
+	var m: Vector2 = seg[0][0]
+	var side := -1 if m.x < W * 0.5 else 1
+	var lft: Array = []
+	var rgt: Array = []
+	for k in range(seg.size() - 1, -1, -1):   # de dentro para a costa
+		var p: Vector2 = seg[k][0]
+		var q: Vector2 = seg[mini(k + 1, seg.size() - 1)][0]
+		var o: Vector2 = seg[maxi(k - 1, 0)][0]
+		var tg := (o - q).normalized()   # aponta para o mar
+		var nrm := Vector2(-tg.y, tg.x)
+		var t := 1.0 - float(seg[k][1]) / FLARE_LEN
+		var hw := 8.0 + 50.0 * t * t * t
+		lft.append(p + nrm * hw)
+		rgt.append(p - nrm * hw)
+	# Margens sem dobra: onde o rio curva perto do mar, a margem de dentro da curva se dobraria (quina).
+	lft = _smooth_bank(lft)
+	rgt = _smooth_bank(rgt)
+	# Cada margem termina exatamente onde cruza a costa (a mesma conta que a praia usa).
+	lft = _to_coast(lft, side)
+	rgt = _to_coast(rgt, side)
+	# Canto arredondado: a margem vira e segue a costa por um trecho, para longe da boca (a ponta de cima vai
+	# para cima, a de baixo para baixo); a praia começa onde o arco termina.
+	var up_is_l: bool = (lft[-1] as Vector2).y < (rgt[-1] as Vector2).y
+	lft = _fillet(lft, side, -1.0 if up_is_l else 1.0)
+	rgt = _fillet(rgt, side, 1.0 if up_is_l else -1.0)
+	var a: Vector2 = lft[-1]
+	var b: Vector2 = rgt[-1]
+	if a.y > b.y:
+		var tmp := a
+		a = b
+		b = tmp
+	return {"side": side, "lft": lft, "rgt": rgt, "a": a, "b": b}
+
+
+## Arredonda o fim da margem `arr` (que termina em cima da costa): troca os últimos FILLET de linha por uma
+## curva que sai da margem e encosta na costa a FILLET dali, no sentido `dir` (−1 para cima, +1 para baixo).
+const FILLET := 30.0
+
+
+func _fillet(arr: Array, side: int, dir: float) -> Array:
+	var c: Vector2 = arr[-1]
+	var k := arr.size() - 1
+	var acc := 0.0
+	while k > 0 and acc < FILLET:
+		acc += (arr[k] as Vector2).distance_to(arr[k - 1])
+		k -= 1
+	var p: Vector2 = arr[k]
+	var ey := c.y + dir * FILLET
+	var e := Vector2(_coast_x(side, ey), ey)
+	# Curva que sai de p na direção da margem e chega em e na direção da praia: sem quina nas duas pontas.
+	var tb: Vector2 = (p - (arr[maxi(k - 1, 0)] as Vector2)).normalized() if k > 0 else (c - p).normalized()
+	var ec := Vector2(_coast_x(side, ey - dir * 2.0), ey - dir * 2.0)
+	var tc: Vector2 = (ec - e).normalized()   # da praia de volta para a boca
+	var l := p.distance_to(e) * 0.45
+	var p1 := p + tb * l
+	var p2 := e + tc * l
+	var out: Array = arr.slice(0, k + 1)
+	for i in range(1, 17):
+		var t := i / 16.0
+		var u := 1.0 - t
+		out.append(p * u * u * u + p1 * 3.0 * u * u * t + p2 * 3.0 * u * t * t + e * t * t * t)
+	return out
+
+
+## Desfaz laços e alisa a margem (o primeiro ponto, que encosta no rio, fica onde está).
+func _smooth_bank(arr: Array) -> Array:
+	var p := Array(SimRivers.untangle(PackedVector2Array(arr)))
+	if p.size() < 4:
+		return p
+	p = Array(SimRoad._resample(PackedVector2Array(p), 4.0))
+	for it in 12:
+		var q := p.duplicate()
+		for i in range(1, p.size() - 1):
+			q[i] = (p[i - 1] + p[i] * 2.0 + p[i + 1]) * 0.25
+		p = q
+	return p
+
+
+## Corta a margem no primeiro ponto em que ela passa para o mar; se não chega lá, segue reto até a costa.
+func _to_coast(arr: Array, side: int) -> Array:
+	var inside := func(p: Vector2) -> bool: return p.x > coast_l(p.y) and p.x < coast_r(p.y)
+	for k in range(1, arr.size()):
+		if not inside.call(arr[k]):
+			var out: Array = arr.slice(0, k)
+			out.append(_on_coast(arr[k], arr[k - 1]))
+			return out
+	# Não chegou: segue na própria direção até tocar a costa (nunca um traço reto de lado).
+	var out2: Array = arr.duplicate()
+	var e: Vector2 = arr[-1]
+	var d: Vector2 = (e - (arr[-2] as Vector2)).normalized() if arr.size() > 1 else Vector2(side, 0)
+	var q := e
+	for k in 120:
+		var nq := q + d * 3.0
+		if not inside.call(nq):
+			out2.append(_on_coast(nq, q))
+			return out2
+		out2.append(nq)
+		q = nq
+		d = (d + Vector2(side * 0.06, 0)).normalized()   # vira aos poucos para o mar (no máximo ~3° por passo)
+	out2.append(Vector2(_coast_x(side, q.y), q.y))
+	return out2
+
+
+func _mouths_on(side: int) -> Array:
+	var out: Array = []
+	for a in river_geo:
+		for g in river_geo[a]:
+			for m in g["mouths"]:
+				if int(m["side"]) == side:
+					out.append(m)
+	return out
+
+
+## Corta uma linha paralela à costa (pontos de cima para baixo) nas bocas dos rios; `pad` alarga o corte.
+func _split_at_mouths(pts: Array, side: int, pad: float) -> Array:
+	var ms := _mouths_on(side)
+	if ms.is_empty():
+		return [pts]
+	var pieces: Array = []
+	var cur: Array = []
+	for p in pts:
+		var gap := false
+		for m in ms:
+			if p.y > float(m["a"].y) - pad and p.y < float(m["b"].y) + pad:
+				gap = true
+		if gap:
+			if cur.size() >= 2:
+				pieces.append(cur)
+			cur = []
+		else:
+			cur.append(p)
+	if cur.size() >= 2:
+		pieces.append(cur)
+	return pieces
+
+
+## A linha da praia, tremida como antes, mas aberta em cada foz: o trecho para exatamente na ponta da margem
+## do rio (sem tremido perto dela), para as duas linhas se emendarem.
+func _coast_line(ci: CanvasItem, cl: Array, r: RandomNumberGenerator, side: int) -> void:
+	var wob := _wob(cl, r, 10.0)   # o mesmo número de sorteios de antes
+	var ms := _mouths_on(side)
+	ms.sort_custom(func(x, y): return x["a"].y < y["a"].y)
+	var pieces: Array = []
+	var cur: Array = []
+	var mi := 0
+	for k in cl.size():
+		var p: Vector2 = cl[k]
+		while mi < ms.size() and p.y > float(ms[mi]["b"].y):
+			mi += 1
+		if mi < ms.size() and p.y >= float(ms[mi]["a"].y):
+			# Dentro da boca: fecha o trecho na ponta de cima; o próximo começa na de baixo.
+			var m: Dictionary = ms[mi]
+			if cur.is_empty() or cur[-1] != m["b"]:
+				if cur.size() > 0:
+					# Até a ponta, a costa exata a cada 8 unidades (sem trecho reto até a boca).
+					var y0: float = (cur[-1] as Vector2).y + 8.0
+					while y0 < float(m["a"].y) - 4.0:
+						cur.append(Vector2(_coast_x(side, y0), y0))
+						y0 += 8.0
+					cur.append(m["a"])
+					pieces.append(cur)
+				cur = [m["b"]]
+				var y1: float = float(m["b"].y) + 8.0
+				while y1 < p.y + 40.0 - 4.0:
+					if mi + 1 < ms.size() and y1 >= float(ms[mi + 1]["a"].y):
+						break
+					cur.append(Vector2(_coast_x(side, y1), y1))
+					y1 += 8.0
+			continue
+		# Longe das bocas, o tremido normal; perto, ele some aos poucos.
+		var near := INF
+		for m in ms:
+			near = minf(near, minf(absf(p.y - float(m["a"].y)), absf(p.y - float(m["b"].y))))
+		var f := clampf((near - 30.0) / 70.0, 0.0, 1.0)
+		cur.append(p.lerp(wob[k], f))
+	if cur.size() >= 2:
+		pieces.append(cur)
+	for piece in pieces:
+		if piece.size() >= 2:
+			ci.draw_polyline(_smooth(_dense_near(piece, ms, side), false, 3), INK, 3.4, true)
+
+
+## Perto das bocas, preenche os vãos da praia com a costa exata a cada 8 unidades (sem trecho reto).
+func _dense_near(piece: Array, ms: Array, side: int) -> Array:
+	if ms.is_empty():
+		return piece
+	var out: Array = [piece[0]]
+	for i in range(1, piece.size()):
+		var p: Vector2 = piece[i - 1]
+		var q: Vector2 = piece[i]
+		var near := false
+		for m in ms:
+			for e in [m["a"], m["b"]]:
+				if absf(float(e.y) - p.y) < 120.0 or absf(float(e.y) - q.y) < 120.0:
+					near = true
+		if near and q.y - p.y > 12.0:
+			var y := p.y + 8.0
+			while y < q.y - 4.0:
+				out.append(Vector2(_coast_x(side, y), y))
+				y += 8.0
+		out.append(q)
+	return out
+
+
+## Água da foz, pintada em faixas (um polígono só falha calado quando a forma se cruza): quadriláteros entre as
+## duas margens, mais a boca entre as pontas, que segue a curva da costa e avança um pouco no mar.
+func _fill_mouth(ci: CanvasItem, m: Dictionary) -> void:
+	var n := 40
+	var L := _resample_n(m["lft"], n)
+	var R := _resample_n(m["rgt"], n)
+	for i in n - 1:
+		_tri(ci, L[i], L[i + 1], R[i + 1])
+		_tri(ci, L[i], R[i + 1], R[i])
+	# Boca: das pontas da praia até o mar, em fatias (cada uma um quadrilátero simples, sem chance de falhar).
+	var side: int = m["side"]
+	var a: Vector2 = m["a"]
+	var b: Vector2 = m["b"]
+	var c: Vector2 = (L[n - 1] + R[n - 1]) * 0.5
+	var ys: Array = []
+	var y := a.y
+	while y < b.y:
+		ys.append(y)
+		y += 5.0
+	ys.append(b.y)
+	for i in ys.size() - 1:
+		var y0: float = ys[i]
+		var y1: float = ys[i + 1]
+		if y1 - y0 < 0.05:
+			continue
+		var in0 := Vector2(_coast_x(side, y0) - side * 3.0, y0)
+		var in1 := Vector2(_coast_x(side, y1) - side * 3.0, y1)
+		var out0 := Vector2(_coast_x(side, y0) + side * 40.0, y0)
+		var out1 := Vector2(_coast_x(side, y1) + side * 40.0, y1)
+		ci.draw_colored_polygon(PackedVector2Array([in0, out0, out1, in1]), SEA)
+		# Do meio da boca até a costa (triângulo).
+		_tri(ci, c, in0 + Vector2(side * 4.0, 0), in1 + Vector2(side * 4.0, 0))
+	# Das pontas das margens até o meio (fecha os cantos do leque).
+	_tri(ci, c, L[n - 1], a)
+	_tri(ci, c, R[n - 1], b)
+
+
+## Um triângulo de água (os degenerados ficam de fora: o Godot recusa e não desenha).
+func _tri(ci: CanvasItem, p: Vector2, q: Vector2, r: Vector2) -> void:
+	if absf((q - p).cross(r - p)) > 2.0:
+		ci.draw_colored_polygon(PackedVector2Array([p, q, r]), SEA)
+
+
+## A mesma linha com n pontos igualmente espaçados.
+func _resample_n(pts: Array, n: int) -> Array:
+	var cum: Array = [0.0]
+	for i in range(1, pts.size()):
+		cum.append(float(cum[-1]) + (pts[i] as Vector2).distance_to(pts[i - 1]))
+	var total: float = cum[-1]
+	var out: Array = []
+	var j := 0
+	for k in n:
+		var d := total * k / float(n - 1)
+		while j < pts.size() - 2 and float(cum[j + 1]) < d:
+			j += 1
+		var seg: float = maxf(float(cum[j + 1]) - float(cum[j]), 0.0001) if pts.size() > 1 else 1.0
+		out.append((pts[j] as Vector2).lerp(pts[mini(j + 1, pts.size() - 1)], clampf((d - float(cum[j])) / seg, 0.0, 1.0)))
+	return out
+
+
+## Rio de verdade com foz (16/11/2026): o rio só existe em terra; onde chega ao mar, as margens se abrem num
+## estuário que termina nas pontas da praia, e a água se junta ao mar.
+func _river_to_sea(ci: CanvasItem, g: Dictionary, r: RandomNumberGenerator) -> void:
+	var land: Array = g["land"]
+	var mouths: Array = g["mouths"]
+	for m in mouths:
+		_fill_mouth(ci, m)
+	# O rio de linha dupla vai até onde a boca começa a abrir.
+	var cut0 := 0
+	var cut1 := land.size() - 1
+	for m in mouths:
+		var inner: Vector2 = m["lft"][0]
+		var at_end: bool = inner.distance_to(land[-1]) < inner.distance_to(land[0])
+		var acc := 0.0
+		if at_end:
+			while cut1 > cut0 + 1 and acc < FLARE_LEN - 10.0:
+				acc += (land[cut1] as Vector2).distance_to(land[cut1 - 1])
+				cut1 -= 1
+		else:
+			while cut0 < land.size() - 2 and acc < FLARE_LEN - 10.0:
+				acc += (land[cut0] as Vector2).distance_to(land[cut0 + 1])
+				cut0 += 1
+	_river(ci, PackedVector2Array(land.slice(cut0, cut1 + 1)), r)
+	for m in mouths:
+		for side_pts in [m["lft"], m["rgt"]]:
+			ci.draw_polyline(_smooth(side_pts, false, 3), INK, 2.2, true)
+			# Engrossa perto da praia para casar com a linha da costa.
+			var tail: Array = (side_pts as Array).slice(int(side_pts.size() * 0.55))
+			ci.draw_polyline(_smooth(tail, false, 3), INK, 3.2, true)
 
 
 ## Rio: a linha do meio é `w` (pontos de controle), da nascente à foz.

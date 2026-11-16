@@ -1,5 +1,5 @@
 {
- "_doc": "Campanha. Cada fase é uma run; vencer libera a próxima; a fase 1 libera o Dragão, a 2 o Lich; as fases 3 e 4 pagam Almas e uma rara à escolha. parties (15/11/2026) = fila de parties: cada party é um grupo de 1 a 4 heróis que entra junto; a força da party soma a de um herói só (dividida entre os membros) e sobe a cada party; cada herói que cai dá uma recompensa.",
+ "_doc": "Campanha. Cada fase é uma run; vencer libera a próxima; a fase 1 libera o Dragão, a 2 o Lich; as fases 3 e 4 pagam Almas e uma rara à escolha. parties (15/11/2026) = fila de parties: cada party é um grupo de 1 a 4 heróis que entra junto; a força da party soma a de um herói só (dividida entre os membros) e sobe a cada party; cada herói que cai dá uma recompensa. 16/11/2026: 7 fases em regiões do reino ao redor do covil (docs/CAMPANHA_MAPA.md); a Companhia de antes virou a Capital (fase 6), ampliada; Forte (4) e Torre (5) são novas; rara à escolha saiu (13/11).",
  "phases": [
   {
    "id": 0,
@@ -18,7 +18,34 @@
    "damage_mult": 0.55,
    "acts": 1,
    "deck": "plague",
-   "unlock_villain": ""
+   "unlock_villain": "",
+   "region": "fazenda",
+   "map": {
+    "pos": [
+     520,
+     700
+    ],
+    "rx": 170,
+    "ry": 105,
+    "exit": [
+     585,
+     640
+    ],
+    "road": [
+     [
+      585,
+      640
+     ],
+     [
+      690,
+      590
+     ],
+     [
+      820,
+      500
+     ]
+    ]
+   }
   },
   {
    "id": 1,
@@ -41,7 +68,34 @@
     ]
    ],
    "unlock_villain": "dragon",
-   "hp_mult": 1.4
+   "hp_mult": 1.4,
+   "region": "vila",
+   "map": {
+    "pos": [
+     300,
+     470
+    ],
+    "rx": 170,
+    "ry": 120,
+    "exit": [
+     420,
+     480
+    ],
+    "road": [
+     [
+      420,
+      480
+     ],
+     [
+      600,
+      520
+     ],
+     [
+      820,
+      500
+     ]
+    ]
+   }
   },
   {
    "id": 2,
@@ -66,7 +120,34 @@
     ]
    ],
    "hp_mult": 2.67,
-   "unlock_villain": "lich"
+   "unlock_villain": "lich",
+   "region": "floresta",
+   "map": {
+    "pos": [
+     450,
+     190
+    ],
+    "rx": 200,
+    "ry": 120,
+    "exit": [
+     540,
+     270
+    ],
+    "road": [
+     [
+      540,
+      270
+     ],
+     [
+      660,
+      380
+     ],
+     [
+      820,
+      500
+     ]
+    ]
+   }
   },
   {
    "id": 3,
@@ -91,15 +172,156 @@
    "hp_mult": 2.3,
    "unlock_villain": "",
    "reward_souls": 60,
-   "rare_choice": true,
-   "damage_mult": 1.3
+   "damage_mult": 1.3,
+   "region": "mosteiro",
+   "map": {
+    "pos": [
+     930,
+     150
+    ],
+    "rx": 170,
+    "ry": 100,
+    "exit": [
+     910,
+     230
+    ],
+    "road": [
+     [
+      910,
+      230
+     ],
+     [
+      860,
+      360
+     ],
+     [
+      820,
+      500
+     ]
+    ]
+   }
   },
   {
    "id": 4,
    "key": "PHASE_4",
+   "region": "forte",
    "parties": [
     [
+     "guardiao"
+    ],
+    [
+     "barbaro",
      "escudeiro"
+    ],
+    [
+     "guardiao",
+     "escudeiro"
+    ],
+    [
+     "barbaro"
+    ],
+    [
+     "escudeiro",
+     "guardiao",
+     "barbaro"
+    ]
+   ],
+   "hp_mult": 2.5,
+   "damage_mult": 1.3,
+   "unlock_villain": "",
+   "reward_souls": 60,
+   "map": {
+    "pos": [
+     1330,
+     290
+    ],
+    "rx": 170,
+    "ry": 115,
+    "exit": [
+     1220,
+     330
+    ],
+    "road": [
+     [
+      1220,
+      330
+     ],
+     [
+      1030,
+      420
+     ],
+     [
+      820,
+      500
+     ]
+    ]
+   }
+  },
+  {
+   "id": 5,
+   "key": "PHASE_5",
+   "region": "torre",
+   "parties": [
+    [
+     "mago"
+    ],
+    [
+     "besteiro",
+     "arqueira"
+    ],
+    [
+     "cleriga",
+     "mago"
+    ],
+    [
+     "besteiro"
+    ],
+    [
+     "mago",
+     "arqueira",
+     "cleriga"
+    ]
+   ],
+   "hp_mult": 2.6,
+   "damage_mult": 1.35,
+   "unlock_villain": "",
+   "reward_souls": 60,
+   "map": {
+    "pos": [
+     1340,
+     720
+    ],
+    "rx": 160,
+    "ry": 115,
+    "exit": [
+     1230,
+     690
+    ],
+    "road": [
+     [
+      1230,
+      690
+     ],
+     [
+      1030,
+      620
+     ],
+     [
+      820,
+      500
+     ]
+    ]
+   }
+  },
+  {
+   "id": 6,
+   "key": "PHASE_6",
+   "region": "capital",
+   "final": true,
+   "parties": [
+    [
+     "escudeiro",
+     "arqueira"
     ],
     [
      "guardiao",
@@ -108,13 +330,61 @@
      "assassino"
     ],
     [
+     "barbaro",
+     "besteiro",
+     "escudeiro"
+    ],
+    [
+     "assassino"
+    ],
+    [
+     "guardiao",
+     "cleriga",
+     "mago",
      "arqueira"
     ]
    ],
-   "hp_mult": 1.5,
+   "hp_mult": 2.8,
+   "damage_mult": 1.4,
    "unlock_villain": "",
    "reward_souls": 60,
-   "rare_choice": true
+   "map": {
+    "pos": [
+     830,
+     835
+    ],
+    "rx": 230,
+    "ry": 95,
+    "exit": [
+     830,
+     770
+    ],
+    "road": [
+     [
+      830,
+      770
+     ],
+     [
+      810,
+      660
+     ],
+     [
+      820,
+      500
+     ]
+    ]
+   }
   }
- ]
+ ],
+ "map": {
+  "_doc": "Mapa da campanha (16/11/2026): papel de 1640x960, covil no centro. Cada fase tem map.pos/rx/ry (a mancha da região), map.exit (de onde a party sai) e map.road (a estrada até o covil, que a câmera segue). Fundo: assets/ui/campaign/reino.png (tools/art/campanha/).",
+  "paper": [
+   1640,
+   960
+  ],
+  "lair": [
+   820,
+   500
+  ]
+ }
 }

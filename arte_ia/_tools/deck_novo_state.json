@@ -561,5 +561,45 @@
   "seed": 1000,
   "den": 0.62,
   "dir": "final_novo"
+ },
+ "hero_assassino": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hero_barbaro": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hero_besteiro": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hero_guardiao": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hero_escudeiro": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hero_arqueira": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hero_cleriga": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hero_mago": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
  }
 }

@@ -48,7 +48,7 @@ var elixir_max := 10.0
 var hand: Array = []
 ## Recarga da vaga (15/11/2026): a carta jogada deixa a vaga vazia (null) por DRAW_DELAY s antes da compra.
 ## hand_wait[k] = segundos que faltam para a vaga k receber carta (paralelo a `hand`; null/0 = sem espera).
-const DRAW_DELAY := 1.0
+const DRAW_DELAY := 2.0
 var hand_wait: Array = []
 ## Pilha de compra (o nome antigo ficou): a mão compra do começo dela. Baralho com descarte (passo C2, 10/11/2026):
 ## carta jogada vai para `discard`; quando a compra acaba, o descarte é embaralhado e vira a compra.
@@ -282,6 +282,40 @@ func emit(k: int, x: float, y: float, v: float, e: int) -> void:
 
 # ================================================================ passo
 
+## Água dos rios do ato (SimTerrain), refeita quando a estrada muda (novo ato ou save carregado).
+var terrain := SimTerrain.new()
+var _terrain_road: SimRoad = null
+
+
+func terra() -> SimTerrain:
+	if _terrain_road != road:
+		_terrain_road = road
+		terrain.build(road, R)
+	return terrain
+
+
+## Passo final da água (16/11/2026): herói, grupo e monstros de chão nunca terminam o passo dentro do rio.
+## Quem entrou volta deslizando para a margem de onde veio (empurrões, separação, medo, nascimentos...).
+func _water_pass(prev: Dictionary) -> void:
+	if phase != K.Phase.ROAD:
+		return
+	var T := terra()
+	if not T.ok:
+		return
+	for hh in [hero] + followers + ([helper] if helper != null else []):
+		var pp: Vector2 = prev.get(hh, Vector2(hh.x, hh.y))
+		var q := T.resolve(hh.x, hh.y, pp.x, pp.y)
+		hh.x = q.x
+		hh.y = q.y
+	for i in units.hi:
+		if units.alive[i] == 0 or (units.flags[i] & K.F_FLY):
+			continue
+		if T.is_water(units.px[i], units.py[i]):
+			var q := T.resolve(units.px[i], units.py[i], units.ox[i], units.oy[i])
+			units.px[i] = q.x
+			units.py[i] = q.y
+
+
 func step() -> void:
 	_refill_hand()
 	if phase == K.Phase.OVER:
@@ -300,6 +334,11 @@ func step() -> void:
 	_temps()
 	_release_held()
 	_elixir()
+	var prev := {hero: Vector2(hero.x, hero.y)}
+	for f in followers:
+		prev[f] = Vector2(f.x, f.y)
+	if helper != null:
+		prev[helper] = Vector2(helper.x, helper.y)
 	hero.update(dt)
 	for f in followers:
 		f.update(dt)
@@ -324,6 +363,7 @@ func step() -> void:
 		units.separate()
 	if units.count > stats["units_peak"]:
 		stats["units_peak"] = units.count
+	_water_pass(prev)
 	_zones()
 	_burn()
 	if phase == K.Phase.ROAD:
@@ -2168,6 +2208,10 @@ func clear_of_rings(p: Vector2) -> Vector2:
 				v = v.normalized() if v.length() > 0.05 else Vector2(1, 0)
 				p = Vector2(hh.x, hh.y) + v * (r + 0.3)
 				moved = true
+		# Rio (16/11/2026): a mira dos bots também sai da água (para a margem mais perto).
+		if phase == K.Phase.ROAD and terra().is_water(p.x, p.y):
+			p = terrain.nearest_dry(p.x, p.y)
+			moved = true
 		if not moved:
 			break
 	return p
@@ -2177,6 +2221,9 @@ func clear_of_rings(p: Vector2) -> Vector2:
 func valid_target(c: CardInst, x: float, y: float) -> bool:
 	var d := c.def
 	if d.category == "field":
+		# Rio (16/11/2026): monstro de chão não nasce na água (voadores e feitiços podem).
+		if phase == K.Phase.ROAD and not d.is_spell and not d.fly and terra().is_water(x, y):
+			return false
 		var ring: Dictionary = R["ring"]
 		# Sem alcance máximo: vale qualquer ponto que o jogador enxerga na tela.
 		if d.is_spell and ring["spells_ignore_min"]:

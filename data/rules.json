@@ -97,7 +97,6 @@
    "tavern": 2,
    "fountain": 2,
    "ritual": 2,
-   "bridge": 2,
    "event": 2
   },
   "shrine_chance": 0.24,
@@ -111,6 +110,23 @@
    4
   ],
   "_doc_helpers": "Herói Ajudante (11/11/2026): helpers por ato, num nó de fileira com 2+ nós (ramo de bifurcação) entre helper_rows (0 = 1ª fileira; 2 a 4 = fileiras 3 a 5 do mapa). Troca um local comum (nunca Loja nem Santuário).",
+  "river": {
+   "max_bridges": 5,
+   "second_chance": 0.35,
+   "u_chance": 0.4,
+   "half_width": 4.5,
+   "clearance": 2.5,
+   "node_clear": 13.0,
+   "edge_out": 60.0,
+   "bridge_half": 10.0,
+   "stub": 12.0,
+   "meander_amp": 16.0,
+   "meander_wl": 120.0,
+   "diagonal_weight": 14.0,
+   "other_diagonal_weight": 2.0,
+   "flat_weight": 0.2
+  },
+  "_doc_river": "Rios (15/11/2026, docs/RIO_E_PONTES.md): 1 ou 2 por ato (second_chance), no máximo max_bridges pontes; u_chance = vai e volta. A Ponte só nasce do rio (saiu de location_weights). half_width + clearance = distância mínima da estrada; stub = trecho reto da estrada em cada lado da ponte.",
   "hard_contests": 2,
   "_doc_hard": "Disputas difíceis por ato (caveira no mapa, 11/11/2026): vencer as 3 etapas dá também 1 de 3 relíquias."
  },
@@ -214,7 +230,7 @@
    ]
   },
   "bridge": {
-   "radius": 10.0,
+   "radius": 4.0,
    "duration": 15.0,
    "attack_speed": -0.4,
    "win_damage": 150.0,

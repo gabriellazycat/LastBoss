@@ -67,6 +67,7 @@ void fragment() {
 	NORMAL = normalize((VIEW_MATRIX * vec4(nw, 0.0)).xyz);
 	int pk = dirt > 0.5 ? 1 : (rk > 0.5 ? 2 : 0);
 	ALBEDO = paint_albedo(col, wp, vec3(0.0, 1.0, 0.0), pk, 1.4);
+	PAINT_PAPER
 	ROUGHNESS = roughness;
 	SPECULAR = 0.15;
 }

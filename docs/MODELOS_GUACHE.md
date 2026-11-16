@@ -100,3 +100,15 @@ das cartas** e, nos inimigos, **olhos sem pupila, de uma cor só**. Feito (nada 
 **Não verificado / pendências:** os chefes e a arena não foram vistos em jogo (as capturas automáticas pulam para a tela de
 vitória); o brilho de dano some nos heróis novos; os testes do projeto têm 2 falhas em "Ritual Profano", fora desta rodada
 (cartas); a tela de escolha (`escolher.html`) ainda mostra as versões antigas.
+
+---
+
+# Ajuste (15/11, tarde): heróis antigos, mais cor, Mãe da Ninhada
+
+Feedback: inimigos com mais cor, modelos que não condiziam com a carta e herói novo feio.
+- **Heróis:** voltaram ao modelo antigo (KayKit, `HeroRig`) nas 8 classes; `Looks.hero_rig()` não usa mais o `HeroVat`
+  (código e modelos `g_*/escudeiro` etc. seguem no repositório, desligados).
+- **Mais cor:** graduação refeita com `LBG_PULL=0.3 LBG_SAT=1.45 LBG_GAIN=0.5 LBG_PULL_SC=0.25 LBG_GAIN_SC=0.6` (antes 0,65 /
+  1,15 / 0,45). 69 modelos reimportados (heróis novos não foram refeitos). Olhos de uma cor só, sem pupila, mantidos.
+- **Mãe da Ninhada** usava o slime (VARIANTS em `looks.gd`); agora é o rato grande (escala 1,6). Outras cartas que
+  emprestam o modelo de outra (ghoul = lobisomem, fire_imp = morcego, corrupt_piper = cultistas...) não foram revistas.

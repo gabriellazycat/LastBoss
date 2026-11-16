@@ -107,6 +107,10 @@ func _process(delta: float) -> void:
 		return
 	if job:
 		return
+	# Depois de cada local o mapa grande abre sozinho (15/11/2026); com a rota já decidida, a pessoa olha e fecha.
+	if m.map_after_open and m.hud.minimap.visible and not s.route_wait:
+		_close_after_map()
+		return
 	if queue.is_empty():
 		if t_real >= next_extra and s.offers.is_empty() and not s.route_wait and not m.paused and m.hud.selected < 0 and not m.hud.minimap.visible:
 			next_extra = t_real + rng.randf_range(20.0, 45.0)
@@ -486,6 +490,17 @@ func _sim_accepts(k: int) -> bool:
 	if str(op.get("kind", "")) == "event_opt":
 		return s.event_option_ok(op)
 	return true
+
+
+func _close_after_map() -> void:
+	job = true
+	await _frames(rng.randi_range(20, 50))   # olha o mapa
+	_tap(KEY_M)
+	await _frames(3)
+	_count("mapa do fim do local (M fecha)", not m.hud.minimap.visible)
+	if m.hud.minimap.visible:
+		_find("mapa", "M não fechou o mapa aberto depois do local", "")
+	job = false
 
 
 func _do_route(j: Dictionary) -> void:

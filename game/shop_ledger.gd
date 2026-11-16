@@ -1449,7 +1449,7 @@ func _lt(p: Vector2, s: String, f: Font, fs: float, col: Color, align := HORIZON
 static func _ftex(name: String) -> Texture2D:
 	if not _fair_tex.has(name):
 		var p := name if name.begins_with("res://") else "res://assets/ui/map/" + name
-		_fair_tex[name] = load(p) if ResourceLoader.exists(p) else null
+		_fair_tex[name] = CampaignArt.map_tex(p)
 	return _fair_tex[name]
 
 

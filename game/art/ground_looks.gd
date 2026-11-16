@@ -109,7 +109,7 @@ const PRESETS := {
 		"exposure": 1.0, "adj_sat": 1.12,
 		"env": {"fog_height": 0.0, "fog_height_density": 0.04, "fog_sky_affect": 0.7, "fog_aerial_perspective": 0.2,
 			"ssao_intensity": 2.2, "ssao_radius": 1.2, "adjustment_contrast": 1.12, "glow_intensity": 0.6, "glow_bloom": 0.04},
-		"sun": {"shadow_blur": 1.5, "light_angular_distance": 1.0},
+		"sun": {"shadow_blur": 0.8, "light_angular_distance": 0.0},
 	},
 	8: {
 		"proc": true, "shader": "res://game/art/ground_ror.gdshader", "wshader": 5, "props_dir": "cc0", "props_sfx": "_n",
@@ -143,7 +143,7 @@ const PRESETS := {
 		"exposure": 1.0, "adj_sat": 1.05,
 		"env": {"fog_height": 0.0, "fog_height_density": 0.04, "fog_sky_affect": 0.7, "ssao_intensity": 2.2, "ssao_radius": 1.2,
 			"adjustment_contrast": 1.1, "glow_intensity": 0.6, "glow_bloom": 0.04},
-		"sun": {"shadow_blur": 1.5},
+		"sun": {"shadow_blur": 0.8, "light_angular_distance": 0.0},
 	},
 	# Direção "Blender v2" (docs/ARTE_BLENDER.md): monstros, estruturas e cenário refeitos no Blender
 	# (assets/models/v2), na luz da D. Toda peça de Models.prop() que existir em v2 troca pela nova.
@@ -161,7 +161,7 @@ const PRESETS := {
 		"exposure": 1.0, "adj_sat": 1.04,
 		"env": {"fog_height": 0.0, "fog_height_density": 0.04, "fog_sky_affect": 0.7, "fog_aerial_perspective": 0.2,
 			"ssao_intensity": 2.2, "ssao_radius": 1.2, "adjustment_contrast": 1.1, "glow_intensity": 0.6, "glow_bloom": 0.04},
-		"sun": {"shadow_blur": 1.5, "light_angular_distance": 1.0},
+		"sun": {"shadow_blur": 0.8, "light_angular_distance": 0.0},
 	},
 	# Blender v2 nos atos 2 e 3 (look() troca 10 -> 11/12 conforme o "ground_look" do ato): as mesmas peças,
 	# com a folhagem tingida por instância, outro chão e outra luz. Ato 2: outono ao fim da tarde.
@@ -179,7 +179,7 @@ const PRESETS := {
 		"exposure": 1.0, "adj_sat": 1.05,
 		"env": {"fog_height": 0.0, "fog_height_density": 0.05, "fog_sky_affect": 0.7, "fog_aerial_perspective": 0.25,
 			"ssao_intensity": 2.2, "ssao_radius": 1.2, "adjustment_contrast": 1.1, "glow_intensity": 0.7, "glow_bloom": 0.05},
-		"sun": {"shadow_blur": 1.5, "light_angular_distance": 1.0},
+		"sun": {"shadow_blur": 0.8, "light_angular_distance": 0.0},
 	},
 	# Ato 3: terra amaldiçoada no crepúsculo, perto do covil (folhagem roxa e cinza, névoa lilás).
 	12: {
@@ -197,7 +197,7 @@ const PRESETS := {
 		"exposure": 1.05, "adj_sat": 1.0,
 		"env": {"fog_height": 0.0, "fog_height_density": 0.1, "fog_sky_affect": 0.8, "ssao_intensity": 2.0,
 			"adjustment_contrast": 1.12, "glow_intensity": 0.9, "glow_bloom": 0.07},
-		"sun": {"shadow_blur": 1.5},
+		"sun": {"shadow_blur": 0.8, "light_angular_distance": 0.0},
 	},
 }
 
@@ -264,6 +264,7 @@ static func apply_env(env: Environment, sun: DirectionalLight3D, rim: Directiona
 		env.set(k, P["env"][k])
 	for k in P.get("sun", {}):
 		sun.set(k, P["sun"][k])
+	PaintLook.apply_env(env)
 
 
 static func ground_material() -> ShaderMaterial:
