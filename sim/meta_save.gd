@@ -1,15 +1,14 @@
 class_name MetaSave
 extends RefCounted
-## Progresso entre runs: Almas, cartas liberadas, vilões liberados e fases vencidas. Nunca é apagado no fim da run.
+## Progresso entre runs: cartas liberadas, vilões liberados e fases vencidas. Nunca é apagado no fim da run.
 ## Vilões (C3, 10/11/2026): liberar um vilão entrega as comuns e incomuns dele e as raras iniciais
-## (data/villains.json); as comuns (owner common) comuns e incomuns vêm de início; Almas compram só raras e
-## lendárias. Custos e fórmula das Almas em data/meta.json.
+## (data/villains.json); as comuns (owner common) comuns e incomuns vêm de início. As outras cartas se liberam
+## por desafio (data/unlocks.json). As Almas saíram do jogo em 16/11/2026: o campo "souls" de saves antigos é ignorado.
 
 const PATH := "user://meta.save"
 const VERSION := 4                 # 2: vilões no lugar dos Pactos (10/11/2026); 3: cartas liberadas por desafio (13/11/2026); 4: campanha em 7 fases e heróis vistos (16/11/2026)
 
 var data: GameData
-var souls := 0
 var unlocked: Array = []
 var villain := "plague"            # vilão escolhido para a próxima run
 var villains: Array = ["plague"]   # vilões liberados
@@ -60,10 +59,9 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 	if f:
 		var v = f.get_var()
 		if typeof(v) == TYPE_DICTIONARY:
-			m.souls = int(v.get("souls", 0))
 			m.runs = int(v.get("runs", 0))
 			m.rare_choices = int(v.get("rare_choices", 0))
-			# Save antigo (Pactos): horde → Praga, ruin/treasure → Dragão, crypt/cult → Lich; Almas ficam.
+			# Save antigo (Pactos): horde → Praga, ruin/treasure → Dragão, crypt/cult → Lich.
 			for pid in v.get("villains", v.get("pacts", [])):
 				m.unlock_villain(d.villain_id(str(pid)))
 			for ph in v.get("phases_won", []):
@@ -88,7 +86,7 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 				m.totals = v["totals"]
 			elif m.heroes_total > 0:
 				m.totals = {"_old": {"heroes|": float(m.heroes_total)}}
-			# Saves antigos (até a versão 2) tinham cartas compradas com Almas: o sistema de desafios recomeça da coleção inicial.
+			# Saves antigos (até a versão 2) tinham cartas compradas: o sistema de desafios recomeça da coleção inicial.
 			if int(v.get("ver", 1)) >= 3:
 				for id in v.get("unlocked", []):
 					if d.card(id) and not m.unlocked.has(id):
@@ -100,7 +98,7 @@ func save(path := "") -> bool:
 	var f := FileAccess.open(file if path == "" else path, FileAccess.WRITE)
 	if f == null:
 		return false
-	f.store_var({"ver": VERSION, "souls": souls, "unlocked": unlocked, "villain": villain, "villains": villains,
+	f.store_var({"ver": VERSION, "unlocked": unlocked, "villain": villain, "villains": villains,
 		"runs": runs, "phases_won": phases_won, "heroes_seen": heroes_seen, "rare_choices": rare_choices,
 		"wins_by_villain": wins_by_villain, "heroes_total": heroes_total, "progress": progress,
 		"totals": totals, "runs_done": runs_done})
@@ -122,16 +120,12 @@ func unlock_pact(id: String) -> void:
 	unlock_villain(data.villain_id(id))
 
 
-## Fase vencida: guarda, libera o vilão que ela dá e paga Almas/rara à escolha (data/campaign.json).
+## Fase vencida: guarda e libera o vilão que ela dá (data/campaign.json).
 ## Devolve o vilão liberado ("" se nenhum novo).
 func win_phase(n: int) -> String:
-	var first := not phases_won.has(n)
-	if first:
+	if not phases_won.has(n):
 		phases_won.append(n)
 	var ph: Dictionary = data.phase(n)
-	if first:
-		souls += int(ph.get("reward_souls", 0))
-		# A rara à escolha saiu (13/11/2026): cartas bloqueadas só se liberam por desafio.
 	var vid := str(ph.get("unlock_villain", ""))
 	if vid != "" and not villains.has(vid):
 		unlock_villain(vid)
@@ -146,7 +140,7 @@ func rare_choice_options(n := 3, seed_ := 0) -> Array:
 		if c.rarity == 2 and not unlocked.has(c.id) and (c.owner == "common" or villains.has(c.owner)):
 			cand.append(c.id)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_ if seed_ != 0 else runs * 7919 + souls
+	rng.seed = seed_ if seed_ != 0 else runs * 7919 + 1
 	var out: Array = []
 	while out.size() < n and cand.size() > 0:
 		out.append(cand.pop_at(rng.randi_range(0, cand.size() - 1)))
@@ -175,19 +169,6 @@ func phase_open(n: int) -> bool:
 
 func is_unlocked(id: String) -> bool:
 	return unlocked.has(id)
-
-
-func unlock_cost(id: String) -> int:
-	return int(data.meta["unlock_cost"][K.RARITIES[data.card(id).rarity]])
-
-
-## Almas compram só raras e lendárias de vilões liberados (ou comuns).
-func can_buy(_id: String) -> bool:
-	return false   # 13/11/2026: nada se compra mais com Almas; as cartas se liberam por desafio
-
-
-func unlock(_id: String) -> bool:
-	return false
 
 
 ## Fim de uma fase da campanha (vitória ou derrota): confere os desafios das cartas ainda bloqueadas do vilão
@@ -252,24 +233,7 @@ func run_pool(vid := "") -> Array:
 	return unlocked.filter(func(id): return data.in_pool(data.card(id), v))
 
 
-## Almas de uma run: dano no herói, locais por onde ele passou e bônus de vitória.
-static func souls_for(d: GameData, stats: Dictionary) -> int:
-	var S: Dictionary = d.meta["souls"]
-	var dmg := 0.0
-	for k in stats["dmg_by_card"]:
-		dmg += float(stats["dmg_by_card"][k])
-	var n := dmg / float(S["damage_per_soul"]) + int(stats["locs_visited"]) * float(S["per_location"])
-	if stats["result"] in ["win", "win_early"]:
-		n += float(S["win"])
-	if stats["result"] == "win_early":
-		n += float(S["win_early_extra"])
-	return int(round(n))
-
-
-## Credita a run terminada e grava.
-func add_run(stats: Dictionary, path := "") -> int:
-	var n := souls_for(data, stats)
-	souls += n
+## Conta a run terminada e grava.
+func add_run(path := "") -> void:
 	runs += 1
 	save(path)
-	return n

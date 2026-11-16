@@ -646,7 +646,6 @@ func t_meta() -> void:
 	check(m.villains == ["plague"] and m.villain == "plague" and not m.phase_open(2), "começa só com a Praga e a fase 2 fechada")
 	check(m.is_unlocked("rat_horde") and m.is_unlocked("rat_king") and m.is_unlocked("web") and not m.is_unlocked("ogre") and not m.is_unlocked("torch"), "coleção inicial: baralho base e cartas liberadas; o resto bloqueado por desafio")
 	check(m.win_phase(1) == "dragon" and m.villains.has("dragon") and m.is_unlocked("torch") and m.is_unlocked("hell_hound") and not m.is_unlocked("mimic") and m.phase_open(2), "vencer a fase 1 libera o Dragão e as cartas liberadas dele")
-	check(not m.can_buy("slime") and not m.can_buy("rat_tide") and not m.unlock("rat_tide"), "Almas não compram mais nada")
 	m.win_phase(3)
 	check(m.rare_choices == 0, "fase 3 não paga mais rara à escolha")
 	# Save antigo de Pactos: migra.
@@ -655,17 +654,18 @@ func t_meta() -> void:
 	f.store_var({"souls": 77, "pacts": ["horde", "treasure"], "pact": "treasure", "unlocked": ["cosmic_ray", "ogre"], "phases_won": [1]})
 	f.close()
 	var mo := MetaSave.load_or_new(data, old)
-	check(mo.souls == 77 and mo.villains == ["plague", "dragon"] and mo.villain == "dragon" and not mo.is_unlocked("cosmic_ray") and not mo.is_unlocked("ogre"), "save antigo: Pactos viram vilões, Almas ficam, cartas antigas somem")
+	check(not "souls" in mo and mo.villains == ["plague", "dragon"] and mo.villain == "dragon" and not mo.is_unlocked("cosmic_ray") and not mo.is_unlocked("ogre"), "save antigo: Pactos viram vilões, as Almas são ignoradas, cartas antigas somem")
 	check(mo.heroes_seen.has("escudeiro") and mo.heroes_seen.has("arqueira") and not mo.heroes_seen.has("mago"), "save antigo: os heróis das fases já vencidas contam como vistos (%s)" % str(mo.heroes_seen))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(old))
-	var st := {"dmg_by_card": {"a": 4000.0}, "locs_visited": 9, "result": "win"}
-	var per_loc := int(data.meta["souls"]["per_location"])
-	check(MetaSave.souls_for(data, st) == 10 + 9 * per_loc + 40, "Almas: dano, locais e vitória (%d)" % MetaSave.souls_for(data, st))
 	check(m.see_hero("besteiro") and not m.see_hero("besteiro"), "herói visto só conta na primeira vez")
 	check(not m.phase_open(5) and m.phase_open(4) == m.phases_won.has(3), "fase 5 fechada até vencer a 4")
-	m.add_run(st, path)
+	m.add_run(path)
 	var m2 := MetaSave.load_or_new(data, path)
-	check(m2.souls == m.souls and m2.is_unlocked("rat_king") and m2.runs == 1, "meta salva e carrega")
+	check(m2.is_unlocked("rat_king") and m2.runs == 1, "meta salva e carrega")
+	var fm := FileAccess.open(path, FileAccess.READ)
+	var raw = fm.get_var()
+	fm.close()
+	check(typeof(raw) == TYPE_DICTIONARY and not raw.has("souls"), "o meta salvo não tem mais Almas")
 	check(m2.heroes_seen.has("besteiro"), "heróis vistos salvam e carregam")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	# Nível da carta sobrevive ao salvamento da run.
@@ -2649,6 +2649,9 @@ func t_cards_lich_common() -> void:
 	var bolt := _inst("shadow_bolt")
 	var c0 := s6.card_cost(bolt)
 	s6._apply(_inst("profane_ritual"), s6.hero.x + 0.5, s6.hero.y)
+	# O monstro sacrificado também arma o Ciclo de feitiço (passiva do Lich): os dois descontos somam no jogo.
+	check(s6.cycle_spell and s6.card_cost(bolt) == c0 - 2, "Ritual Profano + Ciclo de feitiço somam (%d → %d)" % [c0, s6.card_cost(bolt)])
+	s6.cycle_spell = false   # daqui em diante, só o Ritual
 	check(s6.units.alive[rv_[0]] == 0 and s6.card_cost(bolt) == c0 - 1, "Ritual Profano sacrifica e baixa o custo (%d → %d)" % [c0, s6.card_cost(bolt)])
 	for i in 3:
 		CardsLich.on_card_played(s6, bolt, s6.hero.x, s6.hero.y)
@@ -2906,13 +2909,7 @@ func t_unique_art() -> void:
 		seen[CardModel.art_of(c.id)] = seen.get(CardModel.art_of(c.id), 0) + 1
 		if CardModel.art_of(c.id) != c.id:
 			borrowed.append(c.id)
-	# Arte das 28 cartas de 13/11/2026 ainda por fazer (skill cartas-ia): sai desta lista quando o png chegar.
-	var art_pending := ["poison_dart", "spike_trap", "goblin_scout", "hired_archer", "crow_flock", "fallen_healer", "dark_messenger", "war_cry",
-		"flooded_pit", "hollow_armor", "lone_wolf", "hyena_scavenger", "spitting_viper", "plague_carrion", "brown_bear", "pack_den",
-		"primal_beast", "black_pestilence", "hell_hound", "ash_salamander", "drakeling", "magma_golem", "gold_mine", "dragon_exchange",
-		"ash_phoenix", "meteor_storm", "eternal_army", "bone_dragon"]
-	no_png = no_png.filter(func(id): return not art_pending.has(id))
-	check(no_png.is_empty(), "toda carta tem o próprio png (fora as %d com arte pendente) %s" % [art_pending.size(), no_png])
+	check(no_png.is_empty(), "toda carta tem o próprio png %s" % [no_png])
 	check(borrowed.is_empty(), "nenhuma carta aponta para a imagem de outra %s" % [borrowed])
 	var dup: Array = []
 	for k in seen:

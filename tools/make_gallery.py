@@ -29,7 +29,7 @@ SCREENS = [
     ('pause_1920x1080', 'Pausa', 'Escurecimento atrás (antes não aparecia); o deck da run.'),
     ('hint_1920x1080', 'Dica', ''),
     ('arena_1920x1080', 'Arena', 'Partes do corpo com a vida em %.'),
-    ('result_1920x1080', 'Resultado', 'Almas ganhas em destaque, zeros apagados.'),
+    ('result_1920x1080', 'Resultado', 'Heróis derrubados em destaque, zeros apagados.'),
     ('run_mid_1280x720', 'Meio da run (1280x720)', ''),
     ('offer_1280x720', 'Oferta (1280x720)', ''),
     ('decks_en_1920x1080', 'Pactos em inglês', ''),

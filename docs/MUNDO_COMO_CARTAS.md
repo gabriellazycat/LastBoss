@@ -44,7 +44,7 @@ por FFT, sem costura) numa folha de 1024 px que cobre 32 m: manchas de ~6 a 12 p
 ## Pendências
 
 
-- O degrau da sombra na estrada continua (bug à parte).
-- Trechos de estrada rosados (matiz Lab < 15) não entram no remapeamento de A.
+- ~~O degrau da sombra na estrada~~ (16/11): era a divisa entre um ramo fechado (escurecido) e o ramo da rota, em mosaico onde dois trechos se sobrepõem. O estado do trecho agora é desfocado em ~1 m (`road.gdshader`, `road_paint.gdshader`).
+- ~~Trechos de estrada rosados (matiz Lab < 15)~~ (16/11): entram no remapeamento de A com rampa a partir de 345° (`pt_card_ground`). Na captura medida o rosado que sobra vem da luz e da LUT, não do albedo.
 - Atalhos F6–F8 e as chaves das Configurações não foram testados com tecla de verdade (só pela linha de comando `--set`).
 - Build: `export/mundo_cartas/LastBoss.exe` (a build anterior em `export/` não foi tocada). Nada commitado.

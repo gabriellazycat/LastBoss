@@ -47,13 +47,13 @@ func _ready() -> void:
 	if auto_args.has("hud"):
 		Settings.v["look_hud"] = int(auto_args["hud"])
 		Settings.apply(get_tree())
-	# --liberar: jogo de teste com todas as fases e pactos liberados e 9999 Almas, em saves próprios
-	# (user://liberar_*.save); o seu save e o seu meta ficam intactos. Não é modo de teste: rota, Almas e
-	# coleção funcionam como no jogo normal (10/11/2026).
+	# --liberar: jogo de teste com todas as fases e vilões liberados, em saves próprios (user://liberar_*.save);
+	# o seu save e o seu meta ficam intactos. Não é modo de teste: rota e coleção funcionam como no jogo normal
+	# (10/11/2026).
 	var liberar := OS.get_cmdline_user_args().has("--liberar") or auto_args.has("liberar")
 	auto_args.erase("liberar")
 	# --estilo=D (A a F): direção de arte só nesta execução, para os atalhos de teste do visual.
-	# Não é modo de teste: a run, a coleção e as Almas são as normais (o --set liga o modo de teste).
+	# Não é modo de teste: a run e a coleção são as normais (o --set liga o modo de teste).
 	if auto_args.has("estilo"):
 		var looks: Array = ESTILOS.get(str(auto_args["estilo"]).to_upper(), [])
 		auto_args.erase("estilo")
@@ -102,7 +102,6 @@ func _ready() -> void:
 		meta = MetaSave.load_or_new(data, "user://liberar_meta.save")
 		for ph in data.phases:
 			meta.win_phase(int(ph["id"]))
-		meta.souls = maxi(meta.souls, 9999)
 		meta.save()
 	Tips.data = data
 	add_child(Tips.new())
@@ -200,7 +199,7 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		await art.render_all(data)
 	_build_menu_scene()
 	_show_menu(str(auto_args.get("menu", "title")))
-	audio.music("music_road")
+	audio.music_menu()
 	audio.set_intensity(0.0)
 	_pad_actions()
 	cursor = get_viewport().get_visible_rect().size * 0.5
@@ -408,7 +407,7 @@ func _to_menu(decks: bool) -> void:
 	sim = null
 	world.build_empty()
 	_build_menu_scene()
-	audio.music("music_road")
+	audio.music_menu()
 	audio.set_intensity(0.0)
 	_show_menu("decks" if decks else "title")
 
@@ -662,7 +661,7 @@ func _begin(s: Sim) -> void:
 	map_after = false   # o mapa pós-local pendente da run anterior não abre na nova
 	map_after_t = 0.0
 	map_after_open = false
-	audio.music("music_road")
+	audio.music_for_run(sim)
 	audio.set_intensity(0.0)
 	_apply_act_look(sim)
 	world.build(sim, cam)
@@ -860,8 +859,14 @@ func _process(delta: float) -> void:
 		sim.hand_size = int(auto_args["hand"])
 		sim._refill_hand()
 	# --killat=<s>: derruba o herói nesse instante (captura da cena da queda).
-	if auto_args.has("killat") and life >= float(auto_args["killat"]):
-		auto_args.erase("killat")
+	# --killat=5 derruba o herói da vez aos 5 s; --killat=5,7 derruba um aos 5 s e o próximo líder aos 7 s (party de 4
+	# nas capturas, 16/11/2026).
+	if auto_args.has("killat") and life >= float(str(auto_args["killat"]).split(",")[0]):
+		var rest: Array = Array(str(auto_args["killat"]).split(",")).slice(1)
+		if rest.is_empty():
+			auto_args.erase("killat")
+		else:
+			auto_args["killat"] = ",".join(rest)
 		sim.damage_hero(sim.hero.hp + 99999.0, sim.hero.x, sim.hero.y + 1.0, 0, SimHero.DMG_PIERCE, "test")
 	if auto_bot:
 		auto_bot.think(sim)
@@ -932,8 +937,8 @@ func _process(delta: float) -> void:
 	if sim.phase == K.Phase.OVER and not result_played:
 		result_played = true
 		SaveGame.erase()
-		hud.souls_gained = meta.add_run(sim.stats) if auto_args.is_empty() else MetaSave.souls_for(data, sim.stats)
 		if auto_args.is_empty():
+			meta.add_run()
 			# Desafios de desbloqueio: vitória ou derrota, confere as cartas ainda bloqueadas (antes de win_phase).
 			hud.unlock_result = meta.apply_unlocks(sim, sim.result in [K.Result.WIN, K.Result.WIN_EARLY])
 		if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] and auto_args.is_empty():
@@ -942,8 +947,7 @@ func _process(delta: float) -> void:
 			meta.save()
 			if np != "":
 				hud.say(tr("UI_NEW_VILLAIN").format({"p": tr("DECK_" + np)}))
-		audio.music("")
-		audio.play("victory" if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] else "defeat", 0.0)
+		audio.result_music(sim.result in [K.Result.WIN, K.Result.WIN_EARLY])
 	var alpha := clampf(acc / sim.dt, 0.0, 1.0)
 	world.look_freeze = hud.fan != null and (hud.fan.hover >= 0 or hud.fan.press_i >= 0)
 	world.draw(alpha, delta * (0.15 if stopped else 1.0))
@@ -1903,13 +1907,17 @@ func _unhandled_input(e: InputEvent) -> void:
 				_altar_step(-1)
 			KEY_E:
 				_altar_step(1)
-			# Mundo como as cartas (docs/MUNDO_COMO_CARTAS.md): A cor, B escuros, C papel, na hora.
+			# Mundo como as cartas (docs/MUNDO_COMO_CARTAS.md): A cor, B escuros, C papel, na hora. Só com --variantes
+			# (16/11/2026): o jogador não troca o visual sem querer.
 			KEY_F6:
-				hud.say(PaintLook.toggle("mundo_cor", world_env))
+				if SettingsPanel.variants:
+					hud.say(PaintLook.toggle("mundo_cor", world_env))
 			KEY_F7:
-				hud.say(PaintLook.toggle("mundo_escuro", world_env))
+				if SettingsPanel.variants:
+					hud.say(PaintLook.toggle("mundo_escuro", world_env))
 			KEY_F8:
-				hud.say(PaintLook.toggle("mundo_papel", world_env))
+				if SettingsPanel.variants:
+					hud.say(PaintLook.toggle("mundo_papel", world_env))
 	_pad_input(e)
 
 

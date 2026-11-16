@@ -42,6 +42,7 @@ var banner: BigBanner                  # letreiro grande: objetivo do local, res
 var seals: LocSeals                    # selos dos marcos na cena do fim da disputa (15/11/2026)
 var relic_row: BoxContainer           # relíquias do covil ganhas na run (Diário: coluna de etiquetas à direita)
 var curse_label: Label
+var hero_title: Label                # nome da classe do líder, ou "A PARTY" com mais de um herói de pé
 # Esquerda: run.
 var run_panel: PanelContainer
 var time_label: Label
@@ -88,7 +89,6 @@ var offer_rays: Juice.Rays             # raios de luz atrás da oferta (impacto,
 var offer_obj = null                   # oferta já animada (a mesma oferta reconstruída não anima de novo)
 var ledger: ShopLedger                 # a loja é o livro-caixa do mercador (game/shop_ledger.gd, decisão 11/11/2026)
 var sfx: Callable                      # som da interface: sfx.call(id, tom)
-var souls_gained := 0
 var unlock_near: Label
 var unlock_result: Dictionary = {}   # cartas liberadas e progresso dos desafios (MetaSave.apply_unlocks)
 var pause_layer: Control
@@ -143,7 +143,9 @@ func _build_top() -> void:
 	hh.add_child(hv)
 	var hname := HBoxContainer.new()
 	var hn := UiKit.label(15, UiKit.HERO_XP.lightened(0.3), 3)
-	hn.text = "UI_HERO"
+	hn.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	hn.text = tr("UI_HERO")
+	hero_title = hn
 	if UiSkins.covil():
 		hn.add_theme_font_override("font", UiCovil.font("title"))
 		hn.add_theme_font_size_override("font_size", 16)
@@ -307,6 +309,16 @@ func _build_messages() -> void:
 		hs.content_margin_bottom = 3
 		help_label.add_theme_stylebox_override("normal", hs)
 		help_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.78))
+	elif UiSkins.diario():
+		# Peles de papel (16/11/2026): a ajuda do rodapé numa etiqueta de papel, em tinta (antes, cinza sobre o mundo).
+		var hb := UiParch.box("ink", 0.0)
+		hb.content_margin_left = 12
+		hb.content_margin_right = 12
+		hb.content_margin_top = 3
+		hb.content_margin_bottom = 4
+		help_label.add_theme_stylebox_override("normal", hb)
+		help_label.add_theme_color_override("font_color", UiParch.INK)
+		help_label.set_meta("paper", true)
 	add_child(help_label)
 	toast = UiKit.title(30, Color(1, 0.62, 0.45))
 	if UiSkins.diario():
@@ -408,7 +420,15 @@ func _build_offer() -> void:
 		offer_title.add_theme_font_size_override("font_size", 46)
 		v.add_child(UiDiario.tape_title(offer_title))
 		v.add_child(UiDiario.tape_wrap(offer_sub, UiDiario.MASK, 1.0))
-		v.add_child(UiDiario.tape_wrap(sub, UiDiario.MASK, -0.8))
+		var keys_tag := UiDiario.tape_wrap(sub, UiDiario.MASK, -0.8)
+		# Folga para o texto não encostar na borda da etiqueta (16/11/2026).
+		var ksb := (keys_tag.get_theme_stylebox("panel") as StyleBox).duplicate() as StyleBox
+		ksb.content_margin_top = 7
+		ksb.content_margin_bottom = 8
+		ksb.content_margin_left = 22
+		ksb.content_margin_right = 22
+		keys_tag.add_theme_stylebox_override("panel", ksb)
+		v.add_child(keys_tag)
 	else:
 		v.add_child(offer_title)
 		v.add_child(offer_sub)
@@ -570,8 +590,8 @@ func _layout() -> void:
 	duel.position = Vector2(clampf((vs.x - duel.size.x) * 0.5, m + run_panel.size.x + 12.0, maxf(tool_row.position.x - duel.size.x - 12.0, m + run_panel.size.x + 12.0)), 10)
 	bottom_box.position = Vector2((vs.x - bottom_box.size.x) * 0.5, vs.y - bottom_box.size.y - 30)
 	var top := maxf(run_panel.position.y + run_panel.size.y, duel.position.y + duel.size.y)
-	help_label.position = Vector2(m, vs.y - 24)
-	info_label.position = Vector2(m, vs.y - 44)
+	help_label.position = Vector2(m, vs.y - (30 if UiSkins.diario() else 24))
+	info_label.position = Vector2(m, vs.y - (56 if UiSkins.diario() else 44))
 	# Faixa de rota em pé na borda esquerda, do painel da run até acima das legendas de rodapé.
 	strip.position = Vector2(m, run_panel.position.y + run_panel.size.y + 12)
 	strip.size = Vector2(strip.custom_minimum_size.x, maxf(info_label.position.y - 16.0 - strip.position.y, 120.0))
@@ -857,6 +877,8 @@ func _refresh_top() -> void:
 	if sim.party_mode():
 		hero_of_label.text = tr("UI_PARTY_OF").format({"k": sim.cur_party + 1, "n": sim.party_count()}) + " · " + tr("UI_FALLEN_OF").format({"k": sim.group_falls, "n": sim.party_size()})
 	_refresh_party()
+	var standing := 1 + sim.followers.size()
+	hero_title.text = tr("UI_HERO_PARTY") if standing > 1 else tr("HERO_" + sim.hero.cls()).to_upper()
 	if sim.group_mode():
 		hero_of_label.text += " · " + tr("UI_HEROES_STANDING").format({"n": 1 + sim.followers.size()})
 		var fl: Array = []
@@ -964,7 +986,7 @@ func _announce(id: String) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 2)
 	var head := UiKit.label(14, UiKit.HERO_XP.lightened(0.3), 3)
-	head.text = tr("UI_HERO_LEARNED").format({"n": sim.hero.level})
+	head.text = tr("UI_HERO_LEARNED")
 	var nl := UiKit.title(24)
 	nl.text = tr("UPG_" + id)
 	var dl := RichTextLabel.new()
@@ -1231,7 +1253,8 @@ func _offer_heading(o: Dictionary) -> String:
 		return tr("UI_OFFER_ACT_CARD").format({"a": int(o.get("act", 0)) + 1})
 	if o["source"] == "event":
 		return tr("EVT_" + str(o["event"])) if o.has("event") else tr("UI_OFFER_EVENT_STEP")
-	return tr({"level": "UI_OFFER_LEVEL", "shrine": "UI_OFFER_SHRINE"}[o["source"]])
+	# "level" é a recompensa de queda: vem a cada herói que cai (o id interno ficou do tempo do XP).
+	return tr({"level": "UI_OFFER_FALL", "shrine": "UI_OFFER_SHRINE"}[o["source"]])
 
 
 func _inst_level(uid: int) -> int:
@@ -1524,21 +1547,24 @@ func _show_result() -> void:
 			best = int(st["played"][cid])
 			top = cid
 	UiKit.clear(result_grid)
-	var tiles := [["UI_ST_time", _clock(sim.t)], ["UI_ST_hero", str(sim.hero.level)], ["UI_ST_you", str(int(st.get("heroes_fallen", 0)))],
-		["UI_ST_kills", str(st["kills"])], ["UI_ST_shrines", str(st["shrines_won"])],
-		["UI_ST_parts", str(st["parts_lost"])], ["UI_ST_top", tr("CARD_" + top) if top != "" else "—"],
-		["UI_ST_souls", "+%d" % souls_gained]]
+	# Rodada 16/11/2026: sem Almas, nível do herói nem Santuários (sistemas que saíram). A arena só aparece se houve.
+	var tiles := [["UI_ST_you", "%d / %d" % [int(st.get("heroes_fallen", 0)), sim.party_size()]], ["UI_ST_time", _clock(sim.t)],
+		["UI_ST_contests", "%d / %d" % [int(st["locs_won"]), int(st["locs_visited"])]], ["UI_ST_gold", str(int(st["gold_earned"]))],
+		["UI_ST_relics", str(st["relics"].size())], ["UI_ST_kills", str(st["kills"])],
+		["UI_ST_top", tr("CARD_" + top) if top != "" else "—"]]
+	if float(st.get("arena_t", -1.0)) >= 0.0:
+		tiles.append(["UI_ST_parts", str(st["parts_lost"])])
 	for tdef in tiles:
 		var tp := UiKit.panel(Color(0.08, 0.06, 0.12, 0.95), UiKit.EDGE.darkened(0.2), 10)
 		tp.custom_minimum_size = Vector2(180, 86)
 		var tv := VBoxContainer.new()
 		tv.alignment = BoxContainer.ALIGNMENT_CENTER
-		# Almas ganhas é a recompensa: dourada. Zeros ficam apagados.
-		var souls: bool = tdef[0] == "UI_ST_souls"
+		# Heróis derrubados é o placar da run: dourado. Zeros ficam apagados.
+		var main_: bool = tdef[0] == "UI_ST_you"
 		var zero: bool = tdef[1] == "0"
-		if souls and UiSkins.covil():
+		if main_ and UiSkins.covil():
 			tp.material = UiCovil.material("plate", UiKit.GOLD, Color(0.2, 0.15, 0.08, 0.95), Color(0.08, 0.06, 0.04, 0.95), Color(1.0, 0.8, 0.4, 0.22))
-		var val := UiKit.title(30 if tdef[1].length() < 8 else 17, UiKit.GOLD if souls else (UiKit.MUTED if zero else UiKit.TEXT))
+		var val := UiKit.title(30 if tdef[1].length() < 8 else 17, UiKit.GOLD if main_ else (UiKit.MUTED if zero else UiKit.TEXT))
 		if UiSkins.covil() and tdef[1].length() >= 8:
 			# Nome (carta mais jogada): texto comum, não título; em versalete grande ele quebrava a grade.
 			val = UiKit.label(20, UiKit.TEXT, 3)

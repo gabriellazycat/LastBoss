@@ -1,0 +1,7 @@
+{
+ "id": "idle",
+ "kind": "random",
+ "think_interval": 0.5,
+ "play_chance": 0.0,
+ "_nota": "Não joga cartas: só para capturas que precisam chegar à arena (tools/capture_consolidacao.sh)."
+}

@@ -269,8 +269,10 @@ func _fill_info() -> void:
 	var rewards: Array = []
 	if str(ph.get("unlock_villain", "")) != "":
 		rewards.append(tr("UI_PHASE_UNLOCKS_V").format({"p": tr("DECK_" + str(ph["unlock_villain"]))}))
-	if int(ph.get("reward_souls", 0)) > 0:
-		rewards.append(tr("UI_PHASE_SOULS").format({"n": int(ph["reward_souls"])}))
+	# Vencer libera a próxima região (as Almas saíram em 16/11/2026).
+	var nxt: Dictionary = data.phase(phase + 1)
+	if not ph.get("final", false) and str(nxt.get("region", "")) != "":
+		rewards.append(tr("UI_PHASE_NEXT_REGION").format({"r": tr("REGION_" + str(nxt["region"]))}))
 	if ph.get("final", false):
 		rewards.append(tr("UI_CAMPAIGN_FINAL"))
 	for t in rewards:

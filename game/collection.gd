@@ -1,6 +1,6 @@
 class_name CollectionScreen
 extends VBoxContainer
-## Coleção do menu: ver as cartas por dono (Praga, Dragão, Lich, Comuns) e comprar raras e lendárias com Almas.
+## Coleção do menu: ver as cartas por dono (Praga, Dragão, Lich, Comuns); as bloqueadas mostram o desafio que as libera.
 ## Não há deck montado: a run usa o baralho inicial do vilão e as ofertas saem da coleção dele.
 
 signal closed
@@ -11,7 +11,7 @@ const TABS := ["plague", "dragon", "lich", "common"]
 
 var data: GameData
 var meta: MetaSave
-var souls_l: Label
+var owned_l: Label   # "Cartas liberadas: n de t" (as Almas saíram em 16/11/2026)
 var grid: GridContainer
 var tab := "plague"
 var tab_row: Container
@@ -51,9 +51,9 @@ func _ready() -> void:
 	var t := UiKit.title(44)
 	t.text = "UI_COLLECTION"
 	head.add_child(t)
-	souls_l = UiKit.title(30, UiKit.GOLD)
-	souls_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	head.add_child(souls_l)
+	owned_l = UiKit.label(20, UiKit.MUTED, 3)
+	owned_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(owned_l)
 	add_child(head)
 	var sub := UiKit.label(17, UiKit.MUTED)
 	sub.text = "UI_COLLECTION_SUB_V"
@@ -158,11 +158,20 @@ static func _lock() -> Control:
 	return k
 
 
+## Quantas cartas da coleção já estão liberadas.
+func _owned_text() -> String:
+	var n := 0
+	for d in data.pool:
+		if meta.is_unlocked(d.id):
+			n += 1
+	return tr("UI_COLLECTION_OWNED").format({"n": n, "t": data.pool.size()})
+
+
 func refresh() -> void:
 	if map_mode:
 		_refresh_map()
 		return
-	souls_l.text = tr("UI_SOULS").format({"n": meta.souls})
+	owned_l.text = _owned_text()
 	for k in tab_row.get_child_count():
 		(tab_row.get_child(k) as Button).button_pressed = TABS[k] == tab
 	var had_focus := -1
@@ -268,9 +277,9 @@ func _build_map() -> void:
 	root.add_child(tab_row)
 	for id in TABS:
 		tab_row.add_child(_place(id))
-	souls_l = UiParch.label("", "italic", 22, UiParch.INK_SOFT)
-	souls_l.position = PAPER + Vector2(60, 890)
-	root.add_child(souls_l)
+	owned_l = UiParch.label("", "italic", 22, UiParch.INK_SOFT)
+	owned_l.position = PAPER + Vector2(60, 890)
+	root.add_child(owned_l)
 	# A metade direita: nome do lugar, contagem, grade e a linha de informação da carta em foco.
 	head_l = UiParch.label("", "title", 42, UiParch.INK)
 	head_l.position = PAPER + Vector2(880, 40)
@@ -409,8 +418,7 @@ func _draw_place(c: Control, b: Button, art: Texture2D, on: bool) -> void:
 
 
 func _refresh_map() -> void:
-	souls_l.text = tr("UI_SOULS").format({"n": meta.souls})
-	souls_l.visible = meta.souls > 0
+	owned_l.text = _owned_text()
 	for k in tab_row.get_child_count():
 		var b := tab_row.get_child(k) as Button
 		var id: String = TABS[k]

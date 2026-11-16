@@ -158,6 +158,14 @@ vec3 pt_card_ground(vec3 lin) {
 		h = 118.0 + (h - 120.0) * 0.12;
 	} else if (h >= 15.0 && h < 90.0) {
 		h = 65.0 + (h - 15.0) * 0.25;
+	} else {
+		// Rosados (matiz 345 a 15) também vão ao ocre, com rampa a partir de 345 para não mexer nos roxos e lilases
+		// (16/11/2026: trechos de estrada rosados ficavam de fora do remapeamento).
+		float hs = h > 180.0 ? h - 360.0 : h;
+		if (hs >= -15.0 && hs < 15.0) {
+			float t = smoothstep(-15.0, 0.0, hs);
+			h = mod(mix(hs, 65.0 + (hs - 15.0) * 0.25, t) + 360.0, 360.0);
+		}
 	}
 	C *= 0.62;
 	return pt_unlab(vec3(lab.x, C * cos(radians(h)), C * sin(radians(h))));

@@ -1,15 +1,3 @@
 {
- "unlock_cost": {
-  "common": 40,
-  "uncommon": 70,
-  "rare": 100,
-  "legendary": 180
- },
- "souls": {
-  "damage_per_soul": 400,
-  "per_location": 1,
-  "win": 40,
-  "win_early_extra": 20
- },
- "_doc": "Coleção: liberar um vilão entrega as comuns e incomuns dele e as start_rares (data/villains.json); as comuns de owner common de raridade comum/incomum vêm de início. Almas compram só raras e lendárias."
+ "_doc": "Coleção: liberar um vilão entrega as comuns e incomuns dele e as start_rares (data/villains.json); as comuns de owner common de raridade comum/incomum vêm de início. As outras cartas se liberam por desafio (data/unlocks.json). As Almas e os custos de desbloqueio saíram em 16/11/2026."
 }

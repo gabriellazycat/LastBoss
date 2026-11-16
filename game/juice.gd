@@ -2,6 +2,12 @@ class_name Juice
 extends RefCounted
 ## Impacto da interface (rodada 09/11/2026, "recompensas estilo Vampire Survivors"): cartas que entram voando e
 ## batem na mesa, faíscas, raios de luz girando atrás da oferta, título que bate. Tudo só visual.
+## Peles de papel (16/11/2026): as faíscas viram respingos de tinta (sem clarear até o branco) e o clarão vira um
+## anel de tinta; os raios ficam no ouro claro do papel.
+
+
+static func paper() -> bool:
+	return UiSkins.diario() or UiSkins.mapa()
 
 
 ## A carta entra girando de longe, cresce além do tamanho e assenta; `special` (carta upada) ganha um clarão.
@@ -42,7 +48,8 @@ static func slam(l: Control, delay := 0.0) -> void:
 ## Faíscas que explodem de um ponto (coordenadas do `parent`) e somem.
 static func burst(parent: Control, at: Vector2, col: Color, n := 18, power := 1.0) -> void:
 	var b := Burst.new()
-	b.col = col
+	b.ink = paper()
+	b.col = col.lerp(UiParch.INK, 0.35) if b.ink else col
 	b.power = power
 	b.position = at
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -58,6 +65,7 @@ class Burst extends Control:
 	var col := Color.WHITE
 	var power := 1.0
 	var t := 0.0
+	var ink := false
 	const LIFE := 0.7
 
 	func _process(delta: float) -> void:
@@ -74,11 +82,14 @@ class Burst extends Control:
 	func _draw() -> void:
 		var k := t / LIFE
 		for p in parts:
-			var c := col.lerp(Color.WHITE, 0.4 * (1.0 - k))
+			var c := col if ink else col.lerp(Color.WHITE, 0.4 * (1.0 - k))
 			c.a = 1.0 - k
 			draw_circle(p[0], p[2] * (1.0 - k * 0.6), c)
 		if k < 0.25:
-			draw_circle(Vector2.ZERO, 60.0 * power * k / 0.25, Color(col.r, col.g, col.b, 0.35 * (1.0 - k / 0.25)))
+			if ink:
+				draw_arc(Vector2.ZERO, 60.0 * power * k / 0.25, 0.0, TAU, 40, Color(col.r, col.g, col.b, 0.7 * (1.0 - k / 0.25)), 3.0, true)
+			else:
+				draw_circle(Vector2.ZERO, 60.0 * power * k / 0.25, Color(col.r, col.g, col.b, 0.35 * (1.0 - k / 0.25)))
 
 
 ## Raios de luz girando atrás da oferta (como o baú do Vampire Survivors). Fica atrás das cartas.
@@ -89,6 +100,8 @@ class Rays extends Control:
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if Juice.paper():
+			col = UiParch.GOLD_LIGHT
 
 	func kick() -> void:
 		power = 1.0

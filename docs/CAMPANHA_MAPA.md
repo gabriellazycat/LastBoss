@@ -57,10 +57,10 @@ Capturas: `docs/campanha_mapa/` (Mapa aberto, a câmera no meio da viagem, Diár
 | 0 | Fazenda do Vale (tutorial) | igual a antes | 0,135 / 0,55 | — |
 | 1 | Vila de Pedravau | igual a antes | 1,4 | Dragão |
 | 2 | Floresta de Ramagris | igual a antes | 2,67 | Lich |
-| 3 | Mosteiro da Colina | igual a antes | 2,3 / 1,3 | 60 Almas |
-| 4 | Forte da Fronteira (nova) | Guardião · Bárbaro+Escudeiro · Guardião+Escudeiro · Bárbaro · Escudeiro+Guardião+Bárbaro | 2,5 / 1,3 | 60 Almas |
-| 5 | Torre dos Arcanos (nova) | Mago · Besteiro+Arqueira · Clériga+Mago · Besteiro · Mago+Arqueira+Clériga | 2,6 / 1,35 | 60 Almas |
-| 6 | Capital de Aurévia (final) | Escudeiro+Arqueira · Guardião+Clériga+Mago+Assassino · Bárbaro+Besteiro+Escudeiro · Assassino · Guardião+Clériga+Mago+Arqueira | 2,8 / 1,4 | 60 Almas + "o reino é seu" |
+| 3 | Mosteiro da Colina | igual a antes | 2,3 / 1,3 | libera a próxima região |
+| 4 | Forte da Fronteira (nova) | Guardião · Bárbaro+Escudeiro · Guardião+Escudeiro · Bárbaro · Escudeiro+Guardião+Bárbaro | 2,5 / 1,3 | libera a próxima região |
+| 5 | Torre dos Arcanos (nova) | Mago · Besteiro+Arqueira · Clériga+Mago · Besteiro · Mago+Arqueira+Clériga | 2,6 / 1,35 | libera a próxima região |
+| 6 | Capital de Aurévia (final) | Escudeiro+Arqueira · Guardião+Clériga+Mago+Assassino · Bárbaro+Besteiro+Escudeiro · Assassino · Guardião+Clériga+Mago+Arqueira | 2,8 / 1,4 | "o reino é seu" |
 
 **Por que esses números:**
 - Com `share_exp` = 1, a força total de uma party não depende de quantos heróis ela tem. Só o número de parties (passo ×1,21 cada) e o multiplicador da fase mudam a força.
@@ -79,7 +79,8 @@ Capturas: `docs/campanha_mapa/` (Mapa aberto, a câmera no meio da viagem, Diár
 
 ## Testes
 
-- `tests/tests.tscn`: 3 falhas do Ritual ("só o marco 1", "Ritual Profano sacrifica", "acaba depois de 3 feitiços"). Elas vêm da mudança de rio e pontes em `data/rules.json` (15/11, outra sessão), não da campanha.
+- `tests/tests.tscn`: 0 falhas desde a consolidação de 16/11 (`docs/CONSOLIDACAO_2026-11-16.md`). As 2 falhas do Ritual Profano não vinham do rio: o monstro sacrificado também arma o Ciclo de feitiço do Lich, e os dois descontos somam (o teste agora separa os dois).
+- As Almas saíram do jogo em 16/11: o prêmio das fases 3 a 6 é a próxima região; a Capital dá "o reino é seu".
 - Os testes da fila de parties usavam a fase 4 antiga e agora rodam numa fase de teste (93) com a mesma fila.
 - Testes novos: 7 fases seguidas com mapa, heróis vistos (salvar, carregar e migrar) e a fase 5 fechada até vencer a 4.
 - `--menutest`: OK. Cobre o fluxo do mapa, as setas, a fase trancada e "Defender → vilão → run na fase certa".

@@ -1,0 +1,173 @@
+Áudio do Last Boss: licenças
+==============================
+
+Todos os arquivos .ogg desta pasta vêm do OpenGameArt.org com licença CC0 1.0 (domínio público,
+https://creativecommons.org/publicdomain/zero/1.0/), conferida na página de origem em 16/11/2026.
+Foram convertidos para Ogg Vorbis (ffmpeg): ganho estático, efeitos aparados e em mono, alguns loops
+com emenda cruzada. Crédito não é obrigatório pela CC0, mas fica registrado aqui.
+Os .wav antigos (sintetizados por tools/make_audio.py) ficam como reserva e não têm terceiros.
+
+Once Upon a Time (loop) (TAD)
+  Origem: https://opengameart.org/content/once-upon-a-time-loop
+  Licença: CC0 1.0
+  - music_menu.ogg  <- once_upon_a_time_loop.wav
+
+Evil Approach (nene)
+  Origem: https://opengameart.org/content/evil-approach
+  Licença: CC0 1.0
+  - music_road_plague.ogg  <- Evil_Approach.wav
+
+Ancient Power Of Serpents (josepharaoh99)
+  Origem: https://opengameart.org/content/ancient-power-of-serpents
+  Licença: CC0 1.0
+  - music_road_dragon.ogg  <- Ancient_Power_Of_Serpents_0.ogg
+
+Sinister Boss Appears! (cynicmusic)
+  Origem: https://opengameart.org/content/sinister-boss-appears
+  Licença: CC0 1.0
+  - music_road_lich.ogg  <- Sinister_Boss_Appears.wav
+
+Determined Pursuit (epic orchestra loop) (Emma_MA)
+  Origem: https://opengameart.org/content/determined-pursuit-epic-orchestra-loop
+  Licença: CC0 1.0
+  - music_road.ogg  <- determined_pursuit_loop.wav
+
+Boss Battle Music (Juhani Junkala (SubspaceAudio))
+  Origem: https://opengameart.org/content/boss-battle-music
+  Licença: CC0 1.0
+  - music_arena.ogg  <- Juhani_Junkala_-_Epic_Boss_Battle_Seamlessly_Looping.wav
+
+Medieval: Victory Theme (RandomMind)
+  Origem: https://opengameart.org/content/medieval-victory-theme
+  Licença: CC0 1.0
+  - music_victory.ogg  <- victory.wav
+
+Medieval: Defeat Theme (RandomMind)
+  Origem: https://opengameart.org/content/medieval-defeat-theme
+  Licença: CC0 1.0
+  - music_defeat.ogg  <- defeat.wav
+
+AMB Morning Sounds (Perfect Loop) (Kresiek The Furry)
+  Origem: https://opengameart.org/content/amb-morning-sounds-perfect-loop
+  Licença: CC0 1.0
+  - amb_field.ogg  <- amb_morning_0.ogg
+
+AMB Outside 1 (Kresiek The Furry)
+  Origem: https://opengameart.org/content/amb-outside-1
+  Licença: CC0 1.0
+  - amb_village.ogg  <- amb_outdoor1_loop.ogg
+
+Park ambiences (Thimras)
+  Origem: https://opengameart.org/content/park-ambiences
+  Licença: CC0 1.0
+  - amb_river.ogg  <- park_ambience_river.wav
+
+Mild Wind Background Noise (Bashar3A)
+  Origem: https://opengameart.org/content/mild-wind-background-noise
+  Licença: CC0 1.0
+  - amb_wind.ogg  <- wind_background_noise_2.wav
+
+Loopable Dungeon Ambience (JaggedStone)
+  Origem: https://opengameart.org/content/loopable-dungeon-ambience
+  Licença: CC0 1.0
+  - amb_dungeon.ogg  <- dungeon_ambient_1_0.ogg
+
+54 Casino sound effects (cards, dice, chips) (Kenney)
+  Origem: https://opengameart.org/content/54-casino-sound-effects-cards-dice-chips
+  Licença: CC0 1.0
+  - sfx_card_1.ogg  <- card-place-1.ogg
+  - sfx_card_2.ogg  <- card-place-2.ogg
+  - sfx_card_3.ogg  <- card-place-3.ogg
+  - sfx_card_4.ogg  <- card-place-4.ogg
+
+Magic Spell SFX (JaggedStone)
+  Origem: https://opengameart.org/content/magic-spell-sfx
+  Licença: CC0 1.0
+  - sfx_spell_1.ogg  <- magical_1_0.ogg
+  - sfx_spell_2.ogg  <- magical_3.ogg
+  - sfx_spell_3.ogg  <- magical_5.ogg
+  - sfx_heal.ogg  <- magical_6_0.ogg
+
+80 CC0 RPG SFX (rubberduck)
+  Origem: https://opengameart.org/content/80-cc0-rpg-sfx
+  Licença: CC0 1.0
+  - sfx_spell_fire_1.ogg  <- spell_fire_01.ogg
+  - sfx_spell_fire_2.ogg  <- spell_fire_03.ogg
+  - sfx_death_1.ogg  <- creature_die_01.ogg
+  - sfx_death_2.ogg  <- creature_hurt_01.ogg
+  - sfx_death_3.ogg  <- creature_hurt_02.ogg
+  - sfx_relic.ogg  <- item_gem_01.ogg
+  - sfx_fear.ogg  <- creature_roar_01.ogg
+
+3 dark magic spells (qubodup)
+  Origem: https://opengameart.org/content/3-dark-magic-spells
+  Licença: CC0 1.0
+  - sfx_spell_dark_1.ogg  <- fout-01.flac
+  - sfx_spell_dark_2.ogg  <- fout-02.flac
+
+50 RPG sound effects (Kenney)
+  Origem: https://opengameart.org/content/50-rpg-sound-effects
+  Licença: CC0 1.0
+  - sfx_hit_flesh_1.ogg  <- chop.ogg
+  - sfx_hit_flesh_2.ogg  <- dropLeather.ogg
+  - sfx_shield_break.ogg  <- metalPot1.ogg
+  - sfx_ability_tell.ogg  <- drawKnife1.ogg
+
+100 CC0 SFX (rubberduck)
+  Origem: https://opengameart.org/content/100-cc0-sfx
+  Licença: CC0 1.0
+  - sfx_hit_flesh_3.ogg  <- hit_01.ogg
+
+75 CC0 breaking / falling / hit sfx (rubberduck)
+  Origem: https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx
+  Licença: CC0 1.0
+  - sfx_hit_hard_1.ogg  <- bfh1_wood_hit_01.ogg
+  - sfx_hit_hard_2.ogg  <- bfh1_wood_hit_02.ogg
+  - sfx_hero_hit_1.ogg  <- bfh1_metal_hit_01.ogg
+  - sfx_hero_hit_2.ogg  <- bfh1_metal_hit_02.ogg
+  - sfx_hero_hit_3.ogg  <- bfh1_metal_hit_03.ogg
+  - sfx_death_bone_1.ogg  <- bfh1_wood_breaking_01.ogg
+  - sfx_death_bone_2.ogg  <- bfh1_wood_breaking_02.ogg
+  - sfx_death_stone.ogg  <- bfh1_rock_breaking_02.ogg
+  - sfx_hero_fall.ogg  <- bfh1_metal_falling_01.ogg
+
+10 Impact/Shield Blocks (StarNinjas)
+  Origem: https://opengameart.org/content/10-impactshield-blocks
+  Licença: CC0 1.0
+  - sfx_boss_hit_1.ogg  <- impact.1.ogg
+  - sfx_boss_hit_2.ogg  <- impact.2.ogg
+  - sfx_impact_heavy.ogg  <- impact.5.ogg
+
+25 CC0 bang / firework SFX (rubberduck)
+  Origem: https://opengameart.org/content/25-cc0-bang-firework-sfx
+  Licença: CC0 1.0
+  - sfx_explosion_1.ogg  <- bang_01.ogg
+  - sfx_explosion_2.ogg  <- bang_03.ogg
+  - sfx_explosion_3.ogg  <- cannon_01.ogg
+
+Teleport Spell (Ogrebane)
+  Origem: https://opengameart.org/content/teleport-spell
+  Licença: CC0 1.0
+  - sfx_teleport.ogg  <- teleport.wav
+
+Interface Sounds (Kenney)
+  Origem: https://opengameart.org/content/interface-sounds
+  Licença: CC0 1.0
+  - sfx_ui_click_1.ogg  <- scratch_001.ogg
+  - sfx_ui_click_2.ogg  <- scratch_002.ogg
+
+85 Short music jingles (Kenney)
+  Origem: https://opengameart.org/content/85-short-music-jingles
+  Licença: CC0 1.0
+  - jingle_contest_start.ogg  <- jingles_STEEL13.ogg
+  - jingle_mark.ogg  <- jingles_STEEL05.ogg
+  - jingle_won.ogg  <- jingles_STEEL10.ogg
+  - jingle_partial.ogg  <- jingles_STEEL04.ogg
+  - jingle_lost.ogg  <- jingles_STEEL11.ogg
+  - jingle_defeat.ogg  <- jingles_STEEL14.ogg
+  - jingle_act_start.ogg  <- jingles_STEEL00.ogg
+  - jingle_act_end.ogg  <- jingles_STEEL15.ogg
+  - jingle_arena.ogg  <- jingles_HIT11.ogg
+  - jingle_level_hero.ogg  <- jingles_HIT01.ogg
+  - jingle_level_player.ogg  <- jingles_HIT13.ogg
+  - jingle_reward.ogg  <- jingles_STEEL08.ogg

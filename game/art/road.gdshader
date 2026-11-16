@@ -45,22 +45,30 @@ vec2 road_piece_state(ivec2 p, ivec2 sz) {
 	return texelFetch(road_state, ivec2(id, 0), 0).rg;
 }
 
-// Distância (m) ao eixo, alfa de borda (1 no miolo, 0 em 3,7 m, igual à fita antiga) e estado do trecho.
-void road_field(vec3 world, out float d, out float edge_a, out float dimv, out float glow) {
-	vec2 muv = (world.xz - mask_rect.xy) / mask_rect.zw;
-	d = texture(road_mask, muv).r * mask_dmax;
-	edge_a = clamp((3.7 - d) / 2.0, 0.0, 1.0);
-	// Estado do trecho mais próximo, com bilinear à mão entre os 4 texels (senão a divisa entre um ramo
-	// escurecido e outro normal sai em degraus de 0,5 m).
-	ivec2 sz = textureSize(road_ids, 0);
-	vec2 tp = muv * vec2(sz) - 0.5;
+// Estado bilinear entre os 4 texels em volta de tp (coordenada em texels).
+vec2 road_state_bilinear(vec2 tp, ivec2 sz) {
 	ivec2 i0 = ivec2(floor(tp));
 	vec2 f = fract(tp);
 	vec2 s00 = road_piece_state(i0, sz);
 	vec2 s10 = road_piece_state(i0 + ivec2(1, 0), sz);
 	vec2 s01 = road_piece_state(i0 + ivec2(0, 1), sz);
 	vec2 s11 = road_piece_state(i0 + ivec2(1, 1), sz);
-	vec2 s = mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+	return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+}
+
+// Distância (m) ao eixo, alfa de borda (1 no miolo, 0 em 3,7 m, igual à fita antiga) e estado do trecho.
+void road_field(vec3 world, out float d, out float edge_a, out float dimv, out float glow) {
+	vec2 muv = (world.xz - mask_rect.xy) / mask_rect.zw;
+	d = texture(road_mask, muv).r * mask_dmax;
+	edge_a = clamp((3.7 - d) / 2.0, 0.0, 1.0);
+	// Estado do trecho mais próximo, com bilinear à mão entre os 4 texels (senão a divisa entre um ramo
+	// escurecido e outro normal sai em degraus de 0,5 m). Onde dois trechos se sobrepõem (bifurcação, ponte) o id
+	// alternava de texel em texel e a bilinear sozinha virava mosaico: 4 bilineares deslocadas de 0,8 texel
+	// (desfoque de ~1 m) apagam o degrau (16/11/2026).
+	ivec2 sz = textureSize(road_ids, 0);
+	vec2 tp = muv * vec2(sz) - 0.5;
+	vec2 s = 0.25 * (road_state_bilinear(tp + vec2(-0.8, -0.8), sz) + road_state_bilinear(tp + vec2(0.8, -0.8), sz)
+		+ road_state_bilinear(tp + vec2(-0.8, 0.8), sz) + road_state_bilinear(tp + vec2(0.8, 0.8), sz));
 	dimv = s.x;
 	glow = s.y * 0.35;
 }

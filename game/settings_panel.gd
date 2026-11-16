@@ -5,7 +5,13 @@ extends PanelContainer
 signal closed
 signal changed(key: String)
 
-const TABS := ["audio", "video", "game", "controls", "looks"]
+const TABS_ALL := ["audio", "video", "game", "controls", "looks"]
+## Variações de arte em avaliação (aba Aparência, guache, modelos, mundo A/B/C): escondidas do jogador desde 16/11/2026,
+## com os padrões escolhidos fixos. Aparecem com `--variantes` na linha de comando; o `--set` continua valendo.
+static var variants := OS.get_cmdline_user_args().has("--variantes")
+var TABS: Array:
+	get:
+		return TABS_ALL if variants else TABS_ALL.filter(func(t): return t != "looks")
 const CONTROLS := ["card", "place", "cursor", "map", "altar", "zoom", "pause", "speed"]
 const COL_W := {"CTL_": 230.0, "CTLK_": 320.0, "CTLP_": 160.0}
 
@@ -59,6 +65,8 @@ func _ready() -> void:
 func open() -> void:
 	visible = true
 	_rebuild()
+	if not TABS.has(tab):
+		tab = TABS[0]
 	(tab_row.get_child(TABS.find(tab)) as Button).grab_focus()
 
 
@@ -109,11 +117,12 @@ func _rebuild() -> void:
 			_toggle("fullscreen")
 			_toggle("vsync")
 			_choice("quality", ["UI_Q_0", "UI_Q_1", "UI_Q_2"], [0, 1, 2])
-			_choice("paint_look", PaintLook.NAMES, range(PaintLook.NAMES.size()))
-			_toggle("mundo_cor")
-			_toggle("mundo_escuro")
-			_toggle("mundo_papel")
-			_choice("model_g", Looks.G_NAMES, range(Looks.G_NAMES.size()))
+			if variants:
+				_choice("paint_look", PaintLook.NAMES, range(PaintLook.NAMES.size()))
+				_toggle("mundo_cor")
+				_toggle("mundo_escuro")
+				_toggle("mundo_papel")
+				_choice("model_g", Looks.G_NAMES, range(Looks.G_NAMES.size()))
 			var caps: Array = []
 			for f in Settings.FPS_CAPS:
 				caps.append(tr("UI_FPS_NOLIMIT") if f == 0 else str(f))
@@ -169,7 +178,7 @@ func _rebuild() -> void:
 		_fit_scroll.call_deferred()
 	# Volta ao tamanho mínimo: um contêiner não encolhe sozinho depois de uma aba mais larga.
 	set_deferred("size", Vector2.ZERO)
-	if had_focus and not had_focus.is_inside_tree():
+	if had_focus and not had_focus.is_inside_tree() and TABS.has(tab):
 		(tab_row.get_child(TABS.find(tab)) as Button).grab_focus.call_deferred()
 
 

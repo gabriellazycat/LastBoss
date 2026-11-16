@@ -91,22 +91,20 @@ DECK_treasure,Tesouro,Treasure
 DECKDESC_horde,"Família Bando: quanto mais ratos, mais forte. Mão de 6, mas os heróis têm +10% de vida.","Pack family: the more rats, the stronger. Hand of 6, but the heroes have +10% health."
 DECKDESC_ruin,Família Fogo: encharque e queime. Feitiços +15% de dano; heróis com +10% de vida.,Fire family: soak and burn. Spells +15% damage; heroes with +10% health.
 DECKDESC_treasure,"Família Cobiça: ouro vira poder. Começa com 7 de elixir e a recompensa de queda tem 4 opções, mas os heróis têm +25% de vida.","Greed family: gold becomes power. Starts with 7 elixir and the fall reward has 4 choices, but the heroes have +25% health."
-UI_CHOOSE_DECK,Escolha o Pacto do Lorde das Trevas,Choose the Dark Lord's Pact
 UI_HERO_LEVEL,Herói nv {n},Hero lv {n}
 UI_HERO_OF,Herói {k} de {n},Hero {k} of {n}
 UI_HERO_FALLEN,Herói {n} caído!,Hero {n} fallen!
 UI_HERO_ARRIVING,Herói chegando,Hero arriving
-UI_OFFER_LEVEL,Subiu de nível! Escolha 1,Level up! Pick 1
 UI_OFFER_SHRINE,Santuário defendido! Escolha uma carta rara,Shrine defended! Pick a rare card
 UI_OPT_REMOVE,Remover {card},Remove {card}
-UI_RESULT_win,O herói caiu na sua arena.,The hero fell in your arena.
-UI_RESULT_win_early,Vitória antecipada: o herói nem chegou ao covil.,Early victory: the hero never reached the lair.
+UI_RESULT_win,A última party caiu na sua arena.,The last party fell in your arena.
+UI_RESULT_win_early,Vitória antecipada: nenhum herói chegou ao covil.,Early victory: no hero reached the lair.
 UI_RESULT_loss,Seu núcleo foi destruído.,Your core was destroyed.
 UI_RESULT_timeout,A run chegou ao limite de tempo.,The run reached its time limit.
 UI_RESTART,Nova run,New run
 UI_QUIT,Sair,Quit
 UI_ARENA,A LUTA FINAL COMEÇOU,THE FINAL BATTLE BEGINS
-UI_OVERTIME,PRORROGAÇÃO: os altares apagaram e o herói não se cura mais,OVERTIME: the altars went dark and the hero no longer heals
+UI_OVERTIME,PRORROGAÇÃO: os altares apagaram e os heróis não se curam mais,OVERTIME: the altars went dark and the heroes no longer heal
 UI_PART_left_arm,Braço esquerdo,Left arm
 UI_PART_right_arm,Braço direito,Right arm
 UI_PART_head,Cabeça,Head
@@ -131,10 +129,10 @@ TYPE_structure,Estrutura,Structure
 TYPE_route,Rota,Route
 TYPE_lair,Temporário,Temporary
 TYPE_finisher,Finalização,Finisher
-UI_SUBTITLE,O herói está a caminho. Molde quem vai bater à sua porta.,The hero is coming. Shape who will knock on your door.
-HINT_start,"Jogue cartas em qualquer ponto da tela, a pelo menos 3 m do herói. Derrube os 5 heróis em fila: cada queda dá uma recompensa. Passe o mouse nas palavras coloridas para ler o que significam.","Play cards anywhere on screen, at least 3 m from the hero. Bring down the 5 queued heroes: each fall gives a reward. Hover the colored words to read what they mean."
+UI_SUBTITLE,Os heróis estão a caminho. Molde quem vai bater à sua porta.,The heroes are coming. Shape who will knock on your door.
+HINT_start,"Jogue cartas em qualquer ponto da tela, a pelo menos 3 m dos heróis. Derrube as parties da fila: cada herói que cai dá uma recompensa. Passe o mouse nas palavras coloridas para ler o que significam.","Play cards anywhere on screen, at least 3 m from the heroes. Bring down the queued parties: every hero that falls gives a reward. Hover the colored words to read what they mean."
 HINT_offer,Escolha uma recompensa para o deck (ou recuse). Cada local da estrada dá uma: vencer a disputa do local dá mais opções.,Pick a reward for your deck (or skip it). Every place on the road gives one: winning its contest gives more choices.
-HINT_shrine,[[shrine|Santuário]] à frente! O herói abençoado defende o local: não leva dano e bate mais forte em quem está no círculo. Mantenha monstros vivos lá dentro para ganhar uma carta rara.,[[shrine|Shrine]] ahead! The blessed hero defends it: he takes no damage and hits harder at whoever stands in the circle. Keep monsters alive inside to earn a rare card.
+HINT_shrine,"[[shrine|Santuário]] à frente! O líder da party, abençoado, defende o local: não leva dano e bate mais forte em quem está no círculo. Mantenha monstros vivos lá dentro para ganhar uma carta rara.","[[shrine|Shrine]] ahead! The party leader, blessed, defends it: takes no damage and hits harder at whoever stands in the circle. Keep monsters alive inside to earn a rare card."
 HINT_route,Cartas de [[route|Rota]] são jogadas na faixa de rota à esquerda ou no mapa grande (M): clique no local que quer afetar.,[[route|Route]] cards are played on the route strip on the left or on the big map (M): click the place you want to affect.
 HINT_arena,A arena! Proteja o seu corpo. [[teleport|Teleporte]] o chefe com Q/E ou clicando num [[altar|altar]].,The arena! Protect your body. [[teleport|Teleport]] the boss with Q/E or by clicking an [[altar|altar]].
 SAY_HERO_1,Mais forte a cada passo!,Stronger with every step!
@@ -163,8 +161,6 @@ UI_NEW_RUN,Nova run,New run
 UI_SETTINGS,Configurações,Settings
 UI_BACK,Voltar,Back
 UI_DEFAULTS,Restaurar padrões,Restore defaults
-UI_CHOOSE_DECK_SUB,Passe o mouse num Pacto para ver as cartas do deck. Cada Pacto traz o seu deck pronto e muda as regras da run.,Hover a Pact to see its deck. Each Pact comes with a ready-made deck and changes the rules of the run.
-UI_PLAY_DECK,Jogar com este Pacto,Play this Pact
 UI_MENU_KEYS,Enter confirma · Esc volta,Enter confirms · Esc goes back
 UI_TAB_audio,Áudio,Audio
 UI_TAB_video,Vídeo,Video
@@ -236,7 +232,7 @@ UI_OFFER_KEYS,Clique numa opção ou aperte o número dela · 0 recusa,Click an 
 UI_RESUME,Continuar,Resume
 UI_SAVE_MENU,Salvar e voltar ao menu,Save and return to menu
 UI_SAVE_QUIT,Salvar e sair do jogo,Save and quit
-UI_HERO_BUILD,Habilidades do herói,Hero skills
+UI_HERO_BUILD,Habilidades dos heróis,Heroes' skills
 UI_YOUR_DECK,Seu deck ({n}/{max}),Your deck ({n}/{max})
 UI_RUN_DECK,Seu deck ({n} cartas),Your deck ({n} cards)
 UI_MAP_TITLE,Mapa da rota,Route map
@@ -250,11 +246,9 @@ UI_RESULT_TITLE_win_early,VITÓRIA,VICTORY
 UI_RESULT_TITLE_loss,DERROTA,DEFEAT
 UI_RESULT_TITLE_timeout,TEMPO ESGOTADO,TIME'S UP
 UI_ST_time,Tempo,Time
-UI_ST_hero,Nível do herói,Hero level
 UI_ST_fallen,Heróis caídos,Heroes fallen
-UI_ST_kills,Abates do herói,Hero kills
-UI_ST_shrines,Santuários,Shrines
-UI_ST_parts,Partes perdidas,Parts lost
+UI_ST_kills,Abates dos heróis,Heroes' kills
+UI_ST_parts,Partes do corpo perdidas,Body parts lost
 UI_ST_top,Carta mais jogada,Most played card
 UI_OPT_NEW,Carta nova · {r},New card · {r}
 UI_OPT_MOD_HEAD,Melhorar: {mod},Upgrade: {mod}
@@ -348,7 +342,7 @@ UPGD_hero_fury,+{per_unit_pct}% de velocidade de ataque para cada inimigo a até
 UPGD_soul_absorb,Cura {heal_pct}% da vida máxima quando um monstro morre. Recarga de {cooldown} s.,Heals {heal_pct}% of max health when a monster dies. Cooldown of {cooldown} s.
 UPGD_second_wind,"Uma vez por run: quando a vida cai abaixo de {below_pct}%, recupera {heal_pct}% da vida máxima.","Once per run: when health drops below {below_pct}%, recovers {heal_pct}% of max health."
 UPGD_heroic_strike,"A cada {interval} s, um golpe causa {mult}× de dano num alvo grande ({big_hp}+ de vida) ou numa parte do seu corpo.","Every {interval} s, one hit deals {mult}× damage to a big target ({big_hp}+ health) or to one of your body parts."
-UI_HERO_LEARNED,O herói chegou ao nível {n} e aprendeu,The hero reached level {n} and learned
+UI_HERO_LEARNED,Os heróis aprenderam,The heroes learned
 UI_TAB_looks,Visual,Visuals
 SET_look_hud,Interface (HUD),Interface (HUD)
 SET_look_ground,Chão e fundo,Ground and backdrop
@@ -389,17 +383,13 @@ UI_PICKD_remove,Tire qualquer carta do deck.,Remove any card from your deck.
 UI_MY_DECK,Seu deck,Your deck
 UI_BUILD_DECK,Montar deck,Build deck
 UI_COLLECTION,Coleção,Collection
-UI_COLLECTION_SUB,Cartas com cadeado se desbloqueiam com Almas e passam a aparecer nas recompensas das runs.,Locked cards are unlocked with Souls and then show up in run rewards.
-UI_SOULS,Almas: {n},Souls: {n}
 UI_IN_DECK,{n}× no deck,{n}× in deck
 UI_ADD,Pôr no deck,Add to deck
-UI_UNLOCK,{n} Almas,{n} Souls
 UI_PRESETS,Decks prontos:,Ready-made decks:
 UI_DECK_OK,Deck pronto para jogar.,Deck ready to play.
 DECKERR_size,O deck precisa de exatamente {n} cartas.,The deck needs exactly {n} cards.
 DECKERR_copies,No máximo 2 cópias de cada carta.,At most 2 copies of each card.
 DECKERR_locked,Há carta bloqueada no deck.,There is a locked card in the deck.
-UI_ST_souls,Almas ganhas,Souls earned
 LVLK_count,Unidades,Units
 LVLK_hp,Vida,Health
 LVLK_dps,DPS,DPS
@@ -422,7 +412,7 @@ KW_shop,Loja,Shop
 KWD_shop,"Sem disputa: quando o herói chega, a loja abre. Gaste [[gold|Ouro]] em cartas, nível de carta, modificador ou remoção. Toda rota de cada ato passa por uma loja.","No contest: when the hero arrives, the shop opens. Spend [[gold|Gold]] on cards, a card level, a modifier or a removal. Every route of every act passes a shop."
 KW_gold,Ouro,Gold
 KWD_gold,Moeda da run: 1 a cada {gold_dmg} de dano no herói e {gold_win} por disputa vencida. Gaste nas lojas; zera no fim da run.,Run currency: 1 per {gold_dmg} damage dealt to the hero and {gold_win} per contest won. Spend it in shops; it resets when the run ends.
-HINT_fork,"Você escolhe o caminho do herói: clique num local da próxima fileira no mapa (ou aperte 1, 2 ou 3). Os caminhos que ficarem para trás são bloqueados.","You choose the hero's path: click a place on the next row of the map (or press 1, 2 or 3). Paths left behind get blocked."
+HINT_fork,"Você escolhe o caminho dos heróis: clique num local da próxima fileira no mapa (ou aperte 1, 2 ou 3). Os caminhos que ficarem para trás são bloqueados.","You choose the heroes' path: click a place on the next row of the map (or press 1, 2 or 3). Paths left behind get blocked."
 UI_OFFER_SHOP,Loja · você tem {g} de ouro,Shop · you have {g} gold
 UI_OFFER_SHOP_PICK_upgrade,Loja: escolha a carta que sobe de nível,Shop: pick the card to level up
 UI_OFFER_SHOP_PICK_remove,Loja: escolha a carta que sai do deck,Shop: pick the card to remove
@@ -462,7 +452,6 @@ UI_COMP_RELICS,Relíquias,Relics
 UI_COMP_MODS,Modificadores,Modifiers
 UI_COMP_LOCS,Locais,Locations
 UI_COMP_HERO,Herói,Hero
-UI_COMP_LOCKED,Bloqueada · {c} Almas,Locked · {c} Souls
 UI_CHALLENGE,Desafio: {t},Challenge: {t}
 UI_UNLOCK_TITLE,Cartas desbloqueadas,Cards unlocked
 UI_UNLOCK_SUB,Novas na sua coleção: {n},New in your collection: {n}
@@ -598,11 +587,7 @@ UI_START_RUN,Começar a run,Start the run
 UI_UNLOCKED,Desbloqueada,Unlocked
 UI_MAP_CLOSE,Fechar (M),Close (M)
 RULE_hero_hp_mult,Heróis com {p}% de vida,Heroes have {p}% health
-UI_PACT_OF_horde,Pacto da,Pact of the
-UI_PACT_OF_ruin,Pacto da,Pact of
-UI_PACT_OF_treasure,Pacto do,Pact of the
 UI_PACT_LORD,o Lorde das Trevas,the Dark Lord
-UI_PACT_SIGN,Assinar este Pacto,Sign this Pact
 UI_WANTED,PROCURA-SE,WANTED
 UI_ST_you,Heróis derrubados,Heroes defeated
 UI_TITLE_ME,"eu, o chefe final","me, the final boss"
@@ -612,9 +597,9 @@ UI_GOALSUB_ritual,Faça monstros morrerem no ritual · {s} s,Get monsters killed
 UI_GOAL_shrine,Segure o santuário!,Hold the shrine!
 UI_GOALSUB_shrine,Herói abençoado (sem dano) · {g} s com monstros no círculo · {s} s,Blessed hero (no damage) · {g} s with monsters in the circle · {s} s
 UI_GOAL_tavern,Destrua {g} casas!,Destroy {g} houses!
-UI_GOALSUB_tavern,Antes que o herói descanse · {s} s,Before the hero rests · {s} s
+UI_GOALSUB_tavern,Antes que os heróis descansem · {s} s,Before the heroes rest · {s} s
 UI_GOAL_bridge,Cause {g} de dano!,Deal {g} damage!
-UI_GOALSUB_bridge,Enquanto o herói atravessa a ponte · {s} s,While the hero crosses the bridge · {s} s
+UI_GOALSUB_bridge,Enquanto os heróis atravessam a ponte · {s} s,While the heroes cross the bridge · {s} s
 UI_GOAL_fountain,Interrompa o herói!,Interrupt the hero!
 UI_GOALSUB_fountain,"Medo, raiz, empurrão ou {g} de dano · {s} s","Fear, root, knockback or {g} damage · {s} s"
 UI_BANNER_WON,Vitória!,Victory!
@@ -679,8 +664,6 @@ VILLAIN_plague_PASSIVE,Infestação: qualquer monstro seu que morre tem 20% de c
 VILLAIN_dragon_PASSIVE,Avareza: você não compra em lojas. Cada loja por onde passa dá 200 de ouro e uma carta de raridade alta à sua escolha entre 3 sorteadas.,Greed: you can't buy in shops. Every shop you pass gives 200 gold and a high-rarity card of your choice from 3 random ones.
 VILLAIN_lich_PASSIVE,Ciclo de feitiço: lançar um feitiço faz a próxima criatura custar 1 a menos; uma criatura sua que morre faz o próximo feitiço custar 1 a menos. A carta afetada brilha na mão.,Spell Cycle: casting a spell makes your next creature cost 1 less; one of your creatures dying makes your next spell cost 1 less. The affected card glows in your hand.
 UI_CYCLE_MARK,CICLO −1,CYCLE −1
-UI_PACT_OF_crypt,Pacto da,Pact of the
-UI_PACT_OF_cult,Pacto do,Pact of the
 DECKDESC_crypt,Família Morte: monstros que morrem alimentam os outros. Heróis com +15% de vida.,Death family: monsters that die feed the others. Heroes with +15% health.
 DECKDESC_cult,Família Sequência: feitiço atrás de feitiço. Feitiços +10% de dano; heróis com +15% de vida.,Chain family: spell after spell. Spells +10% damage; heroes with +15% health.
 DECKSTYLE_crypt,Morte: as mortes alimentam o resto.,Death: deaths feed the rest.
@@ -705,10 +688,7 @@ UI_CAMPAIGN,Campanha,Campaign
 UI_PHASE,Fase {n},Stage {n}
 UI_PHASE_LOCKED,Vença a fase anterior para liberar.,Beat the previous stage to unlock.
 UI_PHASE_WON,Vencida,Won
-UI_PHASE_UNLOCKS,Libera o pacto: {p},Unlocks the pact: {p}
-UI_PACT_LOCKED,Pacto bloqueado: vença a fase {n}.,Locked pact: beat stage {n}.
 UI_PHASE_PARTY,Grupo: {list},Party: {list}
-UI_NEW_PACT,Novo pacto liberado: {p}!,New pact unlocked: {p}!
 PHASE_0,Tutorial: O Primeiro Invasor,Tutorial: The First Intruder
 PHASE_1,Os Escudeiros,The Squires
 PHASE_2,A Patrulha,The Patrol
@@ -729,10 +709,10 @@ TUT_deck,"A carta jogada vai para o descarte e outra vem da pilha de compra (os 
 TUT_temp,"Esta carta é [[lair|Temporária]]: dá um efeito por alguns segundos, vai ao descarte e volta no ciclo como qualquer outra.","This card is [[lair|Temporary]]: it gives an effect for a few seconds, goes to the discard and returns in the cycle like any other."
 TUT_pack,Combo do [[pack|Bando]]: os Ratos Raivosos ficam mais fortes com mais ratos em campo. Jogue a Horda e depois os Raivosos.,"[[pack|Pack]] combo: Rabid Rats get stronger with more rats on the field. Play the Horde, then the Rabid Rats."
 TUT_call,O Chamado do Bando deixa todos os seus ratos mais rápidos e fortes por alguns segundos. Use quando o bando estiver grande.,Pack Call makes all your rats faster and stronger for a few seconds. Use it when the pack is big.
-TUT_shield,O herói tem escudo na frente. Monstros que chegam por trás e pelos lados acertam em cheio.,The hero has a shield in front. Monsters coming from behind and the sides land full hits.
-TUT_location,Os locais na estrada (círculos) são disputas com uma barra de 3 marcos enquanto o herói está lá. Cada marco que a barra alcança dá uma recompensa; os 3 marcos dão ainda mais ouro.,Places on the road (circles) are contests with a 3-mark bar while the hero is there. Each mark the bar reaches gives a reward; all 3 marks also give bonus gold.
-TUT_fall,"Um herói caiu! O próximo vem mais forte, com uma habilidade nova. Escolha a sua recompensa.","A hero fell! The next one comes stronger, with a new ability. Pick your reward."
-TUT_arena,"O herói chegou ao covil. Na arena, ele ataca as partes do seu corpo: defenda com monstros e feitiços. As cartas de Rota ficam fora do baralho até a arena acabar.",The hero reached the lair. In the arena he attacks your body parts: defend with monsters and spells. Route cards stay out of your deck until the arena ends.
+TUT_shield,"Heróis de escudo, como o Escudeiro, bloqueiam o que vem da frente. Monstros que chegam por trás e pelos lados acertam em cheio.","Shield heroes, like the Squire, block what comes from the front. Monsters coming from behind and the sides land full hits."
+TUT_location,Os locais na estrada (círculos) são disputas com uma barra de 3 marcos enquanto a party está lá. Cada marco que a barra alcança dá uma recompensa; os 3 marcos dão ainda mais ouro.,Places on the road (circles) are contests with a 3-mark bar while the party is there. Each mark the bar reaches gives a reward; all 3 marks also give bonus gold.
+TUT_fall,"Um herói caiu! Os que ficam aprendem uma habilidade nova, e a próxima party vem mais forte. Escolha a sua recompensa.","A hero fell! Those left standing learn a new ability, and the next party comes stronger. Pick your reward."
+TUT_arena,"Uma party chegou ao covil. Na arena, os heróis atacam as partes do seu corpo: defenda com monstros e feitiços. As cartas de Rota ficam fora do baralho até a arena acabar.",A party reached the lair. In the arena the heroes attack your body parts: defend with monsters and spells. Route cards stay out of your deck until the arena ends.
 TUT_done,Tutorial concluído! A Fase 1 está liberada.,Tutorial complete! Stage 1 is unlocked.
 UI_TUT_OK,Entendi,Got it
 UI_SKIP_TUTORIAL,Pular tutorial,Skip tutorial
@@ -754,8 +734,6 @@ UI_VILLAIN_DECK,Baralho inicial de {name} · {n} cartas,{name} starting deck · 
 UI_VILLAIN_TAG,VILÃO,VILLAIN
 UI_GROUP_VILLAIN,Vilão escolhido: {name},Chosen villain: {name}
 UI_PHASE_UNLOCKS_V,Libera o vilão: {p},Unlocks the villain: {p}
-UI_PHASE_SOULS,Recompensa: {n} Almas (na primeira vitória),Reward: {n} Souls (first win)
-UI_PHASE_RARE,Recompensa: uma carta rara à escolha,Reward: one rare card of your choice
 UI_NEW_VILLAIN,Novo vilão liberado: {p}!,New villain unlocked: {p}!
 UI_RARE_CHOICE,Rara à escolha,Rare of your choice
 UI_RARE_CHOICE_SUB,Você venceu uma fase: escolha 1 carta rara para a sua coleção. Restam {n} escolha(s).,You beat a stage: pick 1 rare card for your collection. {n} pick(s) left.
@@ -765,7 +743,7 @@ UI_TAB_V_dragon,Dragão,Dragon
 UI_TAB_V_lich,Lich,Lich
 UI_TAB_V_common,Comuns,Common
 UI_UNLOCK_WITH,Libera com o vilão {v},Unlocks with villain {v}
-UI_COLLECTION_SUB_V,Cada vilão libera as comuns e incomuns dele. Raras e lendárias de vilões liberados se compram com Almas.,Each villain unlocks its common and uncommon cards. Rares and legendaries of unlocked villains are bought with Souls.
+UI_COLLECTION_SUB_V,Cada vilão libera as comuns e incomuns dele. As outras cartas se liberam cumprindo o desafio de cada uma.,Each villain unlocks its common and uncommon cards. The other cards unlock by completing their own challenge.
 UI_COMP_OWNER_common,Cartas comuns (de todos os vilões),Common cards (all villains)
 VCOMBO_plague_1,Enxame + auras: encha o campo de bichos e multiplique o dano de todos.,Swarm + auras: fill the field with creatures and multiply everyone's damage.
 VCOMBO_plague_2,"Ninhos na disputa: com o herói parado num local, Tocas e Ninhos rendem do começo ao fim.",Nests in the standoff: while the hero is stuck at a place burrows and nests pay off all along.
@@ -919,7 +897,7 @@ KWD_helper,"Outro herói está parado ao lado do herói da vez e luta junto dele
 UI_CONTEST_helper,Herói Ajudante: {p} de {g} de dano · {s} s,Helper Hero: {p} of {g} damage · {s} s
 UI_GOAL_helper,Mate o Herói Ajudante!,Kill the Helper Hero!
 UI_GOALSUB_helper,{g} de vida · {s} s · matar = 1 de 3 relíquias; falhar = nada,{g} health · {s} s · kill = 1 of 3 relics; fail = nothing
-HINT_helper,"[[helper|Herói Ajudante]] à frente! Ele luta junto do herói da vez: são 2 contra você. Mande monstros e feitiços no ajudante: matá-lo em 60 s dá 1 de 3 relíquias; se não, ele vai embora sem nada.",[[helper|Helper Hero]] ahead! He fights alongside the current hero: it is 2 against you. Send monsters and spells at the helper: killing him within 60 s gives 1 of 3 relics; otherwise he leaves with nothing.
+HINT_helper,"[[helper|Herói Ajudante]] à frente! Ele luta junto da party da vez. Mande monstros e feitiços no ajudante: matá-lo em 60 s dá 1 de 3 relíquias; se não, ele vai embora sem nada.",[[helper|Helper Hero]] ahead! He fights alongside the current party. Send monsters and spells at the helper: killing him within 60 s gives 1 of 3 relics; otherwise he leaves with nothing.
 UI_OFFER_RELIC_HELPER,Herói Ajudante derrotado: escolha uma relíquia do covil,Helper Hero defeated: pick a lair relic
 UI_HELPER_BONUS_escudeiro,O ajudante deu um escudo ao herói,The helper gave the hero a shield
 UI_HELPER_BONUS_arqueira,O ajudante deu +20% de dano ao herói,The helper gave the hero +20% damage
@@ -1275,3 +1253,10 @@ UI_CAMPAIGN_PREV,Fase anterior,Previous stage
 UI_CAMPAIGN_NEXT,Próxima fase,Next stage
 UI_CAMPAIGN_KINGDOM,Reino de Aurévia,Kingdom of Aurevia
 UI_CAMPAIGN_LEAGUES,léguas,leagues
+UI_OFFER_FALL,Herói caído! Escolha 1,Hero down! Pick 1
+UI_HERO_PARTY,A PARTY,THE PARTY
+UI_ST_contests,Disputas vencidas,Contests won
+UI_ST_gold,Ouro ganho,Gold earned
+UI_ST_relics,Relíquias,Relics
+UI_COLLECTION_OWNED,Cartas liberadas: {n} de {t},Cards unlocked: {n} of {t}
+UI_PHASE_NEXT_REGION,Libera a próxima região: {r},Unlocks the next region: {r}

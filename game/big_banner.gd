@@ -4,6 +4,8 @@ extends Control
 ## DANO"), resultado da disputa, início de ato. Entra batendo (escala 2,4 → 1 com quique, tremor de câmera e som
 ## no impacto), segura e encolhe voando até `dock` (o painel da disputa no topo vira o lembrete). Não pausa o jogo
 ## e não pega o mouse.
+## Peles de papel (Diário e Mapa aberto, 16/11/2026): faixa de papel com fio duplo de tinta e letras de tinta; as cores
+## de quem chama viram tinta (ver `ink`). A pele Covil fica com a faixa escura.
 
 const IN := 0.2
 const HOLD := 1.05
@@ -19,6 +21,7 @@ var title: Label
 var sub: Label
 var slammed := false
 var strength := 1.0
+var paper := false
 
 
 func _ready() -> void:
@@ -38,6 +41,15 @@ func _ready() -> void:
 	box.add_child(sub)
 	add_child(box)
 	visible = false
+	paper = UiSkins.diario() or UiSkins.mapa()
+	if paper:
+		title.add_theme_color_override("font_outline_color", UiParch.PARCH)
+		title.add_theme_constant_override("outline_size", 10)
+		sub.add_theme_color_override("font_color", UiParch.INK_SOFT)
+		sub.add_theme_color_override("font_outline_color", UiParch.PARCH)
+		sub.add_theme_constant_override("outline_size", 6)
+		if UiSkins.title_font():
+			title.add_theme_font_override("font", UiSkins.title_font())
 
 
 ## Mostra o letreiro (substitui o que estiver na tela). `dock` < 0: some no lugar em vez de voar.
@@ -45,8 +57,8 @@ func show_banner(head: String, line := "", color := UiKit.GOLD, to := Vector2(-1
 	title.text = head.to_upper()
 	sub.text = line
 	sub.visible = line != ""
-	col = color
-	title.add_theme_color_override("font_color", color)
+	col = ink(color) if paper else color
+	title.add_theme_color_override("font_color", col)
 	dock = to
 	strength = power
 	t = 0.0
@@ -107,9 +119,28 @@ func _draw() -> void:
 	var k := clampf(t / IN, 0.0, 1.0)
 	var h := box.get_combined_minimum_size().y * 1.15 * k
 	var y := vs.y * 0.36
+	if paper:
+		# Faixa de papel com fio duplo de tinta em cima e embaixo (como as molduras do mapa).
+		var ink_c := Color(UiParch.INK, 0.9 * k)
+		draw_rect(Rect2(0, y - h * 0.5, vs.x, h), Color(UiParch.PARCH, 0.93 * k))
+		for e in [y - h * 0.5, y + h * 0.5]:
+			draw_rect(Rect2(0, e - 1.5, vs.x, 3), ink_c)
+		draw_rect(Rect2(0, y - h * 0.5 + 6, vs.x, 1.5), Color(col, 0.75 * k))
+		draw_rect(Rect2(0, y + h * 0.5 - 7.5, vs.x, 1.5), Color(col, 0.75 * k))
+		return
 	draw_rect(Rect2(0, y - h * 0.5, vs.x, h), Color(0.04, 0.02, 0.03, 0.55 * k))
 	draw_rect(Rect2(0, y - h * 0.5, vs.x, 3), Color(col.r, col.g, col.b, 0.8 * k))
 	draw_rect(Rect2(0, y + h * 0.5 - 3, vs.x, 3), Color(col.r, col.g, col.b, 0.8 * k))
+
+
+## Cor de quem chama → tinta (peles de papel): verde (marco, vitória) vira tinta verde, vermelho (disputa perdida)
+## vira tinta preta, e o resto (ouro dos objetivos e dos atos) vira a tinta vermelha dos títulos.
+static func ink(c: Color) -> Color:
+	if c.g > c.r + 0.15 and c.g > c.b:
+		return UiParch.GOOD
+	if c.r > 0.85 and c.g < 0.6:
+		return UiParch.INK
+	return UiParch.BLOOD
 
 
 static func _back(k: float) -> float:

@@ -13,7 +13,7 @@ extends Node
 ##   godot --path . -- --humantest=human --deck=horde --phase=1 --seed=7 --speed=4 --out=C:/pasta/ [--minutes=15]
 ##
 ## Sai com 0 se não houve achado de interface, 1 se houve. Não toca no save do jogador (main.gd pula o
-## autosave e as Almas neste modo).
+## autosave e o meta neste modo).
 
 var m: Node                 # game/main.gd
 var bot: HumanBot

@@ -24,8 +24,12 @@ const CLASS_HIDE := {
 }
 const CLASS_ATTACK := {"escudeiro": "1H_Melee_Attack_Slice_Diagonal", "arqueira": "1H_Ranged_Shoot", "mago": "Spellcast_Shoot", "cleriga": "Spellcast_Shoot",
 	"assassino": "1H_Melee_Attack_Slice_Diagonal", "barbaro": "1H_Melee_Attack_Slice_Diagonal", "besteiro": "1H_Ranged_Shoot", "guardiao": "1H_Melee_Attack_Slice_Diagonal"}
-const CLASS_TINT := {"cleriga": Color(1.0, 0.92, 0.62), "assassino": Color(0.62, 0.55, 0.78), "barbaro": Color(1.0, 0.7, 0.55),
-	"besteiro": Color(0.8, 1.0, 0.75), "guardiao": Color(0.7, 0.82, 1.0)}
+# Tom de cada classe tirado da arte da carta dela (16/11/2026), para achar cada herói na party: Arqueira de capa
+# verde, Clériga de branco, Mago de azul fundo, Assassino de roxo, Bárbaro de pele e couro, Besteiro de chapéu e
+# couro marrom, Guardião de aço frio. O Escudeiro fica com o aço azulado do material do herói (Looks.hero_material).
+const CLASS_TINT := {"arqueira": Color(0.7, 0.95, 0.58), "cleriga": Color(1.0, 0.97, 0.86), "mago": Color(0.55, 0.62, 1.0),
+	"assassino": Color(0.86, 0.5, 1.0), "barbaro": Color(1.0, 0.7, 0.52), "besteiro": Color(0.95, 0.8, 0.56),
+	"guardiao": Color(0.8, 0.85, 0.92)}
 
 var ap: AnimationPlayer
 var view: Node

@@ -36,17 +36,6 @@ def is_win(r):
     return r["result"] in ("win", "win_early")
 
 
-def souls(r):
-    """Almas da run, pela fórmula de data/meta.json (a mesma de MetaSave.souls_for)."""
-    S = json.load(open(os.path.join(ROOT, "data", "meta.json"), encoding="utf-8"))["souls"]
-    n = sum(r["dmg_by_card"].values()) / S["damage_per_soul"] + r.get("locs_visited", 0) * S["per_location"]
-    if is_win(r):
-        n += S["win"]
-    if r["result"] == "win_early":
-        n += S["win_early_extra"]
-    return n
-
-
 def mean(xs):
     xs = [x for x in xs if x is not None]
     return sum(xs) / len(xs) if xs else None
@@ -97,12 +86,11 @@ def summarize(runs, goals):
             "waste": mean([r["waste_frac"] for r in rs]),
             "wall_ms": mean([r["wall_ms"] for r in rs]),
             "game_s": mean([r["t_end"] for r in rs]),
-            # Progressão do deck na run: recompensas de local, níveis subidos, tamanho final e Almas ganhas.
+            # Progressão do deck na run: recompensas de local, níveis subidos e tamanho final (as Almas saíram em 16/11/2026).
             "locs_won": mean([r.get("locs_won", 0) for r in rs]),
             "locs_lost": mean([r.get("locs_lost", 0) for r in rs]),
             "card_levels": mean([r.get("card_levels", 0) for r in rs]),
             "deck_n": mean([len(r["deck_final"]) for r in rs]),
-            "souls": mean([souls(r) for r in rs]),
             # Mapa de rotas (09/11/2026): ouro ganho e compras nas lojas.
             "gold": mean([r.get("gold_earned", 0.0) for r in rs]),
             "buys": mean([r.get("shop_buys", 0) for r in rs]),
@@ -193,13 +181,13 @@ def report_md(s, meta):
          f"Runs: {meta['runs']} · processos: {meta['workers']} · tempo total: {meta['wall_s']:.1f} s · "
          f"nota (distância às metas, 0 = ideal): **{s['score']}**", "",
          "| bot | deck | n | vitória | antecipada | derrota | arena (s) | herói nv | heróis caídos | elixir perdido | ms/run |"
-         " locais venc./perd. | níveis subidos | deck final | Almas | ouro | compras |",
-         "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+         " locais venc./perd. | níveis subidos | deck final | ouro | compras |",
+         "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in s["rows"]:
         L.append(f"| {r['bot']} | {r['deck']} | {r['n']} | {pct(r['win'])} | {pct(r['win_early'])} | {pct(r['loss'])} | "
                  f"{num(r['arena_t'], '{:.0f}')} | {num(r['hero_level_arena'])} | {num(r['heroes_fallen'])} | "
                  f"{pct(r['waste'])} | {num(r['wall_ms'], '{:.0f}')} | {num(r['locs_won'])}/{num(r['locs_lost'])} | "
-                 f"{num(r['card_levels'])} | {num(r['deck_n'])} | {num(r['souls'], '{:.0f}')} | "
+                 f"{num(r['card_levels'])} | {num(r['deck_n'])} | "
                  f"{num(r['gold'], '{:.0f}')} | {num(r['buys'])} |")
     L += ["", "## Atos, relíquias e disputas (vencidas/perdidas por run)", "",
           "| bot | deck | duração (s) | atos | relíquias | ritual | santuário | taverna | ponte | fonte |",
