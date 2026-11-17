@@ -6,6 +6,8 @@ var value := 0.0
 var max_value := 10.0
 var cost := 0          # custo da carta selecionada (0 = nenhuma)
 var t := 0.0
+var vertical := false  # gomos de baixo para cima, número no alto (variações da HUD de 17/11/2026)
+var show_label := true # sem o "atual / máximo" (LAYOUT 7: a gota ao lado já mostra o número)
 
 
 func _process(delta: float) -> void:
@@ -20,12 +22,34 @@ func _draw() -> void:
 	var label_w := minf(78.0, size.x * 0.16)
 	var w := (size.x - label_w - gap * (n - 1)) / n
 	var h := size.y
+	var label_h := 30.0
+	if vertical:
+		label_w = 0.0
+		if not show_label:
+			label_h = 0.0
+		w = size.x
+		h = (size.y - label_h - gap * (n - 1)) / n
+		if not show_label and n > 12:
+			# Máximo alto (relíquias de elixir): duas fileiras lado a lado, para o gomo não virar um ponto.
+			var rows := int(ceil(n / 2.0))
+			w = (size.x - gap) * 0.5
+			h = (size.y - gap * (rows - 1)) / rows
 	var font := ThemeDB.fallback_font
 	var txt := "%d / %d" % [int(value), n]
 	var fs := clampi(int(h * 0.85), 12, 22)
 	var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var tp := Vector2(size.x - label_w + (label_w - tw) * 0.5 + 4.0, h * 0.5 + fs * 0.35)
-	if UiSkins.diario():
+	if vertical:
+		fs = 16
+		tw = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		tp = Vector2((size.x - tw) * 0.5, 20.0)
+	if not show_label:
+		pass
+	elif UiSkins.diario() and vertical:
+		var pf := UiParch.font("bold")
+		var pw := pf.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2).x
+		draw_string(pf, Vector2((size.x - pw) * 0.5, tp.y), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2, UiParch.ELIXIR_DEEP)
+	elif UiSkins.diario():
 		# Na bandeja de papel: número a tinta, na letra da interface (13/11/2026).
 		var pf := UiParch.font("bold")
 		var pw := pf.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2).x
@@ -35,6 +59,12 @@ func _draw() -> void:
 		draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.97, 0.9, 1.0))
 	for i in n:
 		var r := Rect2(i * (w + gap), 0, w, h)
+		if vertical and not show_label and n > 12:
+			# Enche de baixo para cima, alternando esquerda e direita em cada andar.
+			var row := i / 2
+			r = Rect2((i % 2) * (w + gap), size.y - (row + 1) * h - row * gap, w, h)
+		elif vertical:
+			r = Rect2(0, size.y - (i + 1) * h - i * gap, w, h)
 		var f := clampf(value - i, 0.0, 1.0)
 		if UiSkins.diario():
 			UiDiario.draw_pip(self, r, f, UiKit.ELIXIR, t)

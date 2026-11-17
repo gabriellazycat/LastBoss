@@ -68,6 +68,9 @@ func _ready() -> void:
 	# --mapvar=N (0 a 9): estilo das construções do mapa da campanha (propostas de 16/11/2026).
 	if auto_args.has("mapvar"):
 		CampaignArt.VARIANT = int(auto_args["mapvar"])
+	# --hudlayout=N (0 a 7): mostra outra disposição da HUD da run só nesta execução (17/11/2026, docs/HUD_2026-11-17.md).
+	if auto_args.has("hudlayout"):
+		Hud.LAYOUT = int(auto_args["hudlayout"])
 	if auto_args.has("mapfog"):
 		Minimap.FOG = auto_args["mapfog"] != "0"
 	# Testes e capturas salvam num arquivo próprio: nunca tocam na run salva do jogador.
@@ -625,6 +628,15 @@ func _start(deck: String) -> void:
 		ph = 1
 	if data.phase(ph).has("deck"):
 		deck = str(data.phase(ph)["deck"])
+	# --firstparty=guardiao.cleriga.mago.assassino: a primeira party da fase, só nesta execução (capturas da HUD com 4 heróis).
+	if auto_args.has("firstparty"):
+		var ps: Array = data.phase(ph).get("parties", []).duplicate(true)
+		var first := Array(str(auto_args["firstparty"]).split(".", false))
+		if ps.is_empty():
+			ps.append(first)
+		else:
+			ps[0] = first
+		data.phase(ph)["parties"] = ps
 	if auto_args.is_empty():
 		s.setup(data, seed_, deck, [], meta.unlocked, ph)
 	else:
@@ -707,6 +719,8 @@ func _process(delta: float) -> void:
 		var path := str(auto_args.get("out", "user://")) + "shot_%03d.png" % int(life)
 		img.save_png(path)
 		print("captura: ", path)
+		if auto_args.has("hudlayout") and hud.visible:
+			print("hud sobreposicoes: ", hud.overlap_report())
 	if not running or sim == null:
 		return
 	# Capturas da mão (rodada C-UI): --elixirmax=20 (barra), --cost=12 (custo da mão), --discardfill=6, --pile=draw|discard,
@@ -1144,7 +1158,9 @@ func _route_test() -> void:
 	for n in sim.road.reach:
 		if n != far and sim.road.nodes[n]["loc"] >= 0 and sim.road.nodes[n]["row"] == row0 + 3:
 			alt = n
-	if alt >= 0:
+	if alt >= 0 and not hud.strip.visible:
+		print("routetest clique na faixa: pulado (sem a faixa na HUD 7)")
+	elif alt >= 0:
 		var st := hud.strip
 		var mb2 := InputEventMouseButton.new()
 		mb2.button_index = MOUSE_BUTTON_LEFT

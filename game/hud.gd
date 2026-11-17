@@ -16,6 +16,10 @@ signal speed_pressed
 signal map_pressed
 signal settings_changed(key: String)
 
+## Disposição da HUD da run (17/11/2026, docs/HUD_2026-11-17.md). 7 = a escolhida (padrão). 0 = a HUD de antes, com faixa
+## de rota e relógio; 1 a 6 = as propostas recusadas, guardadas para comparação (--hudlayout=N).
+static var LAYOUT := 7   # disposição escolhida em 17/11/2026 (docs/HUD_2026-11-17.md); --hudlayout=N mostra as outras
+
 var sim: Sim
 var selected := -1
 var speed := 1.0
@@ -25,7 +29,8 @@ var hero_badge: PanelContainer
 var hero_hp: ProgressBar
 var hero_hp_label: Label
 var hero_of_label: Label
-var party_box: VBoxContainer         # uma linha por herói de pé da party (nome e vida de cada um)
+var hero_name_row: Control          # linha do título do herói (LAYOUT 7 a esconde com party)
+var party_box: BoxContainer          # uma linha por herói de pé da party (nome e vida de cada um); em fileira no LAYOUT 2
 var party_rows: Array = []           # [{h: SimHero, bar: ProgressBar, lab: Label}]
 var upg_row: HBoxContainer         # ícones das habilidades do herói (mouse em cima explica)
 var upg_none: Label
@@ -40,7 +45,7 @@ var contest_stages: Control           # marcadores e barra das etapas da disputa
 var hold_offers := false             # cena da morte do herói: a recompensa e as cartas esperam
 var banner: BigBanner                  # letreiro grande: objetivo do local, resultado, ato (rodada 09/11/2026)
 var seals: LocSeals                    # selos dos marcos na cena do fim da disputa (15/11/2026)
-var relic_row: BoxContainer           # relíquias do covil ganhas na run (Diário: coluna de etiquetas à direita)
+var relic_row: Container           # relíquias do covil ganhas na run (Diário: coluna de etiquetas à direita)
 var curse_label: Label
 var hero_title: Label                # nome da classe do líder, ou "A PARTY" com mais de um herói de pé
 # Esquerda: run.
@@ -64,7 +69,7 @@ var fan: HandFan
 var pad := false
 var elixir_bar: ElixirBar
 var elixir_badge: PanelContainer
-var elixir_tray: HBoxContainer
+var elixir_tray: BoxContainer
 # Mensagens.
 var info_label: Label
 var help_label: Label
@@ -159,6 +164,7 @@ func _build_top() -> void:
 	Tips.attach(curse_label, func(): return [Tips.kw_entry("curse")])
 	hname.add_child(curse_label)
 	hv.add_child(hname)
+	hero_name_row = hname
 	hero_hp = UiKit.bar(UiKit.HERO_HP, 340, 22)
 	hero_hp_label = UiKit.label(15, Color.WHITE, 3)
 	if UiSkins.diario():
@@ -173,8 +179,8 @@ func _build_top() -> void:
 	hv.add_child(hero_hp)
 	hero_of_label = UiKit.label(13, UiKit.MUTED, 3)
 	hv.add_child(hero_of_label)
-	party_box = VBoxContainer.new()
-	party_box.add_theme_constant_override("separation", 2)
+	party_box = HBoxContainer.new() if LAYOUT in [2, 4, 5, 6, 7] else VBoxContainer.new()
+	party_box.add_theme_constant_override("separation", 14 if LAYOUT in [2, 4, 5, 6, 7] else (4 if LAYOUT > 0 else 2))
 	party_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	party_box.visible = false
 	hv.add_child(party_box)
@@ -188,7 +194,14 @@ func _build_top() -> void:
 	upg_row.add_child(upg_none)
 	hv.add_child(upg_row)
 	duel.add_child(hp)
-	_map_doodle(hp, "m-bosque", Vector2(96, 42), Vector2(16, 8))
+	if LAYOUT == 0:
+		_map_doodle(hp, "m-bosque", Vector2(96, 42), Vector2(16, 8))
+	if LAYOUT > 0:
+		# Variações de 17/11/2026: a barra grande só para um herói sozinho (com party, as linhas de cada um bastam);
+		# sem a linha "Sem habilidades ainda"; o painel encolhe para o que tem.
+		hero_hp.custom_minimum_size = Vector2(300 if LAYOUT == 1 else (260 if LAYOUT == 2 else (360 if LAYOUT >= 4 else 230)), 20)
+		upg_row.custom_minimum_size = Vector2(0, 30)
+		hv.add_theme_constant_override("separation", 2)
 
 
 func _build_left() -> void:
@@ -233,7 +246,8 @@ func _build_right() -> void:
 	parts_panel.add_child(parts_box)
 	parts_panel.visible = false
 	add_child(parts_panel)
-	_map_doodle(parts_panel, "m-rat", Vector2(64, 32), Vector2(22, 0), true)
+	if LAYOUT != 7:
+		_map_doodle(parts_panel, "m-rat", Vector2(64, 32), Vector2(22, 0), true)
 	tool_row = HBoxContainer.new()
 	tool_row.add_theme_constant_override("separation", 6)
 	add_child(tool_row)
@@ -263,7 +277,9 @@ func _build_bottom() -> void:
 	fan.card_pressed.connect(func(i): card_pressed.emit(i))
 	fan.card_dropped.connect(func(i, p): card_dropped.emit(i, p))
 	bottom_box.add_child(fan)
-	var eb := HBoxContainer.new()
+	# LAYOUT 4 e 5: elixir em coluna (direita / esquerda); 6: bandeja curta no canto de baixo à direita (17/11/2026).
+	var vert := LAYOUT in [4, 5, 7]
+	var eb: BoxContainer = VBoxContainer.new() if vert else HBoxContainer.new()
 	eb.alignment = BoxContainer.ALIGNMENT_CENTER
 	if UiSkins.diario():
 		eb.set_meta("paper", true)
@@ -281,18 +297,63 @@ func _build_bottom() -> void:
 	# Sem o botão de sacrifício (11/11/2026), a barra ocupa a bandeja toda: mais gomos cabem quando o máximo passa de 20.
 	elixir_bar.custom_minimum_size = Vector2(740, 22)
 	elixir_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if vert:
+		elixir_bar.vertical = true
+		elixir_bar.custom_minimum_size = Vector2(46, 470)
+		elixir_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		if LAYOUT == 7:
+			# A gota grande embaixo já diz quanto há; os gomos dizem o máximo. Sem o "7 / 10" repetido no alto.
+			elixir_bar.show_label = false
+			elixir_bar.custom_minimum_size = Vector2(46, 300)
+	elif LAYOUT == 6:
+		elixir_bar.custom_minimum_size = Vector2(170, 22)
 	elixir_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if LAYOUT == 7:
+		# A moldura dupla do papel ocupa ~14 px no alto: sem este respiro a primeira fileira de gotas cruzava a linha.
+		var top_pad := Control.new()
+		top_pad.custom_minimum_size = Vector2(0, 16)
+		top_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		eb.add_child(top_pad)
 	eb.add_child(elixir_bar)
 	elixir_badge = UiKit.badge(UiKit.ELIXIR, 30 if UiSkins.diario() else 26, 62 if UiSkins.diario() else 52)
 	eb.add_child(elixir_badge)
 	# Ouro da run (lojas), ao lado do elixir.
 	gold_label = UiKit.label(20, UiKit.GOLD, 4)
 	gold_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	gold_label.custom_minimum_size = Vector2(110, 0)
+	gold_label.custom_minimum_size = Vector2(0 if LAYOUT >= 4 else 110, 0)
+	if vert:
+		gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		gold_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		gold_label.custom_minimum_size = Vector2(70, 0)
+		gold_label.add_theme_font_size_override("font_size", 16)
 	gold_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	Tips.attach(gold_label, func(): return [Tips.kw_entry("gold")])
-	eb.add_child(gold_label)
-	bottom_box.add_child(eb)
+	if LAYOUT == 7:
+		# Ouro é moeda de loja, não de carta: vai para o canto de cima à direita, com os botões e as relíquias.
+		gold_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		gold_label.custom_minimum_size = Vector2(0, 0)
+		gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		gold_label.add_theme_font_size_override("font_size", 18)
+		if UiSkins.diario():
+			# Etiqueta de papel igual às das relíquias logo abaixo (solto sobre o mundo, o número se perdia no chão).
+			var gb := UiParch.box("ink", 0.0)
+			gb.content_margin_left = 16
+			gb.content_margin_right = 16
+			gb.content_margin_top = 7
+			gb.content_margin_bottom = 8
+			gold_label.add_theme_stylebox_override("normal", gb)
+			gold_label.add_theme_color_override("font_color", UiParch.INK)
+			gold_label.add_theme_constant_override("outline_size", 0)
+			gold_label.set_meta("paper", true)
+		add_child(gold_label)
+	else:
+		eb.add_child(gold_label)
+	if LAYOUT >= 4:
+		# A bandeja sai de baixo da mão: a mão desce e o elixir vai para um canto (posição em _layout_variant).
+		eb.size_flags_horizontal = Control.SIZE_FILL
+		add_child(eb)
+	else:
+		bottom_box.add_child(eb)
 
 
 func _build_messages() -> void:
@@ -319,6 +380,12 @@ func _build_messages() -> void:
 		help_label.add_theme_stylebox_override("normal", hb)
 		help_label.add_theme_color_override("font_color", UiParch.INK)
 		help_label.set_meta("paper", true)
+		if LAYOUT == 7:
+			# A moldura dupla do papel cortava as letras com 3–4 px de margem.
+			hb.content_margin_left = 18
+			hb.content_margin_right = 18
+			hb.content_margin_top = 8
+			hb.content_margin_bottom = 9
 	add_child(help_label)
 	toast = UiKit.title(30, Color(1, 0.62, 0.45))
 	if UiSkins.diario():
@@ -359,6 +426,23 @@ func _build_messages() -> void:
 	cv.add_child(contest_stages)
 	contest_panel.add_child(cv)
 	contest_panel.visible = false
+	if LAYOUT > 0:
+		# Selo compacto: texto e barra mais estreitos (antes 560 px de largura em duas linhas grossas).
+		contest_label.custom_minimum_size = Vector2(430, 0)
+		contest_label.add_theme_font_size_override("normal_font_size", 16)
+		contest_stages.custom_minimum_size = Vector2(430, 24)
+		cv.add_theme_constant_override("separation", 2)
+		if LAYOUT == 7:
+			# No canto, a leitura começa na borda esquerda (texto alinhado à esquerda, mais estreito).
+			contest_label.set_meta("center", false)
+			contest_label.custom_minimum_size = Vector2(380, 0)
+			# Respiro dentro do papel: sem ele o texto encostava na moldura da esquerda.
+			var cm := StyleBoxEmpty.new()
+			cm.content_margin_left = 16
+			cm.content_margin_right = 10
+			cm.content_margin_top = 4
+			contest_label.add_theme_stylebox_override("normal", cm)
+			contest_stages.custom_minimum_size = Vector2(380, 24)
 	add_child(contest_panel)
 	banner = BigBanner.new()
 	add_child(banner)
@@ -366,6 +450,14 @@ func _build_messages() -> void:
 	add_child(seals)
 	# Relíquias do covil ganhas na run, em fila no canto de baixo à direita.
 	relic_row = VBoxContainer.new() if UiSkins.diario() else HBoxContainer.new()
+	if LAYOUT == 7:
+		# Relíquias são passivas (o fim da hierarquia): só o ícone, em grade de até 290 px; o nome fica na caixa de dica.
+		var fl := HFlowContainer.new()
+		fl.alignment = FlowContainer.ALIGNMENT_END
+		fl.custom_minimum_size = Vector2(290, 0)
+		fl.add_theme_constant_override("h_separation", 6)
+		fl.add_theme_constant_override("v_separation", 6)
+		relic_row = fl
 	relic_row.add_theme_constant_override("separation", 6)
 	relic_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(relic_row)
@@ -618,6 +710,141 @@ func _layout() -> void:
 		var b: Control = layer.get_node("Box")
 		b.position = (vs - b.size) * 0.5
 	settings.position = (vs - settings.size) * 0.5
+	if LAYOUT > 0:
+		_layout_variant(vs, m)
+
+
+## Área real da mão: do monte de compra ao de descarte (o retângulo do leque é mais largo que as cartas).
+func hand_rect() -> Rect2:
+	var fr := fan.get_global_rect()
+	var l := fan.deck_pile.get_global_rect().position.x
+	var r := fan.disc_pile.get_global_rect().end.x
+	return Rect2(l, fr.position.y, r - l, fr.size.y)
+
+
+## Pares de elementos da HUD visíveis que se sobrepõem (capturas das variações, 17/11/2026). Vazio = nada encavalado.
+func overlap_report() -> Array:
+	var named := {"grupo": duel, "missao": contest_panel, "relogio": run_panel, "botoes": tool_row, "reliquias": relic_row,
+		"elixir": elixir_tray, "mao": fan, "ajuda": help_label, "fps": info_label, "aprendeu": learn_panel, "dica": hint_panel,
+		"faixa": strip, "corpo": parts_panel, "ouro": gold_label, "aviso": toast}
+	var out: Array = []
+	var keys := named.keys()
+	for i in keys.size():
+		var a: Control = named[keys[i]]
+		if a == null or not a.is_visible_in_tree() or (a == gold_label and LAYOUT != 7):
+			continue
+		var ra := hand_rect() if a == fan else a.get_global_rect()
+		if not get_viewport_rect().encloses(ra):
+			out.append("%s sai da tela %s" % [keys[i], ra])
+		for j in range(i + 1, keys.size()):
+			var b: Control = named[keys[j]]
+			if b == null or not b.is_visible_in_tree() or (b == gold_label and LAYOUT != 7) or (a == fan and b == elixir_tray and LAYOUT < 4):
+				continue
+			var inter := ra.intersection(hand_rect() if b == fan else b.get_global_rect())
+			if inter.size.x > 2.0 and inter.size.y > 2.0:
+				out.append("%s x %s (%dx%d)" % [keys[i], keys[j], int(inter.size.x), int(inter.size.y)])
+	return out
+
+
+## Variações de 17/11/2026 (docs/HUD_2026-11-17.md): só muda onde ficam o grupo, o objetivo e os avisos.
+## A mão e o elixir seguem embaixo no centro em todas.
+func _layout_variant(vs: Vector2, m: float) -> void:
+	strip.visible = false
+	# Sem o relógio (pedido de 17/11/2026): o tempo da run fica só na pausa.
+	run_panel.visible = false
+	duel.size = duel.get_combined_minimum_size()
+	contest_panel.size = contest_panel.get_combined_minimum_size()
+	var left_edge := m
+	var right_edge := tool_row.position.x - 12.0
+	var top_end := m   # onde acaba o que está no alto, no meio da tela (para os avisos)
+	match LAYOUT:
+		1:
+			# Coluna do grupo na borda esquerda (onde ficava a faixa), embaixo do relógio; objetivo em selo no alto.
+			duel.position = Vector2(m, 10.0)
+			contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, 10.0)
+			if contest_panel.visible:
+				top_end = contest_panel.position.y + contest_panel.size.y
+		2:
+			# Faixa no topo: grupo em fileira e objetivo do lado, centralizados juntos.
+			var gap := 12.0
+			var w := duel.size.x + (gap + contest_panel.size.x if contest_panel.visible else 0.0)
+			var x0 := clampf((vs.x - w) * 0.5, left_edge, maxf(right_edge - w, left_edge))
+			duel.position = Vector2(x0, 10.0)
+			contest_panel.position = Vector2(duel.position.x + duel.size.x + gap, 10.0)
+			if contest_panel.visible and contest_panel.position.x + contest_panel.size.x > right_edge:
+				# Não coube do lado (janela estreita): vai para baixo do grupo.
+				contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, duel.position.y + duel.size.y + 6.0)
+			top_end = maxf(duel.position.y + duel.size.y, contest_panel.position.y + contest_panel.size.y if contest_panel.visible else 0.0)
+		3:
+			# Quadro do grupo no canto de baixo à esquerda, ao lado da mão; o alto fica só com o objetivo.
+			var floor_y := info_label.position.y - 10.0 if info_label.visible else help_label.position.y - 10.0
+			duel.position = Vector2(m, floor_y - duel.size.y)
+			contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, 10.0)
+			if contest_panel.visible:
+				top_end = contest_panel.position.y + contest_panel.size.y
+		7:
+			_layout_7(vs, m)
+			top_end = duel.position.y + duel.size.y
+		4, 5, 6:
+			# Vida do grupo no alto, no centro; missão do local no canto de cima à esquerda; elixir fora de baixo da mão.
+			contest_panel.position = Vector2(m, m)
+			# No centro, mas nunca por cima da missão nem dos botões (party de 4 é larga).
+			var lo := contest_panel.position.x + contest_panel.size.x + 12.0 if contest_panel.visible else m
+			duel.position = Vector2(clampf((vs.x - duel.size.x) * 0.5, lo, maxf(right_edge - duel.size.x, lo)), 10.0)
+			top_end = duel.position.y + duel.size.y
+			elixir_tray.size = elixir_tray.get_combined_minimum_size()
+			var es := elixir_tray.size
+			if LAYOUT == 4:
+				elixir_tray.position = Vector2(vs.x - es.x - m - 6.0, vs.y - es.y - 40.0)
+			elif LAYOUT == 5:
+				elixir_tray.position = Vector2(m + 6.0, vs.y - es.y - 40.0)
+			else:
+				# À direita da mão (do monte de descarte), encostado embaixo.
+				var fr := hand_rect().end.x + 10.0
+				elixir_tray.position = Vector2(maxf(fr, vs.x - es.x - m - 6.0), vs.y - es.y - 18.0)
+			bottom_box.position.y = vs.y - bottom_box.size.y - 14.0
+			# A linha de atalhos (começo da run) vai para baixo da missão; o FPS para o canto livre de baixo.
+			help_label.position = Vector2(m, (contest_panel.position.y + contest_panel.size.y if contest_panel.visible else m) + 8.0)
+			if LAYOUT == 5:
+				info_label.position = Vector2(vs.x - info_label.size.x - m, vs.y - 24.0)
+			elixir_tray.visible = bottom_box.visible
+	learn_panel.position = Vector2((vs.x - learn_panel.size.x) * 0.5, top_end + 10.0)
+	hint_panel.position = Vector2((vs.x - hint_panel.size.x) * 0.5, top_end + (learn_panel.size.y + 20.0 if learn_panel.visible else 10.0))
+
+
+## Disposição final proposta em 17/11/2026 (docs/HUD_2026-11-17.md, 3ª rodada):
+## alto à esquerda = missão (só quando há); alto ao centro = vida do grupo, centrada no meio da tela sempre (não pula
+## quando a missão aparece); alto à direita = botões, ouro, corpo do chefe e relíquias, empilhados; borda direita
+## embaixo = coluna do elixir, que cresce só até onde a pilha da direita deixa; embaixo no centro = a mão.
+func _layout_7(vs: Vector2, m: float) -> void:
+	contest_panel.position = Vector2(m, m)
+	var lo := contest_panel.position.x + contest_panel.size.x + 12.0 if contest_panel.visible else m
+	var right_edge := tool_row.position.x - 12.0
+	duel.position = Vector2(clampf((vs.x - duel.size.x) * 0.5, lo, maxf(right_edge - duel.size.x, lo)), 10.0)
+	help_label.position = Vector2(m, (contest_panel.position.y + contest_panel.size.y if contest_panel.visible else m) + 8.0)
+	# Pilha da direita: botões > ouro > corpo do chefe > relíquias.
+	gold_label.size = gold_label.get_combined_minimum_size()
+	var y := tool_row.position.y + tool_row.size.y + 6.0
+	gold_label.position = Vector2(vs.x - gold_label.size.x - m - 4.0, y)
+	gold_label.visible = bottom_box.visible
+	if gold_label.visible:
+		y = gold_label.position.y + gold_label.size.y + 6.0
+	if parts_panel.visible:
+		parts_panel.position = Vector2(vs.x - parts_panel.size.x - m, y)
+		y = parts_panel.position.y + parts_panel.size.y + 8.0
+	relic_row.position = Vector2(vs.x - relic_row.size.x - m, y)
+	if relic_row.get_child_count() > 0:
+		y = relic_row.position.y + relic_row.size.y + 8.0
+	# Coluna do elixir: presa embaixo; os gomos encolhem para caber sob a pilha (de 150 a 330 px).
+	var floor_y := vs.y - 24.0
+	var extra := elixir_tray.get_combined_minimum_size().y - elixir_bar.custom_minimum_size.y
+	var bar_h := clampf(floor_y - (y + 14.0) - extra, 200.0, 330.0)
+	if absf(elixir_bar.custom_minimum_size.y - bar_h) > 1.0:
+		elixir_bar.custom_minimum_size.y = bar_h
+	elixir_tray.size = elixir_tray.get_combined_minimum_size()
+	elixir_tray.position = Vector2(vs.x - elixir_tray.size.x - m - 6.0, floor_y - elixir_tray.size.y)
+	elixir_tray.visible = bottom_box.visible
+	bottom_box.position.y = vs.y - bottom_box.size.y - 14.0
 
 
 # ---------------------------------------------------------------- estado
@@ -639,6 +866,8 @@ func bind(s: Sim) -> void:
 	show_run(true)
 	for n in [duel, run_panel, strip, bottom_box, tool_row]:
 		n.visible = true
+	# Variações de 17/11/2026: sem a faixa de rota; a rota fica só no mapa (M).
+	strip.visible = LAYOUT == 0
 	minimap.visible = false
 	parts_panel.visible = false
 	UiKit.clear(parts_box)
@@ -777,7 +1006,8 @@ func _hints() -> void:
 func blocks_world(p: Vector2) -> bool:
 	if not get_viewport().get_visible_rect().has_point(p):
 		return true
-	for c in [hero_badge, elixir_tray, tool_row, gold_label]:
+	# Painéis da HUD 7 (17/11/2026): soltar a carta em cima do grupo, da missão ou das relíquias cancela, como nos botões.
+	for c in [hero_badge, elixir_tray, tool_row, gold_label, duel, contest_panel, relic_row]:
 		if c and c.is_visible_in_tree() and c.get_global_rect().has_point(p):
 			return true
 	return false
@@ -877,9 +1107,15 @@ func _refresh_top() -> void:
 	if sim.party_mode():
 		hero_of_label.text = tr("UI_PARTY_OF").format({"k": sim.cur_party + 1, "n": sim.party_count()}) + " · " + tr("UI_FALLEN_OF").format({"k": sim.group_falls, "n": sim.party_size()})
 	_refresh_party()
+	if LAYOUT > 0:
+		hero_hp.visible = not party_box.visible
 	var standing := 1 + sim.followers.size()
 	hero_title.text = tr("UI_HERO_PARTY") if standing > 1 else tr("HERO_" + sim.hero.cls()).to_upper()
-	if sim.group_mode():
+	if LAYOUT == 7:
+		# Barra de chefe (17/11/2026): com party, o título "A PARTY" e a lista "(Clériga 80%...)" repetiam as barras.
+		hero_title.visible = not party_box.visible
+		hero_name_row.visible = hero_title.visible or h.curses > 0
+	if sim.group_mode() and not (LAYOUT == 7 and party_box.visible):
 		hero_of_label.text += " · " + tr("UI_HEROES_STANDING").format({"n": 1 + sim.followers.size()})
 		var fl: Array = []
 		for f in sim.followers:
@@ -905,15 +1141,26 @@ func _refresh_party() -> void:
 		party_rows.clear()
 		if members.size() > 1:
 			for i in members.size():
-				var row := HBoxContainer.new()
-				row.add_theme_constant_override("separation", 6)
+				# LAYOUT 2: cada herói é uma coluna (nome em cima, barra embaixo), lado a lado na faixa do topo.
+				var row: BoxContainer = VBoxContainer.new() if LAYOUT in [2, 4, 5, 6, 7] else HBoxContainer.new()
+				row.add_theme_constant_override("separation", 1 if LAYOUT in [2, 4, 5, 6, 7] else 6)
 				row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				var nm := UiKit.label(13, UiKit.TEXT if i == 0 else UiKit.MUTED, 3)
-				nm.custom_minimum_size = Vector2(84, 0)
+				var lead := i == 0 and LAYOUT > 0
+				var nm := UiKit.label((15 if lead else 13) if LAYOUT < 7 else 13, UiKit.TEXT if i == 0 else UiKit.MUTED, 3)
+				nm.custom_minimum_size = Vector2(0 if LAYOUT in [2, 4, 5, 6, 7] else (96 if LAYOUT == 1 else 84), 0)
 				nm.text = ("▶ " if i == 0 else "") + tr("HERO_" + (members[i] as SimHero).cls())
 				row.add_child(nm)
-				var bar := UiKit.bar(UiKit.HERO_HP, 200, 14)
-				var lab := UiKit.label(12, Color.WHITE, 3)
+				var bw := (130.0 if LAYOUT == 2 else (150.0 if LAYOUT < 7 else (140.0 if lead else 112.0))) if LAYOUT in [2, 4, 5, 6, 7] else (220.0 if LAYOUT == 1 else (150.0 if LAYOUT == 3 else 200.0))
+				var bar := UiKit.bar(UiKit.HERO_HP, bw, (18 if lead else 14) if LAYOUT < 7 else 16)
+				var lab := UiKit.label(13 if lead else 12, Color.WHITE, 3)
+				if LAYOUT == 7:
+					# Mesma letra e mesma altura de barra para todos (o líder se distingue pela barra mais larga e pelo ▸):
+					# nomes e barras alinham numa linha só. Número claro com contorno, como a barra do herói sozinho.
+					if UiSkins.diario():
+						UiParch.style_label(nm, "bold" if i == 0 else "body", 14, UiParch.INK if i == 0 else UiParch.INK.lightened(0.25))
+						UiParch.style_label(lab, "bold", 13, UiParch.CREAM)
+					lab.add_theme_constant_override("outline_size", 4)
+					lab.add_theme_color_override("font_outline_color", Color(0.1, 0.03, 0.02, 0.9))
 				lab.set_anchors_preset(Control.PRESET_FULL_RECT)
 				lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -936,7 +1183,9 @@ func _refresh_upgrades() -> void:
 		ic.pulse = 4.0
 		_announce(order[upg_shown])
 		upg_shown += 1
-	upg_none.visible = order.is_empty()
+	upg_none.visible = order.is_empty() and LAYOUT == 0
+	if LAYOUT > 0:
+		upg_row.visible = not order.is_empty()
 	# Recarga de cada habilidade: a janela para jogar a carta certa (rodada 09/11/2026).
 	for id in upg_icons:
 		var ic: UpgradeIcon = upg_icons[id]
@@ -1025,13 +1274,33 @@ func _refresh_contest() -> void:
 		"p": int(p) if c["type"] != "bridge" and c["type"] != "fountain" else int(p),
 		"g": int(g), "s": int(ceil(float(c["window"]) - float(c["t"])))})
 	# Disputa difícil (11/11/2026): alcançar os 3 marcos também dá uma relíquia.
-	if c.has("li") and sim.road.locations[int(c["li"])].get("hard", false):
+	var hard: bool = c.has("li") and sim.road.locations[int(c["li"])].get("hard", false)
+	if hard and LAYOUT != 7:
 		txt = tr("UI_CONTEST_HARD") + " · " + txt
+	if LAYOUT == 7:
+		txt = _mission_text(txt, int(ceil(float(c["window"]) - float(c["t"]))), hard)
 	contest_stages.visible = true
 	contest_stages.queue_redraw()
 	if txt != contest_text:
 		contest_text = txt
 		Tips.set_text(contest_label, txt)
+
+
+## Missão no canto (LAYOUT 7, 17/11/2026): o nome do local em destaque e, embaixo, o que fazer. O tempo fica só na barra
+## de marcos (antes aparecia no texto e na barra); a regra da disputa difícil vira uma linha menor por último.
+func _mission_text(txt: String, secs: int, hard: bool) -> String:
+	txt = txt.trim_suffix(" · %d s" % secs)
+	var k := txt.find(": ")
+	var head := txt.substr(0, k) if k > 0 else ""
+	var body := txt.substr(k + 2) if k > 0 else txt
+	if hard:
+		head = "☠ " + (head if head != "" else tr("UI_CONTEST_HARD").get_slice(":", 0).trim_prefix("☠ "))
+	var out := ("[b][color=#%s]%s[/color][/b]
+" % [UiKit.GOLD.to_html(false), head] if head != "" else "") + body
+	if hard:
+		out += "
+[font_size=13]%s[/font_size]" % tr("UI_CONTEST_HARD").trim_prefix("☠ ")
+	return out
 
 
 ## Barra única da disputa (12/11/2026): enche até o 3º marco; cada marco é um círculo na barra (cheio e verde = alcançado,
@@ -1095,8 +1364,12 @@ func _refresh_relics() -> void:
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 6)
 			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			row.add_child(UiKit.relic_icon(rid, 26.0))
-			row.add_child(UiParch.label(tr("REL_" + rid), "bold", 15, UiParch.INK))
+			row.add_child(UiKit.relic_icon(rid, 28.0 if LAYOUT == 7 else 26.0))
+			if LAYOUT != 7:
+				row.add_child(UiParch.label(tr("REL_" + rid), "bold", 15, UiParch.INK))
+			else:
+				sb.content_margin_left = 8
+				sb.content_margin_right = 8
 			tag.add_child(row)
 			Tips.attach(tag, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
 			relic_row.add_child(tag)
