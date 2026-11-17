@@ -261,8 +261,11 @@ func refresh(delta: float) -> void:
 		var b := sim.can_play(k)
 		(p.find_child("Cost", true, false) as Label).text = str(sim.card_cost(ci))
 		var dim := Color(1, 1, 1) if b == K.Block.OK else Color(0.7, 0.7, 0.78)
+		if b == K.Block.NO_ELIXIR:
+			dim = Color(0.42, 0.42, 0.5)
 		dim.a = 0.0 if k == hover else 1.0
 		p.modulate = dim
+		_short_gem(p, ci, b == K.Block.NO_ELIXIR)
 		UiKit.card_state(p, k == selected, b == K.Block.OK)
 		_sync_cycle(p, sim.cycle_applies(ci))
 	_refresh_held()
@@ -479,8 +482,40 @@ func _refresh_preview(m: Vector2, motion: float) -> void:
 	# Inclina de leve para o lado do mouse.
 	preview.rotation = deg_to_rad(clampf((m.x - c.x) / CARD.x, -1.0, 1.0) * 3.0) * motion
 	(preview.find_child("Cost", true, false) as Label).text = str(sim.card_cost(ci))
-	preview.modulate = Color(1, 1, 1) if sim.can_play(hover) == K.Block.OK else Color(0.7, 0.7, 0.76)
+	var pb := sim.can_play(hover)
+	preview.modulate = Color(1, 1, 1) if pb == K.Block.OK else (Color(0.42, 0.42, 0.5) if pb == K.Block.NO_ELIXIR else Color(0.7, 0.7, 0.76))
+	_short_gem(preview, ci, pb == K.Block.NO_ELIXIR)
 	_sync_cycle(preview, sim.cycle_applies(ci))
+
+
+## Sem elixir (17/11/2026): a gema do custo fica vermelha e um "faltam N" aparece embaixo dela.
+func _short_gem(p: Control, ci, short: bool) -> void:
+	var gem := p.find_child("Gem", true, false) as Control
+	if gem == null:
+		return
+	if gem.get_child_count() > 0:
+		gem.get_child(0).modulate = Color(1.0, 0.32, 0.32) if short else Color.WHITE
+	var miss := gem.get_node_or_null("Miss") as Label
+	if not short:
+		if miss:
+			miss.visible = false
+		return
+	if miss == null:
+		miss = Label.new()
+		miss.name = "Miss"
+		miss.set_meta("no_ink", true)
+		miss.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		miss.add_theme_font_override("font", UiDiario.font("fell"))
+		miss.add_theme_font_size_override("font_size", 40 if gem.size.x > 75.0 else 30)
+		miss.add_theme_color_override("font_color", Color(1.0, 0.93, 0.88))
+		miss.add_theme_color_override("font_outline_color", Color(0.62, 0.05, 0.08))
+		miss.add_theme_constant_override("outline_size", 7)
+		miss.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		miss.position = Vector2(18.0, gem.size.y - 4.0)
+		miss.size = Vector2(gem.size.x + 90.0, 50)
+		gem.add_child(miss)
+	miss.visible = true
+	miss.text = "faltam %d" % int(ceil(sim.card_cost(ci) - sim.elixir))
 
 
 func _drop_preview() -> void:

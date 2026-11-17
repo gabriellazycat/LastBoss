@@ -36,6 +36,8 @@ var count_l: Label
 var parties_box: HFlowContainer
 var go_b: Button
 var back_b: Button
+var panel: PanelContainer      # painel de baixo; a altura trava no maior das fases (nada mexe ao trocar de fase)
+var panel_locked := false
 
 # câmera (no papel)
 var cam_c := Vector2(820, 500)
@@ -99,7 +101,7 @@ func _ready() -> void:
 			_snap_camera())
 	root.add_child(view)
 	# --- embaixo: o lugar, quem vem, o prêmio, Defender
-	var panel := PanelContainer.new()
+	panel = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(0, 176)
 	if parch:
 		panel.add_theme_stylebox_override("panel", UiParch.box("ink", 14.0))
@@ -168,6 +170,24 @@ func open(k: int) -> void:
 	_snap_camera()
 	refresh()
 	go_b.grab_focus.call_deferred()
+	if not panel_locked:
+		_lock_panel_height.call_deferred()
+
+
+## O painel de baixo tem a altura da maior fase: trocar de fase não muda o tamanho do mapa nem a posição do Defender/Voltar.
+func _lock_panel_height() -> void:
+	panel_locked = true
+	var keep := phase
+	var h := 0.0
+	for k in range(_first(), _last() + 1):
+		phase = k
+		_fill_info()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		h = maxf(h, panel.get_combined_minimum_size().y)
+	panel.custom_minimum_size.y = h
+	phase = keep
+	_fill_info()
 
 
 func refresh() -> void:
@@ -181,18 +201,12 @@ func select(k: int) -> void:
 	k = clampi(k, _first(), _last())
 	if k == phase:
 		return
-	var a := phase
 	phase = k
+	# Linha reta até a nova região: o desvio pelas estradas fazia a câmera ir até a ponta da estrada e voltar.
 	var path := PackedVector2Array()
 	path.append(cam_c)
-	var ra := _road(a)
-	for i in range(ra.size() - 1, -1, -1):
-		path.append(ra[i])
-	var rb := _road(k)
-	for i in rb.size():
-		path.append(rb[i])
 	path.append(_frame_center(k))
-	cam_path = _smooth(path, 10)
+	cam_path = path
 	cam_t = 0.0
 	cam_z0 = cam_z
 	_fill_info()

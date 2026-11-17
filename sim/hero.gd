@@ -88,6 +88,7 @@ var dash_left := 0.0
 var dash_x := 0.0
 var dash_y := 0.0
 var cry_t := 0.0
+var ward_cd := 0.0     # recarga do escudo conjurado da Clériga
 var strike_t := 0.0
 var reflect_t := 0.0
 var absorb_t := 0.0   # recarga do "Absorver Almas"
@@ -295,6 +296,7 @@ func update(dt: float) -> void:
 	var regen: float = H.get("regen", 0.0) + bonus_regen
 	if regen > 0.0 and petrify_t <= 0.0 and hp > 0.0 and sim.overtime() <= 0.0:
 		hp = minf(max_hp(), hp + max_hp() * regen * dt)
+	_cast_ward(dt)
 	if sim.tick % sim.ai_period == 0:
 		_choose_target()
 		_rebuild_danger()
@@ -632,6 +634,33 @@ func soul_absorb_on_kill() -> void:
 	var p: Dictionary = upgrades["soul_absorb"]
 	heal(max_hp() * float(p["heal"]))
 	absorb_t = p["cooldown"]
+
+
+## Clériga: a cada `cooldown` s conjura um escudo (ward) de `pct` da vida atual do alvo, em si mesma ou no amigo
+## (herói da vez, seguidores, ajudante) mais ferido a até `range` m.
+func _cast_ward(dt: float) -> void:
+	var W: Dictionary = H.get("ward_cast", {})
+	if W.is_empty():
+		return
+	ward_cd -= dt
+	if ward_cd > 0.0 or hp <= 0.0 or petrify_t > 0.0 or drink_t > 0.0 or sim.overtime() > 0.0:
+		return
+	var best: SimHero = null
+	var best_f := 2.0
+	var r2 := float(W["range"]) * float(W["range"])
+	for a in [sim.hero] + sim.followers + ([sim.helper] if sim.helper != null else []):
+		if a.hp <= 0.0:
+			continue
+		if a != self and (a.x - x) * (a.x - x) + (a.y - y) * (a.y - y) > r2:
+			continue
+		var f: float = a.hp_frac()
+		if f < best_f:
+			best_f = f
+			best = a
+	if best == null:
+		return
+	best.ward += best.hp * float(W["pct"])
+	ward_cd = float(W["cooldown"])
 
 
 ## Estado de uma habilidade para a HUD: (recarga que falta, recarga total, preparação que falta ou -1).

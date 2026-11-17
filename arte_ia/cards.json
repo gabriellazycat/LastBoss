@@ -894,5 +894,45 @@
   "pt": "Pestilência Negra",
   "en": "Black Pestilence",
   "art": false
+ },
+ {
+  "id": "gold_dart",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Dardo de Ouro",
+  "en": "Gold Dart",
+  "art": true
+ },
+ {
+  "id": "coin_swarm",
+  "type": "swarm",
+  "villain": "dragon",
+  "pt": "Moedas Vivas",
+  "en": "Living Coins",
+  "art": true
+ },
+ {
+  "id": "gold_rain",
+  "type": "spell",
+  "villain": "dragon",
+  "pt": "Chuva de Ouro Fundido",
+  "en": "Molten Gold Rain",
+  "art": true
+ },
+ {
+  "id": "gilded_golem",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Golem Dourado",
+  "en": "Gilded Golem",
+  "art": true
+ },
+ {
+  "id": "hoard_dragon",
+  "type": "monster",
+  "villain": "dragon",
+  "pt": "Dragão do Tesouro",
+  "en": "Hoard Dragon",
+  "art": true
  }
 ]

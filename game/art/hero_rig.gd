@@ -74,9 +74,11 @@ static func make(look: int, mat: Material, cls_ := "escudeiro") -> HeroRig:
 	var ps: PackedScene = load(path)
 	var n: Node3D = ps.instantiate()
 	r.add_child(n)
-	if r.cls != "escudeiro" and mat is ShaderMaterial:
-		# Cada pacote tem a sua textura: o material do herói (flash, brilho) é copiado com a textura certa.
+	if mat is ShaderMaterial:
+		# Cada rig tem o seu material (17/11/2026): antes o flash de dano do líder acendia também seguidores e ajudante.
 		mat = (mat as ShaderMaterial).duplicate()
+	if r.cls != "escudeiro" and mat is ShaderMaterial:
+		# Cada pacote tem a sua textura: o material do herói (flash, brilho) fica com a textura certa.
 		for mi in n.find_children("*", "MeshInstance3D", true, false):
 			var m0: Material = (mi as MeshInstance3D).get_active_material(0)
 			if m0 is BaseMaterial3D and (m0 as BaseMaterial3D).albedo_texture:
@@ -137,6 +139,8 @@ func _process(_delta: float) -> void:
 		return
 	var h = hero_ref if hero_ref != null else view.sim.hero
 	var spd: float = Vector2(h.x - h.ox, h.y - h.oy).length() / view.sim.dt
+	if view.sim.waiting_choice():
+		spd = 0.0   # parado esperando escolha: sem correr no lugar
 	if h.petrify_t > 0.0 or h.root_t > 0.0:
 		ap.speed_scale = 0.0 if h.petrify_t > 0.0 else 0.3
 		return
@@ -160,9 +164,9 @@ func _process(_delta: float) -> void:
 			return
 	if h.shield_hp > 0.0 and spd < 0.4:
 		_play("Blocking", 0.2)
-	elif spd > 3.4:
+	elif spd > (3.0 if cur == "Running_A" else 3.4):
 		_play("Running_A", 0.2, clampf(spd / 5.0, 0.7, 1.5))
-	elif spd > 0.4:
+	elif spd > (0.25 if cur == "Walking_A" or cur == "Running_A" else 0.4):   # histerese: sem alternar a cada passo
 		_play("Walking_A", 0.2, clampf(spd / 2.2, 0.6, 1.6))
 	else:
 		_play("Idle", 0.3)

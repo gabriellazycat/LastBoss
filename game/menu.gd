@@ -329,12 +329,7 @@ func _fill_decks() -> void:
 		name_.text = tr("DECK_" + id).to_upper()
 		v.add_child(name_)
 		v.add_child(Tips.label(UiKit.deck_rules_text(data, id), 16, Color(0.9, 0.86, 1.0), 346.0))
-		var ch := UiKit.label(15, UiKit.GOLD)
-		ch.text = "UI_VILLAIN_COMBOS"
-		v.add_child(ch)
-		var combos := _combo_lines(id, 15, Color(0.9, 0.86, 1.0), 346.0)
-		combos.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		v.add_child(combos)
+		# Sem dicas de combo (17/11/2026): o jogador descobre sozinho.
 		var b := Button.new()
 		b.text = "UI_PICK_VILLAIN"
 		if not meta.villains.has(id):
@@ -724,13 +719,7 @@ func _fill_contracts() -> void:
 			rl.add_theme_font_size_override("normal_font_size", 15)
 			row.add_child(rl)
 			v.add_child(row)
-		var ch := Label.new()
-		ch.text = tr("UI_VILLAIN_COMBOS")
-		ch.add_theme_font_override("font", UiDiario.font("fell"))
-		ch.add_theme_font_size_override("font_size", 19)
-		ch.add_theme_color_override("font_color", UiDiario.BLOOD)
-		v.add_child(ch)
-		v.add_child(_combo_lines(id, 14, UiDiario.INK, 350.0, UiDiario.font("type")))
+		# Sem dicas de combo (17/11/2026): o jogador descobre sozinho.
 		var gap := Control.new()
 		gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		gap.custom_minimum_size = Vector2(0, 6)
@@ -844,6 +833,7 @@ func _build_villains_parch() -> void:
 	root.add_child(sub)
 	var body := HBoxContainer.new()
 	body.add_theme_constant_override("separation", 26)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL   # prende a linha do Voltar no fundo da folha
 	root.add_child(body)
 	# Lista dos vilões: retrato, nome e situação (liberado, bloqueado, último escolhido).
 	var list := VBoxContainer.new()
@@ -912,8 +902,8 @@ func _build_villains_parch() -> void:
 	v_rules = VBoxContainer.new()
 	v_rules.add_theme_constant_override("separation", 8)
 	info.add_child(v_rules)
-	det.add_child(UiParch.label(tr("UI_VILLAIN_COMBOS"), "title", 22, UiParch.INK))
 	v_combos = VBoxContainer.new()
+	v_combos.visible = false   # sem dicas de combo (17/11/2026)
 	v_combos.add_theme_constant_override("separation", 4)
 	det.add_child(v_combos)
 	det.add_child(UiParch.divider(880))
@@ -969,11 +959,21 @@ func _measure_villain_sheet() -> void:
 	v_measured = true
 	var keep := _default_villain()
 	var best := Vector2.ZERO
+	var rules_h := 0.0
+	var combos_h := 0.0
 	for id in data.villain_ids:
 		_focus_villain(id)
 		await get_tree().process_frame
 		await get_tree().process_frame
+		await get_tree().process_frame
+		rules_h = maxf(rules_h, v_rules.get_combined_minimum_size().y)
+		combos_h = maxf(combos_h, v_combos.get_combined_minimum_size().y)
 		best = best.max(deck_screen.get_combined_minimum_size())
+	# Cada bloco variável ganha a altura do maior: nada abaixo dele (cartas, Voltar) se mexe ao trocar de vilão.
+	v_rules.custom_minimum_size.y = rules_h
+	v_combos.custom_minimum_size.y = combos_h
+	await get_tree().process_frame
+	best = deck_screen.get_combined_minimum_size()
 	deck_screen.custom_minimum_size = best
 	deck_screen.reset_size()
 	_focus_villain(keep)
@@ -1009,7 +1009,7 @@ func _focus_villain(id: String) -> void:
 		row.add_child(_rich(lines[i].trim_prefix("• "), 19, UiParch.INK, P_TEXT_W - 30.0))
 		v_rules.add_child(row)
 	UiKit.clear(v_combos)
-	for i in 3:
+	for i in 0:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
 		var n := UiParch.label(str(i + 1), "heavy", 18, UiParch.BLOOD)

@@ -77,7 +77,8 @@ var fair_buy := Rect2()               # botão "Comprar" da ficha (quadro)
 var buy_hot := false
 const FAIR_PO := Vector2(140, 90)     # canto do papel da maquete na tela de 1920x1080
 const FAIR_BG := "res://assets/ui/map/bg_lojaB.png"   # o papel já desenhado (+24 px de margem): vai em (116, 66)
-const FAIR_SPOTS := [Vector2(260, 300), Vector2(560, 230), Vector2(860, 330), Vector2(480, 560), Vector2(800, 640)]
+const FAIR_SPOTS := [Vector2(260, 350), Vector2(560, 300), Vector2(860, 360), Vector2(450, 590), Vector2(780, 650)]
+const FAIR_PURSE := Rect2(176, 106, 376, 116)   # a bolsa: sempre no mesmo canto (17/11/2026)
 const FAIR_FICHA := Rect2(1210, 300, 510, 330)
 const FAIR_RED := Color("a8323a")
 const FAIR_INK := Color("3a2a1c")
@@ -1471,11 +1472,16 @@ func _fair_layout(n_cards: int) -> void:
 			var c := FAIR_PO + spot + Vector2(0, -30)
 			r["c"] = c
 			r["stall"] = ci
-			r["rect"] = Rect2(c.x - 82, c.y - 82, 164, 208)
+			r["rect"] = Rect2(c.x - 90, c.y - 82, 180, 270)
 			ci += 1
 		else:
 			r["rect"] = Rect2(sp.position.x + 18, sp.position.y + 58 + si * step, sp.size.x - 48, step)
 			si += 1
+
+
+## Textos novos da loja sem chave no CSV (evita reimportar traduções): português ou inglês conforme o idioma.
+func _t2(pt: String, en: String) -> String:
+	return en if TranslationServer.get_locale().begins_with("en") else pt
 
 
 func _fair_step(n: int) -> float:
@@ -1613,19 +1619,31 @@ func _draw_fair() -> void:
 			_draw_stall(r, is_same(r, foc), _index_of(r) == fair_hover and not r["sold"])
 	_draw_fair_ficha(foc)
 	_draw_fair_services(foc)
-	# Bolsa (o ouro pisca em vermelho quando falta) e Sair da feira.
-	var pulse := clampf(1.0 - (t - gold_pulse) / 0.6, 0.0, 1.0)
-	var lab := tr("UI_FAIR_PURSE")
-	var val := tr("UI_FAIR_PURSE_V").format({"g": int(sim.gold), "n": sim.cards.size()})
-	var by := 946.0
-	_txt(Vector2(1240, by), lab, f_disp, 25, FAIR_INK)
-	var vx := 1240 + _tw(lab, f_disp, 25) + 8
-	var it := UiParch.font("italic")
-	var vfs := _fit(val, it, 25, 1530 - vx - 12, 16) * (1.0 + 0.15 * sin(pulse * PI))
-	_txt(Vector2(vx, by), val, it, vfs, FAIR_INK.lerp(FAIR_RED, pulse))
+	_draw_fair_purse()
+	# Cabeçalho da seção das barracas.
+	_txt_halo(Vector2(570, 160), _t2("Cartas à venda", "Cards for sale"), f_disp, 30, FAIR_INK)
+	_txt_halo(Vector2(570, 188), _t2("clique numa barraca para ver a carta", "click a stall to see the card"), UiParch.font("italic"), 19, FAIR_INK)
+	# Sair da feira.
 	var lr := _fair_leave_rect()
 	draw_style_box(UiParch.button_box("hover" if seal_hot else "normal"), lr)
 	_txt(Vector2(lr.position.x, lr.position.y + 37), tr("UI_FAIR_LEAVE"), f_disp, 26, UiParch.BLOOD if seal_hot else FAIR_INK, HORIZONTAL_ALIGNMENT_CENTER, lr.size.x)
+
+
+## A bolsa: placa fixa no canto de cima com a moeda, o ouro em número grande (pisca em vermelho quando falta)
+## e o tamanho do baralho.
+func _draw_fair_purse() -> void:
+	var pr := FAIR_PURSE
+	var pulse := clampf(1.0 - (t - gold_pulse) / 0.6, 0.0, 1.0)
+	_rrect(Rect2(pr.position + Vector2(2, 5), pr.size), Color(0, 0, 0, 0.25), 10)
+	draw_style_box(UiParch.box("gold", 0.0), pr)
+	_coin(pr.position + Vector2(58, 60), 28.0)
+	var gtxt := str(int(sim.gold))
+	var sc := 1.0 + 0.2 * sin(pulse * PI)
+	_txt(pr.position + Vector2(104, 44), _t2("SEU OURO", "YOUR GOLD"), UiParch.font("italic"), 19, FAIR_INK.lerp(FAIR_RED, 0.0))
+	_txt(pr.position + Vector2(102, 92), gtxt, f_disp, 46 * sc, FAIR_INK.lerp(FAIR_RED, pulse))
+	var dtxt := _t2("%d cartas no baralho", "%d cards in deck") % sim.cards.size()
+	var dfs := _fit(dtxt, UiParch.font("italic"), 17, pr.end.x - (pr.position.x + 102 + _tw(gtxt, f_disp, 46) + 16) - 26, 12)
+	_txt(pr.position + Vector2(102 + _tw(gtxt, f_disp, 46) + 16, 90), dtxt, UiParch.font("italic"), dfs, Color(FAIR_INK, 0.8))
 
 
 ## Uma barraca: arte da carta num círculo com anel duplo de tinta (vermelho se escolhida), a tenda em cima, o nome
@@ -1675,12 +1693,21 @@ func _draw_stall(r: Dictionary, hot: bool, hover: bool) -> void:
 	if sold:
 		_stamp(c, tr("UI_LEDGER_STAMP_SOLD"), 30)
 		return
-	# Preço na faixa vermelha.
+	# Linha de tipo e custo (o que a carta é) e, embaixo, o preço com a moeda; sem ouro, em vermelho com o que falta.
+	var cd2: CardDef = r["cd"]
+	var tline := "%s · %s" % [UiKit.type_line(cd2), tr("UI_FAIR_COST").format({"n": cd2.cost_at(int(r["lv"]))})]
+	var itf := UiParch.font("italic")
+	_txt_halo(Vector2(c.x - _tw(tline, itf, 19) * 0.5, c.y + 128), tline, itf, 19, Color(FAIR_INK, 0.85))
 	var ptxt := str(int(r["price"]))
-	var tw := _tw(ptxt, f_disp, 24) + 16 + 28
-	var tc := c + Vector2(52 + tw * 0.5, -20)
-	var rot := deg_to_rad(4.0 if int(r.get("stall", 0)) % 2 else -4.0)
-	_fair_tag(tc, rot, Vector2(tw, 38), ptxt, 24, poor)
+	var pw2 := 20.0 + _tw(ptxt, f_disp, 30)
+	var short := int(ceil(float(r["price"]) - sim.gold))
+	var pl := Rect2(c.x - pw2 * 0.5 - 24, c.y + 140, pw2 + 48, 42)
+	_rrect(pl, Color(FAIR_PAPER, 0.95), 21, 3.0, FAIR_RED if poor else FAIR_INK)
+	_coin(pl.position + Vector2(22, 21), 11.0)
+	_txt(pl.position + Vector2(40, 31), ptxt, f_disp, 30, FAIR_RED if poor else FAIR_INK)
+	if poor:
+		var mt := _t2("faltam %d", "%d short") % short
+		_txt_halo(Vector2(pl.end.x + 10, pl.position.y + 29), mt, itf, 20, FAIR_RED)
 
 
 ## Faixa de preço (rf-box red): papel vermelho, contorno de tinta e filete creme; com falta de ouro, apagada.
@@ -1766,7 +1793,7 @@ func _draw_fair_ficha(foc: Dictionary) -> void:
 	var bw := _tw(btxt, f_disp, 26)
 	var bx := fair_buy.get_center().x - (bw + 22) * 0.5
 	_txt(Vector2(bx, fair_buy.position.y + 35), btxt, f_disp, 26, cream)
-	draw_circle(Vector2(bx + bw + 14, fair_buy.position.y + 26), 5.0, cream)
+	_coin(Vector2(bx + bw + 18, fair_buy.position.y + 26), 9.0)
 	var hx := fair_buy.end.x + 22
 	var hint := tr("UI_LEDGER_SHORT").format({"n": short}) if short > 0 else tr("UI_FAIR_HINT_PAD" if hud.pad else "UI_FAIR_HINT")
 	_txt(Vector2(hx, fair_buy.position.y + 33), hint, it, _fit(hint, it, 19, fr.end.x - 24 - hx, 13), FAIR_RED if short > 0 else FAIR_INK)
@@ -1816,6 +1843,6 @@ func _draw_fair_services(foc: Dictionary) -> void:
 		if sold:
 			pc = Color(FAIR_INK, 0.45)
 		_txt(Vector2(px, base), ptxt, f_disp, 21, pc)
-		draw_circle(Vector2(rr.end.x - 10, base - 7), 4.0, pc)
+		_coin(Vector2(rr.end.x - 10, base - 7), 8.0)
 		if sold:
 			_stamp(Vector2(px - 60, base - 8), tr("UI_LEDGER_STAMP_SOLD" if r["kind"] == "relic" else "UI_LEDGER_STAMP_DONE"), 18)

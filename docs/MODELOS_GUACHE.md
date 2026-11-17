@@ -112,3 +112,14 @@ Feedback: inimigos com mais cor, modelos que não condiziam com a carta e herói
   1,15 / 0,45). 69 modelos reimportados (heróis novos não foram refeitos). Olhos de uma cor só, sem pupila, mantidos.
 - **Mãe da Ninhada** usava o slime (VARIANTS em `looks.gd`); agora é o rato grande (escala 1,6). Outras cartas que
   emprestam o modelo de outra (ghoul = lobisomem, fire_imp = morcego, corrupt_piper = cultistas...) não foram revistas.
+
+## Modelos novos para cartas que usavam emprestado (17/11/2026)
+
+Salamandra de Cinzas (era o Ogro), Dragãozinho (era o morcego tingido), Urso Pardo (era o Ogro), Víbora Cuspidora
+(era o Rato), Fênix das Cinzas e Dragão de Ossos (eram o Dragão Ancião), Golem de Magma (era o Ogro). A Fera Primal
+passou a usar a Besta Alfa (o lobo grande) no lugar do lobo comum. Código em `tools/art/blender_v2/creatures_new.py`
+(o Dragão de Ossos e o Dragãozinho reaproveitam a geometria do Dragão Ancião com outra paleta; `creatures_dragon.py`
+ganhou `MEM`, `EYEC` e `SKEL`). Paletas à mão em `tools/art/blender_g/palettes.py` (`HAND`): o miolo da carta trazia o
+fundo cinza e apagava a cor. Exportar:
+`blender -b --factory-startup -P tools/art/blender_g/build_g_all.py -- new <saída> [ids]` e depois `import_g.gd` e
+`godot --headless --import`. Prancha de conferência: `tools/art/board_new.tscn` (`--shots=novos`).

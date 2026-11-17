@@ -3,6 +3,7 @@
  "free": [
   "barricade",
   "bubonic_plague",
+  "coin_swarm",
   "dark_forge",
   "dark_messenger",
   "dark_sacrifice",
@@ -14,6 +15,7 @@
   "gargoyle_tower",
   "ghoul",
   "goblin_scout",
+  "gold_dart",
   "gold_merc",
   "gold_mine",
   "hell_hound",
@@ -177,6 +179,11 @@
    "n": 40,
    "runs": 3
   },
+  "gilded_golem": {
+   "kind": "gold_spent",
+   "n": 6000,
+   "total": true
+  },
   "gold_avalanche": {
    "kind": "gold_earned",
    "n": 6000,
@@ -185,6 +192,16 @@
   "gold_bait": {
    "kind": "coins",
    "n": 25,
+   "total": true
+  },
+  "gold_rain": {
+   "kind": "gold_spent",
+   "n": 3000,
+   "total": true
+  },
+  "hoard_dragon": {
+   "kind": "gold_earned",
+   "n": 10000,
    "total": true
   },
   "hollow_armor": {

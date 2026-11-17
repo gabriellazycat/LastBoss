@@ -223,6 +223,8 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		_route_test()
 	if auto_args.has("menutest"):
 		_menu_test()
+	if auto_args.has("villaintest"):
+		_villain_layout_test()
 	if auto_args.has("campaignshot"):
 		_campaign_shot()
 	if auto_args.has("mapvars"):
@@ -962,7 +964,7 @@ func _process(delta: float) -> void:
 			if np != "":
 				hud.say(tr("UI_NEW_VILLAIN").format({"p": tr("DECK_" + np)}))
 		audio.result_music(sim.result in [K.Result.WIN, K.Result.WIN_EARLY])
-	var alpha := clampf(acc / sim.dt, 0.0, 1.0)
+	var alpha := 1.0 if sim.waiting_choice() else clampf(acc / sim.dt, 0.0, 1.0)
 	world.look_freeze = hud.fan != null and (hud.fan.hover >= 0 or hud.fan.press_i >= 0)
 	world.draw(alpha, delta * (0.15 if stopped else 1.0))
 	flash_rect.color = world.screen_flash if Settings.v["flash"] else Color(0, 0, 0, 0)
@@ -1275,6 +1277,30 @@ func _button(root: Node, key: String) -> Button:
 	return null
 
 
+## Escolha de vilão sem cliques: trocar o vilão em foco não pode mexer em Voltar, cartas nem na folha.
+func _villain_layout_test() -> void:
+	await get_tree().create_timer(0.5).timeout
+	for vid in data.villain_ids:
+		meta.unlock_villain(vid)
+	menu.show_screen("decks")
+	await get_tree().create_timer(2.5).timeout
+	var back_b: Button = _button(menu.deck_screen, "UI_BACK")
+	var first := []
+	var ok := true
+	for vid in data.villain_ids:
+		menu._focus_villain(vid)
+		await get_tree().create_timer(0.4).timeout
+		var m := [back_b.global_position, back_b.size, menu.preview_row.global_position, menu.preview_row.size, menu.deck_screen.global_position, menu.deck_screen.size]
+		print("villaintest ", vid, ": ", m)
+		if first.is_empty():
+			first = m
+		elif m != first:
+			ok = false
+	_ui_shot("villains_last")
+	print("villaintest resultado: ", "OK" if ok else "FALHOU")
+	get_tree().quit()
+
+
 ## Teste do menu com entrada real: Nova run → deck → pausa → configurações → salvar e voltar → Continuar.
 func _menu_test() -> void:
 	var fails: Array = []   # lambdas capturam por valor: um bool não voltaria daqui
@@ -1304,6 +1330,19 @@ func _menu_test() -> void:
 	menu.show_screen("decks")
 	await get_tree().create_timer(1.2).timeout
 	_ui_shot("menu_decks3")
+	# Trocar o vilão em foco não pode mexer em nada: Voltar, cartas do baralho e a folha ficam onde estão.
+	if menu.has_method("_focus_villain") and not menu.v_tabs.is_empty():
+		var back_b: Button = _button(menu.deck_screen, "UI_BACK")
+		var marks: Array = []
+		for vid in data.villain_ids:
+			menu._focus_villain(vid)
+			await get_tree().create_timer(0.3).timeout
+			marks.append([back_b.global_position, back_b.size, menu.preview_row.global_position, menu.deck_screen.size])
+			print("menutest layout ", vid, ": ", marks[-1])
+		var same := true
+		for m in marks:
+			same = same and m == marks[0]
+		step.call("Trocar de vilão não muda a altura nem o tamanho de nada", same)
 	meta.villains = villains_before
 	menu.show_screen("decks")
 	await get_tree().create_timer(0.3).timeout
@@ -1801,8 +1840,8 @@ func _scene_gates() -> void:
 
 
 ## Depois de todo local (15/11/2026), o mapa grande abre quando a cena e as recompensas acabam e o jogo espera:
-## numa bifurcação ele já abre sozinho (escolha obrigatória); com o caminho decidido ou único, o jogador olha e
-## fecha (botão, Esc ou M) ou replaneja clicando num local. Sem cena (bots, testes sem janela) não abre.
+## numa bifurcação ele já abre sozinho (escolha obrigatória); com uma bifurcação ainda por decidir à frente, o
+## jogador olha e fecha. Desde 17/11/2026 só a bifurcação onde o herói espera abre o mapa; sem escolha o jogo segue direto.
 func _map_after_location(delta: float) -> void:
 	if not world.scene.is_empty():
 		map_after = true
@@ -1814,14 +1853,10 @@ func _map_after_location(delta: float) -> void:
 	if sim.phase != K.Phase.ROAD or hud.minimap.visible or sim.route_wait or sim.road.complete:
 		map_after = false   # fora da estrada, mapa já aberto, ou a bifurcação abre o dela
 		return
-	# Alguns passos da simulação antes: numa bifurcação, route_wait chega e o mapa dela abre no lugar deste.
-	map_after_t += delta / maxf(Engine.time_scale, 0.01)
-	if map_after_t >= 0.25:
-		map_after = false
-		map_after_open = true
-		_toggle_map()
-		if not auto_args.is_empty():
-			print("cena: mapa aberto depois do local (t=%.1f)" % sim.t)
+	# 17/11/2026 (2ª correção): head é o fim da rota já decidida, que pode ser a bifurcação logo DEPOIS do próximo
+	# ponto; o jogador não tem o que escolher agora. Só a bifurcação onde o herói espera (route_wait) abre o mapa,
+	# e isso é feito em _process. Depois do evento sem escolha o jogo segue direto.
+	map_after = false
 
 
 ## O mapa que abriu sozinho na bifurcação fecha quando o herói volta a andar.

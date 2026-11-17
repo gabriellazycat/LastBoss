@@ -616,7 +616,7 @@
    },
    "owner": "dragon",
    "family": "fire",
-   "model": "ogre"
+   "model": "ash_salamander"
   },
   {
    "id": "drakeling",
@@ -651,7 +651,7 @@
    "owner": "dragon",
    "family": "fire",
    "fly": true,
-   "model": "fire_imp"
+   "model": "drakeling"
   },
   {
    "id": "magma_golem",
@@ -693,7 +693,7 @@
      "dps": "lava_dps"
     }
    ],
-   "model": "ogre"
+   "model": "magma_golem"
   },
   {
    "id": "gold_mine",
@@ -813,7 +813,7 @@
      }
     ]
    },
-   "model": "elder_dragon"
+   "model": "ash_phoenix"
   },
   {
    "id": "meteor_storm",
@@ -854,6 +854,255 @@
     "needs_hit": true
    },
    "model": "boiling_oil"
+  },
+  {
+   "id": "gold_dart",
+   "category": "field",
+   "type": "spell",
+   "tags": [],
+   "archetype": "",
+   "rarity": "common",
+   "cost": 1,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "gold_cost": 10,
+    "damage": 90,
+    "radius": 2.0
+   },
+   "lvl": [
+    "damage"
+   ],
+   "n3": {
+    "damage": 140
+   },
+   "ops": [
+    {
+     "op": "pay_gold",
+     "amount": "gold_cost"
+    },
+    {
+     "op": "damage",
+     "damage": "damage",
+     "radius": "radius",
+     "target": "nearest",
+     "boom": true
+    }
+   ],
+   "family": "greed",
+   "owner": "dragon",
+   "model": "gold_bait",
+   "ai": {
+    "aim": "hero",
+    "needs_hit": true,
+    "needs": {
+     "gold_above": 10
+    }
+   }
+  },
+  {
+   "id": "coin_swarm",
+   "category": "field",
+   "type": "swarm",
+   "tags": [],
+   "archetype": "swarm",
+   "rarity": "common",
+   "cost": 2,
+   "count": 3,
+   "xp_parts": 3,
+   "hp": 55,
+   "dps": 8,
+   "attack_interval": 0.25,
+   "speed": 5.5,
+   "range": 0.8,
+   "fx": {
+    "gold_cost": 15,
+    "gold_step": 20,
+    "gold_bonus": 0.2,
+    "gold_cap": 1.0
+   },
+   "lvl": [
+    "count"
+   ],
+   "n3": {
+    "gold_cap": 1.6
+   },
+   "ops": [
+    {
+     "op": "pay_gold",
+     "amount": "gold_cost"
+    }
+   ],
+   "family": "greed",
+   "owner": "dragon",
+   "model": "kobold_scavengers",
+   "ai": {
+    "needs": {
+     "gold_above": 15
+    }
+   }
+  },
+  {
+   "id": "gold_rain",
+   "category": "field",
+   "type": "spell",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "",
+   "rarity": "uncommon",
+   "cost": 4,
+   "count": 0,
+   "xp_parts": 0,
+   "hp": 0,
+   "dps": 0,
+   "attack_interval": 1.0,
+   "speed": 0,
+   "range": 4,
+   "fx": {
+    "gold_cost": 40,
+    "radius": 4.0,
+    "duration": 8.0,
+    "dps": 45,
+    "slow": 3.0
+   },
+   "lvl": [
+    "dps"
+   ],
+   "n3": {
+    "dps": 70
+   },
+   "ops": [
+    {
+     "op": "pay_gold",
+     "amount": "gold_cost"
+    },
+    {
+     "op": "zone",
+     "kind": "fire",
+     "radius": "radius",
+     "duration": "duration",
+     "dps": "dps"
+    },
+    {
+     "op": "status",
+     "status": "slow",
+     "duration": "slow",
+     "target": "area",
+     "radius": "radius"
+    }
+   ],
+   "family": "greed",
+   "owner": "dragon",
+   "model": "boiling_oil",
+   "ai": {
+    "aim": "cluster",
+    "needs_hit": true,
+    "lingers": true,
+    "needs": {
+     "gold_above": 40
+    }
+   }
+  },
+  {
+   "id": "gilded_golem",
+   "category": "field",
+   "type": "monster",
+   "tags": [],
+   "archetype": "tank",
+   "rarity": "rare",
+   "cost": 6,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 1300,
+   "dps": 40,
+   "attack_interval": 0.25,
+   "speed": 2.2,
+   "range": 1.5,
+   "fx": {
+    "gold_cost": 35,
+    "gold_step": 25,
+    "gold_bonus": 0.15,
+    "gold_cap": 0.9
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "gold_cap": 1.5
+   },
+   "ops": [
+    {
+     "op": "pay_gold",
+     "amount": "gold_cost"
+    }
+   ],
+   "family": "greed",
+   "owner": "dragon",
+   "model": "ogre",
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "needs": {
+     "gold_above": 35
+    }
+   }
+  },
+  {
+   "id": "hoard_dragon",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "fire"
+   ],
+   "archetype": "shooter",
+   "rarity": "legendary",
+   "cost": 14,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 3600,
+   "dps": 90,
+   "attack_interval": 0.25,
+   "speed": 3.2,
+   "range": 6.0,
+   "fx": {
+    "gold_cost": 120,
+    "gold_step": 50,
+    "gold_bonus": 0.2,
+    "gold_cap": 1.0
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "n3": {
+    "gold_cap": 1.6
+   },
+   "ops": [
+    {
+     "op": "pay_gold",
+     "amount": "gold_cost"
+    }
+   ],
+   "family": "greed",
+   "owner": "dragon",
+   "fly": true,
+   "model": "elder_dragon",
+   "ai": {
+    "keys": [
+     "big"
+    ],
+    "needs": {
+     "gold_above": 120
+    }
+   }
   }
  ]
 }

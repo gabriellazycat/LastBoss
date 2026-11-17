@@ -42,7 +42,7 @@ def export_g(root, path, height, budget=2500, anim=None, deform=None, rig=None, 
 
 
 vat.export = export_g
-SCRIPTS = {"build": "build.py", "plague": "creatures_plague.py", "dragon": "creatures_dragon.py", "lich": "export_lich.py", "bosses": "bosses_final.py"}
+SCRIPTS = {"build": "build.py", "plague": "creatures_plague.py", "dragon": "creatures_dragon.py", "lich": "export_lich.py", "new": "creatures_new.py", "bosses": "bosses_final.py"}
 path = os.path.join(V2, SCRIPTS[which])
 if which == "bosses":
     sys.argv = ["blender", path, "--", "--out=" + os.path.join(out, "_unused")] + rest

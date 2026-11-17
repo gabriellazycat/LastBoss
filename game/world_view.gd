@@ -29,6 +29,8 @@ const ACCENT := {
 	"ogre": Color(1.0, 0.55, 0.25), "mimic": Color(1.0, 0.8, 0.35), "ghost": Color(0.6, 0.85, 1.0),
 	"spectre": Color(0.3, 1.0, 0.95), "gargoyle_tower": Color(0.75, 0.7, 1.0), "werewolf": Color(0.9, 0.6, 0.4),
 	"scrap_golem": Color(1.0, 0.62, 0.2),
+	"ash_salamander": Color(1.0, 0.45, 0.15), "drakeling": Color(1.0, 0.4, 0.25), "brown_bear": Color(0.8, 0.55, 0.35),
+	"spitting_viper": Color(0.6, 1.0, 0.3), "ash_phoenix": Color(1.0, 0.6, 0.2), "bone_dragon": Color(0.6, 1.0, 0.9), "magma_golem": Color(1.0, 0.5, 0.15),
 }
 # Câmera: distância base, quanto ela afasta por unidade em campo (até 300) e o extra na arena.
 const CAM_DIST := 44.0 # também é o mínimo: o zoom só afasta (main.gd limita zoom a >= 0)
@@ -1678,7 +1680,7 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	_draw_followers(alpha, delta)
 	_draw_helper(alpha, delta)
 	var p := hero_pos(alpha)
-	var speed := Vector2(h.x - h.ox, h.y - h.oy).length() / sim.dt
+	var speed := 0.0 if sim.waiting_choice() else Vector2(h.x - h.ox, h.y - h.oy).length() / sim.dt
 	var walk := clampf(speed / 3.0, 0.0, 1.0)
 	var frozen := h.petrify_t > 0.0 or h.root_t > 0.0 or h.drink_t > 0.0
 	hero_root.position = p
@@ -1697,7 +1699,7 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	level_jump = maxf(0.0, level_jump - delta)
 	var jump := sin(clampf(level_jump / 0.6, 0.0, 1.0) * PI) * 0.8
 	body.position.y = absf(sp) * 0.1 * walk + jump
-	body.rotation.x = -0.12 * walk - hero_flash * 0.25
+	body.rotation.x = -0.12 * walk - hero_flash * 0.08
 	head.rotation.x = sin(walk_phase * 2.0) * 0.04
 	# Golpe: preparo e corte com rastro.
 	swing_t = maxf(0.0, swing_t - delta)
@@ -1715,10 +1717,16 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	arm_h.rotation = Vector3(lerpf(arm_h.rotation.x, up + sp * 0.15 * walk, clampf(delta * 10.0, 0.0, 1.0)), 0.35, 0)
 	arm_h.scale = Vector3(1.6, 1.3, 1.3) if h.shield_cos < 0.6 else Vector3.ONE
 	cape.rotation.x = 0.15 + walk * 0.5 + sin(sim.t * 3.0) * 0.06
-	hero_flash = maxf(0.0, hero_flash - delta * 5.0)
+	hero_flash = maxf(0.0, hero_flash - delta * 7.0)
 	var glow := 0.02 + h.level * 0.012
-	hero_mat.set_shader_parameter("emission_boost", 0.0 if h.petrify_t > 0.0 else glow)
-	hero_mat.set_shader_parameter("flash", hero_flash)
+	# O flash de dano é só um toque (17/11/2026): antes ia a 100% e, com golpes seguidos, o herói ficava branco.
+	var fl := hero_flash * 0.28
+	var mats: Array = [hero_mat]
+	if hero_rig_node != null and hero_rig_node.has_meta("mat"):
+		mats.append(hero_rig_node.get_meta("mat"))
+	for hm in mats:
+		hm.set_shader_parameter("emission_boost", 0.0 if h.petrify_t > 0.0 else glow)
+		hm.set_shader_parameter("flash", fl)
 	hero_light.light_energy = 1.0 + h.level * 0.06
 	fireflies.position = p
 
@@ -2468,7 +2476,8 @@ func handle_events(evs: Array) -> void:
 						dmg_acc["col"] = col
 					dmg_acc["v"] += v
 					dmg_acc["p"] = p
-				hero_flash = minf(1.0, hero_flash + clampf(v / 80.0, 0.2, 1.0))
+				if hero_flash < 0.15:   # sem empilhar: golpes seguidos não prendem o brilho
+					hero_flash = clampf(v / 80.0, 0.5, 1.0)
 				if v >= 100.0:
 					add_trauma(0.35)
 					_stop(0.06)

@@ -9,7 +9,7 @@ const FPS_CAPS := [0, 30, 60, 120, 144, 240]
 ## 4: o mundo pintado em guache S1 (guache chapado) vira o padrão (13/11/2026).
 ## 5: a interface "Mapa aberto" (look_hud 7) vira a padrão (13/11/2026).
 ## 6: as miniaturas pintadas em pincel seco (model_g 4, docs/MODELOS_GUACHE.md) viram o padrão (15/11/2026).
-const ART_REV := 6
+const ART_REV := 8
 
 static var v := defaults()
 # Chaves trocadas só nesta execução (--set=...), com o valor que estava salvo: save() grava o salvo, não o da execução.
@@ -34,7 +34,7 @@ static func defaults() -> Dictionary:
 		# S1-S3, T1-T3, C1-C3 (game/art/paint_look.gd). Escolhida pelo designer em 13/11: S1, guache chapado.
 		"paint_look": 1,
 		# Mundo como as cartas (15/11/2026, docs/MUNDO_COMO_CARTAS.md): A cor, B escuros, C papel; F6/F7/F8 no jogo.
-		"mundo_cor": true, "mundo_escuro": true, "mundo_papel": true,
+		"mundo_cor": false, "mundo_escuro": true, "mundo_papel": false,
 		# Miniaturas pintadas (15/11/2026, docs/MODELOS_GUACHE.md): 0 = desligado, 1..7 = versões V1..V7.
 		"model_g": 4,
 		# Versão do padrão de arte: quando sobe, quem já tinha configuração salva recebe a direção nova uma vez.
@@ -63,6 +63,10 @@ static func load_all() -> void:
 			keys += ["paint_look"]
 		if rev < 6:
 			keys += ["model_g"]
+		if rev < 7:
+			keys += ["mundo_cor"]  # 17/11/2026: ele prefere a cor viva (A desligada)
+		if rev < 8:
+			keys += ["mundo_escuro", "mundo_papel"]  # 17/11/2026: F7 ligado, F8 (grão) desligado
 		for k in keys:
 			v[k] = d[k]
 		v["art_rev"] = ART_REV
@@ -85,8 +89,21 @@ static func apply(tree: SceneTree) -> void:
 	_vol("SFX", v["sfx"])
 	TranslationServer.set_locale(v["language"])
 	Engine.max_fps = int(v["max_fps"])
-	tree.root.content_scale_factor = clampf(float(v["ui_scale"]), 0.8, 1.15)
-	if DisplayServer.get_name() == "headless":
+	var factor := clampf(float(v["ui_scale"]), 0.8, 1.15)
+	var headless := DisplayServer.get_name() == "headless"
+	if not is_equal_approx(tree.root.content_scale_factor, factor):
+		# Mudar a escala da interface não pode redimensionar a janela (17/11): guarda o tamanho e devolve depois.
+		var windowed := not headless and DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED
+		var keep := DisplayServer.window_get_size() if windowed else Vector2i.ZERO
+		tree.root.content_scale_factor = factor
+		if windowed and not Settings.v["fullscreen"]:
+			var restore := func():
+				if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED \
+						and DisplayServer.window_get_size() != keep:
+					DisplayServer.window_set_size(keep)
+			restore.call()
+			tree.process_frame.connect(restore, CONNECT_ONE_SHOT)
+	if headless:
 		return
 	var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if v["fullscreen"] else DisplayServer.WINDOW_MODE_WINDOWED
 	if DisplayServer.window_get_mode() != mode:

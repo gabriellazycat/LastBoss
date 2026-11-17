@@ -124,7 +124,12 @@
    "gold_mine": "F",
    "dragon_exchange": "L|Encharque o herói e incendeie-o em até 1 segundo",
    "ash_phoenix": "L|Termine 4 fases com 1000 de ouro",
-   "meteor_storm": "L|Jogue 80 feitiços de Fogo no total"
+   "meteor_storm": "L|Jogue 80 feitiços de Fogo no total",
+   "gold_dart": "F",
+   "coin_swarm": "F",
+   "gold_rain": "L|Gaste 3000 de ouro no total",
+   "gilded_golem": "L|Gaste 6000 de ouro no total",
+   "hoard_dragon": "L|Ganhe 10000 de ouro no total"
   }
  },
  "lich": {

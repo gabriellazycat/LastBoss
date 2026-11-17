@@ -159,6 +159,9 @@ def treasure_guard():
 # =============================================================== Dragão Ancião
 
 RS = (0.58, 0.12, 0.09); RSD = (0.3, 0.06, 0.07); BELLY = (0.95, 0.68, 0.28)
+MEM = (0.75, 0.3, 0.12)    # membrana das asas (creatures_new.py troca no Dragão de Ossos)
+EYEC = (1.0, 0.4, 0.1)
+SKEL = False               # asa só de dedos, sem membrana
 
 
 def _dragon_head(M=None, jaw_open=0.0):
@@ -181,7 +184,7 @@ def _dragon_head(M=None, jaw_open=0.0):
             u = box((sx * (0.1 - k * 0.003), -0.55 - k * 0.1, -0.24 - jaw_open * 0.3), (0.025, 0.025, 0.07), bevel=0.004, taper=(0.1, 0.2)); hard(u); setmat(u, toothm); H.append(u)
     hornm = mat("dhorn", BONE, 0.5)
     for sx in (-1, 1):
-        H += yellow_eye((sx * 0.2, -0.42, 0.17), 0.075, 28, sx, (1.0, 0.4, 0.1), RS)
+        H += yellow_eye((sx * 0.2, -0.42, 0.17), 0.075, 28, sx, EYEC, RS)
         hn = tube([(sx * 0.17, 0.0, 0.18), (sx * 0.33, 0.35, 0.34), (sx * 0.42, 0.8, 0.5), (sx * 0.36, 1.1, 0.42)], 0.08, 0.1, 18); setmat(hn, hornm); H.append(hn)
         hn2 = tube([(sx * 0.3, -0.1, 0.0), (sx * 0.5, 0.05, 0.05), (sx * 0.58, 0.28, 0.12)], 0.05, 0.1, 10); setmat(hn2, hornm); H.append(hn2)
         nr = sph((sx * 0.06, -1.27, -0.02), 0.03); setmat(nr, mat("shadow", SHADOW, 0.9)); H.append(nr)
@@ -201,6 +204,8 @@ def _wing(sx, spread=1.0):
     for t in tips:
         f = tube([tuple(wr), tuple((wr + t) / 2 + Vector((0, 0.0, 0.05))), tuple(t)], 0.05, 0.35, 10); setmat(f, bonem); W.append(f)
     cl = tube([tuple(wr), tuple(wr + Vector((sx * 0.1, -0.2, 0.18)))], 0.04, 0.3, 4); setmat(cl, mat("dhorn", BONE, 0.5)); W.append(cl)
+    if SKEL:
+        return W
     import bmesh as _bm
     root_ = sh + Vector((0, 0.3, -0.5))
     pts_ = [sh, el, wr] + tips + [root_]
@@ -218,7 +223,7 @@ def _wing(sx, spread=1.0):
     sm_ = mem.modifiers.new("sub", 'SUBSURF'); sm_.levels = 1; sm_.render_levels = 1
     so_ = mem.modifiers.new("sol", 'SOLIDIFY'); so_.thickness = 0.05
     apply_mods(mem); shade(mem)
-    paint(mem, lambda p, n: mix(RSD, (0.75, 0.3, 0.12), smoothstep(0.0, 4.0, abs(p.x)) * 0.5)); setmat(mem, mat("dmem", vcol=True, rough=0.6)); W.append(mem)
+    paint(mem, lambda p, n: mix(RSD, MEM, smoothstep(0.0, 4.0, abs(p.x)) * 0.5)); setmat(mem, mat("dmem", vcol=True, rough=0.6)); W.append(mem)
     return W
 
 

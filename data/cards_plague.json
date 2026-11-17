@@ -642,7 +642,7 @@
    },
    "owner": "plague",
    "family": "wild",
-   "model": "rat_horde"
+   "model": "spitting_viper"
   },
   {
    "id": "plague_carrion",
@@ -710,7 +710,7 @@
    },
    "owner": "plague",
    "family": "wild",
-   "model": "ogre"
+   "model": "brown_bear"
   },
   {
    "id": "pack_den",
@@ -802,7 +802,7 @@
      }
     ]
    },
-   "model": "werewolf"
+   "model": "alpha_beast"
   },
   {
    "id": "black_pestilence",

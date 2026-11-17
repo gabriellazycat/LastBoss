@@ -24,7 +24,12 @@
    "model": "mage_white",
    "hp_mult": 0.9,
    "damage_mult": 0.7,
-   "regen": 0.006,
+   "_doc_ward": "Conjura um escudo (ward) em si ou num amigo a até `range` m: pct da vida ATUAL do alvo, a cada `cooldown` s. Escolhe o amigo com a menor fração de vida (16/11/2026; troca da regeneração).",
+   "ward_cast": {
+    "pct": 0.006,
+    "cooldown": 5.0,
+    "range": 10.0
+   },
    "bless_next": 0.25,
    "shield": {
     "hp": 120,

@@ -49,6 +49,8 @@ const LEGACY := {
 	"brood_mother": "rat_horde", "corrupt_piper": "rat_king", "sewer_flood": "bat_nest", "kobold_scavengers": "rat_horde",
 	"trap_chest": "mimic", "furnace": "bone_totem", "raised_servant": "skeleton", "barricade": "gargoyle_tower",
 	"war_banner": "gargoyle_tower", "rat_burrow": "bat_nest", "ghoul": "skeleton", "fire_imp": "bat",
+	"ash_salamander": "ogre", "drakeling": "bat", "magma_golem": "scrap_golem", "ash_phoenix": "bat", "brown_bear": "ogre",
+	"spitting_viper": "rat_horde", "bone_dragon": "bat",   # 17/11/2026: modelos próprios em g_n (creatures_new.py)
 }
 
 

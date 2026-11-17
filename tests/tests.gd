@@ -71,7 +71,7 @@ func _ready() -> void:
 
 
 func t_data() -> void:
-	check(data.pool.size() == 112, "112 cartas na pool (%d)" % data.pool.size())
+	check(data.pool.size() == 117, "117 cartas na pool (%d)" % data.pool.size())
 	check(data.upgrades.size() == 15, "15 upgrades")
 	# Vilões (C3): dono válido em tudo; baralho inicial só com cartas do vilão ou comuns, liberadas com ele.
 	var owners := ["common"] + data.villain_ids
@@ -644,8 +644,8 @@ func t_meta() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var m := MetaSave.load_or_new(data, path)
 	check(m.villains == ["plague"] and m.villain == "plague" and not m.phase_open(2), "começa só com a Praga e a fase 2 fechada")
-	check(m.is_unlocked("rat_horde") and m.is_unlocked("rat_king") and m.is_unlocked("web") and not m.is_unlocked("ogre") and not m.is_unlocked("torch"), "coleção inicial: baralho base e cartas liberadas; o resto bloqueado por desafio")
-	check(m.win_phase(1) == "dragon" and m.villains.has("dragon") and m.is_unlocked("torch") and m.is_unlocked("hell_hound") and not m.is_unlocked("mimic") and m.phase_open(2), "vencer a fase 1 libera o Dragão e as cartas liberadas dele")
+	check(m.is_unlocked("rat_horde") and m.is_unlocked("rat_king") and m.is_unlocked("web") and not m.is_unlocked("ogre") and not m.is_unlocked("gold_dart"), "coleção inicial: baralho base e cartas liberadas; o resto bloqueado por desafio")
+	check(m.win_phase(1) == "dragon" and m.villains.has("dragon") and m.is_unlocked("gold_dart") and m.is_unlocked("hell_hound") and not m.is_unlocked("mimic") and m.phase_open(2), "vencer a fase 1 libera o Dragão e as cartas liberadas dele")
 	m.win_phase(3)
 	check(m.rare_choices == 0, "fase 3 não paga mais rara à escolha")
 	# Save antigo de Pactos: migra.
@@ -2511,7 +2511,7 @@ func t_dragon_c6() -> void:
 	CardsDragon.on_tick(s)
 	check(s.gold == 0.0, "Guarda do Tesouro: o ouro não fica negativo (%.1f)" % s.gold)
 	# Custo em ouro: Moedas Amaldiçoadas (15) e Batedor Goblin (30) ficam bloqueados sem ouro e cobram ao jogar.
-	for gc in [["cursed_coins", 15.0], ["goblin_scout", 30.0]]:
+	for gc in [["cursed_coins", 15.0], ["goblin_scout", 30.0], ["coin_swarm", 15.0], ["gold_rain", 40.0], ["gilded_golem", 35.0], ["hoard_dragon", 120.0]]:
 		var sg := _sim(5, "dragon")
 		sg.elixir = 20.0
 		sg.hand[0] = _inst(gc[0])

@@ -678,7 +678,7 @@ HERO_besteiro,Besteiro,Crossbowman
 HERO_guardiao,Guardião,Guardian
 HEROD_escudeiro,Escudo na frente: ataque pelos lados e por trás.,Shield in front: attack from the sides and behind.
 HEROD_arqueira,Atira de longe e não tem escudo: frágil quando cercada.,Shoots from afar and has no shield: fragile when surrounded.
-HEROD_cleriga,"Cura a si mesma com o tempo e, ao cair, abençoa o próximo herói (+25% de vida).","Heals herself over time and, when she falls, blesses the next hero (+25% health)."
+HEROD_cleriga,"A cada 5 s conjura um escudo de 0,6% da vida atual em si ou no amigo mais ferido; ao cair, abençoa o próximo herói (+25% de vida).","Every 5 s casts a shield worth 0.6% of current health on herself or the most wounded ally; when she falls, blesses the next hero (+25% health)."
 HEROD_mago,"Golpe que explode em área: destrói bandos, mas é lento e frágil.","Attack that explodes in an area: wrecks packs, but slow and fragile."
 HEROD_assassino,"Corpo a corpo, rápido e frágil: golpe muito forte num alvo só.","Fast, fragile melee: a very strong hit on a single target."
 HEROD_barbaro,Golpe largo que acerta uma roda de monstros; sem escudo.,Wide swing that hits a ring of monsters; no shield.
@@ -1170,62 +1170,6 @@ UI_FAIR_RELIC,Relíquia: {r},Relic: {r}
 UI_FAIR_COST,custa {n},costs {n}
 UI_FAIR_pick_upgrade,Subir nível de uma carta,Level up a card
 UI_FAIR_pick_remove,Tirar uma carta do baralho,Remove a card from the deck
-UNLOCK_alpha_beast,Tenha 30 ratos em campo ao mesmo tempo,Have 30 rats on the field at once
-UNLOCK_arcane_apocalypse,Jogue 7 feitiços em 20 segundos,Play 7 spells within 20 seconds
-UNLOCK_arcane_spark,Jogue 120 feitiços de Sombra no total,Play 120 Shadow spells in total
-UNLOCK_ash_phoenix,Termine 4 fases com 1000 de ouro,Finish 4 phases with 1000 gold
-UNLOCK_bat_cloud,Tenha 12 bichos de Bando em campo ao mesmo tempo em 2 fases diferentes,"Have 12 Pack creatures on the field at once, in 2 different phases"
-UNLOCK_bat_nest,Tenha 3 estruturas em campo ao mesmo tempo em 3 fases diferentes,"Have 3 structures on the field at once, in 3 different phases"
-UNLOCK_black_pestilence,Jogue 150 feitiços no total,Play 150 spells in total
-UNLOCK_blood_tax,Jogue 100 feitiços no total,Play 100 spells in total
-UNLOCK_boiling_oil,Mantenha o herói Encharcado por 75 segundos no total,Keep the hero Soaked for 75 seconds in total
-UNLOCK_bone_colossus,Faça 3000 dos seus monstros morrerem no total,Have 3000 of your monsters die in total
-UNLOCK_bone_dragon,Derrote 35 heróis no total,Defeat 35 heroes in total
-UNLOCK_bone_totem,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_brown_bear,Derrote 20 heróis no total,Defeat 20 heroes in total
-UNLOCK_burn_village,Queime o herói por 150 segundos no total,Burn the hero for 150 seconds in total
-UNLOCK_cave_troll,Vença a primeira fase,Win the first phase
-UNLOCK_corrupt_piper,Faça 2000 ratos morrerem no total,Have 2000 of your rats die in total
-UNLOCK_devour,Vença uma fase jogando só 10 feitiços,Win a phase playing only 10 spells
-UNLOCK_dragon_exchange,Encharque o herói e incendeie-o em até 1 segundo,Soak the hero and set them on fire within 1 second(s)
-UNLOCK_elder_dragon,Tenha 5 monstros de Fogo em campo ao mesmo tempo,Have 5 Fire monsters on the field at once
-UNLOCK_ember_rain,"Jogue 25 feitiços numa mesma fase, em 3 fases diferentes","Play 25 spells in a single phase, in 3 different phases"
-UNLOCK_eruption,Vença uma fase sem jogar estruturas,Win a phase without playing structures
-UNLOCK_eternal_army,Tenha 12 mortos-vivos em campo ao mesmo tempo em 5 fases diferentes,"Have 12 undead on the field at once, in 5 different phases"
-UNLOCK_fallen_healer,Derrote um herói perdendo no máximo 5 monstros,Defeat a hero while losing at most 5 monsters
-UNLOCK_flooded_pit,"Jogue 5 cartas Temporárias numa mesma fase, em 4 fases diferentes","Play 5 Temporary cards in a single phase, in 4 different phases"
-UNLOCK_forbidden_library,Jogue 200 cartas Temporárias no total,Play 200 Temporary cards in total
-UNLOCK_furnace,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_ghost,Tenha 40 esqueletos em campo ao mesmo tempo em 3 fases diferentes,"Have 40 skeletons on the field at once, in 3 different phases"
-UNLOCK_gold_avalanche,Ganhe 6000 de ouro no total,Earn 6000 gold in total
-UNLOCK_gold_bait,Faça o herói parar nas Moedas Malditas 25 vezes no total,Make the hero stop at the Cursed Coins 25 times in total
-UNLOCK_hollow_armor,Tenha 20 de Elixir máximo em 4 fases diferentes,"Reach 20 maximum Elixir, in 4 different phases"
-UNLOCK_hunt_instinct,Jogue 40 feitiços no total,Play 40 spells in total
-UNLOCK_life_drain,"Aplique 5 Maldições no herói numa mesma fase, em 2 fases diferentes","Put 5 Curses on the hero in a single phase, in 2 different phases"
-UNLOCK_magma_golem,Tenha 10 monstros seus em campo ao mesmo tempo em 4 fases diferentes,"Have 10 monsters on the field at once, in 4 different phases"
-UNLOCK_meteor_storm,Jogue 80 feitiços de Fogo no total,Play 80 Fire spells in total
-UNLOCK_mimic,Jogue 60 estruturas no total,Play 60 structures in total
-UNLOCK_molten_gold,Gaste 2000 de Elixir no total,Spend 2000 Elixir in total
-UNLOCK_mother_nest,Tenha 20 bichos de Bando em campo ao jogar um feitiço em 3 fases diferentes,"Have 20 Pack creatures on the field when you play a spell, in 3 different phases"
-UNLOCK_ogre,Jogue 600 monstros no total,Play 600 monsters in total
-UNLOCK_pack_den,Jogue 40 estruturas no total,Play 40 structures in total
-UNLOCK_plague_carrion,Tenha 40 monstros seus em campo ao mesmo tempo em 3 fases diferentes,"Have 40 monsters on the field at once, in 3 different phases"
-UNLOCK_primal_beast,Jogue 600 cartas de Bando no total,Play 600 Pack cards in total
-UNLOCK_rat_tide,"Use a mesma carta de monstro 40 vezes numa mesma fase, em 3 fases diferentes","Play the same monster card 40 times in a single phase, in 3 different phases"
-UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo em 2 fases diferentes,"Stack 5 Plague on the hero at once, in 2 different phases"
-UNLOCK_ruin_titan,Vença a segunda fase,Win the second phase
-UNLOCK_sewer_flood,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_shadow_echo,Jogue 5 feitiços de Sombra em 15 segundos,Play 5 Shadow spells within 15 seconds
-UNLOCK_shadow_mark,Jogue 1000 cartas no total,Play 1000 cards in total
-UNLOCK_slime,Tenha 2 Feras e 8 ratos em campo ao mesmo tempo,Have 2 Beasts and 8 rats on the field at once
-UNLOCK_soul_collector,Cause 2000 de dano ao herói em menos de 4 segundos,Deal 2000 damage to the hero in under 4 seconds
-UNLOCK_soul_feast,Jogue 400 feitiços no total,Play 400 spells in total
-UNLOCK_soul_harvest,Vença 2 fases sem jogar estruturas,Win 2 phases without playing structures
-UNLOCK_soul_storm,Acerte o herói com 6 feitiços diferentes numa mesma fase,Hit the hero with 6 different spells in a single phase
-UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos em 2 fases diferentes,"Soak the hero and set them on fire within 8 second(s), in 2 different phases"
-UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
-UNLOCK_spitting_viper,Jogue 150 Feras no total,Play 150 Beasts in total
-UNLOCK_tar_net,Gaste 2000 de ouro no total,Spend 2000 gold in total
 UI_SCENE_REWARDS,{n} recompensa(s) para escolher,{n} reward(s) to choose
 UI_SCENE_RELIC,1 relíquia para escolher,1 relic to choose
 UI_SCENE_NONE,Sem recompensa,No reward
@@ -1260,3 +1204,77 @@ UI_ST_gold,Ouro ganho,Gold earned
 UI_ST_relics,Relíquias,Relics
 UI_COLLECTION_OWNED,Cartas liberadas: {n} de {t},Cards unlocked: {n} of {t}
 UI_PHASE_NEXT_REGION,Libera a próxima região: {r},Unlocks the next region: {r}
+CARD_gold_dart,Dardo de Ouro,Gold Dart
+DESC_gold_dart,"Custa {gold_cost} de [[gold|Ouro]]. Lança uma moeda afiada: {damage} de dano no herói mais perto.","Costs {gold_cost} [[gold|Gold]]. Hurls a sharpened coin: {damage} damage to the nearest hero."
+N3_gold_dart,N3: {damage} de dano.,L3: {damage} damage.
+CARD_coin_swarm,Moedas Vivas,Living Coins
+DESC_coin_swarm,"Custa {gold_cost} de [[gold|Ouro]]. Bando de moedas enfeitiçadas. Cobiça: +20% de vida e dano para cada {gold_step} de ouro que você tem (até +100%).","Costs {gold_cost} [[gold|Gold]]. A flock of bewitched coins. Greed: +20% health and damage for every {gold_step} gold you have (up to +100%)."
+N3_coin_swarm,N3: a Cobiça chega a +160%.,L3: Greed reaches +160%.
+CARD_gold_rain,Chuva de Ouro Fundido,Molten Gold Rain
+DESC_gold_rain,"Custa {gold_cost} de [[gold|Ouro]]. Chove ouro derretido por {duration} s: {dps} de dano de [[fire|Fogo]] por segundo e o herói fica lento.","Costs {gold_cost} [[gold|Gold]]. Molten gold rains for {duration} s: {dps} [[fire|Fire]] damage per second and the hero is slowed."
+N3_gold_rain,N3: {dps} de dano por segundo.,L3: {dps} damage per second.
+CARD_gilded_golem,Golem Dourado,Gilded Golem
+DESC_gilded_golem,"Custa {gold_cost} de [[gold|Ouro]]. Golem de ouro maciço. Cobiça: +15% de vida e dano para cada {gold_step} de ouro que você tem (até +90%).","Costs {gold_cost} [[gold|Gold]]. A golem of solid gold. Greed: +15% health and damage for every {gold_step} gold you have (up to +90%)."
+N3_gilded_golem,N3: a Cobiça chega a +150%.,L3: Greed reaches +150%.
+CARD_hoard_dragon,Dragão do Tesouro,Hoard Dragon
+DESC_hoard_dragon,"Custa {gold_cost} de [[gold|Ouro]]. Dragão que dormia sobre o tesouro. Voa. Cobiça: +20% de vida e dano para cada {gold_step} de ouro que você tem (até +100%).","Costs {gold_cost} [[gold|Gold]]. A dragon that slept on the hoard. Flies. Greed: +20% health and damage for every {gold_step} gold you have (up to +100%)."
+N3_hoard_dragon,N3: a Cobiça chega a +160%.,L3: Greed reaches +160%.
+UNLOCK_alpha_beast,Tenha 30 ratos em campo ao mesmo tempo,Have 30 rats on the field at once
+UNLOCK_arcane_apocalypse,Jogue 7 feitiços em 20 segundos,Play 7 spells within 20 seconds
+UNLOCK_arcane_spark,Jogue 120 feitiços de Sombra no total,Play 120 Shadow spells in total
+UNLOCK_ash_phoenix,Termine 4 fases com 1000 de ouro,Finish 4 phases with 1000 gold
+UNLOCK_bat_cloud,Tenha 12 bichos de Bando em campo ao mesmo tempo em 2 fases diferentes,"Have 12 Pack creatures on the field at once, in 2 different phases"
+UNLOCK_bat_nest,Tenha 3 estruturas em campo ao mesmo tempo em 3 fases diferentes,"Have 3 structures on the field at once, in 3 different phases"
+UNLOCK_black_pestilence,Jogue 150 feitiços no total,Play 150 spells in total
+UNLOCK_blood_tax,Jogue 100 feitiços no total,Play 100 spells in total
+UNLOCK_boiling_oil,Mantenha o herói Encharcado por 75 segundos no total,Keep the hero Soaked for 75 seconds in total
+UNLOCK_bone_colossus,Faça 3000 dos seus monstros morrerem no total,Have 3000 of your monsters die in total
+UNLOCK_bone_dragon,Derrote 35 heróis no total,Defeat 35 heroes in total
+UNLOCK_bone_totem,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_brown_bear,Derrote 20 heróis no total,Defeat 20 heroes in total
+UNLOCK_burn_village,Queime o herói por 150 segundos no total,Burn the hero for 150 seconds in total
+UNLOCK_cave_troll,Vença a primeira fase,Win the first phase
+UNLOCK_corrupt_piper,Faça 2000 ratos morrerem no total,Have 2000 of your rats die in total
+UNLOCK_devour,Vença uma fase jogando só 10 feitiços,Win a phase playing only 10 spells
+UNLOCK_dragon_exchange,Encharque o herói e incendeie-o em até 1 segundo,Soak the hero and set them on fire within 1 second(s)
+UNLOCK_elder_dragon,Tenha 5 monstros de Fogo em campo ao mesmo tempo,Have 5 Fire monsters on the field at once
+UNLOCK_ember_rain,"Jogue 25 feitiços numa mesma fase, em 3 fases diferentes","Play 25 spells in a single phase, in 3 different phases"
+UNLOCK_eruption,Vença uma fase sem jogar estruturas,Win a phase without playing structures
+UNLOCK_eternal_army,Tenha 12 mortos-vivos em campo ao mesmo tempo em 5 fases diferentes,"Have 12 undead on the field at once, in 5 different phases"
+UNLOCK_fallen_healer,Derrote um herói perdendo no máximo 5 monstros,Defeat a hero while losing at most 5 monsters
+UNLOCK_flooded_pit,"Jogue 5 cartas Temporárias numa mesma fase, em 4 fases diferentes","Play 5 Temporary cards in a single phase, in 4 different phases"
+UNLOCK_forbidden_library,Jogue 200 cartas Temporárias no total,Play 200 Temporary cards in total
+UNLOCK_furnace,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_ghost,Tenha 40 esqueletos em campo ao mesmo tempo em 3 fases diferentes,"Have 40 skeletons on the field at once, in 3 different phases"
+UNLOCK_gilded_golem,Gaste 6000 de ouro no total,Spend 6000 gold in total
+UNLOCK_gold_avalanche,Ganhe 6000 de ouro no total,Earn 6000 gold in total
+UNLOCK_gold_bait,Faça o herói parar nas Moedas Malditas 25 vezes no total,Make the hero stop at the Cursed Coins 25 times in total
+UNLOCK_gold_rain,Gaste 3000 de ouro no total,Spend 3000 gold in total
+UNLOCK_hoard_dragon,Ganhe 10000 de ouro no total,Earn 10000 gold in total
+UNLOCK_hollow_armor,Tenha 20 de Elixir máximo em 4 fases diferentes,"Reach 20 maximum Elixir, in 4 different phases"
+UNLOCK_hunt_instinct,Jogue 40 feitiços no total,Play 40 spells in total
+UNLOCK_life_drain,"Aplique 5 Maldições no herói numa mesma fase, em 2 fases diferentes","Put 5 Curses on the hero in a single phase, in 2 different phases"
+UNLOCK_magma_golem,Tenha 10 monstros seus em campo ao mesmo tempo em 4 fases diferentes,"Have 10 monsters on the field at once, in 4 different phases"
+UNLOCK_meteor_storm,Jogue 80 feitiços de Fogo no total,Play 80 Fire spells in total
+UNLOCK_mimic,Jogue 60 estruturas no total,Play 60 structures in total
+UNLOCK_molten_gold,Gaste 2000 de Elixir no total,Spend 2000 Elixir in total
+UNLOCK_mother_nest,Tenha 20 bichos de Bando em campo ao jogar um feitiço em 3 fases diferentes,"Have 20 Pack creatures on the field when you play a spell, in 3 different phases"
+UNLOCK_ogre,Jogue 600 monstros no total,Play 600 monsters in total
+UNLOCK_pack_den,Jogue 40 estruturas no total,Play 40 structures in total
+UNLOCK_plague_carrion,Tenha 40 monstros seus em campo ao mesmo tempo em 3 fases diferentes,"Have 40 monsters on the field at once, in 3 different phases"
+UNLOCK_primal_beast,Jogue 600 cartas de Bando no total,Play 600 Pack cards in total
+UNLOCK_rat_tide,"Use a mesma carta de monstro 40 vezes numa mesma fase, em 3 fases diferentes","Play the same monster card 40 times in a single phase, in 3 different phases"
+UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo em 2 fases diferentes,"Stack 5 Plague on the hero at once, in 2 different phases"
+UNLOCK_ruin_titan,Vença a segunda fase,Win the second phase
+UNLOCK_sewer_flood,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_shadow_echo,Jogue 5 feitiços de Sombra em 15 segundos,Play 5 Shadow spells within 15 seconds
+UNLOCK_shadow_mark,Jogue 1000 cartas no total,Play 1000 cards in total
+UNLOCK_slime,Tenha 2 Feras e 8 ratos em campo ao mesmo tempo,Have 2 Beasts and 8 rats on the field at once
+UNLOCK_soul_collector,Cause 2000 de dano ao herói em menos de 4 segundos,Deal 2000 damage to the hero in under 4 seconds
+UNLOCK_soul_feast,Jogue 400 feitiços no total,Play 400 spells in total
+UNLOCK_soul_harvest,Vença 2 fases sem jogar estruturas,Win 2 phases without playing structures
+UNLOCK_soul_storm,Acerte o herói com 6 feitiços diferentes numa mesma fase,Hit the hero with 6 different spells in a single phase
+UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos em 2 fases diferentes,"Soak the hero and set them on fire within 8 second(s), in 2 different phases"
+UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
+UNLOCK_spitting_viper,Jogue 150 Feras no total,Play 150 Beasts in total
+UNLOCK_tar_net,Gaste 2000 de ouro no total,Spend 2000 gold in total

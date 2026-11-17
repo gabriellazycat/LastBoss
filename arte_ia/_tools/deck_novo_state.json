@@ -601,5 +601,30 @@
   "seed": 1000,
   "den": 0.62,
   "dir": "final_novo"
+ },
+ "gold_dart": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "coin_swarm": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "gold_rain": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "gilded_golem": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
+ },
+ "hoard_dragon": {
+  "seed": 1000,
+  "den": 0.62,
+  "dir": "final_novo"
  }
 }

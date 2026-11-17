@@ -316,6 +316,12 @@ func _water_pass(prev: Dictionary) -> void:
 			units.py[i] = q.y
 
 
+## Mundo parado esperando uma escolha (oferta, rota ou relíquia de ato): o passo não anda, então a
+## interpolação visual não pode seguir oscilando entre a posição velha e a nova (17/11/2026: herói tremendo).
+func waiting_choice() -> bool:
+	return act_pending or (pause_on_offer and (offers.size() > 0 or route_wait))
+
+
 func step() -> void:
 	_refill_hand()
 	if phase == K.Phase.OVER:
