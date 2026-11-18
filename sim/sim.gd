@@ -1744,7 +1744,7 @@ func kill_unit(i: int, cause: int) -> void:
 			if not _golem_absorb(i, x, y) and not _relic_revive(i, x, y, c):
 				_totem_revive(i, x, y)
 	# Gatilho "ao morrer" declarado em dados (data/cards.json "on_death"; docs/CARD_FX.md).
-	if not c.on_death.is_empty() and (cause == K.Death.HERO or cause == K.Death.SELF):
+	if not c.on_death.is_empty() and (c.on_death_any or cause == K.Death.HERO or cause == K.Death.SELF):
 		CardFxLib.run(self, CardFxLib.unit_ctx(c, int(units.lvl[i]), units.uid[i]), c.on_death, x, y)
 	emit(K.Ev.DEATH, x, y, di, i)
 	units.release(i)

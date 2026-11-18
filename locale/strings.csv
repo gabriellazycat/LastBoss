@@ -829,6 +829,8 @@ DESC_cave_troll,Regenera {regen_pct}% da vida por segundo; arremessa pedras.,Reg
 DESC_ruin_titan,O golpe vira um pisão em área que atordoa por {stomp_stun} s (a cada {stomp_cd} s).,Its blow becomes an area stomp that stuns for {stomp_stun} s (every {stomp_cd} s).
 CARD_rat_brute,Ratazana,Brute Rat
 DESC_rat_brute,"Gorda e resistente; mordendo o herói, aplica {peste} de [[plague|Peste]] por segundo.","Fat and tough; while biting the hero, adds {peste} [[plague|Plague]] per second."
+CARD_male_rat,Rato Macho?,Male Rat?
+DESC_male_rat,"Lento e fraco. Ao morrer, de qualquer forma, ganhe {elixir} de elixir.","Slow and weak. When it dies, in any way, gain {elixir} elixir."
 CARD_infected_bite,Mordida Infectada,Infected Bite
 DESC_infected_bite,"Por {duration} s, o [[pack|Bando]] a até {radius} m aplica +{extra} de [[plague|Peste]] por segundo mordendo.","For {duration} s, [[pack|Pack]] creatures within {radius} m add +{extra} [[plague|Plague]] per second of biting."
 N3_infected_bite,N3: +{extra} de Peste por segundo.,L3: +{extra} Plague per second.
@@ -1255,6 +1257,7 @@ UNLOCK_hollow_armor,Tenha 20 de Elixir máximo em 4 fases diferentes,"Reach 20 m
 UNLOCK_hunt_instinct,Jogue 40 feitiços no total,Play 40 spells in total
 UNLOCK_life_drain,"Aplique 5 Maldições no herói numa mesma fase, em 2 fases diferentes","Put 5 Curses on the hero in a single phase, in 2 different phases"
 UNLOCK_magma_golem,Tenha 10 monstros seus em campo ao mesmo tempo em 4 fases diferentes,"Have 10 monsters on the field at once, in 4 different phases"
+UNLOCK_male_rat,Faça 1000 ratos morrerem no total,Have 1000 of your rats die in total
 UNLOCK_meteor_storm,Jogue 80 feitiços de Fogo no total,Play 80 Fire spells in total
 UNLOCK_mimic,Jogue 60 estruturas no total,Play 60 structures in total
 UNLOCK_molten_gold,Gaste 2000 de Elixir no total,Spend 2000 Elixir in total

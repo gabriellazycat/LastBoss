@@ -226,6 +226,12 @@
    "n": 10,
    "runs": 4
   },
+  "male_rat": {
+   "kind": "died",
+   "fam": "rat",
+   "n": 1000,
+   "total": true
+  },
   "meteor_storm": {
    "kind": "plays",
    "fam": "fire_spell",

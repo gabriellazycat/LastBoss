@@ -31,6 +31,41 @@
    "family": "pack"
   },
   {
+   "id": "male_rat",
+   "category": "field",
+   "type": "monster",
+   "tags": [
+    "pack"
+   ],
+   "archetype": "chaser",
+   "rarity": "rare",
+   "cost": 0,
+   "count": 1,
+   "xp_parts": 1,
+   "hp": 40,
+   "dps": 2,
+   "attack_interval": 0.25,
+   "speed": 1.5,
+   "range": 1.0,
+   "fx": {
+    "elixir": 2
+   },
+   "lvl": [
+    "hp",
+    "dps"
+   ],
+   "owner": "plague",
+   "family": "pack",
+   "model": "rat_brute",
+   "on_death_any": true,
+   "on_death": [
+    {
+     "op": "elixir",
+     "amount": "elixir"
+    }
+   ]
+  },
+  {
    "id": "infected_bite",
    "category": "field",
    "type": "spell",

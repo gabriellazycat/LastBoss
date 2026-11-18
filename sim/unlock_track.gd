@@ -9,7 +9,7 @@ extends RefCounted
 const SAMPLE_EVERY := 8   # amostra o campo a cada N passos (não precisa de todo passo)
 
 ## Famílias de unidades (por id da carta ou da unidade auxiliar).
-const RAT_IDS := ["rat", "rat_horde", "rabid_rats", "rat_brute", "rat_tide"]
+const RAT_IDS := ["rat", "rat_horde", "rabid_rats", "rat_brute", "rat_tide", "male_rat"]
 const BAT_IDS := ["bat", "bat_cloud"]
 const SKEL_IDS := ["skeleton", "bone_legion", "skeleton_archers"]
 

@@ -21,7 +21,7 @@ Campos novos da carta: `"owner": "plague" | "dragon" | "lich" | "common"` (obrig
 
 ## Ops
 
-`"ops": [ {"op": "...", ...}, ... ]` roda ao jogar; `"on_death": [...]` roda quando uma unidade da carta morre pelo herói ou explodindo (no ponto da morte, com o nível da unidade, sem Pacto nem Veterano).
+`"ops": [ {"op": "...", ...}, ... ]` roda ao jogar; `"on_death": [...]` roda quando uma unidade da carta morre pelo herói ou explodindo (no ponto da morte, com o nível da unidade, sem Pacto nem Veterano). Com `"on_death_any": true` roda em qualquer morte, inclusive sacrifício e expiração (Rato Macho?, 18/11/2026).
 
 **Parâmetro numérico**: número literal (`2.5`) ou o nome de uma chave do `fx` da carta (`"damage"`), que vale `fxv(chave, nível)`, isto é, já cresce com `lvl` e troca pelo `n3`. Prefira chaves do `fx`: a planilha e o nível continuam funcionando.
 

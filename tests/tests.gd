@@ -71,7 +71,7 @@ func _ready() -> void:
 
 
 func t_data() -> void:
-	check(data.pool.size() == 117, "117 cartas na pool (%d)" % data.pool.size())
+	check(data.pool.size() == 118, "118 cartas na pool (%d)" % data.pool.size())
 	check(data.upgrades.size() == 15, "15 upgrades")
 	# Vilões (C3): dono válido em tudo; baralho inicial só com cartas do vilão ou comuns, liberadas com ele.
 	var owners := ["common"] + data.villain_ids

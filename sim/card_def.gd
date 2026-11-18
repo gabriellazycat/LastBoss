@@ -32,6 +32,7 @@ var growth := 0.25         # +25% por nível (rules.card_levels.growth)
 var owner := "common"      # vilão dono da carta: plague, dragon, lich ou common (sim/cards/<dono>.gd)
 var ops: Array = []        # efeito declarado em dados, rodado por CardFxLib ao jogar (docs/CARD_FX.md)
 var on_death: Array = []   # ops rodadas por CardFxLib quando uma unidade desta carta morre
+var on_death_any := false  # true: on_death roda em qualquer morte (sacrifício e expiração também), não só herói/sozinha
 var ai: Dictionary = {}    # como os bots jogam a carta (docs/CARD_FX.md, "Vocabulário de ai")
 var ai_keys: Array = []    # ai.keys: rótulos que outras cartas procuram (combos)
 
@@ -61,6 +62,7 @@ static func from_dict(d: Dictionary, i: int, cat_override := "") -> CardDef:
 	c.owner = str(d.get("owner", "common"))
 	c.ops = d.get("ops", [])
 	c.on_death = d.get("on_death", [])
+	c.on_death_any = bool(d.get("on_death_any", false))
 	c.ai = d.get("ai", {})
 	c.ai_keys = c.ai.get("keys", [])
 	c.fly = bool(d.get("fly", false))
