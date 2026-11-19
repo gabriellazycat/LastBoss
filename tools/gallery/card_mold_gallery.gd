@@ -29,10 +29,11 @@ func _ready() -> void:
 		["rat_horde", 1, []], ["rat_burrow", 1, []], ["rat_king", 3, []], ["rat_king", 1, ["cheap"]], ["rat_king", 1, ["veteran"]],
 		["rat_king", 1, ["explosive"]], ["rat_king", 1, ["cursed"]], ["rat_king", 1, ["shadowy"]], ["rat_king", 3, ["explosive"]], ["rat_king", 2, ["veteran", "cursed"]],
 	]
-	if page == 3:
-		cases = [["rat_king", 1, ["explosive"]], ["rat_king", 2, ["explosive"]], ["rat_king", 3, ["explosive"]]]
+	var m3 := "leech" if page == 4 else "explosive"   # página 4: o Rouba-vida nos níveis 1, 2 e 3
+	if page >= 3:
+		cases = [["rat_king", 1, [m3]], ["rat_king", 2, [m3]], ["rat_king", 3, [m3]]]
 	var grid := GridContainer.new()
-	grid.columns = 5 if page == 1 else (3 if page == 3 else 10)
+	grid.columns = 5 if page == 1 else (3 if page >= 3 else 10)
 	grid.add_theme_constant_override("h_separation", 30 if page == 1 else 10)
 	grid.add_theme_constant_override("v_separation", 26)
 	grid.position = Vector2(34, 24)
@@ -43,7 +44,7 @@ func _ready() -> void:
 		var cost := maxi(d.cost_at(c[1]) - (1 if c[2].has("cheap") else 0), 0)
 		if page == 1:
 			grid.add_child(UiKit.card(d, cost, names, "", 250.0, c[1]))
-		elif page == 3:
+		elif page >= 3:
 			grid.add_child(UiKit.card(d, cost, names, "", 300.0, c[1]))
 		else:
 			grid.add_child(UiKit.mini_card(d, cost, names, "1", 124.0, 158.0, true, c[1]))
@@ -56,7 +57,7 @@ func _ready() -> void:
 			var d2: CardDef = data.card(id)
 			if d2 != null:
 				row2.add_child(UiKit.card(d2, d2.cost, [], "", 210.0, 1))
-	if page == 3:
+	if page >= 3:
 		grid.add_theme_constant_override("h_separation", 70)
 		grid.position = Vector2(60, 40)
 		var row3 := HBoxContainer.new()
@@ -65,7 +66,7 @@ func _ready() -> void:
 		add_child(row3)
 		for lv in [1, 2, 3]:
 			var d3: CardDef = data.card("rat_king")
-			row3.add_child(UiKit.mini_card(d3, d3.cost_at(lv), [TranslationServer.translate("MOD_explosive")], "", 150.0, 190.0, true, lv))
+			row3.add_child(UiKit.mini_card(d3, d3.cost_at(lv), [TranslationServer.translate("MOD_" + m3)], "", 150.0, 190.0, true, lv))
 	if args.has("out") and args.has("frames"):
 		Engine.max_fps = 60   # quadro N = N/60 s, para os instantes da animação valerem em qualquer máquina
 		var done := 0

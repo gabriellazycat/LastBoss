@@ -86,6 +86,7 @@ var offer_box: VBoxContainer   # linhas (HBox) de cartas, dentro de offer_scroll
 var offer_scroll: ScrollContainer
 var offer_sub: Label
 var offer_skip: Button
+var offer_gold: Label
 var offer_keys: Label
 var gold_label: Label
 var offer_sig := ""
@@ -99,6 +100,7 @@ var unlock_result: Dictionary = {}   # cartas liberadas e progresso dos desafios
 var pause_layer: Control
 var pause_menu: VBoxContainer
 var pause_deck: GridContainer
+var pause_deck_scroll: ScrollContainer
 var pause_build: GridContainer
 var pause_time: Label
 var settings: SettingsPanel
@@ -484,6 +486,10 @@ func _build_offer() -> void:
 	offer_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	offer_sub = UiKit.label(19, UiKit.TEXT, 3)
 	offer_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Ouro à vista nas ofertas de evento (a pilha da direita some com a oferta; as opções pedem ouro).
+	offer_gold = UiKit.label(22, UiKit.GOLD, 4)
+	offer_gold.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	offer_gold.visible = false
 	var sub := UiKit.label(16, UiKit.MUTED, 3)
 	sub.text = "UI_OFFER_KEYS"
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -525,6 +531,7 @@ func _build_offer() -> void:
 		v.add_child(offer_title)
 		v.add_child(offer_sub)
 		v.add_child(sub)
+	v.add_child(offer_gold)
 	v.add_child(offer_scroll)
 	v.add_child(offer_skip)
 	offer_layer.add_child(v)
@@ -583,7 +590,11 @@ func _build_pause() -> void:
 	pause_deck.columns = 5
 	pause_deck.add_theme_constant_override("h_separation", 8)
 	pause_deck.add_theme_constant_override("v_separation", 8)
-	iv.add_child(pause_deck)
+	# Baralho grande rola dentro de uma caixa de altura limitada (como _fit_offer), em vez de empurrar o painel.
+	pause_deck_scroll = ScrollContainer.new()
+	pause_deck_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	pause_deck_scroll.add_child(pause_deck)
+	iv.add_child(pause_deck_scroll)
 	var bh := UiKit.title(26)
 	bh.text = "UI_HERO_BUILD"
 	iv.add_child(bh)
@@ -647,19 +658,25 @@ func _build_result() -> void:
 	var br := HBoxContainer.new()
 	br.alignment = BoxContainer.ALIGNMENT_CENTER
 	br.add_theme_constant_override("separation", 14)
-	result_btn = Button.new()
+	# Segurar 1 s (HoldButton): clicar sem querer na tela de resultado não recomeça nem sai da run.
+	var rb := HoldButton.new()
+	result_btn = rb
 	result_btn.text = "UI_RESTART"
 	result_btn.custom_minimum_size = Vector2(280, 56)
 	result_btn.add_theme_font_size_override("font_size", 22)
-	result_btn.pressed.connect(func(): to_menu.emit(true))
-	var mb := Button.new()
+	rb.held.connect(func(): to_menu.emit(true))
+	var mb := HoldButton.new()
 	mb.text = "UI_MAIN_MENU"
 	mb.custom_minimum_size = Vector2(280, 56)
 	mb.add_theme_font_size_override("font_size", 22)
-	mb.pressed.connect(func(): to_menu.emit(false))
+	mb.held.connect(func(): to_menu.emit(false))
 	br.add_child(result_btn)
 	br.add_child(mb)
 	v.add_child(br)
+	var hold_hint := UiKit.label(16, UiKit.MUTED, 3)
+	hold_hint.text = "UI_HOLD_HINT"
+	hold_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(hold_hint)
 	result_layer.add_child(p)
 	result_layer.visible = false
 	add_child(result_layer)
@@ -881,6 +898,20 @@ func bind(s: Sim) -> void:
 	Tips.close_all()
 
 
+## O baralho da pausa nunca passa de ~45% da altura da tela: depois de um quadro (a grade já mediu), a rolagem
+## recebe a altura do conteúdo limitada a isso e a largura da grade (+ barra); o resto rola.
+func _fit_pause_deck() -> void:
+	pause_deck_scroll.custom_minimum_size = Vector2.ZERO
+	await get_tree().process_frame
+	if not is_instance_valid(pause_deck_scroll):
+		return
+	var vs := get_viewport_rect().size
+	var content := pause_deck.get_combined_minimum_size()
+	var max_h := maxf(vs.y * 0.45, 160.0)
+	var scrolls := content.y > max_h
+	pause_deck_scroll.custom_minimum_size = Vector2(content.x + (14.0 if scrolls else 0.0), minf(content.y, max_h))
+
+
 func show_pause(on: bool) -> void:
 	pause_layer.visible = on and sim != null
 	if not pause_layer.visible:
@@ -931,6 +962,7 @@ func show_pause(on: bool) -> void:
 		UiKit.ignore_mouse(cell)
 		cell.mouse_filter = Control.MOUSE_FILTER_PASS
 		pause_deck.add_child(cell)
+	_fit_pause_deck()
 	UiKit.clear(pause_build)
 	for u in sim.hero.upgrade_order:
 		var row := HBoxContainer.new()
@@ -1100,7 +1132,7 @@ func _show_unlocks() -> void:
 func _refresh_top() -> void:
 	var h := sim.hero
 	(hero_badge.get_node("N") as Label).text = str(h.level)
-	hero_hp.max_value = h.max_hp()
+	_curse_hatch(hero_hp, h)
 	hero_hp.value = h.hp
 	hero_hp_label.text = "%d / %d" % [int(h.hp), int(h.max_hp())]
 	hero_of_label.text = tr("UI_HERO_OF").format({"k": sim.party_idx + 1, "n": sim.party_size()}) + " · " + tr("HERO_" + sim.hero.cls())
@@ -1124,6 +1156,69 @@ func _refresh_top() -> void:
 			hero_of_label.text += " (" + ", ".join(fl) + ")"
 	_refresh_upgrades()
 	curse_label.text = tr("UI_CURSES").format({"n": h.curses}) if h.curses > 0 else ""
+
+
+## Barreira (ward) como camada azul na barra de vida: começa onde a vida termina e, se passa da ponta, encosta na direita.
+func _ward_layer(bar: ProgressBar, h: SimHero) -> void:
+	var o := bar.get_node_or_null("WardLayer") as Control
+	if o == null:
+		o = Control.new()
+		o.name = "WardLayer"
+		o.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		o.set_anchors_preset(Control.PRESET_FULL_RECT)
+		o.draw.connect(func() -> void:
+			var w: float = float(o.get_meta("ward", 0.0))
+			if w <= 0.0:
+				return
+			var sz := o.size
+			var base: float = maxf(float(o.get_meta("base", 1.0)), 1.0)
+			var x0: float = clampf(float(o.get_meta("hp", 0.0)) / base, 0.0, 1.0) * sz.x
+			var x1: float = minf(x0 + w / base * sz.x, sz.x)
+			x0 = maxf(minf(x0, x1 - minf(w / base * sz.x, sz.x)), 0.0)
+			var r := Rect2(x0, 1.0, maxf(x1 - x0, 2.0), sz.y - 2.0)
+			o.draw_rect(r, Color(0.55, 0.82, 1.0, 0.85))
+			o.draw_rect(r, Color(0.9, 0.97, 1.0, 0.95), false, 1.5))
+		bar.add_child(o)
+	if absf(float(o.get_meta("ward", -1.0)) - h.ward) > 0.01 or absf(float(o.get_meta("hp", -1.0)) - h.hp) > 0.01:
+		o.set_meta("ward", h.ward)
+		o.set_meta("hp", h.hp)
+		o.set_meta("base", h.base_hp)
+		o.queue_redraw()
+
+
+## Vida tirada pelas Maldições: a barra mede a vida sem maldição e a ponta direita fica riscada (verde-veneno),
+## mostrando o quanto elas já tiraram. Sem maldição, a faixa some.
+func _curse_hatch(bar: ProgressBar, h: SimHero) -> void:
+	_ward_layer(bar, h)
+	bar.max_value = h.base_hp
+	var cut := clampf(1.0 - h.max_hp() / maxf(h.base_hp, 1.0), 0.0, 1.0)
+	var o := bar.get_node_or_null("CurseHatch") as Control
+	if o == null:
+		o = Control.new()
+		o.name = "CurseHatch"
+		o.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		o.clip_contents = true
+		o.anchor_top = 0.0
+		o.anchor_bottom = 1.0
+		o.anchor_right = 1.0
+		o.offset_left = 0.0
+		o.offset_right = 0.0
+		o.offset_top = 0.0
+		o.offset_bottom = 0.0
+		o.draw.connect(func() -> void:
+			var sz := o.size
+			var line := Color(0.75, 1.0, 0.55, 0.85)
+			o.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.05, 0.02, 0.07, 0.8))
+			var x := -sz.y
+			while x < sz.x:
+				o.draw_line(Vector2(x, sz.y), Vector2(x + sz.y, 0.0), line, 1.5)
+				x += 6.0
+			o.draw_line(Vector2.ZERO, Vector2(0.0, sz.y), line, 2.0))
+		bar.add_child(o)
+		bar.move_child(o, 0)   # atrás do número da vida
+	o.visible = cut > 0.0
+	o.anchor_left = 1.0 - cut
+	o.queue_redraw()
 
 
 ## Vida de cada herói da party em campo: uma linha por herói de pé, o líder primeiro. Só aparece com mais de um.
@@ -1170,7 +1265,7 @@ func _refresh_party() -> void:
 				party_rows.append({"h": members[i], "bar": bar, "lab": lab})
 	for r in party_rows:
 		var h: SimHero = r["h"]
-		(r["bar"] as ProgressBar).max_value = h.max_hp()
+		_curse_hatch(r["bar"] as ProgressBar, h)
 		(r["bar"] as ProgressBar).value = h.hp
 		(r["lab"] as Label).text = "%d" % int(h.hp)
 
@@ -1526,6 +1621,8 @@ func _offer_heading(o: Dictionary) -> String:
 		return tr("UI_OFFER_ACT_CARD").format({"a": int(o.get("act", 0)) + 1})
 	if o["source"] == "event":
 		return tr("EVT_" + str(o["event"])) if o.has("event") else tr("UI_OFFER_EVENT_STEP")
+	if o["source"] == "give":
+		return tr("UI_OFFER_GIVE")
 	# "level" é a recompensa de queda: vem a cada herói que cai (o id interno ficou do tempo do XP).
 	return tr({"level": "UI_OFFER_FALL", "shrine": "UI_OFFER_SHRINE"}[o["source"]])
 
@@ -1549,7 +1646,9 @@ func _build_offer_options(o: Dictionary) -> void:
 		var won: bool = o["won"]
 		offer_sub.text = tr("UI_OFFER_MARK").format({"a": int(o.get("mark", 3))}) if o.has("mark") else tr("UI_OFFER_WON" if won else "UI_OFFER_LOST")
 		offer_sub.add_theme_color_override("font_color", UiKit.GOOD if won else UiKit.GOLD)
-	offer_skip.text = tr("UI_OFFER_SKIP")
+	offer_skip.text = tr("UI_OFFER_CONTINUE" if o["source"] == "give" else "UI_OFFER_SKIP")
+	offer_gold.visible = o["source"] == "event"
+	offer_gold.text = tr("UI_GOLD").format({"g": int(sim.gold)})
 	offer_keys.text = tr("UI_OFFER_KEYS")
 	UiKit.clear(offer_box)
 	offer_slots.clear()
@@ -1620,8 +1719,9 @@ func _build_offer_options(o: Dictionary) -> void:
 				head.add_theme_color_override("font_color", UiKit.BAD)
 				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
 				cp.modulate = Color(1.0, 0.6, 0.6)
-				if w > 200.0:
-					Tips.set_text(foot, tr("UI_OPT_REMOVE").format({"card": UiKit.card_name(cd, lv)}))
+				# Sempre à vista (também nas cartas pequenas do deck inteiro), com o texto da carta.
+				Tips.set_text(foot, tr("UI_OPT_REMOVE").format({"card": UiKit.card_name(cd, lv)}) + "
+" + UiKit.card_desc(cd, lv))
 			"pick":
 				head.text = tr("UI_OPT_PICK_HEAD")
 				cp = UiKit.panel(UiKit.BG, UiKit.GOLD, 14)

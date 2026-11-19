@@ -838,9 +838,6 @@ func _choose_target() -> void:
 			continue
 		var th := U.dmg[i] / maxf(U.atk_int[i], 0.1)
 		var sc := th * 0.05 + (1.0 - U.hp[i] / U.max_hp[i]) + float(strat.get(sim.data.cards[di].id, 0.0)) - d * (0.12 if far_ok else 0.35)
-		# Santuário abençoado: o herói defende o círculo e vai primeiro em quem está dentro.
-		if sim.in_shrine_circle(U.px[i], U.py[i]):
-			sc += 3.0
 		if arena:
 			sc += 2.0
 		# Taverna em disputa: quem está atacando uma casa vira prioridade.
@@ -1050,7 +1047,7 @@ func knockback(from_x: float, from_y: float, dist: float) -> void:
 	var v := Vector2(x - from_x, y - from_y)
 	if v.length() < 0.01:
 		v = Vector2(-face_x, -face_y)
-	v = v.normalized() * dist / 0.25
+	v = v.normalized() * dist * float(sim.data.rules.get("hero", {}).get("knockback_mult", 1.0)) / 0.25
 	kb_x = v.x
 	kb_y = v.y
 	kb_t = 0.25

@@ -17,7 +17,7 @@ const KEYWORDS := [
 	"slow", "fear", "curse", "soaked", "petrify", "root",
 	"shield", "pierce", "elixir", "sacrifice", "teleport", "altar",
 	"swarm", "monster", "spell", "structure", "route", "lair", "finisher", "plague", "beast",
-	"veteran", "cheap", "explosive", "cursed", "shadowy",
+	"veteran", "cheap", "explosive", "cursed", "shadowy", "leech",
 	"shop", "tavern", "fountain", "ritual", "shrine", "bridge", "gold", "event", "helper",
 ]
 
@@ -141,7 +141,7 @@ static func _kw_params() -> Dictionary:
 		"fountain_s": _num(L["fountain"]["drink_s"]), "fountain_dmg": _num(L["fountain"]["interrupt_damage"]),
 		"fountain_heal": _pct(L["fountain"]["heal"]),
 		"ritual_mult": _num(L["ritual"]["elixir_mult"]), "ritual_kills": _num(L["ritual"]["kills"]), "ritual_s": _num(L["ritual"]["window"]),
-		"shrine_window": _num(L["shrine"]["window"]),
+		"shrine_window": _num(L["shrine"]["window"]), "shrine_ward": _pct(L["shrine"]["ward_frac"]),
 		"helper_s": _num(L["helper"]["window"]), "helper_hp1": _num(L["helper"]["hp_act"][0]),
 		"helper_hp2": _num(L["helper"]["hp_act"][1]), "helper_hp3": _num(L["helper"]["hp_act"][2]),
 		"bridge_atk": _pct(L["bridge"]["attack_speed"]), "bridge_s": _num(L["bridge"]["duration"]), "bridge_window": _num(L["bridge"]["window"]),
@@ -163,7 +163,7 @@ static func _kw_params() -> Dictionary:
 	for mid in data.modifiers:
 		var mp: Dictionary = data.modifiers[mid].get("p", {})
 		for k in mp:
-			p["%s_%s" % [mid, k]] = _num(mp[k])
+			p["%s_%s" % [mid, k]] = _pct(mp[k]) if str(k).ends_with("_frac") else _num(mp[k])
 	return p
 
 

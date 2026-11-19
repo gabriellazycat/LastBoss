@@ -360,12 +360,58 @@ func _debug_contest(ty: String) -> void:
 
 
 ## Chão, luz e névoa do ato atual (provisórios: os looks 2, 3 e 4 até a direção de arte nova).
-func _apply_act_look(s: Sim) -> void:
+func _apply_act_look(s: Sim, blend := false) -> void:
 	built_act = s.act
 	var A: Array = data.rules.get("acts", [])
 	GroundLooks.act_look = int(A[s.act].get("ground_look", -1)) if s.act < A.size() else -1
 	if world_env and sun:
+		var old := _env_snapshot() if blend else {}
 		GroundLooks.apply_env(world_env, sun, rim_light)
+		if blend and not old.is_empty():
+			var nw := _env_snapshot()
+			_env_apply(old, nw, 0.0)
+			var tw := create_tween()
+			tw.tween_method(func(v: float): _env_apply(old, nw, v), 0.0, 1.0, 3.0)
+			tw.finished.connect(func(): _env_apply(old, nw, 1.0))
+
+
+## Luz, céu e névoa como números, para a troca de ato misturar de um ato para o outro (C17, 19/11/2026).
+func _env_snapshot() -> Dictionary:
+	var d := {"sun_c": sun.light_color, "sun_e": sun.light_energy, "sun_r": sun.rotation_degrees,
+		"amb_c": world_env.ambient_light_color, "amb_e": world_env.ambient_light_energy, "fog_c": world_env.fog_light_color,
+		"fog_d": world_env.fog_density, "expo": world_env.tonemap_exposure, "sat": world_env.adjustment_saturation}
+	if rim_light:
+		d["rim_c"] = rim_light.light_color
+		d["rim_e"] = rim_light.light_energy
+	var sm := world_env.sky.sky_material if world_env.sky else null
+	if sm is ProceduralSkyMaterial:
+		d["sky_t"] = sm.sky_top_color
+		d["sky_h"] = sm.sky_horizon_color
+		d["sky_g"] = sm.ground_bottom_color
+	return d
+
+
+func _env_apply(a: Dictionary, b: Dictionary, v: float) -> void:
+	if not is_instance_valid(sun) or world_env == null:
+		return
+	sun.light_color = a["sun_c"].lerp(b["sun_c"], v)
+	sun.light_energy = lerpf(a["sun_e"], b["sun_e"], v)
+	sun.rotation_degrees = a["sun_r"].lerp(b["sun_r"], v)
+	world_env.ambient_light_color = a["amb_c"].lerp(b["amb_c"], v)
+	world_env.ambient_light_energy = lerpf(a["amb_e"], b["amb_e"], v)
+	world_env.fog_light_color = a["fog_c"].lerp(b["fog_c"], v)
+	world_env.fog_density = lerpf(a["fog_d"], b["fog_d"], v)
+	world_env.tonemap_exposure = lerpf(a["expo"], b["expo"], v)
+	world_env.adjustment_saturation = lerpf(a["sat"], b["sat"], v)
+	if rim_light and a.has("rim_c") and b.has("rim_c"):
+		rim_light.light_color = a["rim_c"].lerp(b["rim_c"], v)
+		rim_light.light_energy = lerpf(a["rim_e"], b["rim_e"], v)
+	var sm := world_env.sky.sky_material if world_env.sky else null
+	if sm is ProceduralSkyMaterial and a.has("sky_t") and b.has("sky_t"):
+		sm.sky_top_color = a["sky_t"].lerp(b["sky_t"], v)
+		sm.sky_horizon_color = a["sky_h"].lerp(b["sky_h"], v)
+		sm.ground_horizon_color = sm.sky_horizon_color
+		sm.ground_bottom_color = a["sky_g"].lerp(b["sky_g"], v)
 
 
 func _pad_actions() -> void:
@@ -414,7 +460,9 @@ func _to_menu(decks: bool) -> void:
 	_build_menu_scene()
 	audio.music_menu()
 	audio.set_intensity(0.0)
-	_show_menu("decks" if decks else "title")
+	# "Nova run" volta ao mapa da campanha (19/11/2026): antes pulava o mapa e abria a escolha de vilão, uma segunda
+	# tela de baralho fora do fluxo mapa → vilão. A fase que estava escolhida continua escolhida.
+	_show_menu("campaign" if decks else "title")
 
 
 func _quit() -> void:
@@ -644,6 +692,7 @@ func _start(deck: String) -> void:
 	else:
 		s.setup(data, seed_, deck, [], [], ph)
 	# Capturas e testes de janela sem bot seguem o primeiro ramo (com --routewait, esperam a escolha como no jogo).
+	s.notify_gives = not auto_args.has("autoplay")
 	s.auto_route = not auto_args.is_empty() and not auto_args.has("autoplay") and not auto_args.has("routewait") and not auto_args.has("routetest")
 	_begin(s)
 
@@ -768,6 +817,8 @@ func _process(delta: float) -> void:
 			_scene_gates()
 	# --skipkey=<s>: aperta espaço de verdade nesse instante (pulo da cena do local); --pick=<s>: a partir desse
 	# instante escolhe a 1ª opção de cada oferta que aparecer na tela (o mapa do fim do local abre depois).
+	if auto_args.has("select") and sim and sim.offers.is_empty() and sim.phase != K.Phase.OVER:
+		hud.selected = int(auto_args["select"])   # captura: segura a carta N da mão (anel de alcance)
 	if auto_args.has("skipkey") and life >= float(auto_args["skipkey"]):
 		auto_args.erase("skipkey")
 		var ke := InputEventKey.new()
@@ -935,8 +986,9 @@ func _process(delta: float) -> void:
 	_mark_heroes_seen()
 	# Ato novo: estrada nova, chão e luz do ato.
 	if sim.phase == K.Phase.ROAD and sim.act != built_act:
-		_apply_act_look(sim)
-		world.build(sim, cam)
+		var first := built_act < 0 or world.sim != sim
+		_apply_act_look(sim, not first)
+		world.build(sim, cam, not first)
 	if sim.phase == K.Phase.ARENA and not arena_built:
 		arena_built = true
 		world.build_arena()
@@ -1423,7 +1475,7 @@ func _menu_test() -> void:
 	await get_tree().create_timer(1.2).timeout
 	_ui_shot("menu_campaign_3")
 	await _key(KEY_RIGHT)
-	step.call("seta para a direita vai à fase 4", menu.campaign.phase == 4 and menu.campaign.animating())
+	step.call("seta para a direita vai à fase 4", menu.campaign.phase == 4 and not menu.campaign.animating())
 	await get_tree().create_timer(0.75).timeout
 	_ui_shot("menu_campaign_move")
 	await get_tree().create_timer(1.0).timeout

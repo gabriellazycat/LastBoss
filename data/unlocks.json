@@ -2,7 +2,9 @@
  "_doc": "Gerado por tools/gerar_unlocks.py a partir de tools/desbloqueios.json. free = cartas liberadas desde o início (podem ser sorteadas nas ofertas); challenges = desafio que libera cada carta bloqueada (texto em UNLOCK_<id>). Fase = uma run inteira; contadores 'numa mesma fase' zeram a cada fase. total = soma entre fases (carta de vilão: só as fases com ele; comum: todas); runs = em quantas fases diferentes o feito aconteceu.",
  "free": [
   "barricade",
+  "brown_bear",
   "bubonic_plague",
+  "cave_troll",
   "coin_swarm",
   "dark_forge",
   "dark_messenger",
@@ -11,10 +13,14 @@
   "deep_chalice",
   "dragon_vault",
   "drakeling",
+  "ember_rain",
   "endless_swarm",
+  "forbidden_library",
   "gargoyle_tower",
   "ghoul",
+  "gilded_golem",
   "goblin_scout",
+  "gold_avalanche",
   "gold_dart",
   "gold_merc",
   "gold_mine",
@@ -26,6 +32,7 @@
   "rabid_rats",
   "rat_king",
   "scrap_golem",
+  "shadow_echo",
   "skeleton_archers",
   "toll",
   "trap_chest",
@@ -103,19 +110,10 @@
    "kind": "wins",
    "n": 2
   },
-  "brown_bear": {
-   "kind": "heroes",
-   "n": 20,
-   "total": true
-  },
   "burn_village": {
    "kind": "burn_time",
    "s": 150.0,
    "total": true
-  },
-  "cave_troll": {
-   "kind": "win_phase",
-   "phase": 1
   },
   "corrupt_piper": {
    "kind": "died",
@@ -137,12 +135,6 @@
    "fam": "fire_monster",
    "n": 5
   },
-  "ember_rain": {
-   "kind": "plays",
-   "fam": "spell",
-   "n": 25,
-   "runs": 3
-  },
   "eruption": {
    "kind": "win_without",
    "fam": "structure"
@@ -163,12 +155,6 @@
    "n": 5,
    "runs": 4
   },
-  "forbidden_library": {
-   "kind": "plays",
-   "fam": "lair",
-   "n": 200,
-   "total": true
-  },
   "furnace": {
    "kind": "wins",
    "n": 2
@@ -178,16 +164,6 @@
    "fam": "skeleton",
    "n": 40,
    "runs": 3
-  },
-  "gilded_golem": {
-   "kind": "gold_spent",
-   "n": 6000,
-   "total": true
-  },
-  "gold_avalanche": {
-   "kind": "gold_earned",
-   "n": 6000,
-   "total": true
   },
   "gold_bait": {
    "kind": "coins",
@@ -296,12 +272,6 @@
   "sewer_flood": {
    "kind": "wins",
    "n": 2
-  },
-  "shadow_echo": {
-   "kind": "plays_window",
-   "fam": "shadow_spell",
-   "n": 5,
-   "s": 15.0
   },
   "shadow_mark": {
    "kind": "plays",

@@ -206,13 +206,31 @@ func build_empty() -> void:
 	sim = null
 
 
-func build(s: Sim, camera: Camera3D) -> void:
+## Cenário do ato montado (filhos 0..static_count-1: chão, estrada, rios, cenário, locais, covil); o resto são unidades, herói, pools.
+var static_nodes: Array = []
+var ground_nodes: Array = []
+var old_act_root: Node3D = null
+var ground_nodes_old: Array = []
+var fade_old: Node3D = null
+var fade_old_ground: Array = []
+var fade_t := 1.0
+const ACT_FADE_S := 2.5
+
+
+## `append` (C17, 19/11/2026): troca de ato contínua. O cenário do ato anterior fica no lugar e some aos poucos;
+## o ato novo é montado em cima, a câmera não é teleportada.
+func build(s: Sim, camera: Camera3D, append := false) -> void:
 	# Run nova ou ato novo: nenhuma cena de queda pela metade (o mundo volta à velocidade normal).
 	cine_t = -1.0
 	_end_scene()
 	look_hold = false
 	Engine.time_scale = 1.0
-	build_empty()
+	var keep_cam := cam_pos
+	if append and sim != null and not static_nodes.is_empty():
+		_retire_old_act()
+	else:
+		append = false
+		build_empty()
 	sim = s
 	cam = camera
 	road_field = null
@@ -248,17 +266,79 @@ func build(s: Sim, camera: Camera3D) -> void:
 	soft_tex.fill_to = Vector2(0.5, 0.0)
 	soft_tex.width = 64
 	soft_tex.height = 64
+	var before := get_children()
 	_build_ground()
+	ground_nodes = get_children().filter(func(c): return not before.has(c))
 	_build_road()
 	_build_rivers()
 	_build_scatter()
 	_build_locations()
 	_build_lair()
+	static_nodes = get_children().filter(func(c): return not before.has(c))
+	if append:
+		for c in static_nodes:
+			_fade_tree(c, 1.0)   # o cenário novo entra em fade (_update_act_fade)
+	else:
+		fade_old = null
 	_build_units()
 	_build_hero()
 	_build_pools()
 	_build_bars()
-	cam_pos = Vector3(sim.hero.x, 0, sim.hero.y)
+	cam_pos = keep_cam if append else Vector3(sim.hero.x, 0, sim.hero.y)
+
+
+## Tira o cenário do ato anterior da cena viva: vai para um nó à parte, um pouco abaixo, e some com um fade.
+func _retire_old_act() -> void:
+	var old := Node3D.new()
+	old.name = "OldAct"
+	old.position = Vector3(0, -0.02, 0)
+	ground_nodes_old = ground_nodes.duplicate()
+	var keep: Array = static_nodes.filter(func(c): return is_instance_valid(c) and c.get_parent() == self)
+	if old_act_root != null and is_instance_valid(old_act_root):
+		keep.append(old_act_root)
+	for c in get_children():
+		if not keep.has(c):
+			c.queue_free()
+	add_child(old)
+	for c in keep:
+		if c == old_act_root:
+			c.queue_free()
+		else:
+			c.reparent(old, true)
+	old_act_root = old
+	fade_old = old
+	fade_old_ground = keep.filter(func(c): return ground_nodes_old.has(c))
+	fade_t = 0.0
+
+
+## Quadro a quadro (chamado do _process): o cenário antigo some e o novo entra, os dois por cima do chão antigo, que
+## fica sólido por baixo até o fim (sem faixas retas) e então sai.
+func _update_act_fade(delta: float) -> void:
+	if fade_old == null:
+		return
+	fade_t = minf(fade_t + delta / ACT_FADE_S, 1.0)
+	var v := fade_t * fade_t * (3.0 - 2.0 * fade_t)
+	if is_instance_valid(fade_old):
+		for c in fade_old.get_children():
+			if not fade_old_ground.has(c):
+				_fade_tree(c, v)
+	for c in static_nodes:
+		if is_instance_valid(c):
+			_fade_tree(c, 1.0 - v)
+	if fade_t >= 1.0:
+		if is_instance_valid(fade_old):
+			fade_old.queue_free()
+		fade_old = null
+		old_act_root = null
+
+
+func _fade_tree(n: Node, v: float) -> void:
+	if not is_instance_valid(n):
+		return
+	if n is GeometryInstance3D:
+		(n as GeometryInstance3D).transparency = v
+	for c in n.find_children("*", "GeometryInstance3D", true, false):
+		(c as GeometryInstance3D).transparency = v
 
 
 # ---------------------------------------------------------------- terreno e estrada
@@ -1073,15 +1153,15 @@ func _build_hero() -> void:
 	add_child(tell_label)
 
 
-func _circle(r: float, col: Color) -> MeshInstance3D:
+func _circle(r: float, col: Color, half_w := 0.07, energy := 1.2) -> MeshInstance3D:
 	var tm := TorusMesh.new()
-	tm.inner_radius = r - 0.07
-	tm.outer_radius = r + 0.07
+	tm.inner_radius = r - half_w
+	tm.outer_radius = r + half_w
 	tm.rings = 72
 	tm.ring_segments = 4
 	var mi := MeshInstance3D.new()
 	mi.mesh = tm
-	mi.material_override = _unshaded(col, 1.2)
+	mi.material_override = _unshaded(col, energy)
 	return mi
 
 
@@ -1380,7 +1460,7 @@ func build_arena() -> void:
 func _update_rings(on: bool) -> void:
 	var hs: Array = sim.ring_heroes() if sim != null else []
 	while ring_nodes.size() < hs.size():
-		var n := _circle(3.0, Color(1, 0.4, 0.4, 0.75))
+		var n := _circle(3.0, Color(1.0, 0.25, 0.2, 1.0), 0.11, 0.8)
 		add_child(n)
 		ring_nodes.append(n)
 		ring_rad.append(3.0)
@@ -1393,8 +1473,8 @@ func _update_rings(on: bool) -> void:
 		var r: float = sim.ring_of(h)
 		if not is_equal_approx(float(ring_rad[i]), r):
 			var tm := n.mesh as TorusMesh
-			tm.inner_radius = r - 0.07
-			tm.outer_radius = r + 0.07
+			tm.inner_radius = r - 0.11
+			tm.outer_radius = r + 0.11
 			ring_rad[i] = r
 		n.position = Vector3(lerpf(h.ox, h.x, 1.0), 0.06, lerpf(h.oy, h.y, 1.0))
 		n.position.y += surface_y(n.position.x, n.position.z)
@@ -1414,6 +1494,7 @@ func show_placement(on: bool, pos: Vector3, valid: bool, radius: float) -> void:
 # ---------------------------------------------------------------- desenho
 
 func draw(alpha: float, delta: float) -> void:
+	_update_act_fade(delta)
 	if sim == null:
 		return
 	frame += 1
@@ -1489,6 +1570,10 @@ func _draw_units(alpha: float, delta: float) -> void:
 				col = Color(0.55, 0.55, 0.6)
 			elif U.fear_t[i] > 0.0:
 				col = Color(0.8, 0.6, 1.0)
+			elif U.flags[i] & K.F_LEECH:
+				col = Color(1.0, 0.74, 0.78)   # Rouba-vida: pele avermelhada; o anel no chão é carmim
+			elif U.sh[i] > 0.0:
+				col = Color(0.8, 0.84, 1.0)    # Sombrio com escudo: tom frio; o anel no chão é azul-violeta
 			var gy := surface_y(x, z) if not surf_fields.is_empty() else 0.0
 			var y := gy
 			if fly:
@@ -1504,6 +1589,12 @@ func _draw_units(alpha: float, delta: float) -> void:
 			buf[o + 16] = flash[i]; buf[o + 17] = hop * maxf(moving, 0.25 if hop > 0.0 else 0.0); buf[o + 18] = float(i) * 1.7; buf[o + 19] = lunge
 			var rr: float = e["rad"] * s
 			var acc: Color = e["acc"]
+			if U.sh[i] > 0.0:
+				# Escudo de vida do Sombrio: anel azul-violeta que pulsa (some quando o escudo quebra).
+				acc = Color(0.5, 0.55, 1.0, 0.75 + 0.2 * sin(sim.t * 5.0 + i))
+				rr *= 1.12
+			elif U.flags[i] & K.F_LEECH:
+				acc = Color(0.9, 0.1, 0.22, 0.9)   # Rouba-vida: anel carmim
 			var ro := rn * 16
 			rb[ro] = rr; rb[ro + 1] = 0.0; rb[ro + 2] = 0.0; rb[ro + 3] = x
 			rb[ro + 4] = 0.0; rb[ro + 5] = 1.0; rb[ro + 6] = 0.0; rb[ro + 7] = 0.055 + gy
@@ -2583,6 +2674,15 @@ func handle_events(evs: Array) -> void:
 						emit_fx("magic", p + Vector3(0, 0.3, 0), 0.5)
 			K.Ev.CURSE:
 				emit_fx("magic", p + Vector3(0, 1.4, 0), 0.6)
+			K.Ev.LEECH:
+				# Rouba-vida: gotas carmim sobem da unidade que se curou.
+				if _spend("hit"):
+					emit_fx("heal", p + Vector3(0, 0.6, 0), 0.55, Color(1.0, 0.2, 0.3))
+				if Settings.v["damage_numbers"] and float(ev[3]) >= 8.0 and _spend("num"):
+					number(p, "+" + str(int(ev[3])), Color(1.0, 0.3, 0.4), 40)
+			K.Ev.UNIT_SHIELD_BREAK:
+				emit_fx("shield", p + Vector3(0, 0.9, 0), 0.9)
+				ring_burst(p, 1.5, Color(0.55, 0.6, 1.0))
 			K.Ev.CONTEST:
 				var cc := int(ev[4])
 				if cc == 1 or cc == -1 or cc >= 11:

@@ -72,7 +72,9 @@ static func spawn_card_units(sim: Sim, k: Ctx, x: float, y: float) -> void:
 	var xpv := 0.0   # sem XP (09/11/2026)
 	var f := 0
 	if c.has_mod(K.M_SHADOWY):
-		f |= K.F_NO_XP
+		f |= K.F_SHADOWY
+	if c.has_mod(K.M_LEECH):
+		f |= K.F_LEECH
 	if c.has_mod(K.M_EXPLOSIVE):
 		f |= K.F_EXPLOSIVE
 	if c.has_mod(K.M_CURSED):

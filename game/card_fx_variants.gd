@@ -31,6 +31,7 @@ const MOD := {
 	"explosive": Color(0.95, 0.4, 0.06),
 	"cursed": Color(0.55, 0.14, 0.74),
 	"shadowy": Color(0.15, 0.14, 0.2),
+	"leech": Color(0.75, 0.06, 0.16),
 }
 
 

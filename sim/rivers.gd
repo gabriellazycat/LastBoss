@@ -967,7 +967,7 @@ static func _straighten(road: SimRoad, e: int, bridges: Array, RV: Dictionary, r
 		sgn = force_sgn * (1.0 if fwd.dot(ref) >= 0.0 else -1.0)
 	for it in 50:
 		h = (lo + hi) * 0.5
-		var l := SimRoad._length(SimRoad._dogleg(a2, b2, h * sgn, t1, t2))
+		var l := SimRoad._length(SimRoad._resample(SimRoad._dogleg(a2, b2, h * sgn, t1, t2), 6.0))
 		if absf(l - mid_t) < 0.01:
 			break
 		if l < mid_t:

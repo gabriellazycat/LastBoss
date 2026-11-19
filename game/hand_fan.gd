@@ -428,6 +428,7 @@ func _sync_cycle(p: Control, on: bool) -> void:
 		tag.offset_top = 3.0
 		ring.add_child(tag)
 		p.add_child(ring)
+		p.tooltip_text = tr("UI_CYCLE_TIP")
 	ring.modulate.a = 0.72 + 0.28 * sin(Time.get_ticks_msec() * 0.006)
 
 

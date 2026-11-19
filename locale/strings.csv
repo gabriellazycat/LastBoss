@@ -69,7 +69,9 @@ MODDESC_veteran,+1 unidade por carta jogada,+1 unit per card played
 MODDESC_cheap,-1 de custo de [[elixir|Elixir]],-1 [[elixir|Elixir]] cost
 MODDESC_explosive,A unidade explode ao morrer,The unit explodes on death
 MODDESC_cursed,O dano aplica [[curse|Maldição]],Damage applies a [[curse|Curse]]
-MODDESC_shadowy,Não conta para a recompensa de queda,Does not count toward the fall reward
+MODDESC_shadowy,Escudo de vida: 50% da vida em escudo extra que absorve o dano primeiro,Life shield: an extra shield worth 50% of its health that absorbs damage first
+MOD_leech,Rouba-vida,Lifesteal
+MODDESC_leech,Cada golpe no herói cura a unidade em 50% do dano causado,Each hit on the hero heals the unit for 50% of the damage dealt
 TAG_pack,Bando,Pack
 TAG_undead,Morto-vivo,Undead
 TAG_fire,Fogo,Fire
@@ -132,7 +134,7 @@ TYPE_finisher,Finalização,Finisher
 UI_SUBTITLE,Os heróis estão a caminho. Molde quem vai bater à sua porta.,The heroes are coming. Shape who will knock on your door.
 HINT_start,"Jogue cartas em qualquer ponto da tela, a pelo menos 3 m dos heróis. Derrube as parties da fila: cada herói que cai dá uma recompensa. Passe o mouse nas palavras coloridas para ler o que significam.","Play cards anywhere on screen, at least 3 m from the heroes. Bring down the queued parties: every hero that falls gives a reward. Hover the colored words to read what they mean."
 HINT_offer,Escolha uma recompensa para o deck (ou recuse). Cada local da estrada dá uma: vencer a disputa do local dá mais opções.,Pick a reward for your deck (or skip it). Every place on the road gives one: winning its contest gives more choices.
-HINT_shrine,"[[shrine|Santuário]] à frente! O líder da party, abençoado, defende o local: não leva dano e bate mais forte em quem está no círculo. Mantenha monstros vivos lá dentro para ganhar uma carta rara.","[[shrine|Shrine]] ahead! The party leader, blessed, defends it: takes no damage and hits harder at whoever stands in the circle. Keep monsters alive inside to earn a rare card."
+HINT_shrine,"[[shrine|Santuário]] à frente! A party ganha uma barreira e defende o local. Mantenha monstros vivos lá dentro para ganhar uma carta rara.","[[shrine|Shrine]] ahead! The party gains a ward and defends it. Keep monsters alive inside to earn a rare card."
 HINT_route,Cartas de [[route|Rota]] são jogadas na faixa de rota à esquerda ou no mapa grande (M): clique no local que quer afetar.,[[route|Route]] cards are played on the route strip on the left or on the big map (M): click the place you want to affect.
 HINT_arena,A arena! Proteja o seu corpo. [[teleport|Teleporte]] o chefe com Q/E ou clicando num [[altar|altar]].,The arena! Protect your body. [[teleport|Teleport]] the boss with Q/E or by clicking an [[altar|altar]].
 SAY_HERO_1,Mais forte a cada passo!,Stronger with every step!
@@ -288,6 +290,7 @@ KW_cheap,Barato,Cheap
 KW_explosive,Explosivo,Explosive
 KW_cursed,Amaldiçoado,Cursed
 KW_shadowy,Sombrio,Shadowy
+KW_leech,Rouba-vida,Lifesteal
 KW_tavern,Taverna,Tavern
 KW_fountain,Fonte Sagrada,Holy Fountain
 KW_ritual,Círculo de Ritual,Ritual Circle
@@ -319,13 +322,14 @@ KWD_lair,"Tipo de carta: efeito com duração. Depois vai ao descarte e volta no
 KWD_finisher,Tipo de carta: só funciona na arena.,Card type: only works in the arena.
 KWD_veteran,Modificador: a carta cria +{veteran_extra_units} unidade ao ser jogada.,Modifier: the card creates +{veteran_extra_units} unit when played.
 KWD_cheap,Modificador: {cheap_cost} de custo de [[elixir|Elixir]] (mínimo {cheap_min_cost}).,Modifier: {cheap_cost} [[elixir|Elixir]] cost (minimum {cheap_min_cost}).
-KWD_explosive,Modificador: a unidade explode ao morrer e causa {explosive_damage} de dano ao herói a até {explosive_radius} m.,"Modifier: the unit explodes on death, dealing {explosive_damage} damage to the hero within {explosive_radius} m."
+KWD_explosive,Modificador: a unidade explode ao morrer e causa dano ao herói igual a {explosive_hp_frac} da vida máxima da unidade, a até {explosive_radius} m.,"Modifier: the unit explodes on death, dealing damage to the hero equal to {explosive_hp_frac} of the unit's max HP, within {explosive_radius} m."
 KWD_cursed,Modificador: o dano da unidade aplica [[curse|Maldição]] no herói.,Modifier: the unit's damage applies a [[curse|Curse]] to the hero.
-KWD_shadowy,Modificador: a unidade não conta como baixa ao morrer.,Modifier: the unit does not count as a loss when it dies.
+KWD_shadowy,Modificador: a unidade nasce com um escudo de vida igual a 50% da vida dela. O escudo absorve o dano do herói antes da vida e não se recupera.,Modifier: the unit is born with a life shield equal to 50% of its health. The shield absorbs the hero's damage before health and does not regenerate.
+KWD_leech,Modificador: cada golpe da unidade no herói cura a unidade em 50% do dano causado (até a vida máxima).,Modifier: each hit by the unit on the hero heals the unit for 50% of the damage dealt (up to max health).
 KWD_tavern,"O herói para na taverna e defende as {tavern_houses} casas ({tavern_house_hp} de vida cada no ato 1, mais nos seguintes). Seus monstros a até {tavern_aggro} m vão nas casas. Cada casa destruída em {tavern_s} s dá 1 escolha entre 3 modificadores: até 3 no total.","The hero stops at the tavern and defends its {tavern_houses} houses ({tavern_house_hp} health each in act 1, more later). Your monsters within {tavern_aggro} m go for the houses. Each house destroyed within {tavern_s} s gives 1 pick from 3 modifiers: up to 3 in total."
 KWD_fountain,"O herói se ajoelha e bebe. Em {fountain_window} s, a barra de dano mede o quanto você o atrapalha: {fountain_m1} de dano deixa remover 1 carta entre 25% do deck, {fountain_m2} entre 50% e {fountain_m3} qualquer carta (os números sobem a cada ato). Medo, raiz, empurrão ou petrificação enchem a barra na hora. Se ele terminar de beber sem nenhum marco, cura {fountain_heal}% da vida e você não ganha nada.","The hero kneels and drinks. Within {fountain_window} s the damage bar measures how much you disrupt him: {fountain_m1} damage lets you remove 1 card from 25% of the deck, {fountain_m2} from 50% and {fountain_m3} any card (numbers rise each act). Fear, root, knockback or petrify fill the bar at once. If he finishes drinking with no mark, he heals {fountain_heal}% health and you get nothing."
 KWD_ritual,"Sacrifício: o herói para no círculo e seu [[elixir|Elixir]] enche {ritual_mult}× mais rápido. Em {ritual_s} s, {ritual_m1} monstros seus mortos dentro dele deixam subir de nível 1 carta entre 25% do deck, {ritual_m2} entre 50% e {ritual_m3} qualquer carta (os números sobem a cada ato).","Sacrifice: the hero stops in the circle and your [[elixir|Elixir]] fills {ritual_mult}× faster. Within {ritual_s} s, {ritual_m1} of your monsters killed inside it lets you level up 1 card from 25% of the deck, {ritual_m2} from 50% and {ritual_m3} any card (numbers rise each act)."
-KWD_shrine,"O herói para no santuário por até {shrine_window} s e fica abençoado: não leva dano e causa +50% de dano a quem está no círculo (ele ataca esses monstros primeiro). Uma barra enche enquanto monstros seus (não estruturas nem Mímico) estão dentro do círculo: {shrine_m1}, {shrine_m2} e {shrine_m3} s somados dão, cada marco, 1 escolha entre 3 cartas raras.","The hero stops at the shrine for up to {shrine_window} s and is blessed: he takes no damage and deals +50% damage to whoever is in the circle (he attacks those monsters first). A bar fills while your monsters (not structures or the Mimic) are inside the circle: {shrine_m1}, {shrine_m2} and {shrine_m3} s in total each give 1 pick from 3 rare cards."
+KWD_shrine,"O herói para no santuário por até {shrine_window} s e cada herói da party ganha uma barreira de {shrine_ward} da vida máxima (some quando o desafio acaba). Uma barra enche enquanto monstros seus (não estruturas nem Mímico) estão dentro do círculo: {shrine_m1}, {shrine_m2} e {shrine_m3} s somados dão, cada marco, 1 escolha entre 3 cartas raras.","The hero stops at the shrine for up to {shrine_window} s and each party hero gains a ward worth {shrine_ward} of max HP (it is removed when the challenge ends). A bar fills while your monsters (not structures or the Mimic) are inside the circle: {shrine_m1}, {shrine_m2} and {shrine_m3} s in total each give 1 pick from 3 rare cards."
 KWD_bridge,"Na ponte o herói ataca {bridge_atk}% mais devagar por {bridge_s} s. Em {bridge_window} s, {bridge_m1} de dano dão 1 escolha de carta comum, {bridge_m2} somam 1 incomum e {bridge_m3} somam 1 rara (os números sobem a cada ato).","On the bridge the hero attacks {bridge_atk}% slower for {bridge_s} s. Within {bridge_window} s, {bridge_m1} damage gives a pick of 1 common card, {bridge_m2} adds 1 uncommon and {bridge_m3} adds 1 rare (numbers rise each act)."
 UPGD_sword_spin,"A cada {interval} s, se houver inimigos a até {radius} m, gira a espada e acerta todos com {mult_pct}% do dano.","Every {interval} s, if enemies are within {radius} m, spins his sword and hits them all for {mult_pct}% damage."
 UPGD_tower_shield,O [[shield|Escudo]] fica com {hp_mult}× de vida e passa a cobrir {cone}° à frente.,The [[shield|Shield]] gets {hp_mult}× health and covers {cone}° in front.
@@ -436,6 +440,9 @@ UI_ACT_OF,Ato {n} de {m},Act {n} of {m}
 UI_RELICS,Relíquias do covil,Lair relics
 UI_OFFER_RELIC,Fim do ato {a}: escolha uma relíquia do covil,End of act {a}: pick a lair relic
 UI_OFFER_EVENT_STEP,Escolha 1,Pick 1
+UI_HOLD_HINT,Segure o botão por 1 s,Hold the button for 1 s
+UI_OFFER_GIVE,Seu baralho mudou,Your deck changed
+UI_OFFER_CONTINUE,Continuar,Continue
 UI_EVENT_NEEDS,Precisa de {g} de ouro,Needs {g} gold
 UI_CONTEST_ritual,Ritual: {p} de {g} mortes no círculo · {s} s,Ritual: {p} of {g} deaths in the circle · {s} s
 UI_CONTEST_shrine,Santuário: {p} de {g} s com monstros no círculo · {s} s,Shrine: {p} of {g} s with monsters in the circle · {s} s
@@ -466,7 +473,7 @@ UI_COMP_CD,Recarga: {s} s,Cooldown: {s} s
 UI_COMP_PASSIVE,Passiva,Passive
 UI_COMP_REWARD,Recompensa: {r},Reward: {r}
 REL_bone_crown,Coroa de Ossos,Bone Crown
-RELD_bone_crown,"A cada 10 monstros seus mortos, +1 de elixir.","Every 10 of your monsters killed, +1 elixir."
+RELD_bone_crown,"A cada 10 unidades suas mortas pelo herói ou que se sacrificam (estruturas não contam), +1 de elixir.","Every 10 of your units killed by the hero or that self-destruct (structures don't count), +1 elixir."
 REL_lair_tithe,Dízimo do Covil,Lair Tithe
 RELD_lair_tithe,"Ouro do dano no herói ×1,3.",Gold from damage to the hero ×1.3.
 REL_black_mortar,Argamassa Negra,Black Mortar
@@ -484,15 +491,15 @@ RELD_pack_howl,"Com 5 ou mais unidades de bando vivas, os bandos causam +25% de 
 REL_merchant_purse,Bolsa do Mercador,Merchant's Purse
 RELD_merchant_purse,A loja tem 1 carta a mais e tudo custa 25% menos.,Shops have 1 extra card and everything costs 25% less.
 REL_overflowing_chalice,Cálice Transbordante,Overflowing Chalice
-RELD_overflowing_chalice,Cada ato e a arena começam com o elixir cheio.,Each act and the arena start with full elixir.
+RELD_overflowing_chalice,"Ao passar para um novo ato ou para a arena, o elixir enche até o máximo (o do ato que acabou).","When moving to a new act or the arena, elixir fills to the max (the one from the act that just ended)."
 REL_shortcut_stone,Pedra do Atalho,Shortcut Stone
-RELD_shortcut_stone,A primeira carta de cada disputa custa 2 a menos.,The first card of each contest costs 2 less.
+RELD_shortcut_stone,A primeira carta de cada disputa custa 0.,The first card of each contest costs 0.
 REL_profane_earth,Terra Profana,Profane Earth
 RELD_profane_earth,Monstro seu que morre no círculo de um local tem 25% de chance de levantar como Arqueiro Esqueleto.,Your monsters that die in a location circle have a 25% chance to rise as a Skeleton Archer.
 REL_bad_blood,Sangue Ruim,Bad Blood
-RELD_bad_blood,Cada queda de herói dá também 1 entre 3 modificadores.,Each hero fall also grants 1 of 3 modifiers.
+RELD_bad_blood,"Sempre que um herói cair, além do upgrade normal, você escolhe 1 entre 3 modificadores para colocar numa carta.","Whenever a hero falls, besides the normal upgrade, you pick 1 of 3 modifiers to put on a card."
 REL_heavy_grimoire,Grimório Pesado,Heavy Grimoire
-RELD_heavy_grimoire,"Mão +1 carta, elixir máximo −1.","Hand +1 card, max elixir −1."
+RELD_heavy_grimoire,"Mão +2 cartas, elixir máximo −2.","Hand +2 cards, max elixir −2."
 EVT_hooded_merchant,Mercador Encapuzado,Hooded Merchant
 EVT_hooded_merchant_BODY,Um vulto oferece mercadoria roubada de um templo.,A figure offers goods stolen from a temple.
 EVT_hooded_merchant_buy,Comprar (60 de ouro),Buy (60 gold)
@@ -595,7 +602,7 @@ UI_WANTED_REWARD,recompensa: o reino,reward: the kingdom
 UI_GOAL_ritual,Mate {g} no círculo!,Kill {g} in the circle!
 UI_GOALSUB_ritual,Faça monstros morrerem no ritual · {s} s,Get monsters killed in the ritual · {s} s
 UI_GOAL_shrine,Segure o santuário!,Hold the shrine!
-UI_GOALSUB_shrine,Herói abençoado (sem dano) · {g} s com monstros no círculo · {s} s,Blessed hero (no damage) · {g} s with monsters in the circle · {s} s
+UI_GOALSUB_shrine,Party com barreira · {g} s com monstros no círculo · {s} s,Party warded · {g} s with monsters in the circle · {s} s
 UI_GOAL_tavern,Destrua {g} casas!,Destroy {g} houses!
 UI_GOALSUB_tavern,Antes que os heróis descansem · {s} s,Before the heroes rest · {s} s
 UI_GOAL_bridge,Cause {g} de dano!,Deal {g} damage!
@@ -663,7 +670,8 @@ DECK_lich,Lich,Lich
 VILLAIN_plague_PASSIVE,Infestação: qualquer monstro seu que morre tem 20% de chance de deixar um rato (o rato deixado não gera outro).,Infestation: any of your monsters that dies has a 20% chance to leave a rat behind (that rat does not leave another).
 VILLAIN_dragon_PASSIVE,Avareza: você não compra em lojas. Cada loja por onde passa dá 200 de ouro e uma carta de raridade alta à sua escolha entre 3 sorteadas.,Greed: you can't buy in shops. Every shop you pass gives 200 gold and a high-rarity card of your choice from 3 random ones.
 VILLAIN_lich_PASSIVE,Ciclo de feitiço: lançar um feitiço faz a próxima criatura custar 1 a menos; uma criatura sua que morre faz o próximo feitiço custar 1 a menos. A carta afetada brilha na mão.,Spell Cycle: casting a spell makes your next creature cost 1 less; one of your creatures dying makes your next spell cost 1 less. The affected card glows in your hand.
-UI_CYCLE_MARK,CICLO −1,CYCLE −1
+UI_CYCLE_MARK,−1 elixir,−1 elixir
+UI_CYCLE_TIP,"Ciclo do Lich: um feitiço barateia a próxima criatura em 1 elixir, e uma criatura morta barateia o próximo feitiço em 1 elixir.","Lich cycle: a spell makes the next creature cost 1 less elixir, and a dead creature makes the next spell cost 1 less elixir."
 DECKDESC_crypt,Família Morte: monstros que morrem alimentam os outros. Heróis com +15% de vida.,Death family: monsters that die feed the others. Heroes with +15% health.
 DECKDESC_cult,Família Sequência: feitiço atrás de feitiço. Feitiços +10% de dano; heróis com +15% de vida.,Chain family: spell after spell. Spells +10% damage; heroes with +15% health.
 DECKSTYLE_crypt,Morte: as mortes alimentam o resto.,Death: deaths feed the rest.
@@ -908,21 +916,21 @@ UI_HELPER_BONUS_mago,O ajudante deu dano e golpe em área ao herói,The helper g
 UI_SHOP_RELIC,Relíquia {r},{r} relic
 UI_CONTEST_HARD,☠ Difícil: os 3 marcos dão também uma relíquia,☠ Hard: all 3 marks also give a relic
 REL_elixir_flask,Frasco de Elixir,Elixir Flask
-RELD_elixir_flask,+2 de elixir máximo.,+2 max elixir.
+RELD_elixir_flask,+2 de elixir máximo e o elixir enche 15% mais rápido.,+2 max elixir and elixir refills 15% faster.
 REL_quick_spring,Nascente Veloz,Quick Spring
-RELD_quick_spring,O elixir enche 34% mais rápido.,Elixir refills 34% faster.
+RELD_quick_spring,+1 de elixir máximo e o elixir enche 34% mais rápido.,+1 max elixir and elixir refills 34% faster.
 REL_deep_cauldron,Caldeirão Fundo,Deep Cauldron
-RELD_deep_cauldron,+3 de elixir máximo.,+3 max elixir.
+RELD_deep_cauldron,+3 de elixir máximo e o elixir enche 25% mais rápido.,+3 max elixir and elixir refills 25% faster.
 REL_rushing_tide,Maré Veloz,Rushing Tide
-RELD_rushing_tide,O elixir enche 45% mais rápido.,Elixir refills 45% faster.
+RELD_rushing_tide,+1 de elixir máximo e o elixir enche 45% mais rápido.,+1 max elixir and elixir refills 45% faster.
 REL_victory_mark,Marca da Vitória,Victory Mark
-RELD_victory_mark,Alcançar os 3 marcos de uma disputa dá +1 de elixir máximo até o fim da run (até +4).,Reaching all 3 marks of a contest grants +1 max elixir for the rest of the run (up to +4).
+RELD_victory_mark,Alcançar os 3 marcos de uma disputa dá +1 de elixir máximo até o fim da run (até +6).,Reaching all 3 marks of a contest grants +1 max elixir for the rest of the run (up to +6).
 REL_heart_of_well,Coração do Poço,Heart of the Well
-RELD_heart_of_well,+4 de elixir máximo.,+4 max elixir.
+RELD_heart_of_well,+4 de elixir máximo e o elixir enche 50% mais rápido.,+4 max elixir and elixir refills 50% faster.
 REL_eternal_fountain,Fonte Eterna,Eternal Fountain
-RELD_eternal_fountain,+3 de elixir máximo e o elixir enche 60% mais rápido.,+3 max elixir and elixir refills 60% faster.
+RELD_eternal_fountain,+3 de elixir máximo e o elixir enche 100% mais rápido (o dobro).,+3 max elixir and elixir refills 100% faster (double).
 REL_living_vault,Cofre Vivo,Living Vault
-RELD_living_vault,Cada 100 de ouro gastos na loja dão +1 de elixir máximo (até +4).,Every 100 gold spent in shops grants +1 max elixir (up to +4).
+RELD_living_vault,Cada 100 de ouro gastos na loja dão +1 de elixir máximo (até +5).,Every 100 gold spent in shops grants +1 max elixir (up to +5).
 REL_hand_pocket,Bolso Extra,Extra Pocket
 RELD_hand_pocket,Mão +1 carta.,Hand +1 card.
 REL_opening_gambit,Abertura,Opening Gambit
@@ -1091,10 +1099,8 @@ DESC_hollow_armor,"Devolve {reflect_pct}% do dano que o herói causa a ela. Ao m
 N3_hollow_armor,N3: devolve {reflect_pct}%.,L3: returns {reflect_pct}%.
 REL_deep_cistern,Cisterna Funda,Deep Cistern
 RELD_deep_cistern,+4 de elixir máximo.,+4 max elixir.
-REL_copper_tap,Torneira de Cobre,Copper Tap
-RELD_copper_tap,O elixir enche 30% mais rápido.,Elixir refills 30% faster.
 REL_still_aether,Alambique de Éter,Aether Still
-RELD_still_aether,+3 de elixir máximo e o elixir enche 50% mais rápido.,+3 max elixir and elixir refills 50% faster.
+RELD_still_aether,+2 de elixir máximo e o elixir enche 70% mais rápido.,+2 max elixir and elixir refills 70% faster.
 REL_aether_heart,Coração de Éter,Heart of Aether
 RELD_aether_heart,+5 de elixir máximo e o elixir enche 80% mais rápido.,+5 max elixir and elixir refills 80% faster.
 REL_living_library,Biblioteca Viva,Living Library
@@ -1118,7 +1124,7 @@ RELD_tally_stick,"A cada 8 cartas jogadas, a 8ª não gasta elixir.",Every 8th c
 REL_chain_ring,Anel Encadeado,Chain Ring
 RELD_chain_ring,Jogar 3 cartas em 4 segundos devolve 1 de elixir.,Playing 3 cards within 4 seconds refunds 1 elixir.
 REL_miser_ledger,Livro do Avarento,Miser's Ledger
-RELD_miser_ledger,"Ouro do dano no herói ×1,25, mas a loja fica 10% mais cara.","Gold from damage to the hero ×1.25, but the shop is 10% pricier."
+RELD_miser_ledger,"Ouro do dano no herói ×1,4, mas a loja fica 10% mais cara.","Gold from damage to the hero ×1.4, but the shop is 10% pricier."
 REL_frost_shard,Lasca de Gelo,Frost Shard
 RELD_frost_shard,"O herói anda 15% mais devagar, mas seu elixir máximo cai 1.","The hero walks 15% slower, but your max elixir drops by 1."
 REL_rift_key,Chave da Fenda,Rift Key
@@ -1233,23 +1239,17 @@ UNLOCK_boiling_oil,Mantenha o herói Encharcado por 75 segundos no total,Keep th
 UNLOCK_bone_colossus,Faça 3000 dos seus monstros morrerem no total,Have 3000 of your monsters die in total
 UNLOCK_bone_dragon,Derrote 35 heróis no total,Defeat 35 heroes in total
 UNLOCK_bone_totem,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_brown_bear,Derrote 20 heróis no total,Defeat 20 heroes in total
 UNLOCK_burn_village,Queime o herói por 150 segundos no total,Burn the hero for 150 seconds in total
-UNLOCK_cave_troll,Vença a primeira fase,Win the first phase
 UNLOCK_corrupt_piper,Faça 2000 ratos morrerem no total,Have 2000 of your rats die in total
 UNLOCK_devour,Vença uma fase jogando só 10 feitiços,Win a phase playing only 10 spells
 UNLOCK_dragon_exchange,Encharque o herói e incendeie-o em até 1 segundo,Soak the hero and set them on fire within 1 second(s)
 UNLOCK_elder_dragon,Tenha 5 monstros de Fogo em campo ao mesmo tempo,Have 5 Fire monsters on the field at once
-UNLOCK_ember_rain,"Jogue 25 feitiços numa mesma fase, em 3 fases diferentes","Play 25 spells in a single phase, in 3 different phases"
 UNLOCK_eruption,Vença uma fase sem jogar estruturas,Win a phase without playing structures
 UNLOCK_eternal_army,Tenha 12 mortos-vivos em campo ao mesmo tempo em 5 fases diferentes,"Have 12 undead on the field at once, in 5 different phases"
 UNLOCK_fallen_healer,Derrote um herói perdendo no máximo 5 monstros,Defeat a hero while losing at most 5 monsters
 UNLOCK_flooded_pit,"Jogue 5 cartas Temporárias numa mesma fase, em 4 fases diferentes","Play 5 Temporary cards in a single phase, in 4 different phases"
-UNLOCK_forbidden_library,Jogue 200 cartas Temporárias no total,Play 200 Temporary cards in total
 UNLOCK_furnace,Vença 2 fases com este vilão,Win 2 phases with this villain
 UNLOCK_ghost,Tenha 40 esqueletos em campo ao mesmo tempo em 3 fases diferentes,"Have 40 skeletons on the field at once, in 3 different phases"
-UNLOCK_gilded_golem,Gaste 6000 de ouro no total,Spend 6000 gold in total
-UNLOCK_gold_avalanche,Ganhe 6000 de ouro no total,Earn 6000 gold in total
 UNLOCK_gold_bait,Faça o herói parar nas Moedas Malditas 25 vezes no total,Make the hero stop at the Cursed Coins 25 times in total
 UNLOCK_gold_rain,Gaste 3000 de ouro no total,Spend 3000 gold in total
 UNLOCK_hoard_dragon,Ganhe 10000 de ouro no total,Earn 10000 gold in total
@@ -1270,7 +1270,6 @@ UNLOCK_rat_tide,"Use a mesma carta de monstro 40 vezes numa mesma fase, em 3 fas
 UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo em 2 fases diferentes,"Stack 5 Plague on the hero at once, in 2 different phases"
 UNLOCK_ruin_titan,Vença a segunda fase,Win the second phase
 UNLOCK_sewer_flood,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_shadow_echo,Jogue 5 feitiços de Sombra em 15 segundos,Play 5 Shadow spells within 15 seconds
 UNLOCK_shadow_mark,Jogue 1000 cartas no total,Play 1000 cards in total
 UNLOCK_slime,Tenha 2 Feras e 8 ratos em campo ao mesmo tempo,Have 2 Beasts and 8 rats on the field at once
 UNLOCK_soul_collector,Cause 2000 de dano ao herói em menos de 4 segundos,Deal 2000 damage to the hero in under 4 seconds

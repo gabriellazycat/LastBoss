@@ -37,6 +37,7 @@ var group_falls := 0
 var party_of: Array = []            # número da party de cada herói da fila (parties de 1 a 4, 15/11/2026)
 var cur_party := 0                  # party em campo
 var road := SimRoad.new()
+var past_lines: Array = []    # linhas (pontos) das estradas dos atos anteriores: o ato novo não encosta nelas (C17)
 var arena := SimArena.new()
 var zones: Array = []
 var events: Array = []
@@ -115,6 +116,7 @@ var gold := 0.0                 # ouro da run (dano no herói e disputas vencida
 var shop_removes := 0           # remoções compradas na run (cada uma encarece a próxima)
 var route_wait := false         # o herói chegou a uma bifurcação sem ramo escolhido: o jogo espera a escolha
 var auto_route := false         # sem escolha, segue o primeiro ramo em vez de esperar (testes que não jogam a rota)
+var notify_gives := false       # a HUD quer o aviso das cartas dadas em silêncio por eventos (os bots não)
 var relic_max_gain := 0.0       # Marca da Vitória e Cofre Vivo: elixir máximo ganho na run (soma das duas)
 var victory_gain := 0.0         # parte da Marca da Vitória (teto contest_max_cap)
 var vault_gain := 0.0           # parte do Cofre Vivo (teto shop_max_cap)
@@ -690,6 +692,7 @@ func _start_bar() -> void:
 	contest["inside"] = {}
 	match ty:
 		"shrine":
+			_shrine_ward_grant()
 			if var_ == "shrink":
 				contest["r"] = float(loc["r"]) * float(P["shrink"])
 			elif var_ == "two":
@@ -799,6 +802,7 @@ func _expel(p: Vector2, r: float, secs: float) -> void:
 ## os 3 = local vencido (ouro, elixir, Marca da Vitória e, na disputa difícil, uma relíquia).
 func _resolve_contest(won_n: int) -> void:
 	var c := contest
+	_shrine_ward_remove()
 	contest = {}
 	var won := won_n >= 3
 	var li := int(c["li"])
@@ -932,7 +936,31 @@ func _remove_helper() -> void:
 	helper = null
 
 
-## Santuário em disputa: o herói está abençoado (não leva dano) e bate mais forte em quem está no círculo.
+## Santuário em disputa: ao abrir, cada herói do círculo ganha uma barreira (ward_frac da vida máxima); só o valor
+## concedido é retirado quando o desafio acaba (sucesso, falha ou saída).
+func _shrine_ward_grant() -> void:
+	var given: Array = []
+	var frac := float(R["locations"]["shrine"].get("ward_frac", 0.1))
+	for k in ring_heroes().size():
+		var hh: SimHero = ring_heroes()[k]
+		var amt := 0.0
+		if hh.hp > 0.0:
+			amt = hh.max_hp() * frac
+			hh.ward += amt
+		given.append(amt)
+	contest["ward_given"] = given
+
+
+func _shrine_ward_remove() -> void:
+	var given: Array = contest.get("ward_given", [])
+	var hs := ring_heroes()
+	for k in mini(given.size(), hs.size()):
+		var hh: SimHero = hs[k]
+		hh.ward = maxf(0.0, hh.ward - float(given[k]))
+	contest.erase("ward_given")
+
+
+## Há um Santuário em disputa.
 func hero_blessed() -> bool:
 	return not contest.is_empty() and str(contest.get("type", "")) == "shrine"
 
@@ -1005,14 +1033,33 @@ func _end_act() -> void:
 	stats["act_t"].append(t)
 	hero.hold = false
 	hero.target_kind = SimHero.TGT_NONE
-	if act + 1 < acts():
-		for i in units.hi:
-			if units.alive[i] == 1:
-				kill_unit(i, K.Death.EXPIRE)
-		zones.clear()
+	# C17 (19/11/2026): o mundo continua de um ato para o outro; unidades e zonas ficam onde estão.
 	emit(K.Ev.ACT_END, hero.x, hero.y, act, 0)
 	_offer_act_card()
 	offer_relic_choice("act")
+
+
+const ACT_CLEAR := 12.0       # m: o ato novo fica pelo menos isto longe das estradas anteriores
+const ACT_SKIP_R := 40.0      # m em volta do covil de partida, onde a estrada velha termina e a nova começa
+const ACT_TRIES := 14
+
+## Estrada do ato `k`, a partir do covil `origin`: sorteia até ACT_TRIES vezes (mesmo rng, determinístico) e fica com a que
+## menos encosta nas estradas anteriores (`past`, linhas de pontos).
+func gen_act_road(k: int, origin: Vector2, dir: Vector2, past: Array) -> SimRoad:
+	var grid := SimRoad.point_grid(past, ACT_CLEAR)
+	var best: SimRoad = null
+	var best_n := 1 << 30
+	for t in ACT_TRIES:
+		var r := SimRoad.new()
+		r.generate(rng_map, R, _act_cfg(k), origin, dir)
+		var n := r.clash(grid, ACT_CLEAR, origin, ACT_SKIP_R, ACT_CLEAR)
+		if n < best_n:
+			best_n = n
+			best = r
+		if n == 0:
+			break
+	stats["act_clash"] = int(stats.get("act_clash", 0)) + best_n
+	return best
 
 
 func _next_act() -> void:
@@ -1030,19 +1077,13 @@ func _next_act() -> void:
 	if rv("act_gold") > 0.0:
 		_earn_gold(rv("act_gold"))   # Tesouro de Ato
 	stats["route_len"] = float(stats.get("route_len", 0.0)) + road.length()
-	road = SimRoad.new()
-	road.generate(rng_map, R, _act_cfg(act))
+	# O ato novo nasce no covil do anterior, na direção em que o herói já andava: sem teleporte.
+	past_lines.append_array(road.all_lines())
+	road = gen_act_road(act, road.lair, road.lair_dir, past_lines)
 	var p0: Vector2 = road.route[0]
-	hero.x = p0.x
-	hero.y = p0.y
-	hero.ox = p0.x
-	hero.oy = p0.y
 	hero.s = 0.0
 	hero.s_max = 0.0
 	hero.seg = 0
-	hero.face_x = 0.0
-	hero.face_y = -1.0
-	regroup()
 	emit(K.Ev.ACT_START, p0.x, p0.y, act, 0)
 
 
@@ -1180,15 +1221,6 @@ func _offer_relics(source := "act") -> void:
 				if by.has(r2) and by[r2].size() > by[best].size():
 					best = r2
 		pool = by[best]
-		if source == "act":
-			# Uma oferta de fim de ato sempre traz relíquia de elixir (13/11/2026), na raridade sorteada.
-			# Só as que DÃO elixir (15/11/2026): Grimório Pesado, Mão do Enforcado e Lasca de Gelo tiram e não contam.
-			var elx: Array = pool.filter(func(rid): return float(data.relics[rid]["fx"].get("elixir_max", 0.0)) > 0.0 or float(data.relics[rid]["fx"].get("elixir_regen", 0.0)) > 0.0)
-			if elx.size() > 0:
-				var pick := _pick_relic(elx)
-				pool.erase(pick)
-				opts.append({"kind": "relic", "id": pick})
-				want -= 1
 	for k in want:
 		if pool.is_empty():
 			break
@@ -1559,8 +1591,6 @@ func _finish(r: int) -> void:
 # ================================================================ dano e mortes
 
 func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card_id: String) -> float:
-	if hero_blessed():
-		return 0.0   # herói abençoado no Santuário: sem dano (a graça é o herói defender, não ficar apanhando)
 	if tags & K.TAG_FIRE:
 		amount *= 1.0 + hoard_fire()
 	var hh0: SimHero = hit_hero if hit_hero else hero
@@ -1664,6 +1694,12 @@ func unit_hits_hero(i: int) -> void:
 		hk.knockback(units.px[i], units.py[i], float(c.fx.get("knockback", 4.0)))
 		if c.has_n3(lv, "root"):
 			hk.root_t = maxf(hk.root_t, float(c.n3["root"]) * cc_mult())
+	if (units.flags[i] & K.F_LEECH) and real > 0.0:
+		# Rouba-vida: a unidade se cura com uma fração do dano que realmente tirou do herói.
+		var heal := minf(units.max_hp[i] - units.hp[i], real * float(data.modifiers["leech"]["p"]["steal_frac"]))
+		if heal > 0.0:
+			units.hp[i] += heal
+			emit(K.Ev.LEECH, units.px[i], units.py[i], heal, i)
 	if (units.flags[i] & K.F_CURSED) and units.curse_t[i] <= 0.0:
 		hk.add_curse(1)
 		units.curse_t[i] = R["curse"]["cursed_mod_cooldown"]
@@ -1673,8 +1709,6 @@ func hero_hits_unit(i: int, dmg: float) -> void:
 	if units.alive[i] == 0:
 		return
 	dmg *= CardsCommon.hero_out_mult(self) * CardsPlague.hero_out_mult(self) * CardsDragon.hero_out_mult(self) * CardsLich.hero_out_mult(self)
-	if hero_blessed() and in_shrine_circle(units.px[i], units.py[i]):
-		dmg *= 1.0 + float(R["locations"]["shrine"]["blessed_dmg"])
 	if units.flags[i] & K.F_STONE:
 		# Gárgula N3: em pedra, devolve parte do golpe.
 		var gc: CardDef = data.cards[units.def[i]]
@@ -1685,8 +1719,16 @@ func hero_hits_unit(i: int, dmg: float) -> void:
 	if rc.fx.has("reflect"):
 		# Armadura Vazia: devolve parte do golpe ao herói.
 		damage_hero(dmg * rc.fxv("reflect", int(units.lvl[i])), units.px[i], units.py[i], rc.tags, SimHero.DMG_AREA, rc.id)
+	var absorbed := 0.0
+	if units.sh[i] > 0.0:
+		# Sombrio: o escudo de vida leva o golpe primeiro.
+		absorbed = minf(units.sh[i], dmg)
+		units.sh[i] -= absorbed
+		dmg -= absorbed
+		if units.sh[i] <= 0.0:
+			emit(K.Ev.UNIT_SHIELD_BREAK, units.px[i], units.py[i], 0.0, i)
 	units.hp[i] -= dmg
-	emit(K.Ev.DAMAGE_UNIT, units.px[i], units.py[i], dmg, i)
+	emit(K.Ev.DAMAGE_UNIT, units.px[i], units.py[i], dmg + absorbed, i)
 	if units.hp[i] <= 0.0:
 		kill_unit(i, K.Death.HERO)
 
@@ -1720,7 +1762,7 @@ func kill_unit(i: int, cause: int) -> void:
 		if f & K.F_EXPLOSIVE:
 			var M: Dictionary = data.modifiers["explosive"]["p"]
 			if Vector2(hero.x - x, hero.y - y).length() <= float(M["radius"]) + hero.radius:
-				damage_hero(M["damage"], x, y, 0, 0, str(card_of_uid.get(units.uid[i], c.id)))
+				damage_hero(float(units.max_hp[i]) * float(M["hp_frac"]), x, y, 0, 0, str(card_of_uid.get(units.uid[i], c.id)))
 			emit(K.Ev.EXPLOSION, x, y, M["radius"], 0)
 	if cause == K.Death.HERO:
 		var split: Array = c.fx.get("split", [])
@@ -1860,7 +1902,7 @@ func _totem_revive(i: int, x: float, y: float) -> void:
 
 
 func spawn_child(c: CardDef, x: float, y: float, parent: int) -> int:
-	var inherit := units.flags[parent] & (K.F_NO_XP | K.F_CURSED | K.F_DEFEND)
+	var inherit := units.flags[parent] & (K.F_NO_XP | K.F_CURSED | K.F_DEFEND | K.F_EXPLOSIVE | K.F_SHADOWY | K.F_LEECH)
 	var j := units.spawn(c, x, y, units.xp[parent], units.cost_share[parent], inherit, units.uid[parent], _forge())
 	if j >= 0:
 		units.lvl[j] = units.lvl[parent]
@@ -1955,6 +1997,7 @@ func _hero_fell() -> void:
 	if contest.size() > 0:
 		road.locations[int(contest["li"])]["state"] = SimRoad.LocState.USED
 		stats["locs_lost"] += 1
+	_shrine_ward_remove()
 	contest = {}
 	_remove_helper()   # o Herói Ajudante vai embora junto com a disputa perdida
 	hero.hold = false
@@ -2590,6 +2633,21 @@ func _pick_card(filter: Callable, exclude: Array) -> CardDef:
 	return cand[cand.size() - 1]
 
 
+## O modificador muda alguma coisa nesta carta? (Nada de oferecer Amaldiçoado a feitiço que não maldiz, Barato a carta
+## de custo 0, nem Amaldiçoado/Rouba-vida a unidade que não bate no herói.)
+func mod_has_effect(d: CardDef, mid: String) -> bool:
+	match mid:
+		"cursed":
+			if d.is_spell:
+				return CardDef.CURSE_SPELLS.has(d.id)
+			return d.dps > 0.0
+		"cheap":
+			return d.cost > 0
+		"leech":
+			return d.dps > 0.0
+	return true
+
+
 func _mod_option(exclude: Array) -> Dictionary:
 	var cand: Array = []
 	for ci in cards:
@@ -2597,7 +2655,7 @@ func _mod_option(exclude: Array) -> Dictionary:
 			continue
 		for mid in K.MOD_IDS:
 			var m: Dictionary = data.modifiers[mid]
-			var ok: bool = (m["applies"].has("any") or m["applies"].has(ci.def.type)) and not m.get("exclude", []).has(ci.def.id)
+			var ok: bool = (m["applies"].has("any") or m["applies"].has(ci.def.type)) and not m.get("exclude", []).has(ci.def.id) and mod_has_effect(ci.def, mid)
 			if ok and not ci.has_mod(K.MOD_BY_ID[mid]) and not exclude.has(str(ci.uid) + mid):
 				cand.append([ci, mid])
 	if cand.is_empty():
@@ -2876,6 +2934,9 @@ func choose(k: int) -> bool:
 		return false
 	var o: Dictionary = offers[0]
 	var opts: Array = o["options"]
+	if o["source"] == "give":
+		offers.pop_front()   # só um aviso: Continuar (qualquer carta ou SKIP) fecha, sem efeito
+		return true
 	if k == SKIP:
 		# Na loja, recusar é sair (ou voltar da escolha da carta para a loja).
 		if o["source"] != "shop" and o["source"] != "shop_pick":
@@ -3023,6 +3084,41 @@ func _apply_option(op: Dictionary) -> Array:
 					queue.push_front(cp)
 					_refill()
 	return follow
+
+
+## Efeito de evento que dá direto (sem oferta): aplica e avisa a HUD, que mostra a carta e a mudança.
+func give_option(op: Dictionary) -> Array:
+	var kind := -1
+	var d: CardDef = null
+	var lv0 := 0
+	var lv1 := 0
+	match str(op["kind"]):
+		"card":
+			kind = K.GiveKind.ADD
+			d = data.card(op["id"])
+			lv1 = clampi(int(op.get("level", 1)), 1, int(R["card_levels"]["max"]))
+		"upgrade", "remove":
+			for ci in cards:
+				if ci.uid == op["uid"]:
+					d = ci.def
+					lv0 = ci.level
+			kind = K.GiveKind.UPGRADE if str(op["kind"]) == "upgrade" else K.GiveKind.REMOVE
+			lv1 = mini(lv0 + 1, int(R["card_levels"]["max"])) if kind == K.GiveKind.UPGRADE else lv0
+	var out := _apply_option(op)
+	if d != null:
+		emit(K.Ev.GIVE, hero.x, hero.y, d.idx, kind | (lv0 << 4) | (lv1 << 8))
+		if notify_gives:
+			# Aviso com as cartas reais: oferta "give" (a HUD mostra "sobe nível a → b" / "sai do baralho" e Continuar).
+			var shown := {"kind": "card", "id": d.id, "level": lv1}
+			if kind == K.GiveKind.UPGRADE:
+				shown = {"kind": "upgrade", "uid": op["uid"], "card": d.id, "level": lv0}
+			elif kind == K.GiveKind.REMOVE:
+				shown = {"kind": "remove", "uid": op["uid"], "card": d.id, "level": lv0}
+			if not offers.is_empty() and str(offers.back()["source"]) == "give":
+				offers.back()["options"].append(shown)
+			else:
+				offers.append({"source": "give", "options": [shown]})
+	return out
 
 
 func _refill() -> void:

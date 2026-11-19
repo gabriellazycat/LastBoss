@@ -313,7 +313,7 @@ static func on_unit_death(sim: Sim, i: int, cause: int) -> void:
 	if sim.t < float(st.get("endless_t", -1.0)) and (U.tags[i] & K.TAG_PACK) and U.arch[i] != K.Arch.STRUCTURE \
 			and not (U.flags[i] & K.F_REVIVED):
 		var c: CardDef = sim.data.cards[U.def[i]]
-		var j := U.spawn(c, U.px[i], U.py[i], 0.0, 0.0, (U.flags[i] & (K.F_CURSED | K.F_DEFEND)) | K.F_REVIVED | K.F_NO_XP, U.uid[i])
+		var j := U.spawn(c, U.px[i], U.py[i], 0.0, 0.0, (U.flags[i] & (K.F_CURSED | K.F_DEFEND | K.F_EXPLOSIVE)) | K.F_REVIVED | K.F_NO_XP, U.uid[i])
 		if j >= 0:
 			U.lvl[j] = U.lvl[i]
 			U.hp[j] = U.max_hp[i]

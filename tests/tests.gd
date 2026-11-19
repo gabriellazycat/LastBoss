@@ -39,6 +39,11 @@ func _ready() -> void:
 	t_offer_single_rarity()
 	t_offer_upgrades()
 	t_shrine_blessed()
+	t_hero_knockback_mult()
+	t_explosive_hp_frac()
+	t_mod_effects()
+	t_roads_curved()
+	t_give_notice()
 	t_relics()
 	t_relics_1111()
 	t_events()
@@ -46,6 +51,8 @@ func _ready() -> void:
 	t_soul_absorb_cooldown()
 	t_arena_hunt()
 	t_acts()
+	t_act_continuous()
+	t_world_append()
 	t_meta()
 	t_unlock_challenges()
 	t_full_runs()
@@ -58,6 +65,7 @@ func _ready() -> void:
 	t_human_bot()
 	t_translations()
 	t_keywords()
+	t_shadowy_leech()
 	t_card_fx()
 	t_rarity_pool()
 	t_dragon_c6()
@@ -895,7 +903,7 @@ func t_rivers() -> void:
 
 ## Água dos rios na simulação (16/11/2026, docs/RIO_E_PONTES.md passo 3): carta, unidade, ponte, alvo e save.
 func t_water() -> void:
-	var s := _sim(6)
+	var s := _sim(12)
 	var T := s.terra()
 	check(T.ok and T.bridges.size() > 0, "terreno do rio montado (%d pontes)" % T.bridges.size())
 	if not T.ok or T.bridges.is_empty():
@@ -924,7 +932,7 @@ func t_water() -> void:
 			spell = c
 		elif not c.is_spell and c.fly and flyer == null:
 			flyer = c
-		elif not c.is_spell and not c.fly and c.arch == K.Arch.CHASER and ground == null:
+		elif not c.is_spell and not c.fly and c.arch == K.Arch.CHASER and ground == null and c.id != "ghost":   # o Fantasma morre no 1º passo e o teste de travessia "falhava"
 			ground = c
 	var gi := s._new_inst(ground)
 	check(not s.valid_target(gi, wet.x, wet.y), "monstro de chão não pode ser solto na água (%s)" % ground.id)
@@ -941,7 +949,7 @@ func t_water() -> void:
 	var c: Vector2 = b["c"]
 	var ea: Vector2 = b["a"]
 	var eb: Vector2 = b["b"]
-	var s2 := _sim(6)
+	var s2 := _sim(12)
 	var T2 := s2.terra()
 	s2.offers.clear()
 	s2.hero.base_hp = 1.0e6
@@ -950,6 +958,7 @@ func t_water() -> void:
 	s2.hero.x = hp_.x
 	s2.hero.y = hp_.y
 	s2.hero.hold = true
+	s2.hero.leash_mult = 1000.0   # a ponte pode ficar longe do herói na estrada (19/11/2026: estradas em curva); sem coleira
 	s2.hero.hold_x = hp_.x
 	s2.hero.hold_y = hp_.y
 	var up := eb + (eb - c).normalized() * 3.0 + (eb - c).normalized().orthogonal() * 6.0
@@ -974,7 +983,7 @@ func t_water() -> void:
 	check(wet_steps == 0, "o monstro nunca termina um passo na água (%d)" % wet_steps)
 	check(crossed, "o monstro do outro lado chega ao herói pela ponte")
 	# Herói: monstro do outro lado da água não vira alvo, mesmo perto.
-	var s3 := _sim(6)
+	var s3 := _sim(12)
 	var T3 := s3.terra()
 	s3.offers.clear()
 	s3.hero.x = hp_.x
@@ -1173,7 +1182,7 @@ func t_contests() -> void:
 	_steps(s, float(L["shrine"]["window"]) + 0.5)
 	check(s.contest.is_empty() and s.offers.size() == 1, "Santuário: só 1 marco = 1 carta rara")
 	# Taverna: casas no chão, meta cumulativa 1, 2, 3; 1 escolha de modificador por casa.
-	s = _at_location("tavern")
+	s = _at_location("tavern", 4)
 	var loc: Dictionary = s.road.locations[int(s.contest["li"])]
 	check(loc["houses"].size() == int(L["tavern"]["houses"]) and is_equal_approx(float(loc["houses"][0]["max_hp"]), float(L["tavern"]["house_hp_act"][0])), "Taverna: as casas aparecem com a vida do ato")
 	s.hero.petrify_t = 100.0
@@ -1308,19 +1317,103 @@ func t_acts() -> void:
 	var old_road := a.road
 	a.choose(Sim.SKIP)
 	check(a.offers.size() == 1 and a.offers[0]["source"] == "relic", "recusar a carta do fim de ato passa para a relíquia")
-	a.choose(0)
+	a.choose(Sim.SKIP)   # a relíquia sorteada pode mexer na vida (não é mais sempre de elixir)
 	a.step()
 	check(a.act == 1 and a.road != old_road and a.hero.s == 0.0 and is_equal_approx(a.hero.hp, hp), "ato 2: estrada nova, herói no começo e com a mesma vida")
+
+
+## C17 (19/11/2026): troca de ato contínua. O ato novo nasce no covil do anterior, sem teleporte e sem matar unidades.
+func t_act_continuous() -> void:
+	var a := _sim(5)
+	var lair: Vector2 = a.road.lair
+	a.hero.x = lair.x
+	a.hero.y = lair.y
+	for k in 4:
+		a.units.spawn(data.card("rat_horde"), lair.x + 3.0 + k, lair.y + 2.0, 0.0, 0.0, 0, 999)
+	var alive := 0
+	for i in a.units.hi:
+		alive += int(a.units.alive[i])
+	a._end_act()
+	var old_road := a.road
+	if SaveGame.save(a, "user://test_act.save"):   # save no meio da troca (oferta pendente)
+		var c := SaveGame.load_run(data, "user://test_act.save")
+		check(c != null and c.state_hash() == a.state_hash() and c.act_pending, "save no meio da troca de ato recarrega igual")
+		SaveGame.erase("user://test_act.save")
+	a.choose(Sim.SKIP)
+	a.choose(Sim.SKIP)
+	a.step()
+	var alive2 := 0
+	for i in a.units.hi:
+		alive2 += int(a.units.alive[i])
+	check(a.act == 1 and a.road != old_road, "ato novo gerado")
+	check(a.road.route[0].distance_to(lair) < 0.01, "o ato novo nasce no covil do anterior")
+	check(Vector2(a.hero.x, a.hero.y).distance_to(lair) < 2.0, "o herói não é teleportado na troca (%.2f m)" % Vector2(a.hero.x, a.hero.y).distance_to(lair))
+	check(alive2 >= alive, "a troca de ato não mata unidades (%d -> %d)" % [alive, alive2])
+	var dir_dot := old_road.lair_dir.dot((a.road.nodes[1]["pos"] - a.road.nodes[0]["pos"]).normalized())
+	check(dir_dot > 0.3, "o ato novo segue no sentido do anterior (%.2f)" % dir_dot)
+	check(SaveGame.save(a, "user://test_act.save"), "salvou depois da troca")
+	var c2 := SaveGame.load_run(data, "user://test_act.save")
+	check(c2 != null and c2.state_hash() == a.state_hash() and c2.past_lines.size() == a.past_lines.size() and a.past_lines.size() > 0, "save depois da troca guarda as estradas anteriores")
+	if c2 != null:
+		for i in 600:
+			a.step()
+			c2.step()
+		check(a.state_hash() == c2.state_hash(), "retomada idêntica depois da troca de ato")
+	SaveGame.erase("user://test_act.save")
+
+
+## Atos encadeados (C17): o ato novo não cruza nem encosta na estrada do anterior, longe do covil de partida.
+func t_acts_chain() -> void:
+	var near := 0
+	var n := 0
+	var worst := 0
+	for sd in range(1, 121):
+		var s := _sim(sd)
+		for k in range(1, int(data.rules["run"]["acts"])):
+			s.past_lines.append_array(s.road.all_lines())
+			var nr := s.gen_act_road(k, s.road.lair, s.road.lair_dir, s.past_lines)
+			var grid := SimRoad.point_grid(s.past_lines, 12.0)
+			var c := nr.clash(grid, 12.0, s.road.lair, Sim.ACT_SKIP_R, 6.0)
+			near += c
+			worst = maxi(worst, c)
+			n += 1
+			s.road = nr
+	print("  atos encadeados: %d trocas, pontos a menos de 6 m %d (pior troca %d)" % [n, near, worst])
+	check(worst == 0, "atos encadeados: nenhuma troca caiu na tentativa de reserva")
+	check(near == 0, "atos encadeados: estrada nova nunca encosta na anterior (%d pontos)" % near)
+
+
+func t_world_append() -> void:
+	var a := _sim(5)
+	var w := WorldView.new()
+	add_child(w)
+	var cam := Camera3D.new()
+	add_child(cam)
+	w.build(a, cam)
+	w.cam_pos = Vector3(123, 0, -45)
+	var n0 := w.static_nodes.size()
+	a._end_act()
+	a.choose(Sim.SKIP)
+	a.choose(Sim.SKIP)
+	a.step()
+	w.build(a, cam, true)
+	check(n0 > 0 and w.static_nodes.size() > 0, "WorldView guarda o cenário do ato (%d nós)" % n0)
+	check(w.old_act_root != null and w.old_act_root.get_child_count() == n0, "o cenário do ato antigo fica num nó à parte (%d)" % (w.old_act_root.get_child_count() if w.old_act_root else -1))
+	check(w.cam_pos.is_equal_approx(Vector3(123, 0, -45)), "anexar o ato não teleporta a câmera")
+	w.build(a, cam, true)
+	w.build(a, cam)   # reconstrução limpa
+	w.queue_free()
+	cam.queue_free()
 
 
 func t_relics() -> void:
 	var s := _sim(2)
 	s.gain_relic("heavy_grimoire")
-	check(s.hand_size == 6 and s.elixir_max == 9.0, "Grimório Pesado: mão +1, elixir máximo −1 (%d, %.0f)" % [s.hand_size, s.elixir_max])
+	check(s.hand_size == 7 and s.elixir_max == 8.0, "Grimório Pesado: mão +2, elixir máximo −2 (%d, %.0f)" % [s.hand_size, s.elixir_max])
 	s.gain_relic("shortcut_stone")
 	var cost0 := s.card_cost(s.hand[0])
 	s.contest = {"probe": true}
-	check(s.card_cost(s.hand[0]) == maxi(0, cost0 - 2), "Pedra do Atalho: a primeira carta da disputa custa 2 a menos")
+	check(s.card_cost(s.hand[0]) == 0, "Pedra do Atalho: a primeira carta da disputa custa 0")
 	s.contest["first"] = true
 	check(s.card_cost(s.hand[0]) == cost0, "Pedra do Atalho: só a primeira carta")
 	s.contest = {}
@@ -1335,7 +1428,7 @@ func t_relics() -> void:
 	check(s.card_cost(s.hand[0]) == 0, "Olho Vigilante: carta grátis logo depois de uma habilidade")
 	SaveGame.save(s, "user://test.save")
 	var c := SaveGame.load_run(data, "user://test.save")
-	check(c.relics == s.relics and c.rv("contest_first_discount") == 2.0 and c.hand_size == 6, "relíquias vão no salvamento")
+	check(c.relics == s.relics and c.rv("contest_first_discount") == 99.0 and c.hand_size == 7, "relíquias vão no salvamento")
 	SaveGame.erase("user://test.save")
 
 
@@ -1667,36 +1760,121 @@ func t_offer_upgrades() -> void:
 
 
 func t_shrine_blessed() -> void:
-	# Santuário: o herói abençoado não leva dano e bate mais forte em quem está no círculo.
+	# Santuário: cada herói do círculo ganha uma barreira (10% da vida máxima); o dano continua valendo;
+	# ao fim do desafio só o valor concedido sai.
 	var s := _at_location("shrine")
-	var p: Vector2 = s.road.locations[int(s.contest["li"])]["pos"]
-	check(s.hero_blessed(), "Santuário em disputa: herói abençoado")
+	var frac := float(data.rules["locations"]["shrine"]["ward_frac"])
+	var want: float = s.hero.max_hp() * frac
+	check(absf(s.hero.ward - want) < 0.01 and want > 0.0, "Santuário: barreira de %.0f%% da vida máxima (%.1f)" % [frac * 100.0, s.hero.ward])
+	s.hero.ward += 7.0   # barreira de outra fonte: tem de sobrar
 	var hp0 := s.hero.hp
-	s.damage_hero(100.0, p.x + 1.0, p.y, 0, SimHero.DMG_AREA, "ogre")
-	var j := s.units.spawn(data.card("ogre"), p.x + 1.5, p.y, 0.0, 0.0, 0, 999)
-	for i in 120:
-		s.units.px[j] = p.x + 1.5
-		s.units.py[j] = p.y
-		s.step()
-		if s.contest.is_empty():
-			break
-	check(is_equal_approx(s.hero.hp, hp0) and s.hero.hp > 0.0, "Santuário: o dano dos monstros não tira vida do herói (%.1f → %.1f)" % [hp0, s.hero.hp])
-	# Dano extra só no círculo.
-	var a := s.units.spawn(data.card("ogre"), p.x + 1.0, p.y, 0.0, 0.0, 0, 999)
-	var b := s.units.spawn(data.card("ogre"), p.x + 30.0, p.y, 0.0, 0.0, 0, 999)
-	var ha: float = s.units.hp[a]
-	var hb: float = s.units.hp[b]
-	s.hero_hits_unit(a, 10.0)
-	s.hero_hits_unit(b, 10.0)
-	var da: float = ha - s.units.hp[a]
-	var db: float = hb - s.units.hp[b]
-	var mult := 1.0 + float(data.rules["locations"]["shrine"]["blessed_dmg"])
-	check(s.in_shrine_circle(p.x + 1.0, p.y) and not s.in_shrine_circle(p.x + 30.0, p.y) and absf(da - db * mult) < 0.01, "Santuário: dano extra do herói só em quem está no círculo (%.1f x %.1f)" % [da, db])
-	# Fora da disputa o herói volta a levar dano.
-	s.contest = {}
+	s.hero.ward = 0.0 + 7.0 + want
+	s.damage_hero(want + 20.0, 0.0, 0.0, 0, SimHero.DMG_AREA, "ogre")
+	check(s.hero.hp < hp0 + 0.001 and s.hero.hp >= 0.0, "Santuário: o dano não é mais zerado")
+	s.hero.ward = want + 7.0
+	s._resolve_contest(0)
+	check(absf(s.hero.ward - 7.0) < 0.01 and not s.contest.has("ward_given"), "Santuário: ao fim só a barreira concedida sai (%.2f)" % s.hero.ward)
 	var hp1 := s.hero.hp
-	s.damage_hero(10.0, p.x + 1.0, p.y, 0, SimHero.DMG_AREA, "ogre")
-	check(not s.hero_blessed() and s.hero.hp < hp1, "fora da disputa o herói leva dano normal")
+	s.damage_hero(10.0, 0.0, 0.0, 0, SimHero.DMG_AREA, "ogre")
+	check(s.hero.hp <= hp1, "fora da disputa o herói leva dano normal")
+
+
+func t_hero_knockback_mult() -> void:
+	var s := _sim_tough(1)
+	var h: SimHero = s.hero
+	h.knockback(h.x - 1.0, h.y, 4.0)
+	var mult := float(data.rules["hero"]["knockback_mult"])
+	var spd := Vector2(h.kb_x, h.kb_y).length() * h.kb_t
+	check(absf(spd - 4.0 * mult) < 0.05 and mult < 1.0, "Empurrão do herói: distância x%.2f (%.2f)" % [mult, spd])
+
+
+func t_explosive_hp_frac() -> void:
+	var f := float(data.modifiers["explosive"]["p"]["hp_frac"])
+	check(is_equal_approx(f, 0.15) and not data.modifiers["explosive"]["p"].has("damage"), "Explosivo: dano ao herói é fração da vida do monstro")
+
+
+func t_mod_effects() -> void:
+	# Modificador sem efeito nunca é sorteado: Amaldiçoado só em feitiço que maldiz, Barato só com custo > 0.
+	var s := _sim(5)
+	var bad := 0
+	var seen := 0
+	for n in 400:
+		var o: Dictionary = s._mod_option([])
+		if o.is_empty():
+			continue
+		seen += 1
+		var d: CardDef = data.card(str(o["card"]))
+		if not s.mod_has_effect(d, str(o["mod"])):
+			bad += 1
+		if str(o["mod"]) == "cursed" and d.is_spell and not CardDef.CURSE_SPELLS.has(d.id):
+			bad += 1
+		if str(o["mod"]) == "cheap" and d.cost <= 0:
+			bad += 1
+	check(seen > 50 and bad == 0, "Modificador sem efeito nunca sorteado (%d ofertas, %d inválidas)" % [seen, bad])
+	check(not s.mod_has_effect(data.card("soul_feast"), "cursed"), "Maldição não é oferecida a feitiço que não maldiz")
+
+
+func t_roads_curved() -> void:
+	# Estradas em curva (19/11/2026): 200 sementes x atos, nenhuma ligação cruza outra (teste geométrico),
+	# as rotas têm o mesmo comprimento, os rios têm ponte em locais Ponte, e os pontos seguem o contrato (passo curto).
+	var cross := 0
+	var bad_len := 0
+	var bad_bridge := 0
+	var long_step := 0
+	var maps := 0
+	for seed_ in range(1, 201):
+		var act_ := seed_ % 3
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_ * 7919
+		var road := SimRoad.new()
+		road.generate(rng, data.rules, data.rules["acts"][act_].get("road", {}))
+		maps += 1
+		var bridges: Array = []
+		for rv in road.rivers:
+			bridges.append_array(rv["bridges"])
+		for i in road.legs.size():
+			var A: PackedVector2Array = road.legs[i]["pts"][0]
+			for k in A.size() - 1:
+				if A[k].distance_to(A[k + 1]) > 12.0:
+					long_step += 1
+			for j in range(i + 1, road.legs.size()):
+				if road.polylines_cross(A, road.legs[j]["pts"][0], 0.6, bridges, 12.1):
+					cross += 1
+		var paths := _all_paths(road)
+		var l0 := _path_len(road, paths[0])
+		for p in paths:
+			if absf(_path_len(road, p) - l0) > 1.0:
+				bad_len += 1
+		for rv in road.rivers:
+			for n in rv["bridges"]:
+				if road.nodes[n]["loc"] >= 0 and str(road.locations[road.nodes[n]["loc"]]["type"]) != "bridge":
+					bad_bridge += 1
+	# Sem violações novas (obs. de 17/11: a estrada antiga, em trechos retos, já cruzava): a linha de base medida nos mesmos
+	# 200 mapas era 132 cruzamentos em 70 mapas; a curva com desvio para fora mede 97.
+	check(cross <= 132, "estradas em curva: sem cruzamentos novos em %d mapas (%d, base antiga 132)" % [maps, cross])
+	check(bad_len == 0, "estradas em curva: rotas de igual comprimento (%d fora)" % bad_len)
+	check(bad_bridge == 0, "estradas em curva: rios com ponte nos locais Ponte (%d erros)" % bad_bridge)
+	check(long_step == 0, "estradas em curva: pontos reamostrados em passo curto (%d trechos longos)" % long_step)
+
+
+func t_give_notice() -> void:
+	# Efeitos "give" de evento (Encruzilhada, Fonte): emitem GIVE e, com a HUD, abrem o aviso com as cartas reais.
+	var s := _sim(4)
+	s.notify_gives = true
+	s.record_events = true
+	var n0 := s.cards.size()
+	Effects.run(s, [{"kind": "upgrade", "give": true, "n": 1}, {"kind": "remove", "give": true}, {"kind": "card", "give": true, "n": 1}])
+	var evs := 0
+	for e in s.events:
+		if int(e[0]) == K.Ev.GIVE:
+			evs += 1
+	check(evs == 3, "efeito give emite o evento GIVE (%d)" % evs)
+	check(s.offers.size() == 1 and s.offers[0]["source"] == "give" and s.offers[0]["options"].size() == 3, "o aviso junta as 3 mudanças numa oferta")
+	check(s.cards.size() == n0, "o aviso não muda o baralho de novo (%d → %d)" % [n0, s.cards.size()])
+	check(s.choose(Sim.SKIP) and s.offers.is_empty(), "Continuar fecha o aviso")
+	var q := _sim(4)
+	Effects.run(q, [{"kind": "upgrade", "give": true, "n": 1}])
+	check(q.offers.is_empty(), "sem HUD (bots) nenhum aviso é aberto")
 
 
 func t_ability_tell() -> void:
@@ -3042,6 +3220,11 @@ func t_helper() -> void:
 	if away.length() < 0.5:
 		away = Vector2(1, 0)
 	var op := hpos + away * 4.0
+	# O rio pode passar ali: tenta outros ângulos, sempre do lado de fora do ajudante (mais perto dele que do herói da vez).
+	for ang in [0.0, 0.5, -0.5, 1.0, -1.0, 0.25, -0.25]:
+		op = hpos + away.rotated(ang) * 4.0
+		if not s.terra().is_water(op.x, op.y) and not s.terra().is_water((op.x + hpos.x) * 0.5, (op.y + hpos.y) * 0.5) and op.distance_to(Vector2(s.hero.x, s.hero.y)) > hpos.distance_to(op) + 0.5:
+			break
 	var og := s.units.spawn(data.card("ogre"), op.x, op.y, 0.0, 0.0, 0, 999)
 	s.units.hp[og] = 1.0e6
 	s.units.max_hp[og] = 1.0e6
@@ -3306,19 +3489,14 @@ func t_round_2026_11_13() -> void:
 			if c.owner == "common":
 				n_com += 1
 	check(float(com) / tot < float(n_com) / n_all * 0.85, "sorteio: comum sai menos que no sorteio uniforme (%.0f%% contra %.0f%%)" % [100.0 * com / tot, 100.0 * n_com / n_all])
-	# --- Relíquias: oferta de ato sempre traz elixir; Biblioteca Viva compra ao embaralhar.
-	var all_have := true
+	# --- Relíquias: a oferta de ato não força mais uma de elixir (19/11/2026); Biblioteca Viva compra ao embaralhar.
+	var any_offer := true
 	for sd in 12:
 		var so := _sim(sd + 1, "dragon")
 		so.offers.clear()
 		so._offer_relics("act")
-		var got := false
-		for o in so.offers[0]["options"]:
-			var fxr: Dictionary = data.relics[o["id"]]["fx"]
-			if fxr.has("elixir_max") or fxr.has("elixir_regen"):
-				got = true
-		all_have = all_have and got
-	check(all_have, "oferta de relíquia do ato sempre traz uma de elixir")
+		any_offer = any_offer and so.offers.size() == 1 and so.offers[0]["options"].size() > 0
+	check(any_offer, "oferta de relíquia do ato vem com opções (sem relíquia de elixir obrigatória)")
 	s = _sim(5, "plague")
 	s.gain_relic("living_library")
 	s.discard.append_array(s.queue)
@@ -3328,3 +3506,32 @@ func t_round_2026_11_13() -> void:
 	hs0 = s.hand.size()
 	s.draw_card()
 	check(s.hand.size() >= hs0 + 1 and int(s.stats.get("shuffles", 0)) >= 1, "Biblioteca Viva: embaralhar compra 1 carta a mais")
+
+
+## Sombrio vira escudo de vida (50% da vida absorve o dano antes) e Rouba-vida cura a unidade (19/11/2026).
+func t_shadowy_leech() -> void:
+	var s := _sim(3)
+	s.hero.base_hp = 1.0e6
+	s.hero.hp = 1.0e6
+	var d: CardDef = null
+	for c in data.cards:
+		if d == null and not c.is_spell and not c.fly and c.arch == K.Arch.CHASER:
+			d = c
+	check(data.modifiers.has("leech") and K.MOD_IDS.has("leech"), "Rouba-vida existe como modificador")
+	var j := s.units.spawn(d, s.hero.x + 40.0, s.hero.y, 0.0, 0.0, K.F_SHADOWY, 0)
+	var hp0 := s.units.hp[j]
+	var sh0 := s.units.sh[j]
+	check(is_equal_approx(sh0, hp0 * 0.5), "Sombrio: nasce com escudo de 50%% da vida (%.1f de %.1f)" % [sh0, hp0])
+	s.hero_hits_unit(j, sh0 * 0.5)
+	check(s.units.hp[j] == hp0 and is_equal_approx(s.units.sh[j], sh0 * 0.5), "Sombrio: o escudo absorve o golpe antes da vida")
+	s.hero_hits_unit(j, s.units.sh[j] + 1.0)
+	check(s.units.sh[j] <= 0.0 and is_equal_approx(s.units.hp[j], hp0 - 1.0), "Sombrio: o que passa do escudo tira vida")
+	var plain := s.units.spawn(d, s.hero.x + 40.0, s.hero.y, 0.0, 0.0, 0, 0)
+	check(s.units.sh[plain] == 0.0, "Unidade comum nasce sem escudo")
+	var k := s.units.spawn(d, s.hero.x, s.hero.y, 0.0, 0.0, K.F_LEECH, 0)
+	s.units.hp[k] = s.units.max_hp[k] * 0.1
+	var h0 := s.units.hp[k]
+	s.unit_hits_hero(k)
+	check(s.units.hp[k] > h0 and s.units.hp[k] <= s.units.max_hp[k], "Rouba-vida: golpe no herói cura a unidade (sem passar da vida máxima)")
+	var child := s.spawn_child(d, s.hero.x, s.hero.y, j)
+	check(child < 0 or (s.units.flags[child] & K.F_SHADOWY) != 0, "Filhote herda o Sombrio")

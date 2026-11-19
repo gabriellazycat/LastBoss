@@ -213,7 +213,7 @@
   },
   "shrine": {
    "radius": 7.0,
-   "blessed_dmg": 0.5,
+   "ward_frac": 0.1,
    "hold_s": 6.0,
    "window": 45.0,
    "stage3": [
@@ -297,6 +297,9 @@
   "hold_radius": 2.5,
   "_doc_stages": "Disputa em 3 etapas (C5, 10/11/2026): cada etapa tem meta e janela próprias; a 3ª muda por ato (stage3[ato]). Recompensa por degraus: contest_gold[etapas vencidas] e, com as 3, a recompensa cheia do local.",
   "hard_goal_mult": 1.2
+ },
+ "hero": {
+  "knockback_mult": 0.6
  },
  "arena": {
   "radius": 15.0,
