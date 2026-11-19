@@ -8,6 +8,8 @@ extends RefCounted
 
 const LOC_TYPES := ["shop", "tavern", "fountain", "ritual", "shrine", "bridge", "event", "helper"]
 enum LocState { ACTIVE, USED, DESTROYED, WON }
+const FAN_ANGLE := 0.0    # leque desligado: qualquer ângulo > 0 triplicava os cruzamentos (medido em 200 mapas, 19/11/2026)
+const FAN_REACH := 4.0    # m do primeiro trecho em leque
 
 var nodes: Array = []       # {"row", "lane", "pos", "out": [ligação], "in": [ligação], "loc"}; 0 = início, último = covil
 var legs: Array = []        # ligações: {"kind": "edge", "a", "b", "pts": [PackedVector2Array], "len": [float], "chosen", "closed"}
@@ -89,15 +91,46 @@ func _build_graph(rng: RandomNumberGenerator, R: Dictionary) -> Array:
 	nodes.append(_node(rows, lanes / 2, c))
 	row_nodes.append([nodes.size() - 1])
 	# Ligações de uma fileira para a seguinte, uma transição por vez, todas com o mesmo comprimento.
+	var prev_polys: Array = []   # ligações da transição anterior: a seguinte também foge delas
 	for r in row_nodes.size() - 1:
 		var pairs := _link_rows(rng, row_nodes[r], row_nodes[r + 1], float(R["extra_link"]))
 		var target := 0.0
 		for p in pairs:
 			target = maxf(target, nodes[p[0]]["pos"].distance_to(nodes[p[1]]["pos"]))
 		target = target * float(R["length_slack"]) + 3.0
-		var sgn := 1.0 if rng.randf() < 0.5 else -1.0
-		for p in pairs:
-			var pts := _kinked(rng, nodes[p[0]]["pos"], nodes[p[1]]["pos"], target, R["point_step"], sgn)
+		# Leque (19/11/2026): as saídas de um nó abrem em ângulos diferentes, na ordem das pistas de destino; as chegadas
+		# fecham do mesmo jeito. O desvio lateral vai para fora: as ligações da esquerda desviam para a esquerda e as da
+		# direita para a direita (um corte `split` na ordem lateral); acha-se o primeiro corte e o formato sem cruzamento.
+		var fans := _fans(pairs)
+		var order: Array = range(pairs.size())
+		order.sort_custom(func(i, j):
+			var li: int = nodes[pairs[i][0]]["lane"] + nodes[pairs[i][1]]["lane"]
+			var lj: int = nodes[pairs[j][0]]["lane"] + nodes[pairs[j][1]]["lane"]
+			return li < lj or (li == lj and int(nodes[pairs[i][1]]["lane"]) < int(nodes[pairs[j][1]]["lane"])))
+		var splits: Array = range(pairs.size() + 1)
+		if rng.randf() < 0.5:
+			splits.reverse()
+		var made: Array = []
+		var best_n := 1 << 30
+		for tt in [[0.32, 0.68], [0.26, 0.74], [0.4, 0.6], [0.2, 0.55]]:
+			for split in splits:
+				var trial: Array = []
+				for k in pairs.size():
+					var p: Array = pairs[k]
+					var sg := -1.0 if order.find(k) < int(split) else 1.0
+					trial.append(_kinked(rng, nodes[p[0]]["pos"], nodes[p[1]]["pos"], target, R["point_step"], sg, float(fans[k][0]), float(fans[k][1]), float(tt[0]), float(tt[1])))
+				var nc := _count_cross(trial, prev_polys)
+				if nc < best_n:
+					best_n = nc
+					made = trial
+				if nc == 0:
+					break
+			if best_n == 0:
+				break
+		prev_polys = made
+		for k in pairs.size():
+			var p: Array = pairs[k]
+			var pts: PackedVector2Array = made[k]
 			var e := legs.size()
 			legs.append({"kind": "edge", "a": p[0], "b": p[1], "pts": [pts], "len": [_length(pts)], "chosen": -1, "closed": -1})
 			nodes[p[0]]["out"].append(e)
@@ -147,7 +180,7 @@ func _link_rows(rng: RandomNumberGenerator, A: Array, B: Array, extra: float) ->
 					continue
 				if _outs(pairs, a[ai]) >= 2 or rng.randf() >= extra:
 					continue
-				if not _crosses(pairs, a[ai], b[bj], lane):
+				if not _crosses(pairs, a[ai], b[bj]):
 					pairs.append([a[ai], b[bj]])
 	return pairs
 
@@ -167,40 +200,107 @@ func _outs(pairs: Array, x: int) -> int:
 	return n
 
 
-func _crosses(pairs: Array, x: int, y: int, lane: Callable) -> bool:
+## A ligação x → y cruzaria alguma das já escolhidas? Teste geométrico polilinha × polilinha (19/11/2026; antes
+## era só a ordem das pistas), com o trecho provisório de cada par (a corda entre os nós).
+func _crosses(pairs: Array, x: int, y: int) -> bool:
+	var A := PackedVector2Array([nodes[x]["pos"], nodes[y]["pos"]])
 	for p in pairs:
-		var d1: int = lane.call(p[0]) - lane.call(x)
-		var d2: int = lane.call(p[1]) - lane.call(y)
-		if d1 * d2 < 0:
+		if p[0] == x or p[1] == y:
+			continue   # dividem um nó: o leque separa os dois lados
+		var B := PackedVector2Array([nodes[p[0]]["pos"], nodes[p[1]]["pos"]])
+		if polylines_cross(A, B):
 			return true
 	return false
+
+
+## Duas polilinhas se cruzam fora dos nós (os pontos de encontro a menos de `node_tol` m de um nó não contam)?
+func polylines_cross(A: PackedVector2Array, B: PackedVector2Array, node_tol := 0.6, bridge_nodes: Array = [], bridge_tol := 0.0) -> bool:
+	for i in A.size() - 1:
+		for j in B.size() - 1:
+			var x = Geometry2D.segment_intersects_segment(A[i], A[i + 1], B[j], B[j + 1])
+			if x == null:
+				continue
+			var near := false
+			for n in nodes:
+				if (x as Vector2).distance_to(n["pos"]) < node_tol:
+					near = true
+					break
+			for bn in bridge_nodes:   # trecho reto comum das pontes (como em SimRivers._legs_cross)
+				if (x as Vector2).distance_to(nodes[bn]["pos"]) <= bridge_tol:
+					near = true
+			if not near:
+				return true
+	return false
+
+
+func _count_cross(polys: Array, others: Array = []) -> int:
+	var n := 0
+	for p in polys:
+		for o in others:
+			if polylines_cross(p, o):
+				n += 1
+	for i in polys.size():
+		for j in range(i + 1, polys.size()):
+			if polylines_cross(polys[i], polys[j]):
+				n += 1
+	return n
+
+
+## Ângulos de leque (rad) de cada par: [saída, chegada], pela posição entre as saídas do nó (ordenadas pela
+## pista de destino) e entre as chegadas (ordenadas pela pista de origem).
+func _fans(pairs: Array) -> Array:
+	var out: Array = []
+	for p in pairs:
+		var outs: Array = []
+		var ins: Array = []
+		for q in pairs:
+			if q[0] == p[0]:
+				outs.append(q)
+			if q[1] == p[1]:
+				ins.append(q)
+		outs.sort_custom(func(u, v): return nodes[u[1]]["lane"] < nodes[v[1]]["lane"])
+		ins.sort_custom(func(u, v): return nodes[u[0]]["lane"] < nodes[v[0]]["lane"])
+		var fo := (float(outs.find(p)) - (outs.size() - 1) * 0.5) * FAN_ANGLE
+		var fi := (float(ins.find(p)) - (ins.size() - 1) * 0.5) * FAN_ANGLE
+		out.append([fo, fi])
+	return out
 
 
 ## Caminho de a até b com o comprimento `target`, em trechos retos: a sobra vira um desvio lateral
 ## de altura h (a → canto → canto → b), achado por bissecção. `sgn` é o lado do desvio (o mesmo para
 ## todas as ligações de uma transição, para os ramos vizinhos não se cruzarem).
-func _kinked(rng: RandomNumberGenerator, a: Vector2, b: Vector2, target: float, step: float, sgn: float) -> PackedVector2Array:
-	var t1 := rng.randf_range(0.25, 0.4)
-	var t2 := rng.randf_range(0.6, 0.75)
+func _kinked(_rng: RandomNumberGenerator, a: Vector2, b: Vector2, target: float, step: float, sgn: float, fan_a := 0.0, fan_b := 0.0, t1 := 0.32, t2 := 0.68) -> PackedVector2Array:
 	var lo := 0.0
 	var hi := 60.0
 	var h := 0.0
 	for it in 40:
 		h = (lo + hi) * 0.5
-		var l := _length(_dogleg(a, b, h * sgn, t1, t2))
+		var l := _length(_resample(_dogleg(a, b, h * sgn, t1, t2, fan_a, fan_b), step))
 		if absf(l - target) < 0.02:
 			break
 		if l < target:
 			lo = h
 		else:
 			hi = h
-	return _resample(_dogleg(a, b, h * sgn, t1, t2), step)
+	return _resample(_dogleg(a, b, h * sgn, t1, t2, fan_a, fan_b), step)
 
 
-static func _dogleg(a: Vector2, b: Vector2, h: float, t1: float, t2: float) -> PackedVector2Array:
+## Curva Catmull-Rom (19/11/2026, no lugar dos trechos retos com cantos): a → saída em leque → dois pontos com o desvio
+## lateral h → chegada em leque → b. `fan_a` e `fan_b` giram o primeiro e o último trecho (rad).
+static func _dogleg(a: Vector2, b: Vector2, h: float, t1: float, t2: float, fan_a := 0.0, fan_b := 0.0) -> PackedVector2Array:
 	var d := b - a
-	var perp := d.normalized().orthogonal()
-	return PackedVector2Array([a, a + d * t1 + perp * h, a + d * t2 + perp * h, b])
+	var u := d.normalized()
+	var perp := u.orthogonal()
+	var m := minf(FAN_REACH, d.length() * 0.15)
+	var ctrl: Array = [a]
+	if fan_a != 0.0:
+		ctrl.append(a + u.rotated(fan_a) * m)
+	ctrl.append(a + d * t1 + perp * h)
+	ctrl.append(a + d * t2 + perp * h)
+	if fan_b != 0.0:
+		ctrl.append(b - u.rotated(-fan_b) * m)
+	ctrl.append(b)
+	return SimRivers._catmull(ctrl, 3.0)
 
 
 ## Reamostra a polilinha a cada `step` metros, mantendo os cantos (a projeção do herói usa pontos curtos).
