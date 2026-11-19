@@ -1073,15 +1073,15 @@ func _build_hero() -> void:
 	add_child(tell_label)
 
 
-func _circle(r: float, col: Color) -> MeshInstance3D:
+func _circle(r: float, col: Color, half_w := 0.07, energy := 1.2) -> MeshInstance3D:
 	var tm := TorusMesh.new()
-	tm.inner_radius = r - 0.07
-	tm.outer_radius = r + 0.07
+	tm.inner_radius = r - half_w
+	tm.outer_radius = r + half_w
 	tm.rings = 72
 	tm.ring_segments = 4
 	var mi := MeshInstance3D.new()
 	mi.mesh = tm
-	mi.material_override = _unshaded(col, 1.2)
+	mi.material_override = _unshaded(col, energy)
 	return mi
 
 
@@ -1380,7 +1380,7 @@ func build_arena() -> void:
 func _update_rings(on: bool) -> void:
 	var hs: Array = sim.ring_heroes() if sim != null else []
 	while ring_nodes.size() < hs.size():
-		var n := _circle(3.0, Color(1, 0.4, 0.4, 0.75))
+		var n := _circle(3.0, Color(1.0, 0.25, 0.2, 1.0), 0.11, 0.8)
 		add_child(n)
 		ring_nodes.append(n)
 		ring_rad.append(3.0)
@@ -1393,8 +1393,8 @@ func _update_rings(on: bool) -> void:
 		var r: float = sim.ring_of(h)
 		if not is_equal_approx(float(ring_rad[i]), r):
 			var tm := n.mesh as TorusMesh
-			tm.inner_radius = r - 0.07
-			tm.outer_radius = r + 0.07
+			tm.inner_radius = r - 0.11
+			tm.outer_radius = r + 0.11
 			ring_rad[i] = r
 		n.position = Vector3(lerpf(h.ox, h.x, 1.0), 0.06, lerpf(h.oy, h.y, 1.0))
 		n.position.y += surface_y(n.position.x, n.position.z)
@@ -1489,6 +1489,10 @@ func _draw_units(alpha: float, delta: float) -> void:
 				col = Color(0.55, 0.55, 0.6)
 			elif U.fear_t[i] > 0.0:
 				col = Color(0.8, 0.6, 1.0)
+			elif U.flags[i] & K.F_LEECH:
+				col = Color(1.0, 0.74, 0.78)   # Rouba-vida: pele avermelhada; o anel no chão é carmim
+			elif U.sh[i] > 0.0:
+				col = Color(0.8, 0.84, 1.0)    # Sombrio com escudo: tom frio; o anel no chão é azul-violeta
 			var gy := surface_y(x, z) if not surf_fields.is_empty() else 0.0
 			var y := gy
 			if fly:
@@ -1504,6 +1508,12 @@ func _draw_units(alpha: float, delta: float) -> void:
 			buf[o + 16] = flash[i]; buf[o + 17] = hop * maxf(moving, 0.25 if hop > 0.0 else 0.0); buf[o + 18] = float(i) * 1.7; buf[o + 19] = lunge
 			var rr: float = e["rad"] * s
 			var acc: Color = e["acc"]
+			if U.sh[i] > 0.0:
+				# Escudo de vida do Sombrio: anel azul-violeta que pulsa (some quando o escudo quebra).
+				acc = Color(0.5, 0.55, 1.0, 0.75 + 0.2 * sin(sim.t * 5.0 + i))
+				rr *= 1.12
+			elif U.flags[i] & K.F_LEECH:
+				acc = Color(0.9, 0.1, 0.22, 0.9)   # Rouba-vida: anel carmim
 			var ro := rn * 16
 			rb[ro] = rr; rb[ro + 1] = 0.0; rb[ro + 2] = 0.0; rb[ro + 3] = x
 			rb[ro + 4] = 0.0; rb[ro + 5] = 1.0; rb[ro + 6] = 0.0; rb[ro + 7] = 0.055 + gy
@@ -2583,6 +2593,15 @@ func handle_events(evs: Array) -> void:
 						emit_fx("magic", p + Vector3(0, 0.3, 0), 0.5)
 			K.Ev.CURSE:
 				emit_fx("magic", p + Vector3(0, 1.4, 0), 0.6)
+			K.Ev.LEECH:
+				# Rouba-vida: gotas carmim sobem da unidade que se curou.
+				if _spend("hit"):
+					emit_fx("heal", p + Vector3(0, 0.6, 0), 0.55, Color(1.0, 0.2, 0.3))
+				if Settings.v["damage_numbers"] and float(ev[3]) >= 8.0 and _spend("num"):
+					number(p, "+" + str(int(ev[3])), Color(1.0, 0.3, 0.4), 40)
+			K.Ev.UNIT_SHIELD_BREAK:
+				emit_fx("shield", p + Vector3(0, 0.9, 0), 0.9)
+				ring_burst(p, 1.5, Color(0.55, 0.6, 1.0))
 			K.Ev.CONTEST:
 				var cc := int(ev[4])
 				if cc == 1 or cc == -1 or cc >= 11:

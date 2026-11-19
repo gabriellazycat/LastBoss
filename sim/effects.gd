@@ -27,7 +27,7 @@ static func _one(sim: Sim, a: Dictionary) -> void:
 			var opts := sim._card_options(n, f)
 			if a.get("give", false):
 				if opts.size() > 0:
-					sim._apply_option(opts[0])
+					sim.give_option(opts[0])
 			else:
 				sim._push_offer("event", opts, {"event_step": "card"})
 		"upgrade":
@@ -36,14 +36,14 @@ static func _one(sim: Sim, a: Dictionary) -> void:
 				for k in n:
 					var o := sim._level_up_options(1)
 					if o.size() > 0:
-						sim._apply_option(o[0])
+						sim.give_option(o[0])
 			else:
 				sim._push_offer("event", sim._level_up_options(n), {"event_step": "upgrade"})
 		"remove":
 			if a.get("give", false):
 				var o := sim._remove_options(1)
 				if o.size() > 0:
-					sim._apply_option(o[0])
+					sim.give_option(o[0])
 			else:
 				sim._push_offer("event", sim._remove_options(-1), {"event_step": "remove"})
 		"mod":

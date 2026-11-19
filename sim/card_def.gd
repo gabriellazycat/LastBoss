@@ -1,6 +1,12 @@
 class_name CardDef
 extends RefCounted
 ## Definição imutável de uma carta (ou unidade auxiliar), lida do JSON.
+## Feitiços de campo que de fato maldizem o herói quando jogados com Amaldiçoado (medido jogando cada feitiço
+## com o modificador, 19/11/2026; Erupção só quando acerta herói encharcado). Os outros nunca chamam add_curse,
+## então o modificador não faria nada e nem é oferecido (Sim.mod_has_effect).
+const CURSE_SPELLS := ["shadow_bolt", "web", "boiling_oil", "oil_splash", "torch", "tar_net", "cursed_coins", "corpse_blast",
+	"arcane_spark", "shadow_mark", "weakness_curse", "dark_sacrifice", "poison_dart", "spark", "molten_gold",
+	"gold_avalanche", "eruption", "gold_dart", "gold_rain", "life_drain", "profane_ritual", "soul_storm"]
 
 var id: String
 var idx: int

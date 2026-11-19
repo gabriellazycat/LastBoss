@@ -298,9 +298,9 @@
    "archetype": "shooter",
    "rarity": "uncommon",
    "cost": 4,
-   "count": 3,
+   "count": 1,
    "xp_parts": 3,
-   "hp": 90,
+   "hp": 180,
    "dps": 8,
    "attack_interval": 0.25,
    "speed": 3,
@@ -310,9 +310,7 @@
     "spell_min_cost": 0,
     "projectile": true
    },
-   "lvl": [
-    "count"
-   ],
+   "lvl": [],
    "family": "chain",
    "owner": "lich"
   },

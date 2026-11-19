@@ -23,7 +23,7 @@
   {
    "id": "explosive",
    "p": {
-    "damage": 40,
+    "hp_frac": 0.15,
     "radius": 2.0
    },
    "applies": [
@@ -50,12 +50,22 @@
   {
    "id": "shadowy",
    "p": {
-    "no_xp": true
+    "shield_frac": 0.5
    },
    "applies": [
     "monster",
     "swarm",
     "structure"
+   ]
+  },
+  {
+   "id": "leech",
+   "p": {
+    "steal_frac": 0.5
+   },
+   "applies": [
+    "monster",
+    "swarm"
    ]
   }
  ]

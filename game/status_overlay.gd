@@ -85,7 +85,7 @@ func hero_effects() -> Array:
 		add.call("bubo", C_BUBO, float(cs["plague"]["bubo_t"]) - sim.t)
 	var pst := CardsPlague.peste_of(sim, h)
 	if pst > 0: add.call("peste", C_PESTE, -1.0, pst)
-	if sim.has_method("hero_blessed") and sim.call("hero_blessed"): add.call("bless", C_BLESS, -1.0)
+	if h.ward > 0.0: add.call("bless", C_BLESS, -1.0)
 	if h.curses > 0: add.call("curse", C_CURSE, -1.0, h.curses)
 	return out
 

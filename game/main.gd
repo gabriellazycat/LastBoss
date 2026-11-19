@@ -414,7 +414,9 @@ func _to_menu(decks: bool) -> void:
 	_build_menu_scene()
 	audio.music_menu()
 	audio.set_intensity(0.0)
-	_show_menu("decks" if decks else "title")
+	# "Nova run" volta ao mapa da campanha (19/11/2026): antes pulava o mapa e abria a escolha de vilão, uma segunda
+	# tela de baralho fora do fluxo mapa → vilão. A fase que estava escolhida continua escolhida.
+	_show_menu("campaign" if decks else "title")
 
 
 func _quit() -> void:
@@ -644,6 +646,7 @@ func _start(deck: String) -> void:
 	else:
 		s.setup(data, seed_, deck, [], [], ph)
 	# Capturas e testes de janela sem bot seguem o primeiro ramo (com --routewait, esperam a escolha como no jogo).
+	s.notify_gives = not auto_args.has("autoplay")
 	s.auto_route = not auto_args.is_empty() and not auto_args.has("autoplay") and not auto_args.has("routewait") and not auto_args.has("routetest")
 	_begin(s)
 
@@ -768,6 +771,8 @@ func _process(delta: float) -> void:
 			_scene_gates()
 	# --skipkey=<s>: aperta espaço de verdade nesse instante (pulo da cena do local); --pick=<s>: a partir desse
 	# instante escolhe a 1ª opção de cada oferta que aparecer na tela (o mapa do fim do local abre depois).
+	if auto_args.has("select") and sim and sim.offers.is_empty() and sim.phase != K.Phase.OVER:
+		hud.selected = int(auto_args["select"])   # captura: segura a carta N da mão (anel de alcance)
 	if auto_args.has("skipkey") and life >= float(auto_args["skipkey"]):
 		auto_args.erase("skipkey")
 		var ke := InputEventKey.new()
@@ -1423,7 +1428,7 @@ func _menu_test() -> void:
 	await get_tree().create_timer(1.2).timeout
 	_ui_shot("menu_campaign_3")
 	await _key(KEY_RIGHT)
-	step.call("seta para a direita vai à fase 4", menu.campaign.phase == 4 and menu.campaign.animating())
+	step.call("seta para a direita vai à fase 4", menu.campaign.phase == 4 and not menu.campaign.animating())
 	await get_tree().create_timer(0.75).timeout
 	_ui_shot("menu_campaign_move")
 	await get_tree().create_timer(1.0).timeout

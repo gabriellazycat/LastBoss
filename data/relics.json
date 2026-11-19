@@ -88,7 +88,7 @@
   },
   {
    "id": "overflowing_chalice",
-   "rarity": "rare",
+   "rarity": "common",
    "bot_value": 2.5,
    "fx": {
     "act_full_elixir": 1
@@ -101,7 +101,7 @@
    "rarity": "rare",
    "bot_value": 2.5,
    "fx": {
-    "contest_first_discount": 2
+    "contest_first_discount": 99
    },
    "owner": "common"
   },
@@ -129,8 +129,8 @@
    "rarity": "rare",
    "bot_value": 2.0,
    "fx": {
-    "hand": 1,
-    "elixir_max": -1
+    "hand": 2,
+    "elixir_max": -2
    },
    "owner": "common"
   },
@@ -143,7 +143,7 @@
     "elixir_regen": 0.15
    },
    "owner": "common",
-   "weight": 2.5
+   "weight": 1
   },
   {
    "id": "quick_spring",
@@ -154,7 +154,7 @@
     "elixir_regen": 0.344
    },
    "owner": "common",
-   "weight": 2.5
+   "weight": 1
   },
   {
    "id": "deep_cauldron",
@@ -165,7 +165,7 @@
     "elixir_regen": 0.25
    },
    "owner": "common",
-   "weight": 2.5
+   "weight": 1
   },
   {
    "id": "rushing_tide",
@@ -176,7 +176,7 @@
     "elixir_regen": 0.45
    },
    "owner": "common",
-   "weight": 2.0
+   "weight": 1
   },
   {
    "id": "victory_mark",
@@ -184,7 +184,7 @@
    "bot_value": 4.5,
    "fx": {
     "contest_max_gain": 1,
-    "contest_max_cap": 4
+    "contest_max_cap": 6
    },
    "owner": "common",
    "unique": true,
@@ -199,7 +199,7 @@
     "elixir_regen": 0.5
    },
    "owner": "common",
-   "weight": 2.5
+   "weight": 1
   },
   {
    "id": "eternal_fountain",
@@ -207,10 +207,10 @@
    "bot_value": 5.5,
    "fx": {
     "elixir_max": 3,
-    "elixir_regen": 0.6
+    "elixir_regen": 1.0
    },
    "owner": "common",
-   "weight": 2.5
+   "weight": 1
   },
   {
    "id": "living_vault",
@@ -218,7 +218,7 @@
    "bot_value": 3.5,
    "fx": {
     "shop_max_gain": 100,
-    "shop_max_cap": 4
+    "shop_max_cap": 5
    },
    "owner": "dragon",
    "unique": true,
@@ -360,17 +360,7 @@
     "elixir_max": 4
    },
    "owner": "common",
-   "weight": 1.5
-  },
-  {
-   "id": "copper_tap",
-   "rarity": "common",
-   "bot_value": 4.0,
-   "fx": {
-    "elixir_regen": 0.2
-   },
-   "owner": "common",
-   "weight": 1.5
+   "weight": 1
   },
   {
    "id": "still_aether",
@@ -378,21 +368,21 @@
    "bot_value": 5.5,
    "fx": {
     "elixir_max": 2,
-    "elixir_regen": 0.35
+    "elixir_regen": 0.7
    },
    "owner": "common",
-   "weight": 1.5
+   "weight": 1
   },
   {
    "id": "aether_heart",
    "rarity": "legendary",
    "bot_value": 7.0,
    "fx": {
-    "elixir_max": 4,
-    "elixir_regen": 0.5
+    "elixir_max": 5,
+    "elixir_regen": 0.8
    },
    "owner": "common",
-   "weight": 1.5
+   "weight": 1
   },
   {
    "id": "living_library",
@@ -503,7 +493,7 @@
    "rarity": "common",
    "bot_value": 1.5,
    "fx": {
-    "gold": 0.25,
+    "gold": 0.4,
     "shop_price": 0.1
    },
    "owner": "common",
