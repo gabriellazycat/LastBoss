@@ -32,6 +32,10 @@ h2{font-size:16px;margin:18px 0 8px;border-bottom:1px solid var(--line);padding-
 .qty button{width:34px;font-weight:700;font-size:18px;padding:0}.qty b{min-width:28px;text-align:center;font-size:18px}
 .toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none}
 .toast.on{opacity:1}
+.c.base{border-color:var(--ok)}.c.free{border-color:#3b82f6}.c.lock{border-color:#e0922a}
+.stt{padding:3px 6px;font-size:12px;font-weight:700;color:#fff}.stt.base{background:var(--ok)}.stt.free{background:#3b82f6}.stt.lock{background:#c9741a}
+.chl{padding:2px 6px 4px;font-size:11px;font-style:italic;color:var(--acc)}
+.tg{width:calc(100% - 12px);margin:0 6px 6px;padding:3px;font-size:12px}
 .note{font-size:12px;color:var(--mut);margin-top:6px}
 </style></head><body>
 <header>
@@ -42,6 +46,7 @@ h2{font-size:16px;margin:18px 0 8px;border-bottom:1px solid var(--line);padding-
   <select id="fo"><option value="pool">Cartas do vilão + comuns</option><option value="all">Todas as cartas</option></select>
   <select id="fr"><option value="">Toda raridade</option><option>common</option><option>uncommon</option><option>rare</option><option>legendary</option></select>
   <select id="ft"><option value="">Todo tipo</option></select>
+  <select id="fs"><option value="">Todo status</option><option value="base">Deck base</option><option value="free">Liberada desde o início</option><option value="lock">Só com desafio</option></select>
   <select id="fi"><option value="">Todas</option><option value="in">Só no deck</option><option value="out">Só fora do deck</option></select>
   <button id="revert">Voltar ao original</button>
   <button class="pri" id="save">💾 Salvar</button>
@@ -50,7 +55,7 @@ h2{font-size:16px;margin:18px 0 8px;border-bottom:1px solid var(--line);padding-
   <span id="st" class="dirty"></span>
  </div>
  <div class="deck" id="deck"></div>
- <div class="note">+ / − muda quantas cópias entram no deck inicial do vilão. “Salvar” guarda neste navegador; “Copiar decks” copia o JSON com os 3 decks para colar no chat.</div>
+ <div class="note">Borda verde = deck base, azul = liberada desde o início, laranja = só com desafio. + / − muda quantas cópias entram no deck inicial do vilão. “Salvar” guarda neste navegador; “Copiar decks” copia o JSON com os 3 decks para colar no chat.</div>
 </header>
 <main id="main"></main><div class="toast" id="toast"></div>
 <script>
@@ -59,6 +64,9 @@ const KEY="lastboss_deck_base_v1";
 const ORIG={};D.villains.forEach(v=>ORIG[v.id]=v.start_deck.slice());
 const byId=Object.fromEntries(D.cards.map(c=>[c.id,c]));
 let saved=null;try{saved=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
+const FREE=new Set(D.free),CH=D.chal;const LK={};
+const isLock=id=>id in LK?LK[id]:!FREE.has(id);
+const st=(v,id)=>n(v,id)?"base":(isLock(id)?"lock":"free");
 const S={};D.villains.forEach(v=>S[v.id]=(saved&&saved[v.id]||ORIG[v.id]).filter(i=>byId[i]));
 let snap=JSON.stringify(S);
 let cur=D.villains[0].id;
@@ -71,30 +79,33 @@ const types=[...new Set(D.cards.map(c=>c.type||c.cat).filter(Boolean))].sort();
 document.getElementById("ft").innerHTML+=types.map(t=>'<option>'+t+'</option>').join("");
 function sortDeck(a){const m={};a.forEach(i=>m[i]=(m[i]||0)+1);
  return sortC(Object.keys(m).map(i=>byId[i])).flatMap(c=>Array(m[c.id]).fill(c.id))}
-function out(){const o={};D.villains.forEach(v=>{o[v.id]=sortDeck(S[v.id])});return JSON.stringify(o,null,1)}
+function out(){const o={};D.villains.forEach(v=>{o[v.id]=sortDeck(S[v.id])});
+ const free=D.cards.filter(c=>!isLock(c.id)).map(c=>c.id).sort();return JSON.stringify({decks:o,liberadas_desde_o_inicio:free,so_com_desafio:D.cards.filter(c=>isLock(c.id)&&!D.villains.some(v=>n(v.id,c.id))).map(c=>c.id).sort()},null,1)}
 function render(){
  const dirty=JSON.stringify(S)!=snap;
- document.getElementById("tabs").innerHTML=D.villains.map(v=>'<button class="tab '+(v.id==cur?'on':'')+'" data-v="'+v.id+'">'+v.name+' ('+S[v.id].length+' cartas)</button>').join("");
+ document.getElementById("tabs").innerHTML=D.villains.map(v=>'<button class="tab '+(v.id==cur?'on':'')+'" data-v="'+v.id+'">'+v.name+' ('+S[v.id].length+' no deck · '+D.cards.filter(c=>(c.owner==v.id||c.owner=="common")&&!n(v.id,c.id)&&isLock(c.id)).length+' c/ desafio)</button>').join("");
  document.getElementById("st").textContent=dirty?"● alterações não salvas":"";
  const m={};S[cur].forEach(i=>m[i]=(m[i]||0)+1);
  document.getElementById("deck").innerHTML=sortC(Object.keys(m).map(i=>byId[i])).map(c=>'<div class="chip" data-id="'+c.id+'">'+img(c)+'<span>'+c.name+' ×'+m[c.id]+'</span><button data-d="-1">−</button><button data-d="1">+</button></div>').join("")||"(deck vazio)";
- const q=document.getElementById("q").value.toLowerCase(),fo=document.getElementById("fo").value,fr=document.getElementById("fr").value,ft=document.getElementById("ft").value,fi=document.getElementById("fi").value;
+ const q=document.getElementById("q").value.toLowerCase(),fo=document.getElementById("fo").value,fr=document.getElementById("fr").value,ft=document.getElementById("ft").value,fi=document.getElementById("fi").value,fs=document.getElementById("fs").value;
  const ok=c=>{if(fo=="pool"&&c.owner!=cur&&c.owner!="common")return false;
   if(q&&!c.name.toLowerCase().includes(q)&&!c.id.includes(q))return false;
   if(fr&&c.rarity!=fr)return false;if(ft&&(c.type||c.cat)!=ft)return false;
-  const k=n(cur,c.id);if(fi=="in"&&!k)return false;if(fi=="out"&&k)return false;return true};
+  if(fs&&st(cur,c.id)!=fs)return false;const k=n(cur,c.id);if(fi=="in"&&!k)return false;if(fi=="out"&&k)return false;return true};
  const groups=[["Cartas de "+D.villains.find(v=>v.id==cur).name.split(" ")[0],c=>c.owner==cur],["Comuns",c=>c.owner=="common"],["De outros vilões",c=>c.owner!=cur&&c.owner!="common"]];
  document.getElementById("main").innerHTML=groups.map(([t,f])=>{const l=sortC(D.cards.filter(c=>f(c)&&ok(c)));
   return l.length?'<h2>'+t+' ('+l.length+')</h2><div class="grid">'+l.map(card).join("")+'</div>':""}).join("")}
-function card(c){const k=n(cur,c.id);
- return '<div class="c '+(k?'in':'')+'" data-id="'+c.id+'">'+img(c)+'<div class="cost">'+c.cost+'</div><div class="rar r-'+c.rarity+'" title="'+c.rarity+'"></div><div class="nm">'+c.name+'</div><div class="ds">'+c.desc+'</div><div class="mt">'+(c.type||c.cat)+' · '+c.rarity+(c.hp?' · vida '+c.hp:'')+(c.dps?' · dps '+c.dps:'')+(c.count>1?' · x'+c.count:'')+'</div><div class="qty"><button data-d="-1">−</button><b>'+k+'</b><button data-d="1">+</button></div></div>'}
+function card(c){const k=n(cur,c.id),t=st(cur,c.id);
+ const lab={base:"✔ DECK BASE",free:"🔓 Liberada desde o início",lock:"🔒 Só com desafio"}[t];
+ return '<div class="c '+t+(k?' in':'')+'" data-id="'+c.id+'">'+img(c)+'<div class="cost">'+c.cost+'</div><div class="rar r-'+c.rarity+'" title="'+c.rarity+'"></div><div class="nm">'+c.name+'</div><div class="ds">'+c.desc+'</div><div class="mt">'+(c.type||c.cat)+' · '+c.rarity+(c.hp?' · vida '+c.hp:'')+(c.dps?' · dps '+c.dps:'')+(c.count>1?' · x'+c.count:'')+'</div><div class="qty"><button data-d="-1">−</button><b>'+k+'</b><button data-d="1">+</button></div>'+(k?'':'<button class="tg" data-tg="1">'+(t=="lock"?'Liberar desde o início':'Exigir desafio')+'</button>')+'</div>'}
 document.addEventListener("click",e=>{
  const t=e.target.closest(".tab");if(t){cur=t.dataset.v;return render()}
+ const g=e.target.closest("[data-tg]");if(g){const id=g.closest("[data-id]").dataset.id,y=scrollY;LK[id]=!isLock(id);render();scrollTo(0,y);return}
  const b=e.target.closest("[data-d]");if(!b)return;
  const id=b.closest("[data-id]").dataset.id,d=+b.dataset.d,y=scrollY;
  if(d>0)S[cur].push(id);else{const i=S[cur].indexOf(id);if(i>=0)S[cur].splice(i,1)}
  render();scrollTo(0,y)});
-["q","fo","fr","ft","fi"].forEach(i=>document.getElementById(i).addEventListener("input",render));
+["q","fo","fr","ft","fi","fs"].forEach(i=>document.getElementById(i).addEventListener("input",render));
 document.getElementById("save").onclick=()=>{try{localStorage.setItem(KEY,out())}catch(e){}snap=JSON.stringify(S);render();toast("Salvo neste navegador")};
 document.getElementById("revert").onclick=()=>{if(!confirm("Voltar os 3 decks para os originais do jogo?"))return;D.villains.forEach(v=>S[v.id]=ORIG[v.id].slice());render()};
 document.getElementById("copy").onclick=async()=>{try{await navigator.clipboard.writeText(out());toast("Decks copiados — cole no chat")}catch(e){prompt("Copie:",out())}};

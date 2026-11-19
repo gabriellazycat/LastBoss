@@ -41,7 +41,7 @@ func run_one(data: GameData, s: int) -> Dictionary:
 	sim.setup(data, s, pact, list, [], phase_n)
 	for c in sim.cards:
 		c.level = rng.randi_range(1, 3)
-		c.mods = rng.randi_range(0, 31)
+		c.mods = rng.randi_range(0, 63)
 	var still_t := 0.0
 	var last_s := -1.0
 	var bad := ""

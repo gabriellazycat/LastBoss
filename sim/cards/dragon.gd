@@ -333,7 +333,7 @@ static func on_unit_death(sim: Sim, i: int, cause: int) -> void:
 	if cause != K.Death.HERO or not c.fx.has("rebirth") or (U.flags[i] & K.F_REVIVED):
 		return
 	var lv := int(U.lvl[i])
-	var j := U.spawn(c, U.px[i], U.py[i], 0.0, 0.0, (U.flags[i] & (K.F_CURSED | K.F_DEFEND)) | K.F_REVIVED | K.F_NO_XP | K.F_FLY, U.uid[i])
+	var j := U.spawn(c, U.px[i], U.py[i], 0.0, 0.0, (U.flags[i] & (K.F_CURSED | K.F_DEFEND | K.F_EXPLOSIVE)) | K.F_REVIVED | K.F_NO_XP | K.F_FLY, U.uid[i])
 	if j >= 0:
 		U.lvl[j] = lv
 		U.max_hp[j] = U.max_hp[i]

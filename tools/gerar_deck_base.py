@@ -28,7 +28,12 @@ cards = [{"id": c["id"], "name": names.get(c["id"], c["id"]), "owner": c.get("ow
           "art": os.path.exists(os.path.join(R, "assets/cards/%s.png" % c["id"]))} for c in raw]
 nomes = {"plague": "Praga (Rei dos Ratos)", "dragon": "Dragão", "lich": "Lich"}
 vill = [{"id": v["id"], "name": nomes.get(v["id"], v["id"]), "start_deck": v["start_deck"]} for v in J("data/villains.json")["villains"]]
-data = json.dumps({"cards": cards, "villains": vill}, ensure_ascii=False)
+unl = J("data/unlocks.json")
+unl_txt = {}
+for row in csv.DictReader(open(os.path.join(R, "locale/strings.csv"), encoding="utf8")):
+    if row["keys"].startswith("UNLOCK_"): unl_txt[row["keys"][7:]] = row["pt"]
+chal = {k: unl_txt.get(k, "") for k in unl["challenges"]}
+data = json.dumps({"cards": cards, "villains": vill, "free": unl["free"], "chal": chal}, ensure_ascii=False)
 tpl = open(os.path.join(R, "tools/deck_base.tpl.html"), encoding="utf8").read()
 open(os.path.join(R, "tools/deck_base.html"), "w", encoding="utf8").write(tpl.replace("/*DATA*/null", data))
 print("ok", len(cards), "cartas")

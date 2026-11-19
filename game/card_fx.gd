@@ -15,6 +15,7 @@ const MOD_COLOR := {
 	"explosive": Color(0.9, 0.44, 0.16),
 	"cursed": Color(0.5, 0.2, 0.66),
 	"shadowy": Color(0.17, 0.16, 0.2),
+	"leech": Color(0.78, 0.1, 0.2),
 }
 ## Papel de cada modificador: [claro, escuro] (paper_a, paper_b do shader) e se é papel escuro (texto claro).
 const PAPER := {
@@ -23,6 +24,7 @@ const PAPER := {
 	"explosive": [Color(0.86, 0.73, 0.55), Color(0.42, 0.24, 0.12), false],
 	"cursed": [Color(0.33, 0.2, 0.42), Color(0.17, 0.08, 0.23), true],
 	"shadowy": [Color(0.17, 0.16, 0.2), Color(0.07, 0.07, 0.09), true],
+	"leech": [Color(0.45, 0.1, 0.15), Color(0.23, 0.04, 0.07), true],
 }
 const CREAM := Color(0.95, 0.9, 0.8)
 
@@ -62,7 +64,7 @@ static func attach(p: Control, level_: int, mids_: Array, k_: float, big_ := fal
 
 ## Material da carta na variante 4 (`mat_id` do paper.gdshader): o nível manda (N2 ferro, N3 ouro); no N1 vale o do
 ## primeiro modificador. 0 = papel.
-const MOD_MATERIAL := {"shadowy": 3, "cursed": 4, "explosive": 5, "cheap": 6, "veteran": 7}
+const MOD_MATERIAL := {"shadowy": 3, "cursed": 4, "explosive": 5, "cheap": 6, "veteran": 7, "leech": 4}
 
 
 static func material_for(level_: int, mids_: Array) -> int:
@@ -198,6 +200,12 @@ func _seal_icon(mid: String, c: Vector2, s: float, ic := CREAM) -> void:
 			pts.append(c + Vector2(-s * 0.35, s * 0.5))
 			pts.append(c + Vector2(-s * 0.7, s * 0.75))
 			_poly(pts, ic)
+		"leech":   # gota de sangue
+			var drop := PackedVector2Array([c + Vector2(0, -s * 0.95)])
+			for i in 13:
+				var a := -0.35 * PI + PI * 1.7 * i / 12.0
+				drop.append(c + Vector2(0, s * 0.3) + Vector2(cos(a + PI * 0.5 - 0.0), sin(a + PI * 0.5)) * s * 0.62)
+			_poly(drop, ic)
 
 
 ## Efeitos animados de cada modificador (somam-se em combo).
@@ -236,6 +244,14 @@ func _draw_mod_fx(r: Rect2, mo: float) -> void:
 					for piece in Geometry2D.intersect_polygons(poly, rect_poly):
 						_poly(piece, Color(0.85, 0.92, 1.0, 0.3))
 				draw_rect(r, Color(col.r, col.g, col.b, 0.8), false, 1.6 * k)
+			"leech":   # gotas carmim subindo do pé da carta e borda de sangue pulsando
+				draw_rect(r, Color(0.8, 0.08, 0.18, 0.4 + 0.2 * sin(t * 4.0) * mo), false, 2.0 * k)
+				if mo > 0.0:
+					for i in 7:
+						var life := fmod(t * 0.55 + i * 0.151, 1.0)
+						var x := r.position.x + fmod(i * 0.337 + 0.09, 1.0) * r.size.x
+						var y := r.end.y - life * r.size.y * 0.5
+						draw_circle(Vector2(x, y), (1.9 - life) * 1.5 * k, Color(0.85, 0.08, 0.2, 1.0 - life))
 			"cheap":   # borda verde-água fina (a gema pulsa em _process)
 				draw_rect(r, Color(col.r, col.g, col.b, 0.75), false, 1.6 * k)
 

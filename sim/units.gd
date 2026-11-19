@@ -19,6 +19,7 @@ var ax := PackedFloat32Array()
 var ay := PackedFloat32Array()
 var hp := PackedFloat32Array()
 var max_hp := PackedFloat32Array()
+var sh := PackedFloat32Array()     # escudo de vida (Sombrio): absorve o dano do herói antes da vida; não cura
 var dmg := PackedFloat32Array()
 var atk_int := PackedFloat32Array()
 var atk_t := PackedFloat32Array()
@@ -83,7 +84,7 @@ func setup(s: Sim, capacity: int) -> void:
 	px.resize(cap); py.resize(cap); ox.resize(cap); oy.resize(cap); ax.resize(cap); ay.resize(cap)
 	hp.resize(cap); max_hp.resize(cap); dmg.resize(cap); atk_int.resize(cap); atk_t.resize(cap)
 	spd.resize(cap); rng.resize(cap); rad.resize(cap); xp.resize(cap); cost_share.resize(cap)
-	timer.resize(cap); timer2.resize(cap); curse_t.resize(cap); buff.resize(cap); rage.resize(cap); fear_t.resize(cap); slot.resize(cap)
+	timer.resize(cap); timer2.resize(cap); curse_t.resize(cap); buff.resize(cap); rage.resize(cap); fear_t.resize(cap); slot.resize(cap); sh.resize(cap)
 	free.resize(cap)
 	for i in cap:
 		free[i] = cap - 1 - i
@@ -139,6 +140,7 @@ func spawn(d: CardDef, x: float, y: float, xp_val: float, share: float, uflags: 
 	if d.projectile:
 		f |= K.F_PROJECTILE
 	flags[i] = f
+	sh[i] = hp[i] * float(sim.data.modifiers["shadowy"]["p"]["shield_frac"]) if (f & K.F_SHADOWY) else 0.0
 	uid[i] = card_uid
 	count += 1
 	if i >= hi:

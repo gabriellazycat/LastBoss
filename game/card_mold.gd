@@ -11,11 +11,12 @@ extends RefCounted
 
 const DIR := "res://assets/cards/mold/"
 const RAR_NAMES := ["common", "uncommon", "rare", "legendary"]
-const DARK_PAPER := ["veteran", "cursed", "shadowy"]
+const DARK_PAPER := ["veteran", "cursed", "shadowy", "leech"]
 const INK_LIGHT := Color(0.227, 0.165, 0.118)
 const INK_DARK := Color(0.945, 0.91, 0.84)
 const SH_CRACKS := preload("res://game/ui/card_cracks.gdshader")
 const SH_BLOTS := preload("res://game/ui/card_blots.gdshader")
+const SH_BLOOD := preload("res://game/ui/card_blood.gdshader")
 const SH_SWEEP := preload("res://game/ui/card_sweep.gdshader")
 const SH_RAYS := preload("res://game/ui/card_rays.gdshader")
 const SH_FADE := preload("res://game/ui/card_art_fade.gdshader")
@@ -89,6 +90,7 @@ static func paper_color(mids: Array) -> Color:
 		"explosive": return Color(0.78, 0.5, 0.27)
 		"cursed": return Color(0.25, 0.1, 0.35)
 		"shadowy": return Color(0.1, 0.1, 0.13)
+		"leech": return Color(0.3, 0.05, 0.08)
 	return Color(0.93, 0.87, 0.72)
 
 
@@ -216,6 +218,8 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 			fx_sh = SH_CRACKS
 		elif mid == "shadowy":
 			fx_sh = SH_BLOTS
+		elif mid == "leech":
+			fx_sh = SH_BLOOD
 		if fx_sh == null:
 			continue
 		var fx := ColorRect.new()
