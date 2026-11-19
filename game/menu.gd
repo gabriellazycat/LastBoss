@@ -36,6 +36,7 @@ var compendium: CompendiumScreen
 var settings: SettingsPanel
 var footer: Label
 var fade := 0.0
+const CAMPAIGN_MAX_SCALE := 1.6
 ## Pele Diário: a mesa 3D atrás (main liga) e a folha do título; a tela anterior volta para a mesa.
 var desk: DeskScene
 var title_root: Control
@@ -577,7 +578,7 @@ func _process(delta: float) -> void:
 	title_box.modulate.a = fade
 	deck_screen.position = Vector2((vs.x - deck_screen.size.x) * 0.5, (vs.y - deck_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
 	deck_screen.modulate.a = fade
-	var cfit := minf(1.0, minf(vs.y * 0.96 / maxf(campaign.size.y, 1.0), vs.x * 0.98 / maxf(campaign.size.x, 1.0)))
+	var cfit := minf(CAMPAIGN_MAX_SCALE, minf(vs.y * 0.96 / maxf(campaign.size.y, 1.0), vs.x * 0.98 / maxf(campaign.size.x, 1.0)))
 	campaign.scale = Vector2.ONE * cfit
 	campaign.position = (vs - campaign.size * cfit) * 0.5 + Vector2(0, (1.0 - fade) * 24.0)
 	campaign.modulate.a = fade
@@ -649,7 +650,8 @@ func _process_desk(delta: float) -> void:
 		var from := desk.screen_point(_desk_id(s)) if is_instance_valid(desk) else Vector2(vs.x * 0.5, vs.y * 0.85)
 		var fin := _final_pos(s, c, vs)
 		c.pivot_offset = c.size * 0.5
-		var fit := minf(1.0, minf(vs.y * 0.94 / maxf(c.size.y, 1.0), vs.x * 0.96 / maxf(c.size.x, 1.0)))
+		# O mapa da campanha pode crescer além de 1 para encher a tela (19/11/2026); as outras folhas, não.
+		var fit := minf(CAMPAIGN_MAX_SCALE if s == "campaign" else 1.0, minf(vs.y * 0.94 / maxf(c.size.y, 1.0), vs.x * 0.96 / maxf(c.size.x, 1.0)))
 		c.scale = Vector2.ONE * lerpf(0.16, fit, e)
 		c.position = (from - c.size * 0.5).lerp(fin, e)
 		c.rotation = lerpf(deg_to_rad(9.0 if s.length() % 2 == 0 else -9.0), deg_to_rad((-0.35 if UiSkins.mapa() else -1.2) if s == "title" else 0.0), e)

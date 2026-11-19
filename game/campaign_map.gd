@@ -62,7 +62,7 @@ func _ready() -> void:
 	else:
 		UiKit.panel_style(self, UiKit.BG, UiKit.EDGE, 18)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 6)
 	add_child(root)
 	# --- em cima: ◀ nome da fase ▶ e as bolinhas
 	var top := HBoxContainer.new()
@@ -90,7 +90,8 @@ func _ready() -> void:
 	top.add_child(next_b)
 	# --- o mapa
 	view = Control.new()
-	view.custom_minimum_size = Vector2(1440, 540)
+	view.custom_minimum_size = Vector2(1440, 560)
+	view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	view.clip_contents = true
 	view.mouse_filter = Control.MOUSE_FILTER_STOP
 	view.draw.connect(_draw_map)
@@ -102,7 +103,7 @@ func _ready() -> void:
 	root.add_child(view)
 	# --- embaixo: o lugar, quem vem, o prêmio, Defender
 	panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(0, 176)
+	panel.custom_minimum_size = Vector2(0, 120)
 	if parch:
 		panel.add_theme_stylebox_override("panel", UiParch.box("ink", 14.0))
 		panel.set_meta("paper", true)
@@ -116,7 +117,7 @@ func _ready() -> void:
 	left.add_theme_constant_override("separation", 8)
 	left.custom_minimum_size = Vector2(420, 0)
 	row.add_child(left)
-	desc_l = _rich("", 19, 420.0)
+	desc_l = _rich("", 17, 420.0)
 	left.add_child(desc_l)
 	reward_box = VBoxContainer.new()
 	reward_box.add_theme_constant_override("separation", 2)
@@ -201,16 +202,12 @@ func select(k: int) -> void:
 	k = clampi(k, _first(), _last())
 	if k == phase:
 		return
+	# Mapa estático (19/11/2026): o papel inteiro fica à vista e a fase em foco ganha o destaque (_draw_map), sem câmera viajando.
 	phase = k
-	# Linha reta até a nova região: o desvio pelas estradas fazia a câmera ir até a ponta da estrada e voltar.
-	var path := PackedVector2Array()
-	path.append(cam_c)
-	path.append(_frame_center(k))
-	cam_path = path
-	cam_t = 0.0
-	cam_z0 = cam_z
+	_snap_camera()
 	_fill_info()
 	dots.queue_redraw()
+	view.queue_redraw()
 
 
 func step(dir: int) -> void:
@@ -225,17 +222,7 @@ func _process(delta: float) -> void:
 	if not is_visible_in_tree():
 		return
 	pulse += delta
-	if cam_t < 1.0:
-		cam_t = minf(cam_t + delta / CAM_TIME, 1.0)
-		var s := smoothstep(0.0, 1.0, cam_t)
-		cam_c = _along(cam_path, s)
-		var zf := _zoom_frame()
-		var zm := _zoom_fit()
-		# Abre no meio do caminho (dá para ver o covil e as duas regiões) e fecha de novo na chegada.
-		var base := lerpf(cam_z0, zf, s)
-		cam_z = lerpf(base, minf(base, zm), sin(PI * s))
-		cam_c = _clamp_center(cam_c, cam_z)
-	view.queue_redraw()
+	view.queue_redraw()   # o brilho da fase em foco pulsa
 
 
 func _input(e: InputEvent) -> void:
@@ -413,6 +400,11 @@ func _draw_map() -> void:
 		if meta.phase_open(k) or ph.get("map", {}).is_empty():
 			continue
 		_fog(k)
+	# Fase em foco: mancha com brilho que pulsa e contorno forte (o mapa não se mexe ao trocar de fase).
+	if not data.phase(phase).get("map", {}).is_empty():
+		var glow := 0.16 + 0.07 * sin(pulse * 3.0)
+		view.draw_colored_polygon(_blob(phase, 1.04), Color(UiParch.BLOOD, glow))
+		view.draw_polyline(_closed(_blob(phase, 1.04)), Color(UiParch.BLOOD, 0.9), 5.0 * lw + 1.5, true)
 	_dashed(_smooth(_road(phase), 8), UiParch.BLOOD, 5.0 * lw + 2.0, 18.0, 10.0)
 	# Nomes, selos e o ponto de saída.
 	var f := UiParch.font("title")
@@ -571,8 +563,8 @@ func _clamp_center(c: Vector2, z: float) -> Vector2:
 
 func _snap_camera() -> void:
 	cam_t = 1.0
-	cam_z = _zoom_frame()
-	cam_c = _clamp_center(_frame_center(phase), cam_z)
+	cam_z = _zoom_fit()
+	cam_c = _clamp_center(_paper() * 0.5, cam_z)
 	if view:
 		view.queue_redraw()
 
