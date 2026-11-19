@@ -1367,6 +1367,7 @@ func t_acts_chain() -> void:
 	var near := 0
 	var n := 0
 	var worst := 0
+	var river_min := 1e9
 	for sd in range(1, 121):
 		var s := _sim(sd)
 		for k in range(1, int(data.rules["run"]["acts"])):
@@ -1376,10 +1377,15 @@ func t_acts_chain() -> void:
 			var c := nr.clash(grid, 12.0, s.road.lair, Sim.ACT_SKIP_R, 6.0)
 			near += c
 			worst = maxi(worst, c)
+			for rv in nr.rivers:
+				for rp in rv["pts"]:
+					river_min = minf(river_min, rp.distance_to(s.road.lair))
 			n += 1
 			s.road = nr
 	print("  atos encadeados: %d trocas, pontos a menos de 6 m %d (pior troca %d)" % [n, near, worst])
 	check(worst == 0, "atos encadeados: nenhuma troca caiu na tentativa de reserva")
+	print("  atos encadeados: rio mais perto do covil de partida %.1f m" % river_min)
+	check(river_min > 12.0, "atos encadeados: o rio do ato novo nunca fica em cima do covil de partida (%.1f m)" % river_min)
 	check(near == 0, "atos encadeados: estrada nova nunca encosta na anterior (%d pontos)" % near)
 
 

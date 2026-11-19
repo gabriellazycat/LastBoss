@@ -259,12 +259,18 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		var sk := str(auto_args.get("skip", "0"))
 		var to_arena: bool = sk == "arena"
 		var to_loc := sk if sk in SimRoad.LOC_TYPES else ""
-		var skip := 1e9 if to_arena or to_loc != "" else float(sk)
+		# --skip=act / --skip=act1: pula até a oferta de fim do ato 0 / do ato 1 (capturas da troca de ato).
+		var to_act := sk.begins_with("act")
+		var act_idx := int(sk.substr(3)) if to_act else -1
+		var skip := 1e9 if to_arena or to_loc != "" or to_act else float(sk)
 		sim.record_events = false
-		while sim.t < skip and sim.phase != K.Phase.OVER and not (to_arena and sim.phase == K.Phase.ARENA) 				and not (to_loc != "" and str(sim.contest.get("type", "")) == to_loc):
+		while sim.t < skip and sim.phase != K.Phase.OVER and not (to_arena and sim.phase == K.Phase.ARENA) 				and not (to_loc != "" and str(sim.contest.get("type", "")) == to_loc) 				and not (to_act and sim.act_pending and sim.act == act_idx):
 			auto_bot.think(sim)
 			sim.step()
 		sim.record_events = true
+		if sim.phase == K.Phase.ROAD and sim.act != built_act:
+			_apply_act_look(sim)
+			world.build(sim, cam)
 
 
 func _env() -> void:
@@ -687,6 +693,9 @@ func _start(deck: String) -> void:
 		else:
 			ps[0] = first
 		data.phase(ph)["parties"] = ps
+	# --herohp=50: multiplica a vida dos heróis só nesta execução (capturas que precisam chegar ao ato 3).
+	if auto_args.has("herohp"):
+		data.phase(ph)["hp_mult"] = float(auto_args["herohp"])
 	if auto_args.is_empty():
 		s.setup(data, seed_, deck, [], meta.unlocked, ph)
 	else:
@@ -761,7 +770,7 @@ func _process(delta: float) -> void:
 		cam.look_at(Vector3(0, 1.2, -1.0) - cam.global_transform.basis.x * menu_shift, Vector3.UP)
 	if auto_args.has("quit") and life >= float(auto_args["quit"]):
 		if sim:
-			print("autoplay fim: t=%.0f fase=%d resultado=%s unidades=%d fps=%d" % [sim.t, sim.phase, sim.stats["result"], sim.units.count, Engine.get_frames_per_second()])
+			print("autoplay fim: t=%.0f fase=%d resultado=%s unidades=%d fps=%d menu=%s run=%s" % [sim.t, sim.phase, sim.stats["result"], sim.units.count, Engine.get_frames_per_second(), menu.visible, running])
 		get_tree().quit(0)
 		return
 	if shots.size() > 0 and life >= float(shots[0]):
