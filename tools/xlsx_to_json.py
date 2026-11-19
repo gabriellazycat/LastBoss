@@ -280,7 +280,8 @@ def main():
         {"id": "cheap", "p": {"cost": -1, "min_cost": 0}, "applies": ["any"]},
         {"id": "explosive", "p": {"damage": 40, "radius": 2.0}, "applies": ["monster", "swarm", "structure"]},
         {"id": "cursed", "p": {"curses": 1}, "applies": ["monster", "swarm", "structure"]},
-        {"id": "shadowy", "p": {"no_xp": True}, "applies": ["monster", "swarm", "structure"]},
+        {"id": "shadowy", "p": {"shield_frac": 0.5}, "applies": ["monster", "swarm", "structure"]},
+        {"id": "leech", "p": {"steal_frac": 0.5}, "applies": ["monster", "swarm"]},
     ]
     locked = {"paths": ["rules.elixir.seconds_per_point", "rules.elixir.max", "rules.hand_size", "rules.ring.min",
                         "rules.sim.dt", "rules.phase1_target_s", "rules.goals"]}
