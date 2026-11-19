@@ -5,7 +5,7 @@ extends Node
 func _ready() -> void:
 	# Experimentos: --force_relic=id[,id] (ganha no início), --force_event=evento[:opção], --draw_delay=<multiplicador da recarga>.
 	var args := {"bot": "greedy", "deck": "horde", "seeds": "1-10", "out": "user://batch.json", "data": "res://data", "phase": "1", "pool": "full",
-		"force_relic": "", "force_event": "", "draw_delay": "1.0"}
+		"force_relic": "", "force_event": "", "draw_delay": "1.0", "swap_card": "", "ban_card": ""}
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
@@ -22,7 +22,7 @@ func _ready() -> void:
 	var runs: Array = []
 	for s in seeds:
 		runs.append(run_one(data, int(s), args["deck"], args["bot"], int(args["phase"]), str(args["data"]) + "/bots", str(args["pool"]),
-			{"force_relic": str(args["force_relic"]), "force_event": str(args["force_event"]), "draw_delay": float(args["draw_delay"])}))
+			{"force_relic": str(args["force_relic"]), "force_event": str(args["force_event"]), "draw_delay": float(args["draw_delay"]), "swap_card": str(args["swap_card"]), "ban_card": str(args["ban_card"])}))
 	var f := FileAccess.open(args["out"], FileAccess.WRITE)
 	if f == null:
 		push_error("batch: não gravou " + str(args["out"]))
@@ -49,7 +49,19 @@ static func run_one(data: GameData, s: int, deck: String, bot_id: String, phase 
 	if pool == "start":
 		var vid := data.villain_id(deck)
 		unlocked = data.villain_cards(vid) + data.common_cards()
-	sim.setup(data, s, deck, [], unlocked, phase)
+	var card_list: Array = []
+	var sw := str(opts.get("swap_card", ""))
+	if sw != "":
+		# Troca (id:ref): a carta entra no baralho inicial no lugar de uma carta de referência (a 1ª cópia de `ref`).
+		card_list = data.deck(deck)["cards"].duplicate()
+		var sp := sw.split(":")
+		var at := card_list.find(sp[1])
+		if at < 0:
+			push_error("batch: swap_card ref %s não está no baralho %s" % [sp[1], deck])
+		else:
+			card_list[at] = sp[0]
+	sim.banned_cards = Array(str(opts.get("ban_card", "")).split(",", false))
+	sim.setup(data, s, deck, card_list, unlocked, phase)
 	for rid in str(opts.get("force_relic", "")).split(",", false):
 		sim.gain_relic(rid)
 	var bot := PlayerBot.load_bot(bot_id, s, bot_dir)
@@ -60,6 +72,12 @@ static func run_one(data: GameData, s: int, deck: String, bot_id: String, phase 
 	st["track"] = sim.track.snapshot(st, str(st.get("result", "")) in ["win", "win_early"])
 	st["force"] = {"relic": str(opts.get("force_relic", "")), "event": fe, "draw_delay": sim.draw_delay_mult}
 	st["bot"] = bot_id
+	var tot_hp := 0.0
+	for hi in sim.party.size():
+		tot_hp += float(data.hero_of(sim.party_class(hi), sim.phase_hp_mult)["hp"]) * pow(float(data.rules["party"]["step"]), sim.party_number(hi)) * float(data.rules.get("hero_hp_mult", 1.0))
+	st["hero_hp_total"] = tot_hp
+	st["hp_frac"] = clampf(float(st.get("hero_dmg", 0.0)) / maxf(tot_hp, 1.0), 0.0, 1.5)
+	st["swap"] = sw
 	if bot is HumanBot:
 		st["bot_stats"] = bot.stats.duplicate()
 	st["phase"] = phase

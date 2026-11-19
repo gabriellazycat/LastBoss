@@ -338,7 +338,7 @@
    "range": 0,
    "fx": {
     "duration": 8.0,
-    "speed": 0.6,
+    "speed": 0.697,
     "steal": 0.2
    },
    "lvl": [
@@ -756,7 +756,7 @@
    ],
    "archetype": "structure",
    "rarity": "uncommon",
-   "cost": 5,
+   "cost": 6,
    "count": 1,
    "xp_parts": 1,
    "hp": 350,

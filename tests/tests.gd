@@ -219,8 +219,7 @@ func t_hand_cap() -> void:
 		s._apply(lib, s.hero.x, s.hero.y)
 	check(s.hand.size() <= Sim.HAND_MAX and Sim.HAND_MAX == 7, "Biblioteca repetida não passa do teto da mão de 7 (%d, tamanho %d)" % [s.hand.size(), s.hand_size])
 	var full := s.hand.size()
-	for k in int(45.0 / s.dt):
-		s.step()
+	_steps_free(s, 45.0)
 	check(s.hand_size == 5 and s.hand.size() <= full, "Biblioteca acaba: a mão volta a 5 sem expulsar carta (%d, tamanho %d)" % [s.hand.size(), s.hand_size])
 	# Piso de elixir por ato (13/11/2026): máximo 10/12/14 e regen x1/x1,25/x1,5 (rules.acts[].elixir), as relíquias
 	# somam por cima sem teto; o custo máximo das ofertas (7/9/16) nunca passa do elixir máximo permanente.
@@ -896,7 +895,7 @@ func t_rivers() -> void:
 
 ## Água dos rios na simulação (16/11/2026, docs/RIO_E_PONTES.md passo 3): carta, unidade, ponte, alvo e save.
 func t_water() -> void:
-	var s := _sim(5)
+	var s := _sim(6)
 	var T := s.terra()
 	check(T.ok and T.bridges.size() > 0, "terreno do rio montado (%d pontes)" % T.bridges.size())
 	if not T.ok or T.bridges.is_empty():
@@ -942,7 +941,7 @@ func t_water() -> void:
 	var c: Vector2 = b["c"]
 	var ea: Vector2 = b["a"]
 	var eb: Vector2 = b["b"]
-	var s2 := _sim(5)
+	var s2 := _sim(6)
 	var T2 := s2.terra()
 	s2.offers.clear()
 	s2.hero.base_hp = 1.0e6
@@ -962,6 +961,8 @@ func t_water() -> void:
 	for st in int(25.0 / s2.dt):
 		s2.hero.x = hp_.x
 		s2.hero.y = hp_.y
+		if s2.offers.size() > 0:
+			s2.choose(Sim.SKIP)
 		s2.step()
 		if s2.units.alive[k] == 0:
 			break
@@ -973,7 +974,7 @@ func t_water() -> void:
 	check(wet_steps == 0, "o monstro nunca termina um passo na água (%d)" % wet_steps)
 	check(crossed, "o monstro do outro lado chega ao herói pela ponte")
 	# Herói: monstro do outro lado da água não vira alvo, mesmo perto.
-	var s3 := _sim(5)
+	var s3 := _sim(6)
 	var T3 := s3.terra()
 	s3.offers.clear()
 	s3.hero.x = hp_.x
@@ -1083,6 +1084,7 @@ func _at_location(ty: String, seed_ := 3, act_ := 0) -> Sim:
 	var li: int = s.road.nodes[s.road.head]["loc"]
 	var loc: Dictionary = s.road.locations[li]
 	loc["type"] = ty
+	loc["hard"] = false   # o mapa da semente pode sortear o local como difícil (metas ×); o teste quer a meta base
 	loc["r"] = float(data.rules["locations"][ty]["radius"])
 	var p: Vector2 = loc["pos"]
 	s.hero.x = p.x
@@ -1098,6 +1100,14 @@ func _at_location(ty: String, seed_ := 3, act_ := 0) -> Sim:
 
 func _steps(s: Sim, sec: float) -> void:
 	for i in int(sec / s.dt):
+		s.step()
+
+
+## Como _steps, mas pula as ofertas que aparecem (a sim para esperando a escolha; o mapa de cada semente decide quando a 1ª sai).
+func _steps_free(s: Sim, sec: float) -> void:
+	for i in int(sec / s.dt):
+		if s.offers.size() > 0:
+			s.choose(Sim.SKIP)
 		s.step()
 
 
@@ -2160,9 +2170,19 @@ func t_classes() -> void:
 	var s3 := _legacy_sim(7, 96)
 	check(s3.hero.cls() == "cleriga", "fila começa com a Clériga")
 	s3.hero.hp = s3.hero.max_hp() * 0.5
+	var hp_before: float = s3.hero.hp
 	for i in 40:
 		s3.hero.update(s3.dt)
-	check(s3.hero.hp > s3.hero.max_hp() * 0.5, "Clériga se cura com o tempo")
+	check(is_equal_approx(s3.hero.hp, hp_before), "Clériga não se cura mais com o tempo")
+	var wc: Dictionary = s3.hero.H["ward_cast"]
+	check(is_equal_approx(s3.hero.ward, hp_before * float(wc["pct"])), "Clériga conjura escudo de %.1f%% da vida atual em si (%.2f)" % [float(wc["pct"]) * 100.0, s3.hero.ward])
+	var w1: float = s3.hero.ward
+	for i in int(2.0 / s3.dt):
+		s3.hero.update(s3.dt)
+	check(is_equal_approx(s3.hero.ward, w1), "Clériga: escudo só de novo depois da recarga (5 s)")
+	for i in int(4.0 / s3.dt):
+		s3.hero.update(s3.dt)
+	check(s3.hero.ward > w1 * 1.5, "Clériga: conjura outro escudo passada a recarga (%.2f)" % s3.hero.ward)
 	s3.offers.clear()
 	var base2: float = float(data.hero_of(s3.party_class(1), s3.phase_hp_mult)["hp"]) * pow(float(data.rules["party"]["step"]), 1) * float(data.rules.get("hero_hp_mult", 1.0))
 	s3.hero.hp = 0.0
@@ -2405,7 +2425,7 @@ func t_dragon_c6() -> void:
 	g0 = s.gold
 	s._earn_gold(10.0)
 	check(is_equal_approx(s.gold - g0, plain * 2.0), "Cofre do Dragão dobra o ouro (%.1f → %.1f)" % [plain, s.gold - g0])
-	_steps(s, 31.0)
+	_steps_free(s, 31.0)
 	g0 = s.gold
 	s._earn_gold(10.0)
 	check(is_equal_approx(s.gold - g0, plain), "Cofre do Dragão acaba em 30 s")
@@ -2419,7 +2439,7 @@ func t_dragon_c6() -> void:
 	s.hand[1] = bo
 	check(s.card_cost(bo) == 3, "Óleo Fervente custa 3 sem o Imposto")
 	s.play(0, s.hero.x, s.hero.y)
-	check(is_equal_approx(s.gold, 80.0), "Imposto de Sangue paga 20 de ouro (%.0f)" % s.gold)
+	check(is_equal_approx(s.gold, 100.0 - float(data.card("blood_tax").fx["gold_cost"])), "Imposto de Sangue paga o gold_cost em ouro (%.0f)" % s.gold)
 	check(s.card_cost(bo) == 0, "depois do Imposto a próxima carta custa 3 a menos (%d)" % s.card_cost(bo))
 	check(s.queue.has(bt) and s.returned.has(bt.uid), "Imposto de Sangue Retorna ao baralho")
 	s.play(s.hand.find(bo), s.hero.x, s.hero.y)
@@ -3067,8 +3087,8 @@ func t_helper() -> void:
 	t2.contest["cls"] = "arqueira"
 	t2.helper.base_hp = 1.0e7
 	t2.helper.hp = 1.0e7
-	_steps(t2, float(t2.contest["window"]) + 1.0)
-	check(t2.helper == null and t2.contest.is_empty() and t2.offers.is_empty() and t2.hero.bonus_dmg == 0.0 and t2.hero.ward == 0.0,
+	_steps_free(t2, float(t2.contest["window"]) + 1.0)
+	check(t2.helper == null and t2.contest.is_empty() and t2.offers.is_empty() and t2.hero.bonus_dmg == 0.0,
 		"Herói Ajudante: tempo acabou, ele vai embora sem bônus nem recompensa")
 	var t3 := _sim(6)
 	t3.hero.bonus_dmg = 0.2

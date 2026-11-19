@@ -47,6 +47,10 @@ static func save(sim: Sim, path := "") -> bool:
 	d["__ver"] = VERSION
 	d["__rng_seed"] = sim.rng.seed
 	d["__rng_state"] = sim.rng.state
+	d["__rng_map_seed"] = sim.rng_map.seed
+	d["__rng_map_state"] = sim.rng_map.state
+	d["__rng_offer_seed"] = sim.rng_offer.seed
+	d["__rng_offer_state"] = sim.rng_offer.state
 	for part in PARTS:
 		d["__" + part] = _dump(sim.get(part))
 	d["__followers"] = sim.followers.map(func(h): return _dump(h))
@@ -113,6 +117,11 @@ static func load_run(data: GameData, path := "") -> Sim:
 	sim.benched = d.get("benched", []).map(func(c): return by_uid.get(c["uid"]))
 	sim.rng.seed = d["__rng_seed"]
 	sim.rng.state = d["__rng_state"]
+	if d.has("__rng_map_seed"):   # saves antigos não têm os fluxos separados
+		sim.rng_map.seed = d["__rng_map_seed"]
+		sim.rng_map.state = d["__rng_map_state"]
+		sim.rng_offer.seed = d["__rng_offer_seed"]
+		sim.rng_offer.state = d["__rng_offer_state"]
 	sim.hero.H = data.hero_of(sim.party_class(sim.hero.pidx), sim.phase_hp_mult, sim.phase_dmg_mult)
 	sim.followers.clear()   # o setup já pôs os da primeira party; valem os salvos
 	for fd in d.get("__followers", []):

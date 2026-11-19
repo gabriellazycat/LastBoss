@@ -1,0 +1,201 @@
+[
+ {
+  "kind": "carta",
+  "id": "rabid_rats",
+  "file": "cards.json",
+  "path": [
+   "cards",
+   {
+    "id": "rabid_rats"
+   },
+   "dps"
+  ],
+  "from": 5.0,
+  "to": 5.81
+ },
+ {
+  "kind": "carta",
+  "id": "gold_merc",
+  "file": "cards.json",
+  "path": [
+   "cards",
+   {
+    "id": "gold_merc"
+   },
+   "dps"
+  ],
+  "from": 16,
+  "to": 12
+ },
+ {
+  "kind": "carta",
+  "id": "hunt_instinct",
+  "file": "cards_plague.json",
+  "path": [
+   "cards",
+   {
+    "id": "hunt_instinct"
+   },
+   "fx",
+   "speed"
+  ],
+  "from": 0.6,
+  "to": 0.697
+ },
+ {
+  "kind": "carta",
+  "id": "pack_den",
+  "file": "cards_plague.json",
+  "path": [
+   "cards",
+   {
+    "id": "pack_den"
+   },
+   "cost"
+  ],
+  "from": 5,
+  "to": 6
+ },
+ {
+  "kind": "carta",
+  "id": "blood_tax",
+  "file": "cards_dragon.json",
+  "path": [
+   "cards",
+   {
+    "id": "blood_tax"
+   },
+   "fx",
+   "gold_cost"
+  ],
+  "from": 20,
+  "to": 17
+ },
+ {
+  "kind": "carta",
+  "id": "gilded_golem",
+  "file": "cards_dragon.json",
+  "path": [
+   "cards",
+   {
+    "id": "gilded_golem"
+   },
+   "dps"
+  ],
+  "from": 40,
+  "to": 30
+ },
+ {
+  "kind": "relíquia",
+  "id": "quick_spring",
+  "file": "relics.json",
+  "path": [
+   "relics",
+   {
+    "id": "quick_spring"
+   },
+   "fx",
+   "elixir_regen"
+  ],
+  "from": 0.4,
+  "to": 0.344
+ },
+ {
+  "kind": "fase",
+  "id": "fase 0",
+  "file": "campaign.json",
+  "path": [
+   "phases",
+   {
+    "id": 0
+   },
+   "hp_mult"
+  ],
+  "from": 0.135,
+  "to": 0.27
+ },
+ {
+  "kind": "fase",
+  "id": "fase 1",
+  "file": "campaign.json",
+  "path": [
+   "phases",
+   {
+    "id": 1
+   },
+   "hp_mult"
+  ],
+  "from": 1.4,
+  "to": 2.8
+ },
+ {
+  "kind": "fase",
+  "id": "fase 2",
+  "file": "campaign.json",
+  "path": [
+   "phases",
+   {
+    "id": 2
+   },
+   "hp_mult"
+  ],
+  "from": 2.67,
+  "to": 5.34
+ },
+ {
+  "kind": "fase",
+  "id": "fase 3",
+  "file": "campaign.json",
+  "path": [
+   "phases",
+   {
+    "id": 3
+   },
+   "hp_mult"
+  ],
+  "from": 2.3,
+  "to": 4.6
+ },
+ {
+  "kind": "fase",
+  "id": "fase 4",
+  "file": "campaign.json",
+  "path": [
+   "phases",
+   {
+    "id": 4
+   },
+   "hp_mult"
+  ],
+  "from": 2.5,
+  "to": 5.0
+ },
+ {
+  "kind": "fase",
+  "id": "fase 5",
+  "file": "campaign.json",
+  "path": [
+   "phases",
+   {
+    "id": 5
+   },
+   "hp_mult"
+  ],
+  "from": 2.6,
+  "to": 3.6896
+ },
+ {
+  "kind": "fase",
+  "id": "fase 6",
+  "file": "campaign.json",
+  "path": [
+   "phases",
+   {
+    "id": 6
+   },
+   "hp_mult"
+  ],
+  "from": 2.8,
+  "to": 2.4458
+ }
+]

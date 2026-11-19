@@ -17,7 +17,9 @@ class CardInst:
 
 var data: GameData
 var R: Dictionary
-var rng := RandomNumberGenerator.new()
+var rng := RandomNumberGenerator.new()   ## combate (sorteios de efeitos, baralho, spawn)
+var rng_map := RandomNumberGenerator.new()   ## mapa, estrada e classes da party
+var rng_offer := RandomNumberGenerator.new()   ## ofertas, relíquias, eventos e melhorias (mesmos sorteios nos dois braços de um A/B)
 var run_seed := 0
 var dt := 0.05
 var tick := 0
@@ -172,9 +174,11 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	phase_dmg_mult = float(phase_cfg.get("damage_mult", 1.0))
 	run_seed = seed_
 	rng.seed = seed_
+	rng_map.seed = seed_ * 2654435761 + 11
+	rng_offer.seed = seed_ * 40503 + 977
 	dt = R["sim"]["dt"]
 	ai_period = maxi(1, int(round(1.0 / dt / float(R["sim"]["danger_hz"]))))
-	road.generate(rng, R, _act_cfg(0))
+	road.generate(rng_map, R, _act_cfg(0))
 	units.setup(self, int(R["sim"]["max_units"]))
 	var dk := d.deck(deck)
 	deck_id = dk["id"]
@@ -645,7 +649,7 @@ func _spawn_fountain_guard(li: int) -> void:
 	for c in R["locations"]["helper"]["classes"]:
 		if str(c) != hero.cls():
 			pool.append(str(c))
-	var cls: String = pool[rng.randi_range(0, pool.size() - 1)]
+	var cls: String = pool[rng_map.randi_range(0, pool.size() - 1)]
 	var hpa: Array = G["hp_act"]
 	var hp0 := float(hpa[mini(act, hpa.size() - 1)])
 	var stand := helper_spot(li)
@@ -851,7 +855,7 @@ func _start_helper(li: int) -> void:
 			pool.append(str(c))
 	if pool.is_empty():
 		pool = P["classes"].duplicate()
-	var cls: String = pool[rng.randi_range(0, pool.size() - 1)]
+	var cls: String = pool[rng_map.randi_range(0, pool.size() - 1)]
 	var hpa: Array = P["hp_act"]
 	var hp0 := float(hpa[mini(act, hpa.size() - 1)])
 	var p: Vector2 = loc["pos"]
@@ -1027,7 +1031,7 @@ func _next_act() -> void:
 		_earn_gold(rv("act_gold"))   # Tesouro de Ato
 	stats["route_len"] = float(stats.get("route_len", 0.0)) + road.length()
 	road = SimRoad.new()
-	road.generate(rng, R, _act_cfg(act))
+	road.generate(rng_map, R, _act_cfg(act))
 	var p0: Vector2 = road.route[0]
 	hero.x = p0.x
 	hero.y = p0.y
@@ -1080,7 +1084,7 @@ func _relic_pickup(fx: Dictionary) -> void:
 		var cand: Array = cards.filter(func(ci): return ci.level < mx)
 		if cand.is_empty():
 			break
-		cand[rng.randi_range(0, cand.size() - 1)].level += 1
+		cand[rng_offer.randi_range(0, cand.size() - 1)].level += 1
 	var picked: Array = []
 	for k in int(fx.get("pickup_discount", 0)):
 		# Nunca uma carta de custo 0. Usa o modificador Barata quando a carta ainda não tem e cai de custo com
@@ -1088,7 +1092,7 @@ func _relic_pickup(fx: Dictionary) -> void:
 		var cand: Array = cards.filter(func(ci): return not picked.has(ci) and ci.def.cost_at(ci.level) - ci.discount > 0)
 		if cand.is_empty():
 			break
-		var ci: CardInst = cand[rng.randi_range(0, cand.size() - 1)]
+		var ci: CardInst = cand[rng_offer.randi_range(0, cand.size() - 1)]
 		picked.append(ci)
 		if not ci.has_mod(K.M_CHEAP) and ci.def.cost_at(ci.level) >= 1:
 			if ci.mods == 0:
@@ -1138,7 +1142,7 @@ func _pick_relic(pool: Array) -> String:
 	var tot := 0.0
 	for id in pool:
 		tot += float(data.relics[id].get("weight", 1.0))
-	var r := rng.randf() * tot
+	var r := rng_offer.randf() * tot
 	for id in pool:
 		r -= float(data.relics[id].get("weight", 1.0))
 		if r <= 0.0:
@@ -1242,7 +1246,7 @@ func _offer_event() -> void:
 		pool = data.event_ids.filter(func(e): return _owner_ok(data.events_def[e]))
 	if pool.is_empty():
 		return
-	var id: String = pool[rng.randi_range(0, pool.size() - 1)]
+	var id: String = pool[rng_offer.randi_range(0, pool.size() - 1)]
 	if force_event != "" and data.events_def.has(force_event):
 		id = force_event
 	events_seen.append(id)
@@ -1578,6 +1582,7 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 		var pm := float(R["locations"]["bridge"]["shield_mult"]) if contest.get("variant", "") == "shield" else 1.0
 		contest["progress"] += real * pm
 	track.on_hero_damage(self, real)
+	stats["hero_dmg"] = float(stats.get("hero_dmg", 0.0)) + real   # vida de herói tirada (métrica contínua do ajustador)
 	_earn_gold(gain / float(R["gold"]["damage_per_gold"]) * (1.0 + rv("gold")))
 	var dbc: Dictionary = stats["dmg_by_card"]
 	dbc[card_id] = float(dbc.get(card_id, 0.0)) + gain
@@ -2006,7 +2011,7 @@ func _upgrade_options(n: int) -> Array:
 		var tot := 0.0
 		for u in pool:
 			tot += float(u["weight"])
-		var r := rng.randf() * tot
+		var r := rng_offer.randf() * tot
 		for k in pool.size():
 			r -= float(pool[k]["weight"])
 			if r <= 0.0 or k == pool.size() - 1:
@@ -2369,6 +2374,7 @@ func draw_delay() -> float:
 
 ## Experimentos de balanceamento (headless/batch.gd): multiplicador da recarga e evento forçado. Só o lote mexe.
 var draw_delay_mult := 1.0
+var banned_cards: Array = []   # ids fora das ofertas (A/B do ajustador)
 var force_event := ""        # id do evento que sempre sai nos locais de evento ("" = sorteio normal)
 var force_event_opt := -1    # índice da opção que o bot escolhe nesse evento (-1 = escolha normal)
 
@@ -2505,7 +2511,7 @@ func _roll_rarity(rare_mult := 1.0) -> int:
 			tot += float(w[k])
 		for k in w.size():
 			w[k] = float(w[k]) / maxf(tot, 0.0001)
-	var r := rng.randf()
+	var r := rng_offer.randf()
 	for k in w.size():
 		r -= float(w[k])
 		if r <= 0.0:
@@ -2536,7 +2542,7 @@ func roll_offer_level(end_act := false, p := -1.0) -> int:
 	var c3 := minf(p * float(U["lv3_end"]) * m, c2)
 	if end_act:
 		c3 = minf(c3, float(U["act_end_lv3_cap"]))
-	var u := rng.randf()
+	var u := rng_offer.randf()
 	if mx >= 3 and u < c3:
 		return 3
 	if u < c2:
@@ -2565,7 +2571,7 @@ func _deck_count(id: String) -> int:
 func _pick_card(filter: Callable, exclude: Array) -> CardDef:
 	var cand: Array = []
 	for c in data.pool:
-		if filter.call(c) and _card_ok(c) and not exclude.has(c.id):
+		if filter.call(c) and _card_ok(c) and not exclude.has(c.id) and not banned_cards.has(c.id):
 			cand.append(c)
 	if cand.is_empty():
 		return null
@@ -2576,7 +2582,7 @@ func _pick_card(filter: Callable, exclude: Array) -> CardDef:
 	var tot := 0.0
 	for c in cand:
 		tot += wt_com if c.owner == "common" else wt_own
-	var r := rng.randf() * tot
+	var r := rng_offer.randf() * tot
 	for c in cand:
 		r -= wt_com if c.owner == "common" else wt_own
 		if r <= 0.0:
@@ -2596,7 +2602,7 @@ func _mod_option(exclude: Array) -> Dictionary:
 				cand.append([ci, mid])
 	if cand.is_empty():
 		return {}
-	var p: Array = cand[rng.randi_range(0, cand.size() - 1)]
+	var p: Array = cand[rng_offer.randi_range(0, cand.size() - 1)]
 	return {"kind": "mod", "uid": p[0].uid, "card": p[0].def.id, "mod": p[1]}
 
 
@@ -2826,7 +2832,7 @@ func _pick_insts(all: Array, n: int, kind: String) -> Array:
 	for k in n:
 		if pool.is_empty():
 			break
-		var ci: CardInst = pool[rng.randi_range(0, pool.size() - 1)]
+		var ci: CardInst = pool[rng_offer.randi_range(0, pool.size() - 1)]
 		pool.erase(ci)
 		opts.append({"kind": kind, "uid": ci.uid, "card": ci.def.id, "level": ci.level})
 	return opts
@@ -2838,7 +2844,7 @@ func _offer_level() -> void:
 	var ex: Array = []
 	var tries := 0
 	# Uma oferta nunca mistura tipos (rodada 09/11/2026): sorteia o tipo uma vez.
-	var cards_first := rng.randf() < float(R["offers"]["new_card_weight"])
+	var cards_first := rng_offer.randf() < float(R["offers"]["new_card_weight"])
 	var want_cards := cards_first
 	var one := -2   # raridade única da oferta, sorteada na primeira carta
 	var lv := roll_offer_level()   # nível único da oferta

@@ -151,7 +151,7 @@
    "bot_value": 4.5,
    "fx": {
     "elixir_max": 1,
-    "elixir_regen": 0.4
+    "elixir_regen": 0.344
    },
    "owner": "common",
    "weight": 2.5

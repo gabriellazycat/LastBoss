@@ -326,7 +326,7 @@
    "speed": 0,
    "range": 4,
    "fx": {
-    "gold_cost": 20,
+    "gold_cost": 17,
     "discount": 3,
     "returns": true
    },
@@ -1020,7 +1020,7 @@
    "count": 1,
    "xp_parts": 1,
    "hp": 1300,
-   "dps": 40,
+   "dps": 30,
    "attack_interval": 0.25,
    "speed": 2.2,
    "range": 1.5,
