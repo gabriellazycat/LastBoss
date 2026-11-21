@@ -1,0 +1,24 @@
+{
+	"_doc": "Arvore radial do Covil (plano 21/11/2026). ESQUEMA DO CONTRATO com dados de mentira; a frente D troca pelos nos reais. sectors: setores da roda (ordem = sentido horario a partir do topo); 'locked_until' = condicao que abre o setor (act2_reached). Cada no: id, sector, parent ('' = o centro 'Coracao do covil'), branch (sub-ramo, p.ex. o id do local no setor 'locais'; '' = nenhum), name_key/desc_key (strings.csv META_<id>, META_<id>_d), icon (assets/ui/meta/<id>.svg), costs = Almas por nivel (o tamanho = nivel maximo), fx = {caminho: [valor_no_nivel_1, valor_no_nivel_2, ...]}. O valor de fx e o TOTAL no nivel (o nivel comprado substitui o anterior, nao soma) e e um DELTA sobre o padrao de MetaApply.DEFAULTS (multiplicadores partem de 1.0: -0.1 = 10% menos); nos diferentes somam entre si. Caminhos validos: ver sim/meta_apply.gd. Um no so compra depois do pai (nivel>=1).",
+	"sectors": [
+		{"id": "atributos", "name_key": "META_SEC_atributos"},
+		{"id": "locais", "name_key": "META_SEC_locais"},
+		{"id": "arena", "name_key": "META_SEC_arena"},
+		{"id": "reliquias", "name_key": "META_SEC_reliquias"},
+		{"id": "troca_ato", "name_key": "META_SEC_troca_ato", "locked_until": "act2_reached"},
+		{"id": "geral", "name_key": "META_SEC_geral"}
+	],
+	"card_level_costs": [40, 90, 160, 260, 400],
+	"card_rarity_mult": [1.0, 1.5, 2.5, 4.0],
+	"relic_level_costs": [60, 140],
+	"nodes": [
+		{"id": "atr_elixir_max_1", "sector": "atributos", "parent": "", "branch": "", "icon": "elixir", "costs": [30, 60, 100], "fx": {"elixir.max": [1.0, 2.0, 3.0]}},
+		{"id": "atr_elixir_regen_1", "sector": "atributos", "parent": "atr_elixir_max_1", "branch": "", "icon": "elixir", "costs": [50, 90], "fx": {"elixir.regen_mult": [0.05, 0.10]}},
+		{"id": "loc_ritual_1", "sector": "locais", "parent": "", "branch": "ritual", "icon": "ritual", "costs": [60, 120], "fx": {"locais.ritual.elixir_mult": [1.0, 2.0], "locais.ritual.dur_mult": [0.25, 0.5]}},
+		{"id": "are_boss_hp_1", "sector": "arena", "parent": "", "branch": "", "icon": "arena", "costs": [50, 100], "fx": {"arena.boss_hp_mult": [0.10, 0.20]}},
+		{"id": "rel_slot_1", "sector": "reliquias", "parent": "", "branch": "", "icon": "relic", "costs": [80], "fx": {"reliquias.extra_options": [1.0]}},
+		{"id": "ato_switch_1", "sector": "troca_ato", "parent": "", "branch": "", "icon": "act", "costs": [70, 140], "fx": {"ato.elixir_refill": [0.5, 1.0]}},
+		{"id": "ger_offer_hero", "sector": "geral", "parent": "", "branch": "", "icon": "offer", "costs": [120], "fx": {"oferta_por_heroi": [1.0]}},
+		{"id": "ger_gold_start_1", "sector": "geral", "parent": "ger_offer_hero", "branch": "", "icon": "gold", "costs": [40, 80], "fx": {"geral.ouro_inicial": [10.0, 25.0]}}
+	]
+}

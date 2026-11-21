@@ -1,0 +1,12 @@
+{
+	"_doc": "Poderes de party (plano 21/11/2026, docs/PLANO_METAPROGRESSAO.md). ESQUEMA DO CONTRATO; os dados de mentira abaixo (3 poderes) serao trocados pelos reais pela frente B. Cada poder: id; trigger = first_enemy (primeiro inimigo que encosta) | next_creature | next_spell | interval | on_hit_taken; cooldown = segundos de recarga por nivel [n1,n2,n3]; lv = parametros por nivel (mesma chave nas 3 entradas); weight = peso do sorteio; counters = o que o poder responde (como os upgrades antigos: pack, spell, tank...). Textos: strings.csv POWER_<id> (nome) e POWER_<id>_d (efeito). Icone: assets/ui/powers/<id>.svg. Regras gerais em 'rules'.",
+	"rules": {"gap": 1.5, "evolution_chance": 0.34, "max_level": 3},
+	"powers": [
+		{"id": "fire_burst", "trigger": "first_enemy", "cooldown": [18, 15, 12], "weight": 1.0, "counters": ["pack"],
+			"lv": [{"radius": 6.0, "dmg_mult": 4.0}, {"radius": 7.0, "dmg_mult": 6.0}, {"radius": 8.0, "dmg_mult": 8.0}]},
+		{"id": "slay_next", "trigger": "next_creature", "cooldown": [20, 17, 14], "weight": 1.0, "counters": ["tank"],
+			"lv": [{"hp_frac": 1.0}, {"hp_frac": 1.0, "chain": 1}, {"hp_frac": 1.0, "chain": 2}]},
+		{"id": "ally_rat", "trigger": "interval", "cooldown": [5, 5, 4], "weight": 1.0, "counters": ["swarm"],
+			"lv": [{"max": 5, "hp": 30.0, "dps": 6.0}, {"max": 5, "hp": 45.0, "dps": 9.0}, {"max": 6, "hp": 60.0, "dps": 12.0}]}
+	]
+}

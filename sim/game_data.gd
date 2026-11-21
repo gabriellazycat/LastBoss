@@ -23,6 +23,11 @@ var villains: Dictionary = {}      # id -> dict (data/villains.json): os 3 vilõ
 var villain_ids: Array = []
 var free_cards: Array = []         # liberadas desde o início (data/unlocks.json)
 var unlock_challenges: Dictionary = {}  # id da carta -> desafio que a libera
+var meta_tree: Dictionary = {}     # arvore radial do Covil (data/meta_tree.json, plano 21/11/2026)
+var meta_nodes: Dictionary = {}    # id -> no da arvore
+var hero_powers: Dictionary = {}   # id -> poder de party (data/hero_powers.json)
+var power_ids: Array = []          # na ordem do arquivo
+var power_rules: Dictionary = {}   # hero_powers.json "rules" (gap, chance de evolucao...)
 var _alias: Dictionary = {}        # id antigo de Pacto -> vilão
 
 
@@ -97,6 +102,14 @@ static func load_dir(dir := "res://data") -> GameData:
 	var uj := _read(dir + "/unlocks.json")
 	g.free_cards = uj.get("free", [])
 	g.unlock_challenges = uj.get("challenges", {})
+	g.meta_tree = _read(dir + "/meta_tree.json")
+	for n in g.meta_tree.get("nodes", []):
+		g.meta_nodes[n["id"]] = n
+	var hp := _read(dir + "/hero_powers.json")
+	g.power_rules = hp.get("rules", {})
+	for p in hp.get("powers", []):
+		g.hero_powers[p["id"]] = p
+		g.power_ids.append(p["id"])
 	return g
 
 

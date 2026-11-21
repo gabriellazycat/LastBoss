@@ -16,6 +16,14 @@ func check(cond: bool, msg: String) -> void:
 
 func _ready() -> void:
 	data = GameData.load_dir()
+	# `-- --only=t_x,t_y` roda so essas funcoes (frentes de trabalho: teste rapido, sem a suite inteira).
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--only="):
+			for fn in a.substr(7).split(","):
+				call(fn)
+			print("falhas: ", fails)
+			get_tree().quit(fails)
+			return
 	t_data()
 	t_elixir_and_ring()
 	t_costs()
@@ -76,6 +84,7 @@ func _ready() -> void:
 	t_helper()
 	t_round_2026_11_13()
 	t_ui_spacing()
+	t_contracts()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -3690,3 +3699,25 @@ func t_ui_spacing() -> void:
 	check(cut_hits >= 1, "auditoria: texto mais largo que o rótulo é acusado como corte (%d)" % cut_hits)
 	holder.queue_free()
 
+
+## Contratos da metaprogressao (onda 0, 21/11/2026): dados novos carregam, mods neutros, API do MetaSave v5.
+func t_contracts() -> void:
+	check(data.meta_nodes.size() > 0 and data.power_ids.size() > 0, "meta_tree e hero_powers carregam")
+	var mods := MetaApply.merge({})
+	check(float(mods["arena"]["boss_hp_mult"]) == 1.0 and mods["deck"].is_empty(), "mods neutros")
+	var path := "user://test_contracts.save"
+	var m := MetaSave.load_or_new(data, path)
+	m.add_almas(300)
+	check(not m.buy("atr_elixir_regen_1"), "filho nao compra antes do pai")
+	check(m.buy("atr_elixir_max_1") and m.buy("atr_elixir_regen_1"), "compra pai e depois filho")
+	var mm := MetaApply.run_mods(m)
+	check(float(mm["elixir"]["max"]) == 1.0, "run_mods le o no comprado (%s)" % str(mm["elixir"]))
+	m.save()
+	var m2 := MetaSave.load_or_new(data, path)
+	check(m2.almas == m.almas and m2.node_level("atr_elixir_max_1") == 1, "v5 ida e volta")
+	m2.refund_all()
+	check(m2.almas == m2.almas_earned and m2.upgrades.is_empty(), "reembolso total devolve tudo")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var sim := Sim.new()
+	sim.setup(data, 1, "plague", [], [], 1, {"mao": {"inicial": 1}})
+	check(sim.party_powers().is_empty() and sim.hand_size >= 6, "setup com mods e party_powers vazio")

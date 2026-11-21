@@ -34,6 +34,17 @@ var runs_done: Dictionary = {}
 ## escolhido no meta do jogador (rodada 09/11/2026).
 var file := PATH
 
+## ---- CONTRATO v5 (plano 21/11/2026): metaprogressao com Almas. A frente D remove os campos antigos acima
+## (phases_won, endless_best, rare_choices, win_phase), troca VERSION para 5 (o save antigo zera) e completa o corpo.
+var almas := 0                     # saldo de Almas (moeda da meta; o ouro e da run)
+var almas_earned := 0              # total ganho na vida do save: o reembolso total devolve exatamente isto
+var upgrades: Dictionary = {}      # id do no da arvore (data/meta_tree.json) -> nivel comprado (1..custos.size())
+var card_levels: Dictionary = {}   # id da carta -> nivel I..VI (1 = sem melhoria)
+var decks: Dictionary = {}         # id do vilao -> deck montado (19 ids)
+var relic_levels: Dictionary = {}  # id da reliquia -> nivel 1..3
+var relics_unlocked: Array = []    # reliquias liberadas por desafio (as comuns livres entram na criacao)
+var best_party := 0                # mais parties derrubadas numa run
+
 ## Compatibilidade com a interface dos Pactos (até o menu de vilões substituir as telas antigas).
 var pact: String:
 	get:
@@ -61,6 +72,14 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 		var v = f.get_var()
 		if typeof(v) == TYPE_DICTIONARY:
 			m.runs = int(v.get("runs", 0))
+			m.almas = int(v.get("almas", 0))
+			m.almas_earned = int(v.get("almas_earned", 0))
+			m.upgrades = v.get("upgrades", {})
+			m.card_levels = v.get("card_levels", {})
+			m.decks = v.get("decks", {})
+			m.relic_levels = v.get("relic_levels", {})
+			m.relics_unlocked = v.get("relics_unlocked", [])
+			m.best_party = int(v.get("best_party", 0))
 			m.rare_choices = int(v.get("rare_choices", 0))
 			# Save antigo (Pactos): horde → Praga, ruin/treasure → Dragão, crypt/cult → Lich.
 			for pid in v.get("villains", v.get("pacts", [])):
@@ -100,7 +119,9 @@ func save(path := "") -> bool:
 	var f := FileAccess.open(file if path == "" else path, FileAccess.WRITE)
 	if f == null:
 		return false
-	f.store_var({"ver": VERSION, "unlocked": unlocked, "villain": villain, "villains": villains,
+	f.store_var({"almas": almas, "almas_earned": almas_earned, "upgrades": upgrades, "card_levels": card_levels,
+		"decks": decks, "relic_levels": relic_levels, "relics_unlocked": relics_unlocked, "best_party": best_party,
+		"ver": VERSION, "unlocked": unlocked, "villain": villain, "villains": villains,
 		"runs": runs, "phases_won": phases_won, "heroes_seen": heroes_seen, "rare_choices": rare_choices,
 		"wins_by_villain": wins_by_villain, "heroes_total": heroes_total, "progress": progress,
 		"totals": totals, "runs_done": runs_done, "endless_best": endless_best})
@@ -248,3 +269,79 @@ func run_pool(vid := "") -> Array:
 func add_run(path := "") -> void:
 	runs += 1
 	save(path)
+
+
+# ---------------------------------------------------------------- v5: Almas e arvore (contrato)
+
+## Soma Almas ganhas (entra no saldo e no total que o reembolso devolve).
+func add_almas(n: int) -> void:
+	if n <= 0:
+		return
+	almas += n
+	almas_earned += n
+
+
+func node_level(id: String) -> int:
+	return int(upgrades.get(id, 0))
+
+
+## Preco do proximo nivel do no (-1 = no no maximo ou inexistente).
+func node_cost(id: String) -> int:
+	var node: Dictionary = data.meta_nodes.get(id, {})
+	var costs: Array = node.get("costs", [])
+	var lv := node_level(id)
+	return int(costs[lv]) if not node.is_empty() and lv < costs.size() else -1
+
+
+## Um no so compra depois do pai (nivel >= 1) e se houver Almas.
+func can_buy(id: String) -> bool:
+	var node: Dictionary = data.meta_nodes.get(id, {})
+	var c := node_cost(id)
+	if node.is_empty() or c < 0 or almas < c:
+		return false
+	var parent := str(node.get("parent", ""))
+	return parent == "" or node_level(parent) >= 1
+
+
+func buy(id: String) -> bool:
+	if not can_buy(id):
+		return false
+	almas -= node_cost(id)
+	upgrades[id] = node_level(id) + 1
+	return true
+
+
+## Reembolsa o ultimo nivel de um no (so se nenhum filho depende dele). Devolve as Almas devolvidas.
+func refund(id: String) -> int:
+	var lv := node_level(id)
+	if lv <= 0:
+		return 0
+	if lv == 1:
+		for k in upgrades:
+			if str(data.meta_nodes.get(k, {}).get("parent", "")) == id and int(upgrades[k]) > 0:
+				return 0
+	var back := int(data.meta_nodes[id]["costs"][lv - 1])
+	almas += back
+	if lv == 1:
+		upgrades.erase(id)
+	else:
+		upgrades[id] = lv - 1
+	return back
+
+
+## Reembolso total e gratis: zera nos, cartas e reliquias; o saldo volta a ser tudo que ja foi ganho.
+func refund_all() -> int:
+	upgrades = {}
+	card_levels = {}
+	relic_levels = {}
+	var back := almas_earned - almas
+	almas = almas_earned
+	return back
+
+
+## Fim de run: guarda o recorde de parties derrubadas.
+func reach_party(n: int) -> bool:
+	if n <= best_party:
+		return false
+	best_party = n
+	return true

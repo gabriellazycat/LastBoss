@@ -71,6 +71,8 @@ const HAND_MAX := 7
 ## Sem teto prático (11/11/2026): as relíquias de elixir empilham sem limite.
 const ELIXIR_CAP := 999.0
 var next_uid := 1
+var mods: Dictionary = {}          # meta da run (sim/meta_apply.gd, plano 21/11/2026): MetaApply.merge(mods de setup)
+var powers: Array = []             # poderes de party da run (sim/hero_powers.gd)
 var party_idx := 0                 # herói da fila (0 a size-1); o nível dele é party_idx + 1
 var campaign_phase := 1            # fase da campanha (data/campaign.json); 1 = a run clássica de 7 Escudeiros
 var phase_cfg: Dictionary = {}
@@ -154,9 +156,11 @@ var tmp := PackedInt32Array()
 
 ## `deck` é o Pacto (regras); `card_list` é o deck montado na coleção (vazio = deck pronto do Pacto);
 ## `unlocked_` limita as ofertas às cartas desbloqueadas (vazio = todas).
-func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocked_: Array = [], phase_n := 1) -> void:
+func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocked_: Array = [], phase_n := 1, mods_: Dictionary = {}) -> void:
 	data = d
 	R = d.rules
+	mods = MetaApply.merge(mods_)
+	powers = []
 	campaign_phase = phase_n
 	phase_cfg = d.phase(phase_n)
 	# Fila de parties (15/11/2026): "parties" = lista de grupos de 1 a 4 heróis que entram juntos. Sem ela, cada
@@ -203,6 +207,7 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	hand_size = int(deck_rules.get("hand_size", R["hand_size"]))
 	elixir = float(deck_rules.get("elixir_start", R["elixir"]["start"]))
 	act_elixir_base = float(R["elixir"]["max"])
+	MetaApply.apply_to_sim(self)
 	recalc_elixir_max()
 	dead_by_def.resize(d.cards.size())
 	stats = {"seed": run_seed, "deck": deck_id, "result": "none", "t_end": 0.0, "arena_t": -1.0,
@@ -216,7 +221,7 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 		"time_act": [], "spent_act": [], "plays_act": [], "max_cost": 0, "stuck_s": 0.0, "walk_s": 0.0, "contest_s": 0.0}
 	unlocked = unlocked_.duplicate()
 	track.setup(d)
-	var list: Array = (card_list if card_list.size() > 0 else dk["cards"]).duplicate()
+	var list: Array = (card_list if card_list.size() > 0 else (mods["deck"] if mods["deck"].size() > 0 else dk["cards"])).duplicate()
 	for i in range(list.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
 		var tmpc = list[i]
@@ -225,6 +230,11 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	for id in list:
 		queue.append(_new_inst(d.card(id)))
 	_refill_hand()
+
+
+## Poderes da party para a HUD (sim/hero_powers.gd).
+func party_powers() -> Array:
+	return HeroPowers.list(self)
 
 
 func acts() -> int:
@@ -311,6 +321,7 @@ func _act_cfg(k: int) -> Dictionary:
 func _new_inst(c: CardDef) -> CardInst:
 	var ci := CardInst.new()
 	ci.def = c
+	ci.level = MetaApply.card_level(self, c.id)
 	ci.uid = next_uid
 	next_uid += 1
 	cards.append(ci)
@@ -383,6 +394,7 @@ func step() -> void:
 	_temps()
 	_release_held()
 	_elixir()
+	HeroPowers.tick(self)
 	var prev := {hero: Vector2(hero.x, hero.y)}
 	for f in followers:
 		prev[f] = Vector2(f.x, f.y)
@@ -1228,7 +1240,7 @@ func _relic_pool() -> Array:
 	var pool: Array = []
 	for id in data.relic_ids:
 		var r: Dictionary = data.relics[id]
-		if _owner_ok(r) and float(r.get("weight", 1.0)) > 0.0 and not (relics.has(id) and r.get("unique", false)):
+		if _owner_ok(r) and MetaApply.relic_ok(self, id) and float(r.get("weight", 1.0)) > 0.0 and not (relics.has(id) and r.get("unique", false)):
 			pool.append(id)
 	return pool
 
@@ -1533,6 +1545,7 @@ func _member_down(pidx_: int, x_: float, y_: float, e: int) -> void:
 	if bless > 0.0:
 		next_hp_mult *= 1.0 + bless
 	emit(K.Ev.HERO_FALL, x_, y_, group_falls, e)
+	HeroPowers.on_member_down(self, pidx_)
 	_learn_ability()
 	emit(K.Ev.HERO_LEVEL, hero.x, hero.y, hero.level, 0)
 	_offer_level()
@@ -2080,6 +2093,7 @@ func _hero_fell() -> void:
 		arena_party_t = t   # Horda sem fim: a prorrogação recomeça para a party que chega
 	hero.ox = hero.x
 	hero.oy = hero.y
+	HeroPowers.on_party_down(self)
 	_learn_ability()
 	# A party seguinte chega junta: os outros membros nascem atrás do primeiro, com as habilidades do grupo.
 	followers.clear()
