@@ -29,7 +29,7 @@ for L in $LAYOUTS; do
     SETX=""; if [[ "$args" =~ --set=([^ ]+) ]]; then SETX=",${BASH_REMATCH[1]}"; args="${args/--set=${BASH_REMATCH[1]}/}"; fi
     if [ -n "$CAPTURE_ONLY" ] && ! grep -qw "$name" <<<"$CAPTURE_ONLY"; then continue; fi
     tmp="$OUT/_tmp_${L}_$name/"; rm -rf "$tmp"; mkdir -p "$tmp"
-    timeout 150 "$GODOT" --path . -- $args --hudlayout=$L --set="fullscreen:true${SETX}" --shots=$t --quit=$((t+1)) --out="$tmp" >"$tmp/out.txt" 2>"$tmp/err.txt"; echo "   $(grep -m1 "hud sobreposicoes" "$tmp/out.txt")"
+    timeout 150 "$GODOT" --position -6000,0 --path . -- $args --hudlayout=$L --set="fullscreen:true${SETX}" --shots=$t --quit=$((t+1)) --out="$tmp" >"$tmp/out.txt" 2>"$tmp/err.txt"; echo "   $(grep -m1 "hud sobreposicoes" "$tmp/out.txt")"
     f=$(ls "$tmp"/shot_*.png 2>/dev/null | head -1)
     if [ -n "$f" ]; then mv "$f" "$OUT/L${L}_${name}.png"; echo "ok L$L $name"; else echo "FALHOU L$L $name: $(grep -m3 -i error "$tmp/err.txt")"; fi
     grep -i "SCRIPT ERROR\|Parse Error" "$tmp/err.txt" | head -3

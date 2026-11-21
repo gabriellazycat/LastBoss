@@ -159,11 +159,13 @@ static func fill_theme(t: Theme) -> void:
 	var states := {"normal": 9, "hover": 10, "pressed": 11, "disabled": 12, "focus": 13}
 	for st in states:
 		var sb := box("button", 10.0, 1.0, states[st])
-		sb.content_margin_left = 18
-		sb.content_margin_right = 18
+		sb.content_margin_left = UiKit.SP_L + 2
+		sb.content_margin_right = UiKit.SP_L + 2
+		UiKit.fit_margins(sb, true)
 		t.set_stylebox(st, "Button", sb)
 		var ob := box("button", 8.0, 1.0, states[st])
-		ob.content_margin_left = 14
+		ob.content_margin_left = UiKit.SP_L - 2
+		UiKit.fit_margins(ob, true)
 		t.set_stylebox(st, "OptionButton", ob)
 	t.set_font("font", "Button", font("bold"))
 	t.set_font("font", "OptionButton", font("bold"))
@@ -767,11 +769,11 @@ static func _menu_box(a: float) -> StyleBox:
 	else:
 		sb.draw_center = false
 		sb.texture = marker(9)
-	sb.content_margin_left = 34
-	sb.content_margin_right = 18
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
-	return sb
+	sb.content_margin_left = UiKit.SP_XXL + 2
+	sb.content_margin_right = UiKit.SP_L + 2
+	sb.content_margin_top = UiKit.SP_S - 2
+	sb.content_margin_bottom = UiKit.SP_S - 2
+	return UiKit.fit_margins(sb, true)
 
 
 ## Régua de ornamento: losango e uma linha de bronze que some para a direita.

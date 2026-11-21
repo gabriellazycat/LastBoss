@@ -16,11 +16,13 @@ const PLACES := [
 	["compendium", "m-tower", "UI_COMPENDIUM", "", 104.0, Vector2(520, 760)],
 	["settings", "m-mill", "UI_SETTINGS", "", 104.0, Vector2(1240, 350)],
 	["quit", "m-boat", "UI_QUIT", "", 104.0, Vector2(1300, 730)],
+	["endless", "m-house", "UI_ENDLESS", "UI_ENDLESS_SUB", 92.0, Vector2(846, 300)],   # Horda sem fim (19/11/2026)
 ]
 
 signal chosen(id: String)
 
 var buttons := {}          # id -> Button
+var captions := {}         # id -> Label da legenda (a Horda sem fim troca a dela pelo recorde)
 var buttons_box: Control   # os botões, na ordem do menu de hoje (continuar, nova run, coleção, ...)
 var continue_btn: Button
 var portrait: Control
@@ -56,6 +58,7 @@ func build(villain_portrait: Texture2D) -> void:
 			h.add_theme_color_override("font_outline_color", Color(UiParch.PARCH, 0.95))
 			h.add_theme_constant_override("outline_size", 10)
 			_place(h, p[5] + Vector2(-150, p[4] * 0.5 + 60), Vector2(300, 0), true)
+			captions[p[0]] = h
 	# O chefe da última run, num quadrinho com moldura do mapa.
 	if villain_portrait != null:
 		portrait = UiParch.framed_art(villain_portrait, Vector2(200, 192), "frame_gold")
@@ -119,4 +122,4 @@ func _node_button(id: String, sym: String, key: String, sz: float, at: Vector2, 
 
 ## Ordem dos botões como no menu de hoje (main_buttons.get_child(1) = Nova run).
 func ordered() -> Array:
-	return [continue_btn, buttons["new_run"], buttons["collection"], buttons["compendium"], buttons["settings"], buttons["quit"]]
+	return [continue_btn, buttons["new_run"], buttons["endless"], buttons["collection"], buttons["compendium"], buttons["settings"], buttons["quit"]]

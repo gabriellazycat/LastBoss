@@ -33,7 +33,11 @@ const ESTILOS := {"A": [5, 4, 3], "B": [6, 2, 2], "C": [2, 4, 3], "D": [7, 5, 5]
 
 
 var overtime_said := false   # aviso da prorrogação da arena já mostrado
+var overtime_party_t := -1.0  # Horda sem fim: chegada da party da vez na arena (re-arma o aviso da prorrogação)
 var seen_party := -1         # party da fila já marcada como vista no meta (mapa da campanha, 16/11/2026)
+
+
+var bg_mode := false   # teste/captura em segundo plano: janela fora da tela, sem foco, sem mover o mouse
 
 
 func _ready() -> void:
@@ -71,13 +75,38 @@ func _ready() -> void:
 	# --hudlayout=N (0 a 7): mostra outra disposição da HUD da run só nesta execução (17/11/2026, docs/HUD_2026-11-17.md).
 	if auto_args.has("hudlayout"):
 		Hud.LAYOUT = int(auto_args["hudlayout"])
+	# --mundo=N (0 a 3): props, flores e manchas de cor no chão; --luz=N (0 a 3): luz e cor do dia (rodada visual 20/11/2026).
+	if auto_args.has("mundo"):
+		MundoVivo.VAR = int(auto_args["mundo"])
+	if auto_args.has("luz"):
+		LuzLook.VAR = int(auto_args["luz"])
+	# --cenario=N (0 ou 1): regiões + margem florida + vento com rajadas; --arvores=N (0 a 3): estilo das árvores
+	# (cenário com propósito, 21/11/2026, docs/CENARIO_PROPOSITO.md).
+	if auto_args.has("cenario"):
+		Cenario.VAR = int(auto_args["cenario"])
+	if auto_args.has("arvores"):
+		Arvores.VAR = int(auto_args["arvores"])
 	if auto_args.has("mapfog"):
 		Minimap.FOG = auto_args["mapfog"] != "0"
+	# --herois=N (0 a 2): anel, sombra e aura dos heróis; --arena=N (0 a 2): arena do chefe (rodada visual 20/11/2026).
+	# --fx=N (0 a 2) é lido direto por game/art/fx2.gd.
+	if auto_args.has("herois"):
+		HeroPresence.VAR = int(auto_args["herois"])
+	if auto_args.has("arena"):
+		ArenaLook.VAR = int(auto_args["arena"])
+	# --modelos=N (0 ou 1): modelos 3D refeitos à mão (assets/models/m2_a, Looks.M2); 0 = os de hoje.
+	if auto_args.has("modelos"):
+		Looks.M2 = int(auto_args["modelos"])
 	# Testes e capturas salvam num arquivo próprio: nunca tocam na run salva do jogador.
 	if not auto_args.is_empty():
 		SaveGame.current = "user://test_run.save"
 	for t in str(auto_args.get("shots", "")).split(",", false):
 		shots.append(float(t))
+	# Auditoria de folga sem janela: o modo headless nasce 1024x1024 (o layout "expand" do projeto vira 1600x1600);
+	# --spacewin=LxA põe a janela virtual no tamanho da captura (padrão 1920x1080 = o mesmo layout lógico de 1280x720).
+	if auto_args.has("spacetest") and DisplayServer.get_name() == "headless":
+		var wsz := str(auto_args.get("spacewin", "1920x1080")).split("x")
+		get_window().size = Vector2i(int(wsz[0]), int(wsz[1]))
 	# --set=ui_scale:1.15,language:en muda configurações só nesta execução (não salva).
 	for kv in str(auto_args.get("set", "")).split(",", false):
 		var p := kv.split(":")
@@ -85,7 +114,20 @@ func _ready() -> void:
 			if not Settings.session.has(p[0]):
 				Settings.session[p[0]] = Settings.v[p[0]]
 			Settings.v[p[0]] = float(p[1]) if typeof(Settings.v[p[0]]) == TYPE_FLOAT else (p[1] if typeof(Settings.v[p[0]]) == TYPE_STRING else str_to_var(p[1]))
+	# Execução de teste/captura (qualquer argumento --x=y) roda em segundo plano (20/11/2026, pedido do usuário): janela
+	# 1920x1080 fora da tela, sem foco e sem tela cheia, e nunca move o cursor de verdade. --fg=1 volta ao modo antigo.
+	bg_mode = not auto_args.is_empty() and not auto_args.has("fg") and DisplayServer.get_name() != "headless"
+	if bg_mode:
+		if not Settings.session.has("fullscreen"):
+			Settings.session["fullscreen"] = Settings.v["fullscreen"]
+		Settings.v["fullscreen"] = false
 	Settings.apply(get_tree())
+	if bg_mode:
+		var w := get_window()
+		w.set_flag(Window.FLAG_NO_FOCUS, true)
+		w.mode = Window.MODE_WINDOWED
+		w.size = Vector2i(1920, 1080)
+		w.position = Vector2i(-6000, 0)
 	# Pele Covil: todo botão que nascer leva o material da moldura (o tema só leva a StyleBox).
 	UiSkins.apply()
 	if UiSkins.covil() and not get_tree().node_added.is_connected(UiCovil.on_node_added):
@@ -213,6 +255,9 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		menu.show_screen("settings")
 	if auto_args.has("start"):
 		_start(str(auto_args["start"]))
+	if auto_args.has("reader"):
+		# --menu=collection --reader=<índice>: abre o leitor de cartas (capturas e auditoria de folga).
+		_open_reader_shot(int(auto_args["reader"]))
 	if auto_args.has("hint"):
 		hud.hints_seen.erase(str(auto_args["hint"]))
 	if auto_args.has("uitest"):
@@ -227,6 +272,8 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		_villain_layout_test()
 	if auto_args.has("campaignshot"):
 		_campaign_shot()
+	if auto_args.has("endlessshot"):
+		_endless_shot()
 	if auto_args.has("mapvars"):
 		_map_variants()
 	if auto_args.has("mapicons"):
@@ -271,6 +318,24 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		if sim.phase == K.Phase.ROAD and sim.act != built_act:
 			_apply_act_look(sim)
 			world.build(sim, cam)
+
+
+func _open_reader_shot(i: int) -> void:
+	await get_tree().create_timer(1.5).timeout
+	menu.collection._open_reader(i)
+
+
+## Auditoria de folga (SpacingAudit): varre a tela atual e escreve uma linha por problema em <out>/space_<nome>.txt.
+func _space_scan(tag: String) -> void:
+	var view := Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size)
+	var found := SpacingAudit.scan(get_tree().root, tag, view)
+	var lines: PackedStringArray = []
+	for f in found:
+		lines.append("%s\t%s\t%s\t%s\tfolga=%s\tminimo=%s\t%s" % [f["screen"], f["kind"], f["path"], str(f["text"]).replace("\n", " "), f["gap"], f["need"], f["side"]])
+	var fa := FileAccess.open(str(auto_args.get("out", "user://")) + "space_%s.txt" % tag, FileAccess.WRITE)
+	if fa:
+		fa.store_string("\n".join(lines) + ("\n" if lines.size() > 0 else ""))
+	print("space: ", tag, " problemas=", found.size(), " tela=", view.size)
 
 
 func _env() -> void:
@@ -341,6 +406,7 @@ func _env() -> void:
 	sun = moon
 	world_env = env
 	GroundLooks.apply_env(env, moon, rim)
+	LuzLook.apply(env, moon, rim)
 	Settings.apply_quality(env, moon, get_viewport())
 
 
@@ -366,6 +432,10 @@ func _debug_contest(ty: String) -> void:
 
 
 ## Chão, luz e névoa do ato atual (provisórios: os looks 2, 3 e 4 até a direção de arte nova).
+## Fator sobre a energia do sol no primeiro ato (21/11/2026: estava forte demais).
+const ACT_SUN_K := {0: 0.4, 1: 0.5, 2: 1.3}     # 21/11/2026: energia do sol por ato (ato 3 estava escuro: sobe)
+const ACT_SHADOW_OP := {0: 0.4, 1: 0.6, 2: 1.0}  # opacidade da sombra por ato (ato 1 mais transparente; ato 3 padrão)
+
 func _apply_act_look(s: Sim, blend := false) -> void:
 	built_act = s.act
 	var A: Array = data.rules.get("acts", [])
@@ -373,6 +443,12 @@ func _apply_act_look(s: Sim, blend := false) -> void:
 	if world_env and sun:
 		var old := _env_snapshot() if blend else {}
 		GroundLooks.apply_env(world_env, sun, rim_light)
+		LuzLook.apply(world_env, sun, rim_light)
+		if ACT_SUN_K.has(s.act):
+			sun.light_energy *= ACT_SUN_K[s.act]
+			sun.shadow_opacity = ACT_SHADOW_OP[s.act]
+		else:
+			sun.shadow_opacity = 1.0
 		if blend and not old.is_empty():
 			var nw := _env_snapshot()
 			_env_apply(old, nw, 0.0)
@@ -385,7 +461,12 @@ func _apply_act_look(s: Sim, blend := false) -> void:
 func _env_snapshot() -> Dictionary:
 	var d := {"sun_c": sun.light_color, "sun_e": sun.light_energy, "sun_r": sun.rotation_degrees,
 		"amb_c": world_env.ambient_light_color, "amb_e": world_env.ambient_light_energy, "fog_c": world_env.fog_light_color,
-		"fog_d": world_env.fog_density, "expo": world_env.tonemap_exposure, "sat": world_env.adjustment_saturation}
+		"fog_d": world_env.fog_density, "expo": world_env.tonemap_exposure, "sat": world_env.adjustment_saturation,
+		"con": world_env.adjustment_contrast}
+	# Névoa volumétrica e efeito da névoa no céu só entram no crossfade com --luz>0 (com 0 a troca de ato fica como era).
+	if LuzLook.VAR > 0:
+		d["vfog"] = world_env.volumetric_fog_density
+		d["fsky"] = world_env.fog_sky_affect
 	if rim_light:
 		d["rim_c"] = rim_light.light_color
 		d["rim_e"] = rim_light.light_energy
@@ -409,6 +490,10 @@ func _env_apply(a: Dictionary, b: Dictionary, v: float) -> void:
 	world_env.fog_density = lerpf(a["fog_d"], b["fog_d"], v)
 	world_env.tonemap_exposure = lerpf(a["expo"], b["expo"], v)
 	world_env.adjustment_saturation = lerpf(a["sat"], b["sat"], v)
+	world_env.adjustment_contrast = lerpf(a["con"], b["con"], v)
+	if a.has("vfog") and b.has("vfog"):
+		world_env.volumetric_fog_density = lerpf(a["vfog"], b["vfog"], v)
+		world_env.fog_sky_affect = lerpf(a["fsky"], b["fsky"], v)
 	if rim_light and a.has("rim_c") and b.has("rim_c"):
 		rim_light.light_color = a["rim_c"].lerp(b["rim_c"], v)
 		rim_light.light_energy = lerpf(a["rim_e"], b["rim_e"], v)
@@ -768,6 +853,10 @@ func _process(delta: float) -> void:
 		var shift := 3.4 if menu.screen == "title" else 0.0
 		menu_shift = lerpf(menu_shift, shift, clampf(delta * 3.0, 0.0, 1.0))
 		cam.look_at(Vector3(0, 1.2, -1.0) - cam.global_transform.basis.x * menu_shift, Vector3.UP)
+	# --spacetest=<nome da tela>: no instante --spaceat (padrão 4 s) roda a auditoria de folga da interface (tools/space_audit.sh).
+	if auto_args.has("spacetest") and not auto_args.has("_spacedone") and life >= float(auto_args.get("spaceat", "4")):
+		auto_args["_spacedone"] = true
+		_space_scan(str(auto_args["spacetest"]))
 	if auto_args.has("quit") and life >= float(auto_args["quit"]):
 		if sim:
 			print("autoplay fim: t=%.0f fase=%d resultado=%s unidades=%d fps=%d menu=%s run=%s" % [sim.t, sim.phase, sim.stats["result"], sim.units.count, Engine.get_frames_per_second(), menu.visible, running])
@@ -913,6 +1002,82 @@ func _process(delta: float) -> void:
 			var sa := -0.9 + 1.8 * float(si) / maxf(sp_ids.size() - 1.0, 1.0)
 			var sc_: CardDef = data.card(sp_ids[si])
 			sim.units.spawn(sc_, sim.hero.x + sin(sa) * 9.0, sim.hero.y - cos(sa) * 9.0 - 2.0, 0.0, 0.0, K.F_NO_XP, 0)
+	# --fxdemo=<id>,<id>: joga esses feitiços um a cada 0,8 s diante do herói, com elixir cheio (captura dos efeitos,
+	# rodada visual 20/11/2026). Só para capturas: não mexe em nada sem o argumento.
+	# --camzoom=<n>: câmera mais perto (negativo) ou longe, só para capturas de detalhe.
+	if auto_args.has("camzoom"):
+		world.zoom = float(auto_args["camzoom"])
+	# --camlair=1: a câmera mira o covil do último ato (capturas dos modelos, 20/11/2026).
+	if auto_args.has("camlair"):
+		if world.lair_pos == Vector3.ZERO and sim.act + 1 >= sim.acts():
+			world._build_lair()   # o --skip=arena pula a montagem da estrada do último ato
+			# --camlair=2: gira o covil para a frente (a boca) ficar virada para a câmera.
+			if str(auto_args["camlair"]) == "2" and world.lair_node:
+				world.lair_node.rotation.y += PI
+		world.cam_lair = true
+	# Contado no tempo da run (sim.t), não do processo: a carga varia e a foto não pode pegar o menu.
+	# --fxshot=<s>: depois do último feitiço, espera s segundos de run, salva <out>fx.png e fecha.
+	if auto_args.has("fxdemo") and sim.t >= float(auto_args.get("fxat", "2")):
+		var fx_t0 := float(auto_args.get("fxat", "2"))
+		var fx_ids: PackedStringArray = str(auto_args["fxdemo"]).split(",", false)
+		var fx_i := int(auto_args.get("_fxi", "0"))
+		if fx_i >= fx_ids.size():
+			if not auto_args.has("_fxlife"):
+				auto_args["_fxlife"] = str(life)
+			# --fxwait=<s>: espera também s segundos de relógio (a câmera assenta depois de um --skip longo).
+			var waited := life - float(auto_args["_fxlife"]) >= float(auto_args.get("fxwait", "0"))
+			if waited and auto_args.has("fxshot") and sim.t >= fx_t0 + (fx_ids.size() - 1) * float(auto_args.get("fxgap", "0.8")) + float(auto_args["fxshot"]):
+				var vs := get_viewport().get_visible_rect().size
+				var sp := cam.unproject_position(Vector3(sim.hero.x, 0.8, sim.hero.y))
+				print("fxdemo_screen %.4f %.4f" % [sp.x / vs.x, sp.y / vs.y])
+				if auto_args.has("out"):
+					get_viewport().get_texture().get_image().save_png(str(auto_args["out"]) + "fx.png")
+				auto_args.erase("fxdemo")
+				get_tree().quit()
+		elif sim.t >= fx_t0 + fx_i * float(auto_args.get("fxgap", "0.8")):
+			auto_args["_fxi"] = str(fx_i + 1)
+			var fd := float(auto_args.get("fxdist", "0"))
+			var fa := -0.8 + 1.6 * float(fx_i) / maxf(fx_ids.size() - 1.0, 1.0)
+			sim.hand[0] = sim._new_inst(data.card(fx_ids[fx_i]))
+			sim.elixir = maxf(sim.elixir, 20.0)
+			sim.play(0, sim.hero.x + sin(fa) * fd, sim.hero.y - cos(fa) * fd)
+			var fd_vs := get_viewport().get_visible_rect().size
+			var fd_sp := cam.unproject_position(Vector3(sim.hero.x + sin(fa) * fd, 0.8, sim.hero.y - cos(fa) * fd))
+			print("fxclip %d %.4f %.4f %s" % [Engine.get_frames_drawn(), fd_sp.x / fd_vs.x, fd_sp.y / fd_vs.y, fx_ids[fx_i]])
+	# Capturas de efeito: o mouse fica no centro da janela, senão a câmera acompanha o cursor de verdade e o
+	# enquadramento muda de uma gravação para outra.
+	if (auto_args.has("fxend") or auto_args.has("fxshot")) and not bg_mode:
+		get_viewport().warp_mouse(get_viewport().get_visible_rect().size * 0.5)
+	# --herostop=<s>: a partir desse tempo da run o herói fica parado onde está (os efeitos não ficam para trás).
+	if auto_args.has("herostop") and sim.t >= float(auto_args["herostop"]):
+		if not auto_args.has("_hs"):
+			auto_args["_hs"] = "%f,%f" % [sim.hero.x, sim.hero.y]
+		var hs: PackedStringArray = str(auto_args["_hs"]).split(",")
+		sim.hero.x = float(hs[0])
+		sim.hero.y = float(hs[1])
+	# --fxemit=<tipo>[:escala],<tipo>...: dispara efeitos prontos (hit, death, heal, shield, level, magic, collapse...)
+	# diante do herói, um a cada --fxegap s (4), a partir de --fxeat (tempo da run). Imprime "fxclip <quadro do filme>
+	# <x> <y> <rótulo>" (posição do herói na tela, 0..1) para recortar o clipe e achar o pico. --fxgap=<s> espaça o --fxdemo.
+	# --fxend=<s>: fecha nesse tempo da run (clipes com --write-movie). Só capturas.
+	if auto_args.has("fxemit") and sim.t >= float(auto_args.get("fxeat", "2")):
+		var fe_list: PackedStringArray = str(auto_args["fxemit"]).split(",", false)
+		var fe_n := int(auto_args.get("_fxen", "0"))
+		if fe_n < fe_list.size() and sim.t >= float(auto_args.get("fxeat", "2")) + float(auto_args.get("fxegap", "4")) * fe_n:
+			auto_args["_fxen"] = str(fe_n + 1)
+			var fe_parts: PackedStringArray = fe_list[fe_n].split(":")
+			var fe_s := float(fe_parts[1]) if fe_parts.size() > 1 else 1.0
+			var fe_pos := Vector3(sim.hero.x, 1.0, sim.hero.y - float(auto_args.get("fxdist", "3")))
+			world.emit_fx(fe_parts[0], fe_pos, fe_s, Color.WHITE)
+			var fe_vs := get_viewport().get_visible_rect().size
+			var fe_sp := cam.unproject_position(fe_pos)
+			print("fxclip %d %.4f %.4f %s" % [Engine.get_frames_drawn(), fe_sp.x / fe_vs.x, fe_sp.y / fe_vs.y, fe_parts[0]])
+	if auto_args.has("fxend"):
+		# --fxrel=1: --fxend conta a partir do primeiro quadro (depois de um --skip longo, o tempo da run já vai longe).
+		if auto_args.has("fxrel") and not auto_args.has("_fxbase"):
+			auto_args["_fxbase"] = str(sim.t)
+			print("fxclip %d 0 0 base" % Engine.get_frames_drawn())
+		if sim.t >= float(auto_args["fxend"]) + float(auto_args.get("_fxbase", "0")):
+			get_tree().quit()
 	# --statusdemo=1: herói com vários efeitos ao mesmo tempo (captura dos selos de status).
 	if auto_args.has("statusdemo") and life >= 2.0:
 		auto_args.erase("statusdemo")
@@ -996,12 +1161,22 @@ func _process(delta: float) -> void:
 	# Ato novo: estrada nova, chão e luz do ato.
 	if sim.phase == K.Phase.ROAD and sim.act != built_act:
 		var first := built_act < 0 or world.sim != sim
+		var pre: bool = not first and world.pre_ready()
+		var t_sw := Time.get_ticks_usec()
 		_apply_act_look(sim, not first)
-		world.build(sim, cam, not first)
+		if pre:
+			world.commit_next()   # o ato novo já foi montado antes, aos poucos: só adota
+		else:
+			world.build(sim, cam, not first)
+		if world.pre_log:
+			print("troca de ato (%s): %.1f ms" % ["pré-montado" if pre else "montagem inteira", (Time.get_ticks_usec() - t_sw) / 1000.0])
 	if sim.phase == K.Phase.ARENA and not arena_built:
 		arena_built = true
 		world.build_arena()
 		hud.say(tr("UI_ARENA"))
+		overtime_said = false
+	if sim.endless and sim.phase == K.Phase.ARENA and sim.arena_party_t != overtime_party_t:
+		overtime_party_t = sim.arena_party_t   # Horda sem fim: a prorrogação recomeça a cada party que chega
 		overtime_said = false
 	if sim.phase == K.Phase.ARENA and not overtime_said and sim.overtime() > 0.0:
 		overtime_said = true
@@ -1018,6 +1193,11 @@ func _process(delta: float) -> void:
 			meta.add_run()
 			# Desafios de desbloqueio: vitória ou derrota, confere as cartas ainda bloqueadas (antes de win_phase).
 			hud.unlock_result = meta.apply_unlocks(sim, sim.result in [K.Result.WIN, K.Result.WIN_EARLY])
+		if sim.endless and auto_args.is_empty():
+			# Horda sem fim: recorde de parties derrubadas, por vilão.
+			hud.endless_record = meta.record_endless(sim.deck_id, sim.parties_beaten())
+			hud.endless_best = int(meta.endless_best.get(data.villain_id(sim.deck_id), 0))
+			meta.save()
 		if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] and auto_args.is_empty():
 			# Campanha: vencer a fase libera a próxima e, às vezes, um vilão novo.
 			var np := meta.win_phase(sim.campaign_phase)
@@ -1294,7 +1474,9 @@ func _shop_ui_test() -> bool:
 
 
 func _ui_shot(tag: String) -> void:
-	if auto_args.has("out"):
+	if auto_args.has("spacetest"):
+		_space_scan("hand_" + tag)
+	if auto_args.has("out") and DisplayServer.get_name() != "headless":
 		get_viewport().get_texture().get_image().save_png(str(auto_args["out"]) + "uitest_%s.png" % tag)
 
 
@@ -1411,6 +1593,12 @@ func _menu_test() -> void:
 	step.call("Esc volta ao mapa da campanha", menu.screen == "campaign")
 	await _key(KEY_ESCAPE)
 	step.call("Esc volta ao título", menu.screen == "title")
+	# Horda sem fim (19/11/2026): o botão vai direto à escolha do vilão, e Esc volta ao título (não ao mapa).
+	await _click(menu.endless_btn)
+	step.call("Horda sem fim abre a escolha de vilão", menu.screen == "decks" and menu.is_endless())
+	await get_tree().create_timer(0.3).timeout
+	await _key(KEY_ESCAPE)
+	step.call("Esc na escolha do vilão da Horda volta ao título", menu.screen == "title")
 	meta.phases_won = won0
 	if UiSkins.mapa() and menu.title_root is MapMenu:
 		# Pele "Mapa aberto": os papéis da mesa saem; o clique no lugar "Compêndio" do mapa abre a tela.
@@ -1527,6 +1715,15 @@ func _menu_test() -> void:
 		await _click(_button(menu, "UI_CONTINUE"))
 		step.call("Continuar retoma a run", running and sim != null and sim.deck_id == "plague")
 		SaveGame.erase()
+	# Horda sem fim: do jogo de volta ao menu, botão da Horda, vilão e a run começa com a fila infinita.
+	if running:
+		await _key(KEY_ESCAPE)
+		await _click(_button(hud, "UI_SAVE_MENU"))
+	await _click(menu.endless_btn)
+	await get_tree().create_timer(0.3).timeout
+	await _click(_button(menu, "UI_PICK_VILLAIN"))
+	step.call("Horda sem fim começa a run infinita", running and sim != null and sim.endless and sim.campaign_phase == int(data.endless["id"]) and not menu.visible)
+	SaveGame.erase()
 	print("menutest resultado: ", "OK" if fails.is_empty() else "FALHOU " + str(fails))
 	get_tree().quit(0 if fails.is_empty() else 1)
 
@@ -1551,6 +1748,21 @@ func _campaign_shot() -> void:
 	if auto_args.has("out") and menu.campaign.bg != null:
 		menu.campaign.bg.get_image().save_png(str(auto_args["out"]) + "campaign_fundo.png")
 	print("campaignshot ok")
+	get_tree().quit(0)
+
+
+## --endlessshot=1 --hud=N --out=pasta/: capturas da Horda sem fim (19/11/2026): o menu com o botão e um recorde
+## de mentira (só nesta execução, sem gravar) e a escolha do vilão aberta pelo botão.
+func _endless_shot() -> void:
+	meta.endless_best = {"plague": 23}
+	await get_tree().create_timer(0.5).timeout
+	menu.show_screen("title")
+	await get_tree().create_timer(1.2).timeout
+	_ui_shot("endless_hud%s_title" % str(auto_args.get("hud", "")))
+	menu._open_endless()
+	await get_tree().create_timer(1.2).timeout
+	_ui_shot("endless_hud%s_villain" % str(auto_args.get("hud", "")))
+	print("endlessshot ok: tela=%s fase=%d" % [menu.screen, menu.pending_phase])
 	get_tree().quit(0)
 
 
@@ -1624,7 +1836,8 @@ func _tip_test() -> void:
 	Settings.v["hints"] = false
 	# O cursor físico parado sobre o leque abria a prévia de uma carta (e as caixas dela escondem o aviso):
 	# o teste começa com o mouse no meio do mundo, longe da interface.
-	get_viewport().warp_mouse(get_viewport().get_visible_rect().size * Vector2(0.5, 0.35))
+	if not bg_mode:
+		get_viewport().warp_mouse(get_viewport().get_visible_rect().size * Vector2(0.5, 0.35))
 	await get_tree().create_timer(0.6).timeout
 	# Armadura Ignífuga: caixas "Armadura" e "Fogo"; o texto do Fogo cita Encharcado, que ainda não tem caixa.
 	sim.hero.apply_upgrade("fireproof")
@@ -1769,7 +1982,8 @@ func _tip_test() -> void:
 ## pela posição real do mouse, não pela do evento: por isso também move o cursor de verdade.
 func _hover(p: Vector2, frames := 3) -> void:
 	Tips.mouse_override = p
-	get_viewport().warp_mouse(p)
+	if not bg_mode:
+		get_viewport().warp_mouse(p)
 	var mm := InputEventMouseMotion.new()
 	mm.position = p
 	mm.global_position = p
@@ -1982,9 +2196,9 @@ func _unhandled_input(e: InputEvent) -> void:
 		elif e.button_index == MOUSE_BUTTON_RIGHT:
 			hud.selected = -1
 		elif e.button_index == MOUSE_BUTTON_WHEEL_UP:
-			world.zoom = clampf(world.zoom - 2.0, 0.0, 20.0)
+			world.zoom = clampf(world.zoom - 2.0, world.ZOOM_START, 20.0)
 		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			world.zoom = clampf(world.zoom + 2.0, 0.0, 20.0)
+			world.zoom = clampf(world.zoom + 2.0, world.ZOOM_START, 20.0)
 	if e is InputEventKey and e.pressed and not e.echo:
 		var kc: int = e.keycode
 		if paused and kc != KEY_ESCAPE and kc != KEY_SPACE:

@@ -26,6 +26,7 @@ func _ready() -> void:
 	t_save()
 	t_hero_ai()
 	t_party()
+	t_endless()
 	t_card_levels()
 	t_location_rewards()
 	t_route()
@@ -74,6 +75,7 @@ func _ready() -> void:
 	t_unique_art()
 	t_helper()
 	t_round_2026_11_13()
+	t_ui_spacing()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -3541,3 +3543,150 @@ func t_shadowy_leech() -> void:
 	check(s.units.hp[k] > h0 and s.units.hp[k] <= s.units.max_hp[k], "Rouba-vida: golpe no herói cura a unidade (sem passar da vida máxima)")
 	var child := s.spawn_child(d, s.hero.x, s.hero.y, j)
 	check(child < 0 or (s.units.flags[child] & K.F_SHADOWY) != 0, "Filhote herda o Sombrio")
+
+
+## Horda sem fim (19/11/2026): fila infinita, determinística, sobrevive ao salvamento; só acaba com o covil.
+func _endless_kill(s: Sim) -> void:
+	for f in s.followers:
+		f.hp = 0.0
+	s.hero.hp = 0.0
+	s._check_end()
+	s.offers.clear()
+
+
+func t_endless() -> void:
+	var E: Dictionary = data.endless
+	var cap: Dictionary = data.phase(6)
+	check(not E.is_empty() and data.phase(int(E["id"])) == E and E.get("endless", false), "Horda sem fim: data.phase(id) devolve a config")
+	check(is_equal_approx(float(E["hp_mult"]), float(cap["hp_mult"])) and is_equal_approx(float(E["damage_mult"]), float(cap.get("damage_mult", 1.0))), "Horda sem fim: força inicial = a da Capital")
+	var in_list := false
+	for ph in data.phases:
+		in_list = in_list or ph.get("endless", false)
+	check(not in_list, "Horda sem fim fica fora da lista de fases do mapa")
+	var s := _phase_sim(int(E["id"]), 5)
+	check(s.endless and s.party_mode(), "Horda sem fim liga a fila de parties")
+	var hp0 := s.hero.base_hp * s.followers.size() if s.followers.size() > 0 else s.hero.base_hp
+	var classes: Array = data.hero_classes.keys()
+	for k in 12:
+		_endless_kill(s)
+	check(s.phase != K.Phase.OVER and s.cur_party == 12, "12 parties derrubadas e a run segue (party %d, fase %d)" % [s.cur_party, s.phase])
+	check(s.party_count() >= s.cur_party + int(E["ahead"]), "fila sempre %d parties à frente" % int(E["ahead"]))
+	var sizes_ok := true
+	for p in s.party_count():
+		var n := s.party_members(p).size()
+		sizes_ok = sizes_ok and n >= 1 and n <= 4
+	for c in s.party:
+		sizes_ok = sizes_ok and classes.has(c)
+	check(sizes_ok, "toda party tem de 1 a 4 heróis de classes válidas")
+	var sum1 := 0.0
+	for hh in s.all_heroes():
+		sum1 += hh.base_hp
+	check(sum1 > hp0 * 5.0, "força cresce com a fila (vida da party 13 = %.0f, da 1ª = %.0f)" % [sum1, hp0])
+	var t2 := _phase_sim(int(E["id"]), 5)
+	t2._endless_extend()
+	var same := true
+	for k in 4:
+		same = same and t2.endless_party(5, k) == s.endless_party(5, k)
+	for i in t2.party.size():
+		same = same and t2.party[i] == s.party[i]
+	check(same, "mesma semente → mesma fila de parties")
+	check(s.endless_party(5, 3) != s.endless_party(6, 3) or s.endless_party(5, 4) != s.endless_party(6, 4), "semente diferente → fila diferente")
+	s.t = float(data.rules["sim"]["max_run_seconds"]) + 1.0
+	s._check_end()
+	check(s.phase != K.Phase.OVER, "Horda sem fim não acaba por tempo")
+	# Salvar e carregar no meio da fila.
+	check(SaveGame.save(s, "user://test_endless.save"), "salvou a Horda sem fim")
+	var c := SaveGame.load_run(data, "user://test_endless.save")
+	check(c != null and c.endless and c.party == s.party and c.cur_party == s.cur_party and c.state_hash() == s.state_hash(), "carregou a Horda sem fim com a mesma fila")
+	SaveGame.erase("user://test_endless.save")
+	# Arena: a party seguinte entra pelo portão, o dano do covil fica e a prorrogação recomeça.
+	s.enter_arena()
+	s.arena.part_hp[0] *= 0.5
+	var hurt: float = s.arena.part_hp[0]
+	s.t += 400.0
+	check(s.overtime() > 0.0, "prorrogação corre para a party da vez")
+	var p0 := s.cur_party
+	_endless_kill(s)
+	check(s.phase == K.Phase.ARENA and s.cur_party == p0 + 1, "na arena, a party seguinte chega")
+	check(is_equal_approx(s.arena.part_hp[0], hurt), "o dano no covil fica entre as parties")
+	check(s.overtime() == 0.0 and Vector2(s.hero.x, s.hero.y).distance_to(s.gate_pos) < 0.01, "a party nova entra pelo portão, sem prorrogação")
+	s.core_destroyed()
+	check(s.result == K.Result.LOSS and int(s.stats["parties_beaten"]) == p0 + 1, "covil caiu: derrota com %d parties derrubadas" % int(s.stats.get("parties_beaten", -1)))
+	# Recorde por vilão.
+	var mp := "user://test_meta_endless.save"
+	if FileAccess.file_exists(mp):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(mp))
+	var m := MetaSave.load_or_new(data, mp)
+	check(m.record_endless("plague", 7) and not m.record_endless("plague", 5) and m.record_endless("dragon", 2), "recorde só sobe, e é por vilão")
+	m.save()
+	var m2 := MetaSave.load_or_new(data, mp)
+	check(int(m2.endless_best.get("plague", 0)) == 7 and int(m2.endless_best.get("dragon", 0)) == 2, "recorde da Horda sem fim é salvo")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(mp))
+
+## Rodada de UI de 20/11/2026: escala de espaçamento e auditoria de folga (game/spacing_audit.gd). A auditoria das telas
+## inteiras roda fora daqui: bash tools/space_audit.sh <pasta> (sem janela, ~3 min; código de saída = nº de problemas).
+func t_ui_spacing() -> void:
+	# A escala: degraus crescentes e a moldura desenhada dentro da margem de conteúdo dos painéis, botões e fitas do kit.
+	check(UiKit.SP_XS < UiKit.SP_S and UiKit.SP_S < UiKit.SP_M and UiKit.SP_M < UiKit.SP_L and UiKit.SP_L < UiKit.SP_XL and UiKit.SP_XL < UiKit.SP_XXL, "escala de espaçamento crescente")
+	for kind in ["gold", "ink", "dark", "night"]:
+		var sb := UiParch.box(kind, 6.0) as StyleBoxTexture
+		var need := UiKit.clean_need(sb)
+		check(sb.content_margin_left >= need.x and sb.content_margin_top >= need.y, "painel %s: margem de conteúdo %.0f cobre a moldura (%.0f)" % [kind, sb.content_margin_top, need.y])
+		check(UiParch.box(kind, 60.0).content_margin_left == 60.0, "painel %s: margem maior que o mínimo fica como está" % kind)
+		check(UiParch.box(kind, 0.0).content_margin_left == 0.0, "painel %s cru (margem 0) continua cru" % kind)
+	for st in ["normal", "hover", "pressed", "disabled"]:
+		var bb := UiParch.button_box(st) as StyleBoxTexture
+		var need := UiKit.clean_need(bb, true)
+		var top: float = bb.content_margin_top if st != "pressed" else bb.content_margin_top - 2.0
+		check(bb.content_margin_left >= need.x and top >= need.y - (2.0 if st == "pressed" else 0.0) and bb.content_margin_bottom >= need.y - 2.0, "botão %s: folga cobre a moldura" % st)
+	var rb := UiParch.ribbon_box("monster")
+	check(rb.content_margin_top >= UiKit.clean_need(rb).y and rb.content_margin_bottom >= UiKit.clean_need(rb).y, "fita: folga cobre a moldura")
+	var raw := UiParch.box("ink", 0.0)
+	raw.content_margin_left = 2.0
+	raw.content_margin_top = 2.0
+	UiKit.fit_margins(raw, true)
+	check(raw.content_margin_left >= UiKit.clean_need(raw, true).x and raw.content_margin_top >= UiKit.clean_need(raw, true).y, "fit_margins sobe margens escritas à mão")
+	# A auditoria enxerga o problema: rótulo colado na borda do painel de papel acusa; com a margem do kit, não.
+	var holder := Control.new()
+	holder.size = Vector2(800, 600)
+	add_child(holder)
+	var bad := PanelContainer.new()
+	var bsb := UiParch.box("ink", 0.0)
+	bsb.set_content_margin_all(3.0)
+	bad.add_theme_stylebox_override("panel", bsb)
+	var bl := Label.new()
+	bl.text = "Texto colado"
+	bad.add_child(bl)
+	holder.add_child(bad)
+	var good := PanelContainer.new()
+	good.add_theme_stylebox_override("panel", UiParch.box("ink", 4.0))
+	good.position = Vector2(300, 0)
+	var gl := Label.new()
+	gl.text = "Texto com folga"
+	good.add_child(gl)
+	holder.add_child(good)
+	var cut := Label.new()   # largura menor que o texto, com clip_text: deve acusar corte
+	cut.text = "Um texto bem comprido que não cabe"
+	cut.clip_text = true
+	cut.size = Vector2(60, 24)
+	cut.position = Vector2(0, 300)
+	holder.add_child(cut)
+	for pc in [bad, good]:   # sem esperar um quadro: dimensiona e distribui os filhos agora
+		pc.size = pc.get_combined_minimum_size()
+		pc.notification(Container.NOTIFICATION_SORT_CHILDREN)
+	var found := SpacingAudit.scan(holder, "teste", Rect2(Vector2.ZERO, Vector2(800, 600)))
+	var bad_hits := 0
+	var good_hits := 0
+	var cut_hits := 0
+	for f in found:
+		if str(f["text"]).begins_with("Texto colado"):
+			bad_hits += 1
+		elif str(f["text"]).begins_with("Texto com folga"):
+			good_hits += 1
+		elif f["kind"] == "corte":
+			cut_hits += 1
+	check(bad_hits >= 1, "auditoria: texto colado na moldura é acusado (%d)" % bad_hits)
+	check(good_hits == 0, "auditoria: painel com a margem do kit passa limpo (%d)" % good_hits)
+	check(cut_hits >= 1, "auditoria: texto mais largo que o rótulo é acusado como corte (%d)" % cut_hits)
+	holder.queue_free()
+

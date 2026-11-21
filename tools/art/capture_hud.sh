@@ -18,7 +18,7 @@ for v in "${V[@]}"; do
     IFS='|' read -r name t args <<<"$s"
     [ -n "$ONLY" ] && [ "$name" != "$ONLY" ] && continue
     tmp="$OUT/_tmp_${v}_$name/"; rm -rf "$tmp"; mkdir -p "$tmp"
-    timeout 150 "$GODOT" --path . -s res://tools/art/capture_big.gd -- $args --set=model_g:$v --shots=$t --quit=$((t+1)) --out="$tmp" >/dev/null 2>"$tmp/err.txt"
+    timeout 150 "$GODOT" --position -6000,0 --path . -s res://tools/art/capture_big.gd -- $args --set=model_g:$v --shots=$t --quit=$((t+1)) --out="$tmp" >/dev/null 2>"$tmp/err.txt"
     f=$(ls "$tmp"/*.png 2>/dev/null | head -1)
     [ -n "$f" ] && cp "$f" "$OUT/V${v}_$name.png"
     rm -rf "$tmp"

@@ -764,6 +764,7 @@ VCOMBO_lich_2,Corrente de feitiços: Faísca Arcana cresce a cada feitiço; Eco 
 VCOMBO_lich_3,Morte alimenta magia: Ritual Profano troca monstro por feitiços; Cavaleiro da Morte se cura a cada feitiço.,Death feeds magic: Profane Ritual trades a monster for spells; Death Knight heals on every spell.
 UI_PILE_DRAW,Compra,Draw
 UI_PILE_DISCARD,Descarte,Discard
+UI_ELIXIR_SHORT,faltam {n},{n} short
 UI_PILE_PANEL_DRAW,Pilha de compra: {n} cartas (a ordem é secreta),Draw pile: {n} cards (the order is secret)
 UI_PILE_PANEL_DISCARD,Descarte: {n} cartas,Discard pile: {n} cards
 UI_PILE_EMPTY,Nenhuma carta aqui.,No cards here.
@@ -1280,3 +1281,12 @@ UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos em 2 fases dife
 UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
 UNLOCK_spitting_viper,Jogue 150 Feras no total,Play 150 Beasts in total
 UNLOCK_tar_net,Gaste 2000 de ouro no total,Spend 2000 gold in total
+UI_ENDLESS,Horda sem fim,Endless Horde
+UI_ENDLESS_SUB,"Parties sem fim, até o covil cair","Endless parties, until your lair falls"
+UI_ENDLESS_BEST_BTN,Recorde: {n} parties,Best: {n} parties
+UI_ENDLESS_PARTY,Party {k},Party {k}
+UI_ENDLESS_FALLEN,{k} caídos,{k} fallen
+UI_ENDLESS_OVER,{n} PARTIES,{n} PARTIES
+UI_ENDLESS_NEW_BEST,Novo recorde deste vilão!,New best for this villain!
+UI_ENDLESS_BEST,Recorde deste vilão: {n} parties.,Best for this villain: {n} parties.
+PHASE_ENDLESS,Horda sem fim,Endless Horde

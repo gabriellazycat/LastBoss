@@ -382,5 +382,13 @@
    820,
    500
   ]
+ },
+ "endless": {
+  "_doc": "Horda sem fim (19/11/2026, docs/HORDA_SEM_FIM.md): a run normal de 3 atos com a fila de parties infinita. Fora de 'phases' (o mapa da campanha e os testes de 7 fases percorrem a lista). Força inicial = hp_mult/damage_mult da última fase com mapa (a Capital), lidos no carregamento; sobe rules.party.step por party. Cada party: party_min a party_max heróis sorteados entre todas as classes (sorteio só de run_seed e do número da party).",
+  "id": 100,
+  "key": "PHASE_ENDLESS",
+  "party_min": 1,
+  "party_max": 4,
+  "ahead": 3
  }
 }

@@ -33,7 +33,7 @@ for s in "${SCREENS[@]}"; do
   IFS='|' read -r name t args <<<"$s"
   if [ -n "$CAPTURE_ONLY" ] && ! grep -qw "$name" <<<"$CAPTURE_ONLY"; then continue; fi
   tmp="$OUT/_tmp_$name/"; rm -rf "$tmp"; mkdir -p "$tmp"
-  timeout 150 "$GODOT" --path . -- $args --set="fullscreen:true" --shots=$t --quit=$((t+1)) --out="$tmp" >/dev/null 2>"$tmp/err.txt"
+  timeout 150 "$GODOT" --position -6000,0 --path . -- $args --set="fullscreen:true" --shots=$t --quit=$((t+1)) --out="$tmp" >/dev/null 2>"$tmp/err.txt"
   f=$(ls "$tmp"/shot_*.png 2>/dev/null | head -1)
   if [ -n "$f" ]; then mv "$f" "$OUT/${name}.png"; echo "ok $name"; else echo "FALHOU $name: $(grep -m3 -i error "$tmp/err.txt")"; fi
   rm -rf "$tmp"
@@ -41,13 +41,13 @@ done
 # Mapa da campanha (4 capturas) e a mão/mapa grande pelo teste de entrada real.
 if [ -z "$CAPTURE_ONLY" ] || grep -qw campanha <<<"$CAPTURE_ONLY"; then
   tmp="$OUT/_tmp_camp/"; rm -rf "$tmp"; mkdir -p "$tmp"
-  timeout 90 "$GODOT" --path . -- --campaignshot=1 --set="fullscreen:true" --out="$tmp" > "$tmp/log.txt" 2>&1
+  timeout 90 "$GODOT" --position -6000,0 --path . -- --campaignshot=1 --set="fullscreen:true" --out="$tmp" > "$tmp/log.txt" 2>&1
   for f in "$tmp"/*.png; do [ -f "$f" ] && mv "$f" "$OUT/00_$(basename "$f")"; done
   echo "campanha: $(grep -m1 'campaignshot' "$tmp/log.txt")"; rm -rf "$tmp"
 fi
 if [ -z "$CAPTURE_ONLY" ] || grep -qw uitest <<<"$CAPTURE_ONLY"; then
   tmp="$OUT/_tmp_uitest/"; rm -rf "$tmp"; mkdir -p "$tmp"
-  timeout 150 "$GODOT" --path . -- --uitest=1 --set="fullscreen:true" --out="$tmp" > "$tmp/log.txt" 2>&1
+  timeout 150 "$GODOT" --position -6000,0 --path . -- --uitest=1 --set="fullscreen:true" --out="$tmp" > "$tmp/log.txt" 2>&1
   for k in hover map selected; do [ -f "$tmp/uitest_$k.png" ] && mv "$tmp/uitest_$k.png" "$OUT/21_mao_${k}.png"; done
   echo "uitest: $(grep -m1 'uitest resultado' "$tmp/log.txt")"; rm -rf "$tmp"
 fi

@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Revisão visual da rodada</title>
+<style>
+:root{--bg:#f3ead6;--ink:#2b2118;--card:#fffaf0;--line:#c9b68f;--acc:#8a2b1f;--ok:#2f7a3a;--mut:#7a6a52;--bad:#b3261e;--warn:#8a5a08}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1812;--ink:#efe4cc;--card:#2a231a;--line:#51442f;--acc:#e0705a;--ok:#4fae5d;--mut:#a39475;--bad:#ff8a80;--warn:#e0a53c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:2px solid var(--line);padding:10px 16px}
+h1{margin:0 0 6px;font-size:20px}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.prog{flex:1;min-width:160px;max-width:420px;height:12px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
+.prog i{display:block;height:100%;background:var(--ok);width:0}
+button,input,textarea{font:inherit;color:var(--ink)}
+.btn{padding:6px 12px;border:2px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--acc)}
+.btn.ok{border-color:var(--ok);color:var(--ok)}.btn.ok.on{background:var(--ok);color:#fff}
+.btn.no{border-color:var(--bad);color:var(--bad)}.btn.no.on{background:var(--bad);color:#fff}
+.btn.sel{background:var(--acc);border-color:var(--acc);color:#fff}
+main{padding:12px 16px 80px;max-width:1500px;margin:0 auto}
+h2{font-size:18px;margin:26px 0 10px;border-bottom:2px solid var(--line);padding-bottom:4px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px;scroll-margin-top:90px}
+.card.aprovado{border-color:var(--ok)}.card.rejeitado{border-color:var(--bad)}.card.foco{box-shadow:0 0 0 3px var(--acc)}
+.top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.top h3{margin:0;font-size:17px}
+.flag{font:12px ui-monospace,Consolas,monospace;background:#0001;padding:1px 6px;border-radius:5px}
+.badge{font-size:12px;font-weight:700;padding:1px 9px;border-radius:9px;color:#fff;margin-left:auto}
+.badge.pendente{background:var(--mut)}.badge.aprovado{background:var(--ok)}.badge.rejeitado{background:var(--bad)}
+.desc{margin:4px 0 8px;color:var(--mut);white-space:pre-wrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.sub{font-size:12px;color:var(--mut);margin:8px 0 4px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.pares{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:12px}
+.par .lbl{font-size:12px;color:var(--mut);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.cmp{position:relative;user-select:none;touch-action:none;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:repeating-conic-gradient(#0001 0 25%,transparent 0 50%) 0 0/16px 16px;cursor:ew-resize;line-height:0}
+.cmp img{width:100%;height:auto;display:block;-webkit-user-drag:none}
+.cmp .topimg{position:absolute;inset:0}
+.cmp .tag{position:absolute;top:6px;font-size:11px;font-weight:700;background:#000b;color:#fff;padding:1px 7px;border-radius:9px;line-height:1.4}
+.cmp .tag.l{left:6px}.cmp .tag.r{right:6px}
+.cmp .hd{position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 0 1px #0008}
+.cmp .hd:after{content:"\2194";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#000;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;box-shadow:0 0 0 1px #0008}
+.lado{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lado figure{margin:0;position:relative;line-height:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lado img{width:100%;height:auto;cursor:zoom-in}
+.lado figcaption{position:absolute;top:6px;left:6px;font-size:11px;font-weight:700;background:#000b;color:#fff;padding:1px 7px;border-radius:9px;line-height:1.4}
+.solo img{width:100%;border:1px solid var(--line);border-radius:8px;cursor:zoom-in;display:block}
+.vids{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px}
+video{width:100%;border-radius:8px;border:1px solid var(--line);background:#000}
+.falta{border:1px dashed var(--warn);color:var(--warn);padding:10px;border-radius:8px;font-size:13px}
+.m360{max-width:520px}.m360 .vw{position:relative;line-height:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:ew-resize;touch-action:none;user-select:none}
+.m360 img{width:100%;height:auto;-webkit-user-drag:none}
+.m360 .ctl{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut);margin-top:4px}
+.act{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+.act textarea{flex:1;min-width:220px;height:42px;resize:vertical;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.avisos{border:1px dashed var(--warn);color:var(--warn);padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:13px}
+.vazio{text-align:center;color:var(--mut);padding:60px 0;font-size:18px}
+#lb{position:fixed;inset:0;background:#000e;z-index:50;display:none;align-items:center;justify-content:center}
+#lb.on{display:flex}
+#lb img{max-width:96vw;max-height:90vh;object-fit:contain;image-rendering:auto}
+#lb .cap{position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#fff;font-size:14px}
+#lb button{position:fixed;background:#fff3;color:#fff;border:0;font-size:34px;width:56px;height:80px;cursor:pointer;border-radius:10px}
+#lb .p{left:10px;top:calc(50% - 40px)}#lb .n{right:10px;top:calc(50% - 40px)}#lb .x{right:10px;top:10px;height:50px;width:50px;font-size:28px}
+label.chk{display:flex;gap:6px;align-items:center;font-size:14px;cursor:pointer}
+.kbd{font-size:12px;color:var(--mut)}
+</style></head><body>
+<header>
+<h1>Revisão visual da rodada</h1>
+<div class="bar">
+<b id="cont">0 de 0 decididos</b>
+<div class="prog"><i id="pg"></i></div>
+<label class="chk"><input type="checkbox" id="soPend"> só pendentes</label>
+<span class="kbd">teclas: N / P = próximo / anterior cartão</span>
+</div>
+</header>
+<main id="main"><div class="vazio">Carregando...</div></main>
+<div id="lb"><button class="x" title="Fechar (Esc)">&times;</button><button class="p" title="Anterior">&lsaquo;</button><img alt=""><button class="n" title="Próxima">&rsaquo;</button><div class="cap"></div></div>
+<script>
+"use strict";
+let DATA = {itens: [], frentes: [], avisos: []}, APR = {};
+const UI = {};  // estado por cartão: {var, modo}
+const $ = s => document.querySelector(s);
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in (attrs || {})) {
+    const v = attrs[k];
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+async function api(path, body) {
+  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
+  return r.json();
+}
+async function carregar() {
+  [DATA, APR] = await Promise.all([api("/api/itens"), api("/api/aprovacoes")]);
+  desenhar();
+}
+function contar() {
+  const tot = DATA.itens.length, dec = DATA.itens.filter(i => APR[i.id]).length;
+  $("#cont").textContent = dec + " de " + tot + " decididos";
+  $("#pg").style.width = (tot ? 100 * dec / tot : 0) + "%";
+}
+async function decidir(it, decisao, variacao) {
+  const ta = document.getElementById("c_" + cssId(it.id));
+  const body = {id: it.id, decisao, variacao: variacao || null, comentario: ta ? ta.value : ""};
+  const r = await api("/api/decidir", body);
+  if (r.aprovacoes) APR = r.aprovacoes;
+  const y = window.scrollY;
+  desenhar();
+  window.scrollTo(0, y);
+}
+const cssId = s => s.replace(/[^a-zA-Z0-9_-]/g, "_");
+
+/* ---------- comparação ---------- */
+function slider(urlA, urlB, rotA, rotB) {
+  // urlA = antes (por cima, recortado), urlB = depois (base)
+  const imgB = h("img", {src: urlB, alt: rotB, draggable: "false"});
+  const imgA = h("img", {src: urlA, alt: rotA, draggable: "false"});
+  const top = h("div", {class: "topimg"}, imgA);
+  const hd = h("div", {class: "hd"});
+  const box = h("div", {class: "cmp", title: "Arraste. Clique duas vezes para ampliar."},
+    imgB, top, hd, h("span", {class: "tag l"}, rotA), h("span", {class: "tag r"}, rotB));
+  const set = p => { p = Math.max(0, Math.min(100, p)); top.style.clipPath = "inset(0 " + (100 - p) + "% 0 0)"; hd.style.left = p + "%"; };
+  set(50);
+  const mover = e => { const r = box.getBoundingClientRect(); set(100 * (e.clientX - r.left) / r.width); };
+  box.addEventListener("pointerdown", e => { box.setPointerCapture(e.pointerId); mover(e); });
+  box.addEventListener("pointermove", e => { if (box.hasPointerCapture(e.pointerId)) mover(e); });
+  return box;
+}
+function mesmoTamanho(a, b) {
+  return new Promise(res => {
+    const load = u => new Promise(ok => { const i = new Image(); i.onload = () => ok([i.naturalWidth, i.naturalHeight]); i.onerror = () => ok(null); i.src = u; });
+    Promise.all([load(a), load(b)]).then(([x, y]) => res(!!x && !!y && x[0] === y[0] && x[1] === y[1]));
+  });
+}
+function lado(urlA, urlB, rotA, rotB, grupo) {
+  const fig = (u, r) => h("figure", null, h("img", {src: u, alt: r, onclick: () => abrir(grupo, u)}), h("figcaption", null, r));
+  return h("div", {class: "lado"}, fig(urlA, rotA), fig(urlB, rotB));
+}
+function par(it, antesUrl, depoisUrl, rotDepois, grupo, st, idx) {
+  const wrap = h("div", {class: "par"});
+  const corpo = h("div");
+  const cab = h("div", {class: "lbl"}, h("span", null, "Imagem " + (idx + 1)));
+  wrap.append(cab, corpo);
+  if (!antesUrl) {
+    corpo.append(h("div", {class: "solo"}, h("img", {src: depoisUrl, alt: rotDepois, onclick: () => abrir(grupo, depoisUrl)})));
+    return wrap;
+  }
+  const btnLado = h("button", {class: "btn", style: "padding:1px 8px;font-size:12px"}, "");
+  cab.append(btnLado);
+  mesmoTamanho(antesUrl, depoisUrl).then(igual => {
+    const pode = igual;
+    const desenhaCorpo = () => {
+      corpo.replaceChildren();
+      if (pode && st.modo !== "lado") {
+        const s = slider(antesUrl, depoisUrl, "Antes", rotDepois);
+        s.addEventListener("dblclick", () => abrir(grupo, depoisUrl));
+        corpo.append(s);
+        btnLado.textContent = "lado a lado";
+      } else {
+        corpo.append(lado(antesUrl, depoisUrl, "Antes", rotDepois, grupo));
+        btnLado.textContent = pode ? "slider" : "tamanhos diferentes";
+      }
+      btnLado.disabled = !pode;
+    };
+    btnLado.addEventListener("click", () => { st.modo = st.modo === "lado" ? "slider" : "lado"; desenhaCorpo(); });
+    desenhaCorpo();
+  });
+  return wrap;
+}
+
+/* ---------- 360 ---------- */
+function giro(frames, grupo) {
+  let i = 0, auto = true, tmr = null;
+  const img = h("img", {src: frames[0], alt: "modelo", draggable: "false"});
+  const lab = h("span");
+  const mostra = n => { i = ((n % frames.length) + frames.length) % frames.length; img.src = frames[i]; lab.textContent = (i + 1) + "/" + frames.length; };
+  const vw = h("div", {class: "vw", title: "Arraste para girar. Clique duas vezes para ampliar."}, img);
+  const btn = h("button", {class: "btn", style: "padding:1px 8px;font-size:12px", onclick: () => { auto = !auto; btn.textContent = auto ? "pausar" : "girar sozinho"; }}, "pausar");
+  let x0 = null, i0 = 0;
+  vw.addEventListener("pointerdown", e => { vw.setPointerCapture(e.pointerId); x0 = e.clientX; i0 = i; auto = false; btn.textContent = "girar sozinho"; });
+  vw.addEventListener("pointermove", e => { if (x0 != null) mostra(i0 + Math.round((e.clientX - x0) / (vw.clientWidth / frames.length))); });
+  vw.addEventListener("pointerup", () => { x0 = null; });
+  vw.addEventListener("dblclick", () => abrir(frames, frames[i]));
+  tmr = setInterval(() => { if (!vw.isConnected) return clearInterval(tmr); if (auto && x0 == null) mostra(i + 1); }, 110);
+  mostra(0);
+  return h("div", {class: "m360"}, vw, h("div", {class: "ctl"}, btn, lab));
+}
+
+/* ---------- cartão ---------- */
+function cartao(it) {
+  const st = UI[it.id] || (UI[it.id] = {var: null, modo: "slider"});
+  const nomes = Object.keys(it.variacoes);
+  if (!st.var || !nomes.includes(st.var)) st.var = nomes[0] || null;
+  const ap = APR[it.id];
+  const estado = ap ? ap.decisao : "pendente";
+  const c = h("div", {class: "card " + (ap ? ap.decisao : ""), id: "card_" + cssId(it.id)});
+  c.append(h("div", {class: "top"}, h("h3", null, it.titulo),
+    it.flag ? h("span", {class: "flag"}, it.flag) : null,
+    h("span", {class: "badge " + estado}, ap ? (ap.decisao === "aprovado" ? "Aprovado" + (ap.variacao ? ": " + ap.variacao : "") : "Rejeitado") : "Pendente")));
+  if (it.descricao) c.append(h("div", {class: "desc"}, it.descricao));
+  if (it.faltando.length) c.append(h("div", {class: "falta"}, "Arquivo(s) não encontrado(s): " + it.faltando.join(", ")));
+
+  if (nomes.length) {
+    const tabs = h("div", {class: "tabs"});
+    const area = h("div");
+    const pinta = () => {
+      tabs.replaceChildren(...nomes.map(n => h("button", {class: "btn" + (n === st.var ? " sel" : ""), onclick: () => { st.var = n; pinta(); }}, n)));
+      area.replaceChildren();
+      const dep = it.variacoes[st.var] || [];
+      const grupo = [...it.antes, ...dep];
+      if (!dep.length) { area.append(h("div", {class: "falta"}, "Sem imagens nesta variação.")); return; }
+      area.append(h("div", {class: "pares"}, dep.map((u, k) => par(it, it.antes[k] || (it.antes.length === 1 ? it.antes[0] : null), u, nomes.length > 1 ? st.var : "Depois", grupo, st, k))));
+    };
+    if (nomes.length > 1) c.append(tabs);
+    c.append(area);
+    pinta();
+  } else if (it.antes.length) {
+    c.append(h("div", {class: "sub"}, "Antes"), h("div", {class: "pares"}, it.antes.map(u => h("div", {class: "solo"}, h("img", {src: u, alt: "antes", onclick: () => abrir(it.antes, u)})))));
+  }
+  if (it.videos.length) {
+    c.append(h("div", {class: "sub"}, "Vídeos"), h("div", {class: "vids"}, it.videos.map(u => h("video", {src: u, autoplay: true, loop: true, muted: true, playsinline: true, controls: true}))));
+    c.querySelectorAll("video").forEach(v => { v.muted = true; v.play().catch(() => {}); });
+  }
+  if (it.modelo360.length) c.append(h("div", {class: "sub"}, "Modelo 360 (arraste para girar)"), giro(it.modelo360));
+
+  const ta = h("textarea", {id: "c_" + cssId(it.id), placeholder: "Comentário (opcional)"});
+  ta.value = ap ? ap.comentario || "" : "";
+  ta.addEventListener("change", () => { if (ap) decidir(it, ap.decisao, ap.variacao); });
+  const acts = h("div", {class: "act"});
+  if (nomes.length > 1) {
+    for (const n of nomes) acts.append(h("button", {class: "btn ok" + (ap && ap.decisao === "aprovado" && ap.variacao === n ? " on" : ""), onclick: () => decidir(it, "aprovado", n)}, "Aprovar variação " + n));
+  } else {
+    acts.append(h("button", {class: "btn ok" + (ap && ap.decisao === "aprovado" ? " on" : ""), onclick: () => decidir(it, "aprovado", nomes[0] || null)}, "Aprovar"));
+  }
+  acts.append(h("button", {class: "btn no" + (ap && ap.decisao === "rejeitado" ? " on" : ""), onclick: () => decidir(it, "rejeitado", null)}, "Rejeitar"));
+  if (ap) acts.append(h("button", {class: "btn", onclick: () => decidir(it, "pendente", null)}, "Voltar a pendente"));
+  acts.append(ta);
+  c.append(acts);
+  return c;
+}
+
+function desenhar() {
+  const main = $("#main");
+  contar();
+  main.replaceChildren();
+  if (DATA.avisos && DATA.avisos.length) main.append(h("div", {class: "avisos"}, DATA.avisos.map(a => h("div", null, a))));
+  if (!DATA.itens.length) { main.append(h("div", {class: "vazio"}, "Nenhum item ainda.")); return; }
+  const so = $("#soPend").checked;
+  let mostrou = 0;
+  for (const f of DATA.frentes) {
+    const its = DATA.itens.filter(i => i.frente === f && !(so && APR[i.id]));
+    if (!its.length) continue;
+    const dec = DATA.itens.filter(i => i.frente === f && APR[i.id]).length, tot = DATA.itens.filter(i => i.frente === f).length;
+    main.append(h("h2", null, f + "  (" + dec + "/" + tot + ")"));
+    its.forEach(i => { main.append(cartao(i)); mostrou++; });
+  }
+  if (!mostrou) main.append(h("div", {class: "vazio"}, "Tudo decidido. Nenhum item pendente."));
+}
+$("#soPend").addEventListener("change", desenhar);
+
+/* ---------- lightbox ---------- */
+let LB = {lista: [], i: 0};
+function abrir(lista, url) {
+  LB = {lista: lista.length ? lista : [url], i: Math.max(0, lista.indexOf(url))};
+  $("#lb").classList.add("on"); lbDesenha();
+}
+function lbDesenha() {
+  $("#lb img").src = LB.lista[LB.i];
+  $("#lb .cap").textContent = (LB.i + 1) + " / " + LB.lista.length;
+}
+function lbMove(d) { LB.i = (LB.i + d + LB.lista.length) % LB.lista.length; lbDesenha(); }
+$("#lb .p").onclick = e => { e.stopPropagation(); lbMove(-1); };
+$("#lb .n").onclick = e => { e.stopPropagation(); lbMove(1); };
+$("#lb .x").onclick = () => $("#lb").classList.remove("on");
+$("#lb").addEventListener("click", e => { if (e.target.id === "lb") $("#lb").classList.remove("on"); });
+
+/* ---------- teclado ---------- */
+let foco = -1;
+document.addEventListener("keydown", e => {
+  if ($("#lb").classList.contains("on")) {
+    if (e.key === "Escape") $("#lb").classList.remove("on");
+    else if (e.key === "ArrowLeft") lbMove(-1);
+    else if (e.key === "ArrowRight") lbMove(1);
+    return;
+  }
+  if (/^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName)) return;
+  const cards = [...document.querySelectorAll(".card")];
+  if (!cards.length || (e.key !== "n" && e.key !== "p")) return;
+  foco = Math.max(0, Math.min(cards.length - 1, foco + (e.key === "n" ? 1 : -1)));
+  cards.forEach(c => c.classList.remove("foco"));
+  cards[foco].classList.add("foco");
+  cards[foco].scrollIntoView({block: "start", behavior: "smooth"});
+});
+carregar();
+</script>
+</body></html>

@@ -5,6 +5,10 @@ extends Node3D
 ## Game feel: hit-stop, trauma de câmera, flash de tela, recuo, investida, partículas em camadas.
 
 const UP := Vector3.UP
+const FX2 := preload("res://game/art/fx2.gd")   # efeitos novos (--fx=1/2, rodada visual 20/11/2026)
+var fx2: Node3D = null
+var presence: HeroPresence = null   # --herois=N: anel, sombra e aura dos heróis (rodada visual 20/11/2026)
+var gol: Golpes = null              # --golpes=1: golpes dos monstros com peso (game/art/golpes.gd)
 const STRIDE := 20
 const LOC_COLORS := {
 	"shop": Color(0.95, 0.75, 0.35), "tavern": Color(0.9, 0.55, 0.25), "fountain": Color(0.35, 0.75, 1.0),
@@ -142,7 +146,13 @@ var altar_nodes: Array = []
 var pillar_nodes: Array = []
 var boss_face: MeshInstance3D
 var cam_pos := Vector3.ZERO
-var zoom := 0.0
+## Distância extra inicial da câmera (21/11/2026: começa mais atrás). É também o mínimo: a roda não aproxima além disso.
+const ZOOM_START := 8.0
+var zoom := ZOOM_START
+## Só capturas (--camlair, rodada de modelos 20/11/2026): a câmera mira o covil em vez do herói.
+var cam_lair := false
+var lair_pos := Vector3.ZERO
+var lair_node: Node3D
 const CAM_LOOK_Z := 0.0     # para onde a câmera mira em relação ao herói (+ = para trás, sobe o herói na tela)
 var arrive_pull := 0.0   # recuo da câmera por ~3 s quando chega um herói novo
 var trauma := 0.0
@@ -226,6 +236,11 @@ func build(s: Sim, camera: Camera3D, append := false) -> void:
 	look_hold = false
 	Engine.time_scale = 1.0
 	var keep_cam := cam_pos
+	var keep_pre := pre_root
+	pre_root = null   # a pré-montagem do ato seguinte (se houver) é descartada junto com o resto
+	if keep_pre != null and is_instance_valid(keep_pre):
+		keep_pre.queue_free()
+	_pre_reset()
 	if append and sim != null and not static_nodes.is_empty():
 		_retire_old_act()
 	else:
@@ -288,7 +303,7 @@ func build(s: Sim, camera: Camera3D, append := false) -> void:
 
 
 ## Tira o cenário do ato anterior da cena viva: vai para um nó à parte, um pouco abaixo, e some com um fade.
-func _retire_old_act() -> void:
+func _retire_old_act(static_only := false) -> void:
 	var old := Node3D.new()
 	old.name = "OldAct"
 	old.position = Vector3(0, -0.02, 0)
@@ -296,9 +311,10 @@ func _retire_old_act() -> void:
 	var keep: Array = static_nodes.filter(func(c): return is_instance_valid(c) and c.get_parent() == self)
 	if old_act_root != null and is_instance_valid(old_act_root):
 		keep.append(old_act_root)
-	for c in get_children():
-		if not keep.has(c):
-			c.queue_free()
+	if not static_only:
+		for c in get_children():
+			if not keep.has(c) and c != pre_root:
+				c.queue_free()
 	add_child(old)
 	for c in keep:
 		if c == old_act_root:
@@ -322,14 +338,185 @@ func _update_act_fade(delta: float) -> void:
 		for c in fade_old.get_children():
 			if not fade_old_ground.has(c):
 				_fade_tree(c, v)
-	for c in static_nodes:
-		if is_instance_valid(c):
-			_fade_tree(c, 1.0 - v)
+	if fade_new:
+		for c in static_nodes:
+			if is_instance_valid(c):
+				_fade_tree(c, 1.0 - v)
 	if fade_t >= 1.0:
 		if is_instance_valid(fade_old):
 			fade_old.queue_free()
 		fade_old = null
 		old_act_root = null
+
+
+# ---------------------------------------------------------------- mapa contínuo (21/11/2026)
+# O ato seguinte é montado ANTES do fim do ato, uma etapa por quadro (sem travar), por cima do mesmo mundo, e aparece no
+# chão aos poucos conforme o herói chega perto do portão. Na troca de ato só se adota o que já está pronto.
+
+const ACT_STATE := ["road_meshes", "road_field", "road_piece_of", "road_state_img", "road_state_tex", "road_state_last",
+	"barricades", "loc_nodes", "surf_fields", "lanterns", "lantern_lights", "house_nodes", "lair_pos", "lair_node",
+	"ground_nodes", "static_nodes"]
+const PRE_STAGES := ["_build_ground", "_build_road", "_build_rivers", "_scatter_sample", "k:tree", "k:tree_round", "k:dead_tree", "k:rock",
+	"k:grass", "k:mushroom", "k:bush", "k:flowers", "k:gravestone", "k:road_stone", "k:lantern", "_scatter_mundo", "_scatter_lights", "_build_locations", "_build_lair"]
+const PRE_START_D := 320.0    # m do portão em que começa a montagem
+const PRE_SHOW_D := 110.0     # m do portão em que o chão novo começa a aparecer
+const PRE_FULL_D := 35.0      # m do portão em que ele já está inteiro
+var pre_stage := -1           # -1 não começou; 0..5 etapa seguinte; 6 pronto
+var pre_state: Dictionary = {}
+var pre_root: Node3D = null
+var pre_road: SimRoad = null
+## Estrada do ato vivo enquanto o seguinte é montado (Cenario não põe nada em cima dela durante o crossfade).
+var other_road: SimRoad = null
+var pre_act := -1
+var pre_alpha := 1.0
+var pre_lights: Array = []    # [luz, energia]
+var fade_new := true          # false: o cenário novo já está inteiro (veio da pré-montagem)
+var pre_log: bool = OS.get_cmdline_user_args().has("--prelog")
+
+
+func _act_state() -> Dictionary:
+	var d := {}
+	for v in ACT_STATE:
+		d[v] = get(v)
+	return d
+
+
+func _act_state_put(d: Dictionary) -> void:
+	for v in ACT_STATE:
+		set(v, d[v])
+
+
+func _act_state_blank() -> Dictionary:
+	return {"road_meshes": [], "road_field": null, "road_piece_of": [], "road_state_img": null, "road_state_tex": null,
+		"road_state_last": PackedByteArray(), "barricades": [], "loc_nodes": [], "surf_fields": [], "lanterns": [],
+		"lantern_lights": [], "house_nodes": {}, "lair_pos": Vector3.ZERO, "lair_node": null, "ground_nodes": [], "static_nodes": []}
+
+
+func _pre_reset() -> void:
+	if pre_root != null and is_instance_valid(pre_root):
+		pre_root.queue_free()
+	pre_root = null
+	pre_stage = -1
+	pre_state = {}
+	pre_road = null
+	pre_act = -1
+	pre_lights.clear()
+	pre_alpha = 1.0
+	fade_new = true
+
+
+## Distância do herói ao portão de fim do ato.
+func _gate_dist() -> float:
+	return Vector2(sim.hero.x, sim.hero.y).distance_to(sim.road.lair)
+
+
+## Uma etapa da montagem do ato seguinte. O estado do ato vivo (nós e vetores) sai de cena durante a etapa e volta depois.
+func _pre_run_stage() -> void:
+	var t0 := Time.get_ticks_usec()
+	var cur := _act_state()
+	var real_road := sim.road
+	var real_act := sim.act
+	var real_look := GroundLooks.act_look
+	_act_state_put(pre_state)
+	sim.road = pre_road
+	other_road = real_road
+	sim.act = pre_act
+	var A: Array = sim.R.get("acts", [])
+	GroundLooks.act_look = int(A[pre_act].get("ground_look", -1)) if pre_act < A.size() else -1
+	var before := get_children()
+	var st: String = PRE_STAGES[pre_stage]
+	if st.begins_with("k:"):
+		_scatter_kind(st.substr(2))
+	else:
+		call(st)
+	var added := get_children().filter(func(c): return not before.has(c))
+	for c in added:
+		c.reparent(pre_root, false)
+	if pre_stage == 0:
+		ground_nodes = added
+	static_nodes.append_array(added)
+	pre_state = _act_state()
+	_act_state_put(cur)
+	sim.road = real_road
+	other_road = null
+	sim.act = real_act
+	GroundLooks.act_look = real_look
+	for c in added:
+		for l in c.find_children("*", "OmniLight3D", true, false) + ([c] if c is OmniLight3D else []):
+			pre_lights.append([l, (l as OmniLight3D).light_energy])
+		_fade_tree(c, 1.0)
+	pre_stage += 1
+	if pre_log:
+		print("pre-etapa %s: %.1f ms" % [PRE_STAGES[pre_stage - 1], (Time.get_ticks_usec() - t0) / 1000.0])
+
+
+func _pre_begin() -> void:
+	pre_act = sim.act + 1
+	pre_road = sim.next_road()
+	pre_state = _act_state_blank()
+	pre_root = Node3D.new()
+	pre_root.name = "NextAct"
+	pre_root.position = Vector3(0, 0.02, 0)   # um pouco acima do chão do ato vivo: sem brigar com ele
+	pre_root.visible = false
+	add_child(pre_root)
+	pre_stage = 0
+
+
+## Todo quadro (de draw): monta uma etapa e ajusta o quanto do chão novo já aparece.
+func _pre_tick() -> void:
+	if sim == null or sim.phase != K.Phase.ROAD or sim.act_pending or sim.act + 1 >= sim.acts():
+		return
+	if DisplayServer.get_name() == "headless":
+		return   # testes sem janela não montam nada
+	var d := _gate_dist()
+	if pre_stage < 0 and d < PRE_START_D and cine_t < 0.0:
+		_pre_begin()
+	if pre_stage >= 0 and pre_stage < PRE_STAGES.size():
+		_pre_run_stage()
+	if pre_stage >= PRE_STAGES.size():
+		var v := clampf((PRE_SHOW_D - d) / (PRE_SHOW_D - PRE_FULL_D), 0.0, 1.0)
+		v = v * v * (3.0 - 2.0 * v)
+		var a := 1.0 - v
+		if absf(a - pre_alpha) >= 0.03 or (a == 0.0 and pre_alpha != 0.0) or (a == 1.0 and pre_alpha != 1.0):
+			_pre_apply_alpha(a)
+
+
+func _pre_apply_alpha(a: float) -> void:
+	pre_alpha = a
+	pre_root.visible = a < 0.999
+	for c in pre_state["static_nodes"]:
+		_fade_tree(c, a)
+	for e in pre_lights:
+		if is_instance_valid(e[0]):
+			(e[0] as OmniLight3D).light_energy = float(e[1]) * (1.0 - a)
+
+
+## O ato seguinte já foi montado para a estrada atual (`sim.road`)? Então dá para adotá-lo sem montar nada.
+func pre_ready() -> bool:
+	return pre_stage >= 0 and pre_road != null and pre_road == sim.road
+
+
+## Troca de ato com o cenário pronto: termina o que faltar, o cenário velho some aos poucos e o novo passa a ser o do ato.
+func commit_next() -> void:
+	cine_t = -1.0
+	_end_scene()
+	# O que faltar da montagem sai de uma vez só (o herói chegou antes do previsto).
+	while pre_stage < PRE_STAGES.size():
+		_pre_run_stage()
+	_pre_apply_alpha(0.0)
+	_retire_old_act(true)
+	_act_state_put(pre_state)
+	for c in static_nodes:
+		if is_instance_valid(c) and c.get_parent() == pre_root:
+			c.reparent(self, false)
+	pre_root.queue_free()
+	pre_root = null
+	pre_state = {}
+	pre_stage = -1
+	pre_road = null
+	pre_lights.clear()
+	fade_new = false
+	pre_alpha = 1.0
 
 
 func _fade_tree(n: Node, v: float) -> void:
@@ -396,7 +583,10 @@ func _build_ground_look() -> void:
 	# Subdividido: com só dois triângulos enormes, a interpolação por vértice marcava a diagonal.
 	pm.subdivide_width = int(b.size.x / 12.0)
 	pm.subdivide_depth = int(b.size.y / 12.0)
-	var g := _mi(pm, Vector3(b.get_center().x, -0.03, b.get_center().y), GroundLooks.ground_material())
+	var gmat := GroundLooks.ground_material()
+	if MundoVivo.VAR > 0:
+		gmat.set_shader_parameter("mundo", MundoVivo.ground_amount())
+	var g := _mi(pm, Vector3(b.get_center().x, -0.03, b.get_center().y), gmat)
 	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	g.layers = GROUND_LAYER
 	add_child(g)
@@ -415,6 +605,7 @@ func _build_ground_look() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sim.run_seed + 131
 	var chunks := {}
+	var tones := {}   # tom de cada tufo por pedaço (branco com --mundo=0)
 	# Teto por célula de 6 m: onde as faixas de duas estradas se sobrepõem (a rede tem ~50 ligações lado a lado),
 	# a grama não dobra. O teto é a densidade de uma estrada sozinha.
 	var per_cell := {}
@@ -442,12 +633,22 @@ func _build_ground_look() -> void:
 						continue
 					per_cell[cell] = int(per_cell.get(cell, 0)) + 1
 					var s := rng.randf_range(0.9, 1.9) * (1.0 + clampf((r - 8.0) / 18.0, 0.0, 1.0) * 0.4)
+					var tone := Color.WHITE
+					if MundoVivo.VAR > 0:
+						var tf: Array = MundoVivo.tuft(rng)   # 3 tamanhos e 3 tons
+						s *= float(tf[0])
+						tone = tf[1]
 					var ck := Vector2i(int(floor(p.x / 64.0)), int(floor(p.y / 64.0)))
 					if not chunks.has(ck):
 						chunks[ck] = []
 					chunks[ck].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.8, 1.3), s)), Vector3(p.x, -0.02, p.y)))
+					if not tones.has(ck):
+						tones[ck] = []
+					tones[ck].append(tone)
 	var mesh := GroundLooks.grass_mesh()
 	var mat := GroundLooks.grass_material()
+	if Cenario.on():
+		mat.set_shader_parameter("gusts", 1.0)   # o mesmo vento com rajadas das flores
 	for ck in chunks:
 		var xf: Array = chunks[ck]
 		var mm := MultiMesh.new()
@@ -458,7 +659,8 @@ func _build_ground_look() -> void:
 		for i in xf.size():
 			mm.set_instance_transform(i, xf[i])
 			var v := rng.randf_range(0.8, 1.2)
-			mm.set_instance_color(i, Color(v, v * rng.randf_range(0.92, 1.08), v * 0.95))
+			var tc := Color(v, v * rng.randf_range(0.92, 1.08), v * 0.95)
+			mm.set_instance_color(i, tc * (tones[ck][i] as Color))
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
 		mmi.material_override = mat
@@ -784,6 +986,17 @@ func _scatter_mm(mesh: Mesh, xforms: Array, mat: Material, shadow: bool, tint :=
 
 
 func _build_scatter() -> void:
+	_scatter_sample()
+	for k in _sc_sets:
+		_scatter_kind(k)
+	_scatter_tail()
+
+
+var _sc_sets: Dictionary = {}
+
+
+## Sorteia onde fica cada coisa do cenário (só contas; os nós vêm depois, um tipo por vez).
+func _scatter_sample() -> void:
 	var cells := _road_cells()
 	var b := _road_bounds()
 	var rng := RandomNumberGenerator.new()
@@ -797,7 +1010,7 @@ func _build_scatter() -> void:
 	var stones := FastNoiseLite.new()
 	stones.seed = sim.run_seed + 9
 	stones.frequency = 0.05
-	var n := int(b.size.x * b.size.y / 26.0)
+	var n := int(b.size.x * b.size.y / 26.0) if not Cenario.on() else 0   # Cenario: regiões em vez do salpicado
 	for i in n:
 		var p := Vector2(rng.randf_range(b.position.x, b.end.x), rng.randf_range(b.position.y, b.end.y))
 		if cells.has(Vector2i(int(floor(p.x / 6.0)), int(floor(p.y / 6.0)))):
@@ -834,13 +1047,13 @@ func _build_scatter() -> void:
 				var d: Vector2 = pts[i] - pts[i - 1]
 				acc += d.length()
 				var o := d.normalized().orthogonal()
-				if rng.randf() < 0.35:
+				if rng.randf() < 0.35 and not Cenario.on():
 					var q: Vector2 = pts[i] + o * (rng.randf_range(2.6, 3.4) * (1.0 if rng.randf() < 0.5 else -1.0))
 					sets["road_stone"].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.6, 1.4)), Vector3(q.x, 0, q.y)))
 				if acc > 56.0:
 					acc = 0.0
 					side = -side
-					var q2: Vector2 = pts[i] + o * 3.4 * side
+					var q2: Vector2 = pts[i] + o * (4.4 if Cenario.on() else 3.4) * side
 					var yaw := atan2(-o.x * side, -o.y * side) + PI * 0.5
 					sets["lantern"].append(Transform3D(Basis(UP, yaw), Vector3(q2.x, 0, q2.y)))
 					lanterns.append(Vector3(q2.x, 0, q2.y) + Basis(UP, yaw) * Vector3(0.5, 2.15, 0))
@@ -858,7 +1071,12 @@ func _build_scatter() -> void:
 			var kk := "rock" if r2 < 0.45 else ("bush" if r2 < 0.7 else ("flowers" if r2 < 0.85 else "grass"))
 			var sc := rng.randf_range(0.6, 1.2)
 			sets[kk].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3.ONE * sc), Vector3(q.x, 0, q.y)))
-	for k in sets:
+	_sc_sets = sets
+
+
+func _scatter_kind(k: String) -> void:
+	var sets := _sc_sets
+	if true:
 		var mat: Material = Models.material()
 		var mesh: Mesh = Models.prop(k)
 		var look_mesh := GroundLooks.prop_mesh(k)
@@ -866,13 +1084,29 @@ func _build_scatter() -> void:
 			mesh = look_mesh
 			mat = GroundLooks.prop_material(k in ["tree", "tree_round", "bush"])
 		elif k == "grass" and GroundLooks.look() > 0:
-			continue
+			return
 		elif k in ["tree", "tree_round", "bush", "grass", "flowers"]:
 			var sm := Models.glow_material(0.0)
 			Looks.set_param(sm, "sway", 1.0)
 			mat = sm
 		mat = Looks.g_material(mesh, mat)
 		_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"], k in ["tree", "tree_round", "bush", "dead_tree"])
+
+
+func _scatter_tail() -> void:
+	_sc_sets = {}
+	_scatter_mundo()
+	_scatter_lights()
+
+
+func _scatter_mundo() -> void:
+	if Cenario.on():
+		Cenario.build(self, sim)   # --cenario=1: regiões com tema, margem florida, nada na pista (21/11/2026)
+	else:
+		MundoVivo.build(self, sim)   # --mundo=N: flores, pedras, tocos, cercas, trigo (rodada visual 20/11/2026); 0 = nada
+
+
+func _scatter_lights() -> void:
 	for i in 6:
 		var l := _light(Vector3.ZERO, Color(1.0, 0.7, 0.35), 1.6, 9.0)
 		add_child(l)
@@ -1009,9 +1243,11 @@ func _build_lair() -> void:
 		return
 	var lp := sim.road.lair + sim.road.lair_dir * 34.0
 	var yaw := atan2(-sim.road.lair_dir.x, -sim.road.lair_dir.y)
+	lair_pos = Vector3(lp.x, 0, lp.y)
 	var castle := _mi(Models.prop("castle"), Vector3(lp.x, 0, lp.y), Models.glow_material(0.05), yaw + PI)
 	# Peça de fundo: a sombra dela cobria a arena inteira com uma cunha de borda reta.
 	castle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	lair_node = castle
 	add_child(castle)
 	add_child(_light(Vector3(lp.x, 8, lp.y), Color(0.8, 0.3, 1.0), 4.0, 40.0))
 
@@ -1089,7 +1325,7 @@ func _part(parent: Node3D, id: String, pos: Vector3) -> Node3D:
 
 func _build_hero() -> void:
 	hero_root = Node3D.new()
-	hero_root.scale = Vector3.ONE * HERO_SCALE
+	hero_root.scale = Vector3.ONE * HERO_SCALE * HeroPresence.scale_mult()
 	add_child(hero_root)
 	hero_mat = Looks.hero_material(0.05)
 	body = Node3D.new()
@@ -1357,6 +1593,50 @@ func _build_pools() -> void:
 		o.visible = false
 		add_child(o)
 		orb_pool.append({"n": o, "t": 0.0, "from": Vector3.ZERO})
+	_build_fx2()
+
+
+## Efeitos novos (--fx=1 pintado, --fx=2 brilhante): troca os desenhos dos pools de antes; a lógica continua aqui.
+func _build_fx2() -> void:
+	presence = null
+	if HeroPresence.VAR > 0:
+		presence = HeroPresence.new()
+		add_child(presence)
+	if gol != null:
+		gol.queue_free()
+	gol = null
+	if Golpes.VAR > 0:
+		gol = Golpes.new()
+		add_child(gol)
+		gol.setup(self)
+	fx2 = null
+	if FX2.style() == 0:
+		return
+	fx2 = FX2.new()
+	add_child(fx2)
+	fx2.setup()
+	for e in zone_pool:
+		(e["disc"] as MeshInstance3D).material_override = fx2.ground_material(6)
+	for e in decal_pool:
+		(e["n"] as Decal).texture_albedo = fx2.scorch_tex
+	var streak: Material = fx2.streak_material()
+	for e in shot_pool:
+		var s: MeshInstance3D = e["n"]
+		var q := QuadMesh.new()
+		q.size = Vector2(1, 1)
+		s.mesh = q
+		s.material_override = streak
+		s.extra_cull_margin = 16.0   # o quad é esticado no shader ao longo do tiro; a caixa dele não vê isso
+	for e in hshot_pool:
+		var hn: Node3D = e["n"]
+		for c in hn.get_children():
+			c.queue_free()
+		var arrow: Node3D = fx2.make_arrow()
+		var orbn: Node3D = fx2.make_orb()
+		hn.add_child(arrow)
+		hn.add_child(orbn)
+		e["arrow"] = arrow
+		e["orb"] = orbn
 
 
 func _build_bars() -> void:
@@ -1397,26 +1677,30 @@ func build_arena() -> void:
 		arena_root.add_child(fl)
 	var k := Models.Kit.new()
 	k.add(Models.cyl(r + 1.0, r + 1.2, 0.3, 40), Vector3(0, -0.12, 0), Color(0.18, 0.14, 0.22))
-	for ring in 4:
+	for ring in (4 if not ArenaLook.on() else 0):
 		var tm := TorusMesh.new()
 		tm.inner_radius = r * (ring + 1) / 4.5 - 0.15
 		tm.outer_radius = r * (ring + 1) / 4.5
 		tm.rings = 48
 		tm.ring_segments = 3
 		k.add(tm, Vector3(0, 0.04, 0), Models.G(Color(0.45, 0.2, 0.6)) if ring == 3 else Color(0.32, 0.22, 0.4), Vector3.ZERO, Vector3(1, 0.1, 1))
-	for i in 24:
+	for i in (24 if not ArenaLook.on() else 0):
 		var a := TAU * i / 24.0
 		k.add(Models.box(0.12, 0.05, r * 0.95), Vector3(cos(a), 0, sin(a)) * r * 0.5 + Vector3(0, 0.03, 0), Color(0.25, 0.18, 0.32), Vector3(0, -rad_to_deg(a) + 90, 0))
 	if not Models.has_dir_prop("arena"):
 		arena_root.add_child(_mi(k.done(), c))
 	var n := 10
+	var braziers: Array = []
 	for i in n:
 		var a := TAU * i / n
 		var pp := c + Vector3(cos(a), 0, sin(a)) * (r + 2.5)
 		arena_root.add_child(_mi(Models.prop("pillar" if i % 2 == 0 else "brazier"), pp))
 		if i % 2 == 1:
-			arena_root.add_child(_light(pp + Vector3(0, 2.5, 0), Color(1.0, 0.55, 0.2), 3.0, 14.0))
-	arena_root.add_child(_light(c + Vector3(0, 7, 0), Color(0.75, 0.35, 1.0), 3.0, 26.0))
+			braziers.append(pp)
+			arena_root.add_child(_light(pp + Vector3(0, 2.5, 0), ArenaLook.flame_color(), 3.0, 14.0))
+	var cl: Array = ArenaLook.center_light()
+	arena_root.add_child(_light(c + Vector3(0, 7, 0), cl[0], cl[1], 26.0))
+	ArenaLook.build(arena_root, c, r, braziers)   # --arena=N (rodada visual 20/11/2026); 0 = nada
 	# Chefe do vilão da run (Etapa D, 11/11/2026): modelo e posições das partes de BossModels.
 	boss_offs = BossModels.part_offsets(sim.deck_id)
 	if BossModels.has_model(sim.deck_id):
@@ -1495,6 +1779,7 @@ func show_placement(on: bool, pos: Vector3, valid: bool, radius: float) -> void:
 
 func draw(alpha: float, delta: float) -> void:
 	_update_act_fade(delta)
+	_pre_tick()
 	if sim == null:
 		return
 	frame += 1
@@ -1526,6 +1811,8 @@ func _draw_units(alpha: float, delta: float) -> void:
 		ky[i] *= decay
 	var hx := sim.hero.x
 	var hy := sim.hero.y
+	if gol != null:
+		gol.begin(sim.t, alpha, sim.dt, U.cap, delta)
 	var rb := ring_buf
 	ring_buf = PackedFloat32Array()
 	var rn := 0
@@ -1581,9 +1868,19 @@ func _draw_units(alpha: float, delta: float) -> void:
 			var lunge := 0.0
 			if not is_struct and U.atk_int[i] > 0.0:
 				lunge = clampf((U.atk_t[i] - (U.atk_int[i] - 0.2)) / 0.2, 0.0, 1.0)
+			var sy := s
+			if gol != null and not is_struct:
+				# --golpes=1: ataque no tempo do dano (preparo, golpe, impacto), avanço e agacha-e-estica. Estruturas
+				# ficam como antes (sem ataque): não deu para conferir a torre em vídeo nesta rodada.
+				lunge = gol.unit(U, i, x, z, hx - x, hy - z, gy, float(e["rad"]) * s, moving, e["acc"])
+				x += gol.ox
+				z += gol.oz
+				sy = s * gol.sy
+				ca *= gol.sxz
+				sa *= gol.sxz
 			var o := q * STRIDE
 			buf[o] = ca; buf[o + 1] = 0.0; buf[o + 2] = sa; buf[o + 3] = x
-			buf[o + 4] = 0.0; buf[o + 5] = s; buf[o + 6] = 0.0; buf[o + 7] = y
+			buf[o + 4] = 0.0; buf[o + 5] = sy; buf[o + 6] = 0.0; buf[o + 7] = y
 			buf[o + 8] = -sa; buf[o + 9] = 0.0; buf[o + 10] = ca; buf[o + 11] = z
 			buf[o + 12] = col.r; buf[o + 13] = col.g; buf[o + 14] = col.b; buf[o + 15] = 1.0
 			buf[o + 16] = flash[i]; buf[o + 17] = hop * maxf(moving, 0.25 if hop > 0.0 else 0.0); buf[o + 18] = float(i) * 1.7; buf[o + 19] = lunge
@@ -1718,7 +2015,7 @@ func _draw_helper(alpha: float, delta: float) -> void:
 		return
 	if helper_node == null:
 		helper_node = Node3D.new()
-		helper_node.scale = Vector3.ONE * HERO_SCALE
+		helper_node.scale = Vector3.ONE * HERO_SCALE * HeroPresence.scale_mult()
 		add_child(helper_node)
 		var rig := Looks.hero_rig(hero_mat, hh.cls())
 		if rig:
@@ -1742,7 +2039,7 @@ func _draw_followers(alpha: float, delta: float) -> void:
 	for f in sim.followers:
 		if not follower_nodes.has(f):
 			var root := Node3D.new()
-			root.scale = Vector3.ONE * HERO_SCALE
+			root.scale = Vector3.ONE * HERO_SCALE * HeroPresence.scale_mult()
 			add_child(root)
 			var rig := Looks.hero_rig(hero_mat, f.cls())
 			if rig:
@@ -1776,6 +2073,8 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	var frozen := h.petrify_t > 0.0 or h.root_t > 0.0 or h.drink_t > 0.0
 	hero_root.position = p
 	hero_root.position.y += surface_y(p.x, p.z)
+	if gol != null:
+		hero_root.position += gol.hero_off   # --golpes=1: o golpe empurra o herói (volta sozinho)
 	# Fonte: ajoelhado bebendo.
 	if h.drink_t > 0.0:
 		hero_root.position.y -= 0.35
@@ -1820,6 +2119,13 @@ func _draw_hero(alpha: float, delta: float) -> void:
 		hm.set_shader_parameter("flash", fl)
 	hero_light.light_energy = 1.0 + h.level * 0.06
 	fireflies.position = p
+	if presence != null:
+		presence.track(hero_root, h.cls(), true)
+		for fh in follower_nodes:
+			presence.track(follower_nodes[fh], (fh as SimHero).cls(), false)
+		if helper_node != null and helper_of != null:
+			presence.track(helper_node, helper_of.cls(), false)
+		presence.end_frame()
 
 
 func _lanterns() -> void:
@@ -1880,8 +2186,12 @@ func _draw_road_state() -> void:
 		lab.modulate.a = 0.35 if st != SimRoad.LocState.ACTIVE else 1.0
 		if st == SimRoad.LocState.DESTROYED and loc["type"] != "shrine" and n.visible:
 			n.visible = false
-			emit_fx("fire", n.position + Vector3(0, 1, 0), 1.5)
-			emit_fx("smoke", n.position + Vector3(0, 1, 0), 1.5)
+			if fx2 != null:
+				fx2.emit("collapse", n.position + Vector3(0, 0.5, 0), 1.2)
+				add_trauma(0.25)
+			else:
+				emit_fx("fire", n.position + Vector3(0, 1, 0), 1.5)
+				emit_fx("smoke", n.position + Vector3(0, 1, 0), 1.5)
 			scorch(n.position, 6.0)
 
 
@@ -1907,6 +2217,11 @@ func _draw_zones() -> void:
 			var r := float(z["r"])
 			disc.scale = Vector3(r, 1, r)
 			var mat: ShaderMaterial = disc.material_override
+			if fx2 != null:
+				fx2.zone_params(mat, kind)
+				fx2.zone_tick(kind, pos, r, k)
+				k += 1
+				continue
 			var web := kind == "web"
 			var spring := kind == "spring"
 			var tint := Color(0.82, 0.85, 0.95, 0.75) if web else Color(1.0, 0.5, 0.12, 0.95)
@@ -2315,6 +2630,8 @@ func _camera(alpha: float, delta: float) -> void:
 	var target := hero_pos(alpha)
 	if sim.phase == K.Phase.ARENA:
 		target = target.lerp(Vector3(sim.arena.bx, 0, sim.arena.by), 0.4)
+	if cam_lair:
+		target = lair_pos
 	var close := 0.0
 	if cine_t >= 0.0:
 		_cine(delta)
@@ -2387,6 +2704,8 @@ func add_trauma(v: float) -> void:
 
 
 func emit_fx(kind: String, pos: Vector3, scale_ := 1.0, col := Color.WHITE) -> void:
+	if fx2 != null and fx2.emit(kind, pos, scale_, col):
+		return
 	var d: Dictionary = fx[kind]
 	var list: Array = d["list"]
 	var p: GPUParticles3D = list[d["i"]]
@@ -2425,6 +2744,9 @@ func number(pos: Vector3, txt: String, col: Color, size := 52) -> void:
 
 
 func ring_burst(pos: Vector3, r: float, col: Color) -> void:
+	if fx2 != null:
+		fx2.ring(pos, r, col)
+		return
 	var e: Dictionary = burst_pool[burst_i]
 	burst_i = (burst_i + 1) % burst_pool.size()
 	var n: MeshInstance3D = e["n"]
@@ -2545,11 +2867,32 @@ func _stop(t: float) -> void:
 	hitstop = maxf(hitstop, t)
 
 
+## Estilo dos efeitos novos por evento (modo misto, aprovado em 20/11/2026 na página de revisão): 1 pintado,
+## 2 brilhante, -1 = o padrão do tipo (Fx2.KIND_STYLE).
+func _fx_ctx(k: int, ev: Array) -> int:
+	match k:
+		K.Ev.DAMAGE_UNIT, K.Ev.HERO_LEVEL, K.Ev.SPIN, K.Ev.HERO_FALL, K.Ev.SHRINE:
+			return 1
+		K.Ev.EXPLOSION, K.Ev.DEATH, K.Ev.HEAL, K.Ev.LEECH, K.Ev.SHIELD_BREAK, K.Ev.UNIT_SHIELD_BREAK, 				K.Ev.CURSE, K.Ev.PART_DESTROYED, K.Ev.TELEPORT, K.Ev.FEAR:
+			return 2
+		K.Ev.SPELL:
+			var di := int(ev[3])
+			if di >= 0 and di < sim.data.cards.size():
+				var c: CardDef = sim.data.cards[di]
+				# Tocha (fogo) e Explosão de Cadáver: pintados; sombra, arcano, maldição e o resto: brilhantes.
+				if c.is_spell and ((c.tags & K.TAG_FIRE) or c.id == "corpse_blast"):
+					return 1
+			return 2
+	return -1
+
+
 func handle_events(evs: Array) -> void:
 	var U := sim.units
 	for ev in evs:
 		var k: int = ev[0]
 		var p := Vector3(ev[1], 0, ev[2])
+		if fx2 != null:
+			fx2.ctx = _fx_ctx(k, ev)
 		match k:
 			K.Ev.ABILITY_TELL:
 				ability_tell(int(ev[3]))
@@ -2572,6 +2915,8 @@ func handle_events(evs: Array) -> void:
 				if v >= 100.0:
 					add_trauma(0.35)
 					_stop(0.06)
+				if gol != null:
+					gol.note_damage(v, sim.hero.max_hp())   # --golpes=1: hit-stop se veio de golpe de monstro
 			K.Ev.DAMAGE_UNIT:
 				var i: int = ev[4]
 				swing_t = 0.26
@@ -2580,6 +2925,8 @@ func handle_events(evs: Array) -> void:
 					var d := Vector2(U.px[i] - sim.hero.x, U.py[i] - sim.hero.y).normalized() * 0.45
 					kx[i] = d.x
 					ky[i] = d.y
+					if gol != null:
+						gol.hurt(i)
 					if _spend("hit"):
 						emit_fx("hit", p + Vector3(0, 0.8, 0), 0.8)
 				else:
@@ -2666,7 +3013,14 @@ func handle_events(evs: Array) -> void:
 						say("SAY_BOSS_FIN", 2, true, Color(1.0, 0.85, 0.4))
 						screen_flash = Color(1, 0.9, 0.5, 0.4)
 						add_trauma(0.5)
-					if c.is_spell or c.category == "finisher":
+					if fx2 != null and c.is_spell and (c.tags & K.TAG_FIRE):
+						# Efeitos novos: feitiço de fogo explode em chamas, não no círculo roxo de magia.
+						var rr := float(c.fx.get("radius", 2.0))
+						emit_fx("fire", p + Vector3(0, 0.3, 0), clampf(rr / 2.0, 1.0, 2.5))
+						emit_fx("spark", p + Vector3(0, 0.6, 0), 1.0)
+						ring_burst(p, rr, Color(1.0, 0.55, 0.15))
+						scorch(p, rr * 1.6)
+					elif c.is_spell or c.category == "finisher":
 						emit_fx("magic", p + Vector3(0, 0.5, 0), 1.3)
 						ring_burst(p, float(c.fx.get("radius", 2.0)), Color(0.75, 0.35, 1.0))
 					elif c.is_unit:
@@ -2702,3 +3056,5 @@ func handle_events(evs: Array) -> void:
 					emit_fx("smoke", p + Vector3(0, 1.0, 0), 1.5)
 			K.Ev.FEAR:
 				ring_burst(p, 2.0, Color(0.6, 0.3, 1.0))
+	if fx2 != null:
+		fx2.ctx = -1

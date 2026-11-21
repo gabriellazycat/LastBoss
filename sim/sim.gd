@@ -36,6 +36,8 @@ var hit_hero: SimHero = null       # herói que a unidade da vez acerta (null = 
 var group_falls := 0
 var party_of: Array = []            # número da party de cada herói da fila (parties de 1 a 4, 15/11/2026)
 var cur_party := 0                  # party em campo
+var endless := false                # Horda sem fim (19/11/2026): fila de parties infinita, só acaba com o covil
+var arena_party_t := -1.0           # Horda sem fim: quando a party da vez chegou na arena (a prorrogação conta por party)
 var road := SimRoad.new()
 var past_lines: Array = []    # linhas (pontos) das estradas dos atos anteriores: o ato novo não encosta nelas (C17)
 var arena := SimArena.new()
@@ -162,6 +164,11 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	party = []
 	party_of = []
 	var groups: Array = phase_cfg.get("parties", [])
+	endless = bool(phase_cfg.get("endless", false))
+	if endless:
+		groups = []
+		for k in int(phase_cfg.get("ahead", 3)) + 1:
+			groups.append(endless_party(seed_, k))
 	if groups.is_empty():
 		for c in phase_cfg.get("party", []):
 			groups.append([c])
@@ -257,8 +264,38 @@ func party_n_of(i: int) -> int:
 
 
 ## Alguma party tem mais de um herói: os membros andam juntos e as quedas contam uma a uma.
+## Na Horda sem fim é sempre a fila de parties (o sorteio pode trazer só parties de 1 no começo).
 func party_mode() -> bool:
-	return party.size() > party_count()
+	return endless or party.size() > party_count()
+
+
+## Horda sem fim (19/11/2026): a party `k` da fila, sorteada só de `seed_` e `k` (a mesma semente dá a mesma fila,
+## em qualquer ordem de geração): de party_min a party_max heróis entre todas as classes.
+func endless_party(seed_: int, k: int) -> Array:
+	var r := RandomNumberGenerator.new()
+	r.seed = hash([seed_, k, "horda"])
+	var classes: Array = data.hero_classes.keys()
+	classes.sort()
+	var out: Array = []
+	for i in r.randi_range(int(phase_cfg.get("party_min", 1)), int(phase_cfg.get("party_max", 4))):
+		out.append(str(classes[r.randi_range(0, classes.size() - 1)]))
+	return out
+
+
+## Horda sem fim: a fila fica sempre `ahead` parties à frente da que está em campo.
+func _endless_extend() -> void:
+	if not endless:
+		return
+	while party_count() <= cur_party + int(phase_cfg.get("ahead", 3)):
+		var k := party_count()
+		for c in endless_party(run_seed, k):
+			party.append(c)
+			party_of.append(k)
+
+
+## Parties derrubadas inteiras (o placar da Horda sem fim).
+func parties_beaten() -> int:
+	return cur_party
 
 
 ## Quantos heróis já caíram (qualquer modo).
@@ -1049,17 +1086,36 @@ func gen_act_road(k: int, origin: Vector2, dir: Vector2, past: Array) -> SimRoad
 	var grid := SimRoad.point_grid(past, ACT_CLEAR)
 	var best: SimRoad = null
 	var best_n := 1 << 30
+	# Sorteio só da semente e do ato (não mexe no rng_map): a estrada do próximo ato pode ser calculada antes
+	# do fim do ato, para o mundo já mostrá-la no chão, e sai igual a qualquer hora (21/11/2026).
+	var rr := RandomNumberGenerator.new()
+	rr.seed = hash([run_seed, k, "estrada_do_ato"])
 	for t in ACT_TRIES:
 		var r := SimRoad.new()
-		r.generate(rng_map, R, _act_cfg(k), origin, dir)
+		r.generate(rr, R, _act_cfg(k), origin, dir)
 		var n := r.clash(grid, ACT_CLEAR, origin, ACT_SKIP_R, ACT_CLEAR)
 		if n < best_n:
 			best_n = n
 			best = r
 		if n == 0:
 			break
-	stats["act_clash"] = int(stats.get("act_clash", 0)) + best_n
+	_next_clash = best_n
 	return best
+
+
+var _next_road: SimRoad = null   # estrada do ato seguinte, pronta antes do fim do ato (não é salva: sai igual ao recalcular)
+var _next_clash := 0
+
+
+## Estrada do próximo ato (null no último). Calculada uma vez; `_next_act` usa esta mesma.
+func next_road() -> SimRoad:
+	if act + 1 >= acts():
+		return null
+	if _next_road == null:
+		var past := past_lines.duplicate()
+		past.append_array(road.all_lines())
+		_next_road = gen_act_road(act + 1, road.lair, road.lair_dir, past)
+	return _next_road
 
 
 func _next_act() -> void:
@@ -1079,7 +1135,12 @@ func _next_act() -> void:
 	stats["route_len"] = float(stats.get("route_len", 0.0)) + road.length()
 	# O ato novo nasce no covil do anterior, na direção em que o herói já andava: sem teleporte.
 	past_lines.append_array(road.all_lines())
-	road = gen_act_road(act, road.lair, road.lair_dir, past_lines)
+	act -= 1
+	var nr := next_road()
+	act += 1
+	stats["act_clash"] = int(stats.get("act_clash", 0)) + _next_clash
+	road = nr
+	_next_road = null
 	var p0: Vector2 = road.route[0]
 	hero.s = 0.0
 	hero.s_max = 0.0
@@ -1297,6 +1358,7 @@ func event_option_ok(op: Dictionary) -> bool:
 func enter_arena() -> void:
 	phase = K.Phase.ARENA
 	stats["arena_t"] = t
+	arena_party_t = t
 	stats["hero_level_arena"] = hero.level
 	stats["player_level_arena"] = player_level
 	# Métrica da calibração de 11/11/2026: poder de elixir ao fim do ato 3 (meta 18 de máximo e 1,5 s por ponto).
@@ -1353,7 +1415,8 @@ func _bench_route_cards() -> void:
 func overtime() -> float:
 	if phase != K.Phase.ARENA or float(stats.get("arena_t", -1.0)) < 0.0:
 		return 0.0
-	return maxf(0.0, (t - float(stats["arena_t"]) - float(R["arena"].get("overtime_s", 1e9))) / 60.0)
+	var t0 := arena_party_t if endless and arena_party_t >= 0.0 else float(stats["arena_t"])
+	return maxf(0.0, (t - t0 -float(R["arena"].get("overtime_s", 1e9))) / 60.0)
 
 
 func core_destroyed() -> void:
@@ -1429,6 +1492,7 @@ func _group_check() -> void:
 ## Fila de parties (15/11/2026): os membros da party andam juntos; cada um que cai conta como uma queda
 ## (recompensa e habilidade nova para quem ficou). Quando o último cai, a party seguinte chega inteira.
 func _party_check() -> void:
+	_endless_extend()
 	var k := followers.size() - 1
 	while k >= 0:
 		var f: SimHero = followers[k]
@@ -1452,7 +1516,7 @@ func _party_check() -> void:
 			stats["heroes_fallen"] = group_falls
 			emit(K.Ev.HERO_FALL, hero.x, hero.y, group_falls, 0)
 			_finish(K.Result.WIN_EARLY if phase == K.Phase.ROAD else K.Result.WIN)
-	elif t >= float(R["sim"]["max_run_seconds"]):
+	elif t >= float(R["sim"]["max_run_seconds"]) and not endless:
 		_finish(K.Result.TIMEOUT)
 
 
@@ -1574,6 +1638,7 @@ func _finish(r: int) -> void:
 	stats["result"] = K.RESULT_NAMES[r]
 	stats["t_end"] = t
 	stats["gold_end"] = gold
+	stats["parties_beaten"] = parties_beaten()
 	stats["hero_level"] = hero.level
 	stats["player_level"] = player_level
 	stats["upgrades"] = hero.upgrade_order.duplicate()
@@ -2012,6 +2077,7 @@ func _hero_fell() -> void:
 	else:
 		hero.x = gate_pos.x
 		hero.y = gate_pos.y
+		arena_party_t = t   # Horda sem fim: a prorrogação recomeça para a party que chega
 	hero.ox = hero.x
 	hero.oy = hero.y
 	_learn_ability()

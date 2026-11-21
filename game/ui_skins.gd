@@ -365,8 +365,9 @@ static func button_box(st: String, bg: Color, border: Color) -> StyleBox:
 	var sb := panel_box(bg, border, 8)
 	if sb is StyleBoxTexture:
 		(sb as StyleBoxTexture).modulate_color = Color(1.25, 1.2, 1.1) if st in ["hover", "focus"] else (Color(0.6, 0.6, 0.6) if st == "disabled" else Color.WHITE)
-		sb.content_margin_left = 16
-		sb.content_margin_right = 16
+		sb.content_margin_left = UiKit.SP_L
+		sb.content_margin_right = UiKit.SP_L
+		UiKit.fit_margins(sb, true)
 	elif sb is StyleBoxFlat and st in ["hover", "focus", "pressed"]:
 		(sb as StyleBoxFlat).shadow_size = 14
 		(sb as StyleBoxFlat).border_color = border

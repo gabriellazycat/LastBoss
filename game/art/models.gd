@@ -551,6 +551,10 @@ static func has_dir_prop(id: String) -> bool:
 
 
 static func prop(id: String) -> ArrayMesh:
+	# --modelos=1: peça refeita à mão (assets/models/m2_a, ver Looks.M2) antes de tudo.
+	var m2 := Looks.m2_mesh(id)
+	if m2 is ArrayMesh:
+		return m2
 	if Looks.g_on():
 		var gm := Looks.g_mesh(id)
 		if gm is ArrayMesh:

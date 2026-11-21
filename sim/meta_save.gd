@@ -22,6 +22,7 @@ var rare_choices := 0
 ## Desafios de desbloqueio (data/unlocks.json): fases vencidas por vilão, heróis derrotados no total e o melhor
 ## progresso de cada carta ainda bloqueada ({id: {"v", "g"}}), para a coleção mostrar "11/15".
 var wins_by_villain: Dictionary = {}
+var endless_best: Dictionary = {}   # Horda sem fim (19/11/2026): vilão -> mais parties derrubadas numa run
 var heroes_total := 0
 var progress: Dictionary = {}
 ## Desafios entre fases (15/11/2026): contadores somados por vilão ({vid: {"plays|spell": 412.0}}; a chave "_old"
@@ -80,6 +81,7 @@ static func load_or_new(d: GameData, path := PATH) -> MetaSave:
 				m.villain = d.villain_ids[0]
 			m.heroes_total = int(v.get("heroes_total", 0))
 			m.wins_by_villain = v.get("wins_by_villain", {})
+			m.endless_best = v.get("endless_best", {})
 			m.progress = v.get("progress", {})
 			m.runs_done = v.get("runs_done", {})
 			if v.has("totals"):
@@ -101,7 +103,16 @@ func save(path := "") -> bool:
 	f.store_var({"ver": VERSION, "unlocked": unlocked, "villain": villain, "villains": villains,
 		"runs": runs, "phases_won": phases_won, "heroes_seen": heroes_seen, "rare_choices": rare_choices,
 		"wins_by_villain": wins_by_villain, "heroes_total": heroes_total, "progress": progress,
-		"totals": totals, "runs_done": runs_done})
+		"totals": totals, "runs_done": runs_done, "endless_best": endless_best})
+	return true
+
+
+## Horda sem fim: guarda `n` parties derrubadas com o vilão `vid` se for o recorde dele. Devolve se bateu o recorde.
+func record_endless(vid: String, n: int) -> bool:
+	vid = data.villain_id(vid)
+	if n <= int(endless_best.get(vid, 0)):
+		return false
+	endless_best[vid] = n
 	return true
 
 

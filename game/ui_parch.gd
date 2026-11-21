@@ -83,12 +83,14 @@ static func box(kind := "gold", margin := 18.0) -> StyleBoxTexture:
 	sb.texture_margin_right = m
 	sb.texture_margin_top = m
 	sb.texture_margin_bottom = m
-	sb.set_content_margin_all(margin)
+	# margin <= 0: caixa "crua" (o chamador põe as margens e usa UiKit.fit_margins); senão a margem conta a moldura desenhada.
+	sb.set_content_margin_all(margin if margin <= 0.0 else maxf(margin, UiKit.paper_clean(kind)))
 	return sb
 
 
 ## Botão de papel com traço fino; acende em dourado no foco/mouse, afunda ao apertar.
-static func button_box(state: String, pad := Vector4(20, 7, 20, 8)) -> StyleBox:
+## pad.y/pad.w: SP_M, o mínimo que mantém o texto fora do traço (UiKit.clean_need).
+static func button_box(state: String, pad := Vector4(20, 11, 20, 12)) -> StyleBox:
 	if state == "focus":
 		var f := StyleBoxFlat.new()
 		f.bg_color = Color(0, 0, 0, 0)
@@ -118,7 +120,7 @@ static func button_box(state: String, pad := Vector4(20, 7, 20, 8)) -> StyleBox:
 
 
 ## Fita dobrada (a do nome da carta) como fundo de botão ou título: `kind` = tipo da fita (monster = vermelha).
-static func ribbon_box(kind := "monster", dim := false, pad := Vector4(46, 6, 46, 10)) -> StyleBoxTexture:
+static func ribbon_box(kind := "monster", dim := false, pad := Vector4(46, 12, 46, 12)) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
 	sb.texture = tex("ribbon_%s%s" % [kind, "_dim" if dim else ""])
 	sb.texture_margin_left = 34
@@ -183,7 +185,7 @@ static func paper_button(b: Button, size := 22) -> void:
 ## Título numa fita (sobre o mundo ou no topo de uma tela).
 static func ribbon_title(text: String, size := 34, kind := "monster") -> PanelContainer:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", ribbon_box(kind, false, Vector4(56, 4, 56, 12)))
+	p.add_theme_stylebox_override("panel", ribbon_box(kind, false, Vector4(56, 12, 56, 12)))
 	p.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.set_meta("tape", true)

@@ -26,6 +26,7 @@ var preview_head: Label
 var preview_row: HBoxContainer
 var pending_villain := ""
 var pending_phase := -1     # fase da campanha escolhida (-1 = a próxima a vencer)
+var endless_btn: Button     # Horda sem fim (19/11/2026)
 var campaign: CampaignMap    # mapa da campanha (16/11/2026): Nova run abre aqui, antes do vilão
 var rare_screen: Control
 var rare_row: HBoxContainer
@@ -180,6 +181,7 @@ func _build_title() -> void:
 		title_box.add_child(main_buttons)
 	continue_btn = _menu_btn("UI_CONTINUE", func(): continue_run.emit())
 	new_run_btn = _menu_btn("UI_NEW_RUN", func(): show_screen("campaign"))
+	endless_btn = _menu_btn("UI_ENDLESS", _open_endless)
 	_menu_btn("UI_COLLECTION", func(): show_screen("collection"))
 	_menu_btn("UI_COMPENDIUM", func(): show_screen("compendium"))
 	_menu_btn("UI_SETTINGS", func(): show_screen("settings"))
@@ -192,6 +194,8 @@ func _on_map_choice(id: String) -> void:
 		continue_run.emit()
 	elif id == "new_run":
 		show_screen("campaign")
+	elif id == "endless":
+		_open_endless()
 	elif id == "quit":
 		get_tree().quit()
 	else:
@@ -213,6 +217,7 @@ func _build_title_map() -> void:
 	mm.add_child(main_buttons)
 	continue_btn = mm.continue_btn
 	new_run_btn = mm.buttons["new_run"]
+	endless_btn = mm.buttons["endless"]
 	mm.chosen.connect(_on_map_choice)
 	if OS.get_name() == "Web":
 		mm.buttons["quit"].visible = false
@@ -268,7 +273,7 @@ func _build_decks() -> void:
 	back.text = "UI_BACK"
 	back.custom_minimum_size = Vector2(200, 48)
 	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	back.pressed.connect(func(): show_screen("campaign"))
+	back.pressed.connect(func(): show_screen(_villain_back()))
 	deck_screen.add_child(back)
 
 
@@ -447,6 +452,45 @@ func _build_campaign() -> void:
 	add_child(campaign)
 
 
+## Horda sem fim (19/11/2026): aberta desde o começo; vai direto à escolha do vilão (só os liberados).
+func _open_endless() -> void:
+	pending_phase = int(data.endless.get("id", 100))
+	show_screen("decks")
+
+
+func is_endless() -> bool:
+	return not data.endless.is_empty() and pending_phase == int(data.endless["id"])
+
+
+## Voltar da escolha do vilão: ao mapa da campanha, ou ao título na Horda sem fim.
+func _villain_back() -> String:
+	return "title" if is_endless() else "campaign"
+
+
+## Recorde da Horda sem fim no botão do modo: o melhor entre os vilões, com o nome dele.
+func _endless_label() -> void:
+	if endless_btn == null:
+		return
+	var best := 0
+	var who := ""
+	for vid in meta.endless_best:
+		if int(meta.endless_best[vid]) > best:
+			best = int(meta.endless_best[vid])
+			who = str(vid)
+	endless_btn.text = tr("UI_ENDLESS")
+	endless_btn.tooltip_text = tr("UI_ENDLESS_SUB")
+	var rec := ""
+	if best > 0:
+		rec = tr("UI_ENDLESS_BEST_BTN").format({"n": best}) + " (" + tr("DECK_" + who) + ")"
+	if title_root is MapMenu:
+		# Mapa aberto: o recorde vai na legenda embaixo do lugar (no botão, ele saía do papel).
+		var cap: Label = (title_root as MapMenu).captions.get("endless")
+		if cap:
+			cap.text = rec if rec != "" else tr("UI_ENDLESS_SUB")
+	elif rec != "":
+		endless_btn.text += "  ·  " + rec
+
+
 ## Vilão escolhido: a run começa na fase escolhida no mapa.
 func _start_villain() -> void:
 	if pending_villain == "" or not meta.villains.has(pending_villain):
@@ -493,6 +537,7 @@ func show_screen(s: String) -> void:
 	settings.visible = false
 	if s == "title":
 		continue_btn.visible = SaveGame.exists()
+		_endless_label()
 		if UiSkins.mapa():
 			(continue_btn if continue_btn.visible else new_run_btn).grab_focus.call_deferred()
 		else:
@@ -553,7 +598,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 	if visible and screen == "decks" and e.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
-		show_screen("campaign")
+		show_screen(_villain_back())
 		return
 	if visible and screen == "campaign" and e.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
@@ -918,7 +963,7 @@ func _build_villains_parch() -> void:
 	btns.add_theme_constant_override("separation", 16)
 	root.add_child(btns)
 	var back := _paper_btn("UI_BACK", 180, 52)
-	back.pressed.connect(func(): show_screen("campaign"))
+	back.pressed.connect(func(): show_screen(_villain_back()))
 	btns.add_child(back)
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL

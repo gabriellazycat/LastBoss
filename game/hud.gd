@@ -111,6 +111,8 @@ var result_sub: Label
 var result_grid: GridContainer
 var result_btn: Button
 var result_shown := false
+var endless_record := false   # Horda sem fim: a run bateu o recorde do vilão (main.gd, no fim da run)
+var endless_best := 0          # Horda sem fim: recorde do vilão (parties derrubadas)
 
 
 func _ready() -> void:
@@ -343,6 +345,7 @@ func _build_bottom() -> void:
 			gb.content_margin_right = 16
 			gb.content_margin_top = 7
 			gb.content_margin_bottom = 8
+			UiKit.fit_margins(gb, true)
 			gold_label.add_theme_stylebox_override("normal", gb)
 			gold_label.add_theme_color_override("font_color", UiParch.INK)
 			gold_label.add_theme_constant_override("outline_size", 0)
@@ -388,6 +391,7 @@ func _build_messages() -> void:
 			hb.content_margin_right = 18
 			hb.content_margin_top = 8
 			hb.content_margin_bottom = 9
+		UiKit.fit_margins(hb, true)
 	add_child(help_label)
 	toast = UiKit.title(30, Color(1, 0.62, 0.45))
 	if UiSkins.diario():
@@ -440,9 +444,9 @@ func _build_messages() -> void:
 			contest_label.custom_minimum_size = Vector2(380, 0)
 			# Respiro dentro do papel: sem ele o texto encostava na moldura da esquerda.
 			var cm := StyleBoxEmpty.new()
-			cm.content_margin_left = 16
-			cm.content_margin_right = 10
-			cm.content_margin_top = 4
+			cm.content_margin_left = UiKit.SP_L
+			cm.content_margin_right = UiKit.SP_S + 2
+			cm.content_margin_top = UiKit.SP_XS
 			contest_label.add_theme_stylebox_override("normal", cm)
 			contest_stages.custom_minimum_size = Vector2(380, 24)
 	add_child(contest_panel)
@@ -525,6 +529,7 @@ func _build_offer() -> void:
 		ksb.content_margin_bottom = 8
 		ksb.content_margin_left = 22
 		ksb.content_margin_right = 22
+		UiKit.fit_margins(ksb, true)
 		keys_tag.add_theme_stylebox_override("panel", ksb)
 		v.add_child(keys_tag)
 	else:
@@ -1138,6 +1143,8 @@ func _refresh_top() -> void:
 	hero_of_label.text = tr("UI_HERO_OF").format({"k": sim.party_idx + 1, "n": sim.party_size()}) + " · " + tr("HERO_" + sim.hero.cls())
 	if sim.party_mode():
 		hero_of_label.text = tr("UI_PARTY_OF").format({"k": sim.cur_party + 1, "n": sim.party_count()}) + " · " + tr("UI_FALLEN_OF").format({"k": sim.group_falls, "n": sim.party_size()})
+		if sim.endless:
+			hero_of_label.text = tr("UI_ENDLESS_PARTY").format({"k": sim.cur_party + 1}) + " · " + tr("UI_ENDLESS_FALLEN").format({"k": sim.group_falls})
 	_refresh_party()
 	if LAYOUT > 0:
 		hero_hp.visible = not party_box.visible
@@ -1452,6 +1459,8 @@ func _refresh_relics() -> void:
 			sb.content_margin_right = 12
 			sb.content_margin_top = 3
 			sb.content_margin_bottom = 4
+			UiKit.fit_margins(sb, true)
+			tag.set_meta("tag", true)
 			tag.add_theme_stylebox_override("panel", sb)
 			tag.set_meta("paper", true)
 			tag.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -1463,8 +1472,9 @@ func _refresh_relics() -> void:
 			if LAYOUT != 7:
 				row.add_child(UiParch.label(tr("REL_" + rid), "bold", 15, UiParch.INK))
 			else:
-				sb.content_margin_left = 8
-				sb.content_margin_right = 8
+				sb.content_margin_left = UiKit.SP_S
+				sb.content_margin_right = UiKit.SP_S
+				UiKit.fit_margins(sb, true)
 			tag.add_child(row)
 			Tips.attach(tag, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
 			relic_row.add_child(tag)
@@ -1913,6 +1923,10 @@ func _show_result() -> void:
 		result_icon.modulate = Color.WHITE if won else Color(0.78, 0.7, 0.62)
 		UiKit.title_color(result_title, UiParch.INK if won else UiParch.BLOOD)
 	result_sub.text = tr("UI_RESULT_" + r)
+	if sim.endless:
+		# Horda sem fim: só acaba com o covil caindo; o placar são as parties derrubadas e o recorde do vilão.
+		result_title.text = tr("UI_ENDLESS_OVER").format({"n": int(st.get("parties_beaten", 0))})
+		result_sub.text = tr("UI_ENDLESS_NEW_BEST") if endless_record else tr("UI_ENDLESS_BEST").format({"n": endless_best})
 	var top := ""
 	var best := 0
 	for cid in st["played"]:
@@ -1921,7 +1935,10 @@ func _show_result() -> void:
 			top = cid
 	UiKit.clear(result_grid)
 	# Rodada 16/11/2026: sem Almas, nível do herói nem Santuários (sistemas que saíram). A arena só aparece se houve.
-	var tiles := [["UI_ST_you", "%d / %d" % [int(st.get("heroes_fallen", 0)), sim.party_size()]], ["UI_ST_time", _clock(sim.t)],
+	var you := "%d / %d" % [int(st.get("heroes_fallen", 0)), sim.party_size()]
+	if sim.endless:
+		you = str(int(st.get("heroes_fallen", 0)))
+	var tiles := [["UI_ST_you", you], ["UI_ST_time", _clock(sim.t)],
 		["UI_ST_contests", "%d / %d" % [int(st["locs_won"]), int(st["locs_visited"])]], ["UI_ST_gold", str(int(st["gold_earned"]))],
 		["UI_ST_relics", str(st["relics"].size())], ["UI_ST_kills", str(st["kills"])],
 		["UI_ST_top", tr("CARD_" + top) if top != "" else "—"]]

@@ -13,6 +13,14 @@ const DIRS := {5: "cc0", 7: "v2"}
 const SHADER_OF := {6: 5, 7: 5}
 
 static var _mesh: Dictionary = {}
+## --modelos=1 (rodada visual 20/11/2026): modelos refeitos à mão (tools/art/blender_m2 e afins) passam na frente.
+## Formato esperado em assets/models/m2_a/<id>.res: ArrayMesh gravado pelo tools/art/import_g.gd na variante "_a"
+## (o mesmo dos g_n_a: vértices brancos com alfa = 1 - brilho, UV = atlas, UV2.x = índice do vértice; se animada,
+## metas "vat" (ImageTexture RGBAH: posição e normal por quadro), "walk" e "atk", como o vat_g.export grava).
+## Atlas em assets/models/g_tex/m2/<id>.png. <id> = id da carta (unidades e estruturas: unit_mesh) ou da peça
+## (cenário: Models.prop). Altura, origem e frente iguais às do g_n_a; sem a tinta e a escala do VARIANTS.
+## 1 (padrão desde 21/11/2026) = modelos novos; 0 = os de antes. Lido em main.gd (--modelos=N).
+static var M2 := 1   # padrão aprovado em 21/11/2026 (0 = modelos de antes; --modelos=0)
 static var _shader: Dictionary = {}
 static var _empty: ArrayMesh
 # Última malha de unidade pedida: unit_material() usa a animação (VAT) e a textura dela, porque quem chama
@@ -75,6 +83,34 @@ static func mesh(look: int, id: String) -> Mesh:
 	return _mesh[key]
 
 
+## Malha refeita de --modelos=1 (ou null). Leva o atlas em meta "gtex" (Looks.material liga o atlas).
+static func m2_mesh(id: String) -> Mesh:
+	if M2 <= 0 or id == "":
+		return null
+	var key := "m2/" + id
+	if _mesh.has(key):
+		return _mesh[key]
+	var p := "res://assets/models/m2_a/%s.res" % id
+	var m: Mesh = load(p) if ResourceLoader.exists(p) else null
+	if m:
+		var tp := "res://assets/models/g_tex/m2/%s.png" % id
+		if not m.has_meta("gtex") and ResourceLoader.exists(tp):
+			m.set_meta("gtex", load(tp))
+		m.set_meta("gink", 0.0)
+	_mesh[key] = m
+	return m
+
+
+## Id refeito (m2) da carta: o dela, senão o do modelo que ela usa (CardModel); "" se não houver.
+static func m2_unit_id(card: String) -> String:
+	if M2 <= 0:
+		return ""
+	if m2_mesh(card):
+		return card
+	var base := CardModel.of(card)
+	return base if base != card and m2_mesh(base) else ""
+
+
 # ---------------------------------------------------------------- miniaturas pintadas (Settings "model_g")
 # 1..7 = V1..V7: [geometria (n normal, c gorducha, f facetada), tratamento]. V1 = cor por vértice (controle).
 const G_SETS := {1: ["n", "vc"], 2: ["n", "dabs"], 3: ["n", "wash"], 4: ["n", "dry"], 5: ["n", "flat"], 6: ["c", "dabs"], 7: ["f", "dabs"]}
@@ -119,7 +155,7 @@ static func g_material(m: Mesh, base: Material = null) -> Material:
 		return base
 	var mat := material(5, 0.0, false, m)
 	if base is ShaderMaterial and (base as ShaderMaterial).shader == mat.shader:
-		for k in ["sway", "emission_boost"]:
+		for k in ["sway", "emission_boost", "wind_amt"]:
 			var pv = (base as ShaderMaterial).get_shader_parameter(k)
 			if pv != null:
 				mat.set_shader_parameter(k, pv)
@@ -177,11 +213,17 @@ static func set_param(m: ShaderMaterial, k: String, val: Variant) -> void:
 # ---------------------------------------------------------------- atalhos usados pelo jogo
 
 static func scale_of(id: String) -> float:
+	if m2_unit_id(id) != "":
+		return 1.0
 	return float(VARIANTS[id]["scale"]) if VARIANTS.has(id) and enemies() > 0 else 1.0
 
 
 static func unit_mesh(id: String) -> Mesh:
 	_last_card = id
+	var m2 := m2_unit_id(id)
+	if m2 != "":
+		_last_unit = "m2:" + m2
+		return m2_mesh(m2)
 	var legacy: String = LEGACY.get(id, id)
 	id = CardModel.of(id)
 	var lk := enemies()
@@ -193,6 +235,14 @@ static func unit_mesh(id: String) -> Mesh:
 
 static func unit_material(emit: float, multimesh: bool, id := "") -> ShaderMaterial:
 	var card := id if id != "" else _last_card
+	var m2 := m2_unit_id(card) if id != "" else (_last_unit.trim_prefix("m2:") if _last_unit.begins_with("m2:") else "")
+	if m2 != "":
+		# Modelo refeito: shader do look 7 (lê VAT e atlas), sem a tinta do VARIANTS.
+		var src2 := m2_mesh(m2)
+		var lk2 := GroundLooks.world_shader_look()
+		if lk2 == 0 or src2.has_meta("vat"):
+			lk2 = 7
+		return material(lk2, emit, multimesh, src2)
 	if id != "":
 		id = VARIANTS[id]["base"] if VARIANTS.has(id) else CardModel.of(id)
 	if id == "":

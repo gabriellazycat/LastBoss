@@ -511,12 +511,23 @@ func _short_gem(p: Control, ci, short: bool) -> void:
 		miss.add_theme_color_override("font_color", Color(1.0, 0.93, 0.88))
 		miss.add_theme_color_override("font_outline_color", Color(0.62, 0.05, 0.08))
 		miss.add_theme_constant_override("outline_size", 7)
-		miss.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		miss.position = Vector2(18.0, gem.size.y - 4.0)
-		miss.size = Vector2(gem.size.x + 90.0, 50)
+		miss.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		miss.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		gem.add_child(miss)
+	# Aviso inteiro e centrado na carta (o leque cobre a ponta esquerda das cartas): a faixa vai de margem a margem
+	# do papel e a fonte encolhe até o texto caber nela.
+	var card_w: float = gem.get_parent().size.x if gem.get_parent() is Control else 300.0
+	var inset := float(UiKit.SP_L)
+	miss.position = Vector2(inset - gem.position.x, gem.size.y - 4.0)
+	miss.size = Vector2(card_w - inset * 2.0, 50.0)
 	miss.visible = true
-	miss.text = "faltam %d" % int(ceil(sim.card_cost(ci) - sim.elixir))
+	miss.text = tr("UI_ELIXIR_SHORT").format({"n": int(ceil(sim.card_cost(ci) - sim.elixir))})
+	# Só mede de novo quando o texto ou a largura mudam (isto roda todo quadro para cada carta sem elixir).
+	var fit_key := "%s|%d" % [miss.text, int(miss.size.x)]
+	if card_w > 0.0 and miss.get_meta("fit_key", "") != fit_key:
+		miss.set_meta("fit_key", fit_key)
+		var f: Font = miss.get_theme_font("font")
+		miss.add_theme_font_size_override("font_size", UiCovil.fit_size(f, miss.text, 40 if gem.size.x > 75.0 else 30, int(miss.size.x - 14.0), 16))
 
 
 func _drop_preview() -> void:

@@ -13,6 +13,7 @@ uniform float rock_amount = 0.25;
 uniform float fleck_amount = 0.5;
 uniform float bump = 0.6;
 uniform float roughness = 0.9;
+uniform float mundo = 0.0;   // --mundo=N (MundoVivo): manchas de cor no chão; 0 = chão de sempre
 
 varying vec3 wp;
 varying vec3 paint_p;
@@ -52,6 +53,15 @@ void fragment() {
 	float zone = fbm(p * 0.012);
 	float z2 = fbm(p * 0.035 + 7.0);
 	vec3 col = mix(c_grass, c_grass2, smoothstep(0.42, 0.62, zone));
+	if (mundo > 0.0) {
+		// Manchas de cor (rodada visual 20/11/2026): clareiras amareladas, trechos azulados e canteiros mais vivos.
+		float m1 = smoothstep(0.5, 0.68, fbm(p * 0.03 + 61.0));
+		float m2 = smoothstep(0.52, 0.7, fbm(p * 0.045 + 83.0));
+		float m3 = smoothstep(0.55, 0.72, fbm(p * 0.07 + 29.0));
+		col = mix(col, col * vec3(1.35, 1.2, 0.65), m1 * 0.75 * mundo);
+		col = mix(col, col * vec3(0.7, 1.0, 1.2), m2 * 0.6 * mundo);
+		col = mix(col, col * vec3(1.15, 1.3, 0.8), m3 * 0.6 * mundo);
+	}
 	// Variação de valor dentro da relva: manchas grandes um pouco mais claras e mais escuras.
 	col *= 0.85 + 0.3 * z2;
 	float dirt = smoothstep(0.62, 0.7, fbm(p * 0.02 + 41.0)) * dirt_amount * 2.0;

@@ -161,7 +161,7 @@ static func fill_theme(t: Theme) -> void:
 	# Botões (13/11/2026): papel com traço fino; dourado no mouse; afunda ao apertar (UiParch.button_box).
 	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
 		t.set_stylebox(st, "Button", UiParch.button_box(st))
-		t.set_stylebox(st, "OptionButton", UiParch.button_box(st, Vector4(16, 6, 16, 7)))
+		t.set_stylebox(st, "OptionButton", UiParch.button_box(st, Vector4(16, 11, 16, 12)))
 	t.set_stylebox("hover_pressed", "Button", UiParch.button_box("pressed"))
 	t.set_font("font", "Button", UiParch.font("title"))
 	t.set_font("font", "OptionButton", font("hand"))
@@ -287,7 +287,7 @@ static func title(l: Label, size: int, col: Color) -> void:
 static func tape_title(l: Label, tint := TYPES["monster"][0]) -> PanelContainer:
 	# Desde 13/11/2026: a fita dobrada vermelha do nome das cartas, com o título em Fell SC creme.
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", UiParch.ribbon_box("monster", false, Vector4(56, 2, 56, 12)))
+	p.add_theme_stylebox_override("panel", UiParch.ribbon_box("monster", false, Vector4(56, 12, 56, 12)))
 	p.set_meta("tape", true)
 	l.set_meta("no_ink", true)
 	l.add_theme_font_override("font", UiParch.font("title"))
@@ -311,6 +311,8 @@ static func tape_wrap(c: Control, tint := MASK, rot := -1.5) -> PanelContainer:
 	sb.content_margin_right = 16
 	sb.content_margin_top = 4
 	sb.content_margin_bottom = 5
+	UiKit.fit_margins(sb, true)
+	p.set_meta("tag", true)   # etiqueta de uma linha: folga de botão (UiKit.clean_need), não de painel
 	p.add_theme_stylebox_override("panel", sb)
 	p.set_meta("paper", true)
 	p.add_child(c)
@@ -322,9 +324,13 @@ static func tape_wrap(c: Control, tint := MASK, rot := -1.5) -> PanelContainer:
 ## Bilhete: etiqueta de papel claro em volta de um texto (efeito de melhoria, preço).
 static func note_wrap(c: Control) -> PanelContainer:
 	var p := PanelContainer.new()
-	var sb := UiParch.box("ink", 6.0)
+	var sb := UiParch.box("ink", 0.0)
 	sb.content_margin_left = 12
 	sb.content_margin_right = 12
+	sb.content_margin_top = 6
+	sb.content_margin_bottom = 6
+	UiKit.fit_margins(sb, true)
+	p.set_meta("tag", true)
 	p.add_theme_stylebox_override("panel", sb)
 	p.set_meta("paper", true)
 	p.add_child(c)

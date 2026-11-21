@@ -4,6 +4,8 @@ render_mode cull_disabled;
 uniform vec3 base_color : source_color = vec3(0.12, 0.25, 0.08);
 uniform vec3 tip_color : source_color = vec3(0.55, 0.7, 0.25);
 uniform float wind = 1.0;
+uniform float gusts = 0.0;   // 1 = vento com rajadas (wind.gdshaderinc), o mesmo das flores
+#include "res://game/art/wind.gdshaderinc"
 uniform float translucency = 0.35;
 varying float hgt;
 varying vec3 tint;
@@ -16,8 +18,12 @@ void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	paint_p = wp;
 	float w = sin(TIME * 1.7 + wp.x * 0.21 + wp.z * 0.13) * 0.6 + sin(TIME * 3.1 + wp.x * 0.7) * 0.25;
-	VERTEX.x += w * 0.12 * hgt * hgt * wind;
-	VERTEX.z += cos(TIME * 1.3 + wp.z * 0.19) * 0.08 * hgt * hgt * wind;
+	if (gusts > 0.0) {
+		VERTEX += inverse(mat3(MODEL_MATRIX)) * lb_wind_offset(wp, TIME, 1.1 * gusts);
+	} else {
+		VERTEX.x += w * 0.12 * hgt * hgt * wind;
+		VERTEX.z += cos(TIME * 1.3 + wp.z * 0.19) * 0.08 * hgt * hgt * wind;
+	}
 	NORMAL = normalize(mix(NORMAL, vec3(0.0, 1.0, 0.0), 0.7));
 }
 

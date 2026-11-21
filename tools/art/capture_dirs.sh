@@ -27,7 +27,7 @@ for d in "${DIRS[@]}"; do
   for s in "${SCENES[@]}"; do
     IFS='|' read -r name t args <<<"$s"
     tmp="$OUT/_tmp_${d}_$name/"; rm -rf "$tmp"; mkdir -p "$tmp"
-    timeout 120 "$GODOT" --path . -s res://tools/art/capture_big.gd -- $args --set="${SET[$d]}" --shots=$t --quit=$((t+1)) --out="$tmp" >/dev/null 2>"$tmp/err.txt"
+    timeout 120 "$GODOT" --position -6000,0 --path . -s res://tools/art/capture_big.gd -- $args --set="${SET[$d]}" --shots=$t --quit=$((t+1)) --out="$tmp" >/dev/null 2>"$tmp/err.txt"
     f=$(ls "$tmp"/shot_*.png 2>/dev/null | head -1)
     if [ -n "$f" ]; then mv "$f" "$OUT/${d}_${name}.png"; echo "ok $d $name"; else echo "FALHOU $d $name: $(grep -m3 -iE 'error' "$tmp/err.txt")"; fi
     rm -rf "$tmp"
@@ -37,7 +37,7 @@ if [ $FPS = 1 ]; then
   : > "$OUT/fps.txt"
   for round in 1 2; do
     for d in "${DIRS[@]}"; do
-      r=$(timeout 90 "$GODOT" --path . -s res://tools/art/capture_big.gd --disable-vsync -- --autoplay=random --stress=500 --quit=25 --set="${SET[$d]}" 2>&1 | grep "stress:" | tail -1)
+      r=$(timeout 90 "$GODOT" --position -6000,0 --path . -s res://tools/art/capture_big.gd --disable-vsync -- --autoplay=random --stress=500 --quit=25 --set="${SET[$d]}" 2>&1 | grep "stress:" | tail -1)
       echo "$d rodada$round $r" | tee -a "$OUT/fps.txt"
     done
   done

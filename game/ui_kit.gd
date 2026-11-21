@@ -20,6 +20,75 @@ static var RARITY_COLORS := [Color(0.62, 0.62, 0.62), Color(0.35, 0.8, 0.35), Co
 static var _title_font: Font
 
 
+# ---------------------------------------------------------------- escala de espaçamento (rodada de UI de 20/11/2026)
+## Uma escala só para toda margem e folga da interface, em pixels lógicos. Margem escrita à mão nova usa estes degraus.
+const SP_XS := 4
+const SP_S := 8
+const SP_M := 12
+const SP_L := 16
+const SP_XL := 24
+const SP_XXL := 32
+
+## Quanto do papel a moldura desenhada ocupa a partir da borda do PNG (px 1:1, medido nos PNGs de assets/ui/kit*/:
+## do contorno externo até a última linha de tinta/ouro). O 9-slice não escala, então vale em qualquer tamanho de caixa.
+## O texto precisa começar DEPOIS disso mais a folga abaixo; a margem de conteúdo conta a moldura, não só a caixa.
+const DEPTH_MAPA := {"gold": 22, "dark": 22, "night": 22, "ink": 10, "button_ink": 7, "button_gold": 11, "ribbon": 8}
+const DEPTH_KIT := {"gold": 10, "dark": 10, "night": 10, "ink": 8, "button_ink": 4, "button_gold": 4, "ribbon": 8}
+const GAP_PANEL := SP_S      # texto ↔ última linha da moldura de um painel (os dois eixos)
+const GAP_BUTTON_X := SP_S   # idem num botão, na horizontal
+const GAP_BUTTON_Y := SP_XS  # idem na vertical (a caixa de linha da fonte já traz folga acima e abaixo do desenho)
+
+
+## Profundidade da moldura de um tipo de peça do kit ("gold", "ink", "button_ink"...) na pele atual.
+static func paper_depth(kind: String) -> float:
+	var t: Dictionary = DEPTH_MAPA if UiSkins.mapa() else DEPTH_KIT
+	return float(t.get(kind, t["ink"]))
+
+
+## Margem de conteúdo mínima (px) de um painel de papel do `kind` (conta a moldura + GAP_PANEL).
+static func paper_clean(kind: String) -> float:
+	return paper_depth(kind) + GAP_PANEL
+
+
+## Profundidade desenhada de uma StyleBox (contorno de uma StyleBoxFlat; moldura do kit numa StyleBoxTexture).
+static func border_depth(sb: StyleBox) -> float:
+	if sb is StyleBoxTexture:
+		var tex: Texture2D = (sb as StyleBoxTexture).texture
+		var path: String = tex.resource_path if tex else ""
+		var table: Dictionary = DEPTH_MAPA if path.contains("/kit_mapa/") else DEPTH_KIT
+		var file := path.get_file().get_basename()
+		if file.begins_with("ribbon"):
+			return float(table["ribbon"])
+		if file.begins_with("panel_") or file.begins_with("button_"):
+			return float(table.get(file.trim_prefix("panel_") if file.begins_with("panel_") else file, table["ink"]))
+		return 0.0
+	if sb is StyleBoxFlat:
+		var f := sb as StyleBoxFlat
+		return float(maxi(maxi(f.border_width_left, f.border_width_right), maxi(f.border_width_top, f.border_width_bottom)))
+	return 0.0
+
+
+## Sobe as margens de conteúdo de `sb` até o mínimo da moldura (para caixas com margens escritas à mão).
+## Devolve a mesma caixa, para encadear. Margens já maiores ficam como estão.
+static func fit_margins(sb: StyleBox, is_button := false) -> StyleBox:
+	var need := clean_need(sb, is_button)
+	sb.content_margin_left = maxf(sb.content_margin_left, need.x)
+	sb.content_margin_right = maxf(sb.content_margin_right, need.x)
+	sb.content_margin_top = maxf(sb.content_margin_top, need.y)
+	sb.content_margin_bottom = maxf(sb.content_margin_bottom, need.y)
+	return sb
+
+
+## Folga mínima entre o texto e a borda da caixa (x = esquerda/direita, y = topo/base). `is_button`: o próprio botão.
+static func clean_need(sb: StyleBox, is_button := false) -> Vector2:
+	var d := border_depth(sb)
+	var ribbon := sb is StyleBoxTexture and (sb as StyleBoxTexture).texture != null \
+			and (sb as StyleBoxTexture).texture.resource_path.get_file().begins_with("ribbon")
+	if is_button or ribbon:   # a fita é uma faixa fina de texto: mesma folga de botão
+		return Vector2(d + GAP_BUTTON_X, d + GAP_BUTTON_Y)
+	return Vector2(d + GAP_PANEL, d + GAP_PANEL)
+
+
 ## Fonte dos títulos: Cinzel na pele Covil; nas outras, a da pele ou uma serifada do sistema.
 static func title_font() -> Font:
 	if UiSkins.diario():

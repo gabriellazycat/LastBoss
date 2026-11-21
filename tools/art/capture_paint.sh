@@ -14,7 +14,7 @@ for v in "$@"; do
   for s in "${SCENES[@]}"; do
     IFS='|' read -r name t args <<<"$s"
     tmp="$OUT/_tmp_${v}_$name/"; rm -rf "$tmp"; mkdir -p "$tmp"
-    timeout 120 "$GODOT" --path . -s res://tools/art/capture_big.gd -- $args --set=paint_look:$v --shots=$t --quit=$((t+1)) --out="$tmp" >/dev/null 2>"$tmp/err.txt"
+    timeout 120 "$GODOT" --position -6000,0 --path . -s res://tools/art/capture_big.gd -- $args --set=paint_look:$v --shots=$t --quit=$((t+1)) --out="$tmp" >/dev/null 2>"$tmp/err.txt"
     f=$(ls "$tmp"/shot_*.png 2>/dev/null | head -1)
     if [ -n "$f" ]; then mv "$f" "$OUT/v${v}_$name.png"; echo "ok v$v $name"; else echo "FALHOU v$v $name"; fi
     grep -iE "SHADER ERROR|SCRIPT ERROR|Parse Error" -A3 "$tmp/err.txt" | head -6

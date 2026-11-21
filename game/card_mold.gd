@@ -262,8 +262,12 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 	# --- nome na fita
 	var nm := UiKit.card_name(d, level)
 	var fell := UiDiario.font("fell")
-	var fsz := UiCovil.fit_size(fell, nm, 31 if compact else 23, 236.0, 14)
-	body.add_child(_label(nm, fell, fsz, spec[2], Rect2(32, rib_y - 1.0, 236, rib_h), 0))
+	# Na mão (compacta) a carta da frente cobre ~24 unidades da esquerda da seguinte: o nome começa depois dessa faixa
+	# (a fonte encolhe para caber), senão a primeira letra some por baixo da vizinha.
+	var name_x := 50.0 if compact else 32.0
+	var name_w := 212.0 if compact else 236.0
+	var fsz := UiCovil.fit_size(fell, nm, 31 if compact else 23, name_w, 12)
+	body.add_child(_label(nm, fell, fsz, spec[2], Rect2(name_x, rib_y - 1.0, name_w, rib_h), 0))
 
 	# --- tipo e raridade, e o texto (só carta grande)
 	if not compact:

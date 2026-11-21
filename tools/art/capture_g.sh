@@ -12,7 +12,7 @@ V=("$@"); [ ${#V[@]} -eq 0 ] && V=(V1 V2 V3 V4 V5 V6 V7)
 for v in "${V[@]}"; do
   read -r g t <<<"${SET[$v]}"
   tmp="$OUT/_tmp_$v/"; rm -rf "$tmp"; mkdir -p "$tmp"
-  timeout 120 "$GODOT" --path . -s res://tools/art/capture_big.gd -- --scene=res://tools/art/board_g.tscn --geom=$g --tex=$t --shots=jogo,perto,detalhe,herois,cenario --out="$tmp" >/dev/null 2>"$tmp/err.txt"
+  timeout 120 "$GODOT" --position -6000,0 --path . -s res://tools/art/capture_big.gd -- --scene=res://tools/art/board_g.tscn --geom=$g --tex=$t --shots=jogo,perto,detalhe,herois,cenario --out="$tmp" >/dev/null 2>"$tmp/err.txt"
   for f in "$tmp"/board_*.png; do [ -f "$f" ] && mv "$f" "$OUT/${v}_$(basename "$f" | sed 's/board_//')"; done
   rm -rf "$tmp"
 done

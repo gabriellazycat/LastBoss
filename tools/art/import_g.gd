@@ -9,6 +9,9 @@ extends SceneTree
 
 var src := ""
 var out := "res://assets/models/"
+## --m2: grava só a variante "_a" de <src>/n em assets/models/m2_a/ e todos os atlas de <src>/tex/*/ em
+## assets/models/g_tex/m2/ (modelos de --modelos=1, ver Looks.M2).
+var m2 := false
 
 
 func _init() -> void:
@@ -17,11 +20,28 @@ func _init() -> void:
 			src = a.trim_prefix("--src=").replace("\\", "/")
 		elif a.begins_with("--out="):
 			out = a.trim_prefix("--out=")
+		elif a == "--m2":
+			m2 = true
 	if src == "":
 		push_error("faltou --src=<pasta>")
 		quit(1)
 		return
 	var n := 0
+	if m2:
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out + "m2_a"))
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out + "g_tex/m2"))
+		if DirAccess.dir_exists_absolute(src + "/n"):
+			for f in DirAccess.get_files_at(src + "/n"):
+				if f.ends_with(".lbm"):
+					_convert(src + "/n/" + f, out + "m2_a/" + f.get_basename() + ".res", true)
+					n += 1
+		if DirAccess.dir_exists_absolute(src + "/tex"):
+			for d in DirAccess.get_directories_at(src + "/tex"):
+				for f in DirAccess.get_files_at(src + "/tex/" + d):
+					DirAccess.copy_absolute(src + "/tex/" + d + "/" + f, ProjectSettings.globalize_path(out + "g_tex/m2/" + f))
+		print("m2: %d modelos" % n)
+		quit()
+		return
 	for g in ["n", "c", "f"]:
 		if not DirAccess.dir_exists_absolute(src + "/" + g):
 			continue

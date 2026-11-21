@@ -203,9 +203,9 @@ func _stamp() -> Control:
 	sb.bg_color = Color(NOTE, 0.92)
 	sb.border_color = UiParch.BLOOD
 	sb.set_border_width_all(4)
-	sb.set_content_margin_all(10)
-	sb.content_margin_left = 26
-	sb.content_margin_right = 26
+	sb.set_content_margin_all(UiKit.SP_M)
+	sb.content_margin_left = UiKit.SP_XL + UiKit.SP_XS
+	sb.content_margin_right = UiKit.SP_XL + UiKit.SP_XS
 	p.add_theme_stylebox_override("panel", sb)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(UiParch.label(tr("UI_COL_LOCKED"), "title", 44, UiParch.BLOOD))
@@ -220,7 +220,8 @@ func _unlock_box(d: CardDef) -> Control:
 	sb.bg_color = Color(UiParch.BLOOD, 0.1)
 	sb.border_color = UiParch.BLOOD
 	sb.set_border_width_all(3)
-	sb.set_content_margin_all(16)
+	sb.set_content_margin_all(UiKit.SP_L)
+	UiKit.fit_margins(sb)
 	p.add_theme_stylebox_override("panel", sb)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := VBoxContainer.new()

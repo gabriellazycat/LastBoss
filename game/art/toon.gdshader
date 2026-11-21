@@ -8,6 +8,8 @@ uniform vec3 rim_color : source_color = vec3(0.7, 0.6, 1.0);
 uniform float emission_boost = 0.0;
 uniform float hop_height = 0.16;
 uniform float flap = 0.0;       // 1 = asas batem (morcegos)
+uniform float wind_amt = 0.0;   // vento com rajadas (wind.gdshaderinc)
+#include "res://game/art/wind.gdshaderinc"
 uniform float sway = 0.0;       // 1 = balança com o vento (vegetação)
 uniform float glow_strength = 3.5;
 uniform float flash = 0.0;      // brilho de impacto de objetos que não são MultiMesh
@@ -37,6 +39,10 @@ void vertex() {
 		float h = max(VERTEX.y, 0.0);
 		VERTEX.x += sin(TIME * 1.3 + wp.x * 0.15 + wp.z * 0.1) * 0.035 * h * sway;
 		VERTEX.z += cos(TIME * 1.1 + wp.z * 0.13) * 0.025 * h * sway;
+	}
+	if (wind_amt > 0.0) {
+		vec3 wpw = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		VERTEX += inverse(mat3(MODEL_MATRIX)) * lb_wind_offset(wpw, TIME, wind_amt);
 	}
 	// Investida: avança e se inclina ao atacar (frente = -Z local).
 	float lunge = custom.w;
