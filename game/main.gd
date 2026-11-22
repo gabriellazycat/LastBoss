@@ -1175,9 +1175,6 @@ func _process(delta: float) -> void:
 		world.build_arena()
 		hud.say(tr("UI_ARENA"))
 		overtime_said = false
-	if sim.endless and sim.phase == K.Phase.ARENA and sim.arena_party_t != overtime_party_t:
-		overtime_party_t = sim.arena_party_t   # Horda sem fim: a prorrogação recomeça a cada party que chega
-		overtime_said = false
 	if sim.phase == K.Phase.ARENA and not overtime_said and sim.overtime() > 0.0:
 		overtime_said = true
 		hud.say(tr("UI_OVERTIME"))

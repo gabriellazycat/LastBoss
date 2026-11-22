@@ -69,6 +69,7 @@ func _ready() -> void:
 	t_classes()
 	t_group()
 	t_parties()
+	t_run15()
 	t_group_spells()
 	t_stall_and_overtime()
 	t_human_bot()
@@ -3562,6 +3563,71 @@ func _endless_kill(s: Sim) -> void:
 	s._check_end()
 	s.offers.clear()
 
+
+## Frente A (21/11/2026): fase unica de 15 parties, oferta so por party, mods neutros, run curta com o bot.
+func t_run15() -> void:
+	var ph: Dictionary = data.phase(1)
+	check(ph.get("parties", []).size() == 15, "fase 1: 15 parties")
+	check(data.endless.is_empty() and data.campaign_map.is_empty(), "sem Horda sem fim nem mapa na campanha")
+	check(int(data.unlock_villain_at.get("dragon", 0)) == 3 and int(data.unlock_villain_at.get("lich", 0)) == 6, "unlock_villain_at: dragao 3, lich 6")
+	var sizes_ok := true
+	var classes: Array = data.hero_classes.keys()
+	for g in ph["parties"]:
+		sizes_ok = sizes_ok and g.size() >= 1 and g.size() <= 4
+		for c in g:
+			sizes_ok = sizes_ok and classes.has(str(c))
+	check(sizes_ok, "parties de 1 a 4 heroes de classes validas")
+	check(data.phase(0).get("tutorial", false), "tutorial segue na fase 0")
+	var a := Sim.new()
+	a.setup(data, 5, "horde", [], [], 1)
+	var b := Sim.new()
+	b.setup(data, 5, "horde", [], [], 1, MetaApply.defaults())
+	check(a.party_count() == 15 and a.party_mode(), "Sim.setup fase 1: fila de 15 parties")
+	check(a.elixir_max == b.elixir_max and is_equal_approx(a.draw_delay(), b.draw_delay()) and is_equal_approx(a.seconds_per_elixir(), b.seconds_per_elixir()), "mods neutros nao mudam os numeros")
+	var m := MetaApply.defaults()
+	m["recarga"]["carta"] = 0.5
+	m["elixir"]["max"] = 2.0
+	var c := Sim.new()
+	c.setup(data, 5, "horde", [], [], 1, m)
+	check(is_equal_approx(c.draw_delay(), a.draw_delay() * 0.5) and is_equal_approx(c.elixir_max, a.elixir_max + 2.0), "mods de recarga e elixir max aplicam")
+	# Oferta so por party morta (ha 1 heroi por party na party 1 e 2: use a party 3, de 2 herois).
+	var s := Sim.new()
+	s.setup(data, 5, "horde", [], [], 1)
+	s.auto_route = true
+	while s.cur_party < 2:
+		s.hero.hp = 0.0
+		s._check_end()
+		s.offers.clear()
+	check(s.party_members(s.cur_party).size() == 2, "party 3 tem 2 herois")
+	s.offers.clear()
+	s.followers[0].hp = 0.0
+	s._check_end()
+	check(s.offers.is_empty(), "heroi morto sem a melhoria: sem oferta de carta")
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.offers.size() > 0, "party inteira morta: oferta de carta")
+	var m2 := MetaApply.defaults()
+	m2["oferta_por_heroi"] = true
+	var s2 := Sim.new()
+	s2.setup(data, 5, "horde", [], [], 1, m2)
+	s2.auto_route = true
+	while s2.cur_party < 2:
+		s2.hero.hp = 0.0
+		s2._check_end()
+		s2.offers.clear()
+	s2.offers.clear()
+	s2.followers[0].hp = 0.0
+	s2._check_end()
+	check(s2.offers.size() > 0, "oferta_por_heroi: heroi morto oferece carta")
+	# Run curta com o bot (so fumaca).
+	var r := _phase_sim(1, 9)
+	var bot := PlayerBot.load_bot("greedy", 9)
+	var n := 0
+	while r.phase != K.Phase.OVER and n < 4000:
+		bot.think(r)
+		r.step()
+		n += 1
+	check(n > 0 and r.t > 0.0, "run curta com o bot sem erro (%.0f s simulados)" % r.t)
 
 func t_endless() -> void:
 	var E: Dictionary = data.endless

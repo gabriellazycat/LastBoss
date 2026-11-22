@@ -212,7 +212,7 @@ func damage() -> float:
 	var m := 1.0 + sim.overtime() * float(sim.data.rules["arena"].get("overtime_hero_dmg", 0.0))
 	# Fila cheia na arena (protótipo 10/11/2026, desligado com 0): cada herói que ainda falta na fila deixa o
 	# golpe na arena mais forte. Chegar à arena sem ter derrubado heróis na estrada passa a custar caro.
-	if sim.phase == K.Phase.ARENA and not sim.endless:   # Horda sem fim: a fila à frente é só um buffer
+	if sim.phase == K.Phase.ARENA:
 		m *= 1.0 + float(sim.data.rules["arena"].get("queue_dmg", 0.0)) * maxi(0, sim.party_size() - 1 - sim.party_idx)
 	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * m * (1.0 + bonus_dmg) * share
 
