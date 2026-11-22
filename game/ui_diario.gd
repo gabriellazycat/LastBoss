@@ -125,7 +125,7 @@ static func on_node_added(n: Node) -> void:
 
 
 ## Texto em cima de papel: cor clara vira tinta (mantém o matiz), sem contorno. Texto solto sobre o mundo fica.
-static func _inkify(n: Control) -> void:
+static func _inkify(n) -> void:   # sem tipo: um nó já liberado (telas que se refazem) dava erro ao converter o argumento
 	if not is_instance_valid(n) or n.has_meta("no_ink") or not on_paper(n):
 		return
 	var key := "font_color" if n is Label else "default_color"

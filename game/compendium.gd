@@ -1,12 +1,12 @@
 class_name CompendiumScreen
 extends VBoxContainer
 ## Compêndio do menu (rodada 09/11/2026): tudo o que existe no jogo e o que faz.
-## Abas: Cartas (bloqueadas também, níveis 1 a 3, especial do N3, preço), Relíquias, Modificadores, Locais e Herói.
+## Abas: Cartas (bloqueadas também, níveis, especial do N3), Relíquias, Modificadores, Locais e Poderes (de party).
 
 signal closed
 
 const TABS := ["cards", "relics", "mods", "locs", "hero"]
-const TAB_KEYS := {"cards": "UI_COMP_CARDS", "relics": "UI_COMP_RELICS", "mods": "UI_COMP_MODS", "locs": "UI_COMP_LOCS", "hero": "UI_COMP_HERO"}
+const TAB_KEYS := {"cards": "UI_COMP_CARDS", "relics": "UI_COMP_RELICS", "mods": "UI_COMP_MODS", "locs": "UI_COMP_LOCS", "hero": "UI_MENU_COMP_POWERS"}
 const CARD_W := 176.0
 
 var data: GameData
@@ -150,21 +150,34 @@ func _list(rows: Array) -> Container:
 	return v
 
 
+## Aba Poderes (21/11/2026, no lugar das 15 habilidades do herói): os poderes de party de data/hero_powers.json, com o
+## gatilho, a recarga e o efeito de cada nível (1 a 3).
 func _hero() -> Container:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
-	for u in data.hero["upgrades"]:
-		var id: String = u["id"]
+	var intro := Tips.label(tr("UI_MENU_COMP_POWERS_SUB"), 17, UiKit.MUTED, 1080.0)
+	v.add_child(intro)
+	for id in data.power_ids:
+		var d: Dictionary = data.hero_powers[id]
 		var p := UiKit.panel(UiKit.BG_SOFT, UiKit.HERO_XP.darkened(0.3), 10)
 		var h := HBoxContainer.new()
 		h.add_theme_constant_override("separation", 16)
-		h.add_child(UpgradeIcon.make(id, 52))
+		var icon_path := "res://assets/ui/powers/%s.svg" % id
+		if ResourceLoader.exists(icon_path):
+			var ic := TextureRect.new()
+			ic.texture = load(icon_path)
+			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			ic.custom_minimum_size = Vector2(52, 52)
+			h.add_child(ic)
 		var col := VBoxContainer.new()
 		var n := UiKit.title(22, UiKit.HERO_XP.lightened(0.3))
-		n.text = tr("UPG_" + id)
+		n.text = tr("POWER_" + id)
 		col.add_child(n)
-		col.add_child(Tips.label(Tips.rich(UpgradeIcon.desc(data, id), false), 16, UiKit.TEXT, 1000.0))
-		col.add_child(Tips.label(tr("UI_COMP_COUNTER").format({"t": tr("HCTR_" + id)}), 15, UiKit.GOOD, 1000.0))
+		col.add_child(Tips.label(tr("UI_MENU_TRIG_" + str(d.get("trigger", ""))) + " · " + tr("UI_MENU_COMP_COOLDOWN").format({"cd": int(HeroPowers.params(d, 1)["cd"])}), 15, UiKit.GOOD, 1000.0))
+		for lv in range(1, int(d.get("lv", []).size()) + 1):
+			var desc := tr("POWER_" + id + "_d").format(HeroPowers.params(d, lv))
+			col.add_child(Tips.label(tr("UI_MENU_COMP_LEVEL").format({"n": lv, "d": desc}), 16, UiKit.TEXT, 1000.0))
 		h.add_child(col)
 		p.add_child(h)
 		v.add_child(p)

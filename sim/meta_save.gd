@@ -43,11 +43,6 @@ var best_party := 0                # mais parties derrubadas numa run
 var best_by_villain: Dictionary = {}   # vilao -> mais parties derrubadas com ele
 var act2_reached := false          # o jogador ja chegou ao ato 2 (abre o setor "Troca de ato" do Covil)
 
-## ---- SHIMS (frente G apaga junto com as chamadas em game/ e nos testes antigos). Nao sao salvos nem fazem nada.
-var phases_won: Array = []
-var endless_best: Dictionary = {}
-var rare_choices := 0
-
 ## Compatibilidade com a interface dos Pactos (até o menu de vilões substituir as telas antigas).
 var pact: String:
 	get:
@@ -475,25 +470,3 @@ func set_deck(vid: String, ids: Array) -> bool:
 		return false
 	decks[vid] = ids.duplicate()
 	return true
-
-
-# ---------------------------------------------------------------- SHIMS da campanha de 7 fases (frente G apaga)
-
-func win_phase(_n: int) -> String:
-	return ""
-
-
-func phase_open(_n: int) -> bool:
-	return true
-
-
-func record_endless(_vid: String, n: int) -> bool:
-	return reach_party(n)
-
-
-func rare_choice_options(_n := 3, _seed := 0) -> Array:
-	return []
-
-
-func choose_rare(_id: String) -> bool:
-	return false

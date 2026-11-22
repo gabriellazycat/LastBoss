@@ -36,7 +36,6 @@ var hit_hero: SimHero = null       # herói que a unidade da vez acerta (null = 
 var group_falls := 0
 var party_of: Array = []            # número da party de cada herói da fila (parties de 1 a 4, 15/11/2026)
 var cur_party := 0                  # party em campo
-const endless := false              # SHIM (sem Horda sem fim desde 21/11/2026): game/ ainda lê; a frente G apaga
 var road := SimRoad.new()
 var past_lines: Array = []    # linhas (pontos) das estradas dos atos anteriores: o ato novo não encosta nelas (C17)
 var arena := SimArena.new()

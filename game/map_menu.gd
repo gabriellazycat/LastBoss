@@ -11,12 +11,12 @@ const MAP := "res://assets/ui/map/"
 const M := 24.0   # margem do PNG em volta do papel
 # Lugares nas coordenadas do papel da maquete (1640x960): [id, desenho, chave do texto, chave da legenda, tamanho]
 const PLACES := [
-	["new_run", "m-lair", "UI_NEW_RUN", "UI_MAP_LAIR", 150.0, Vector2(846, 540)],
-	["collection", "m-library", "UI_COLLECTION", "", 104.0, Vector2(420, 330)],
+	["covil", "m-lair", "UI_MENU_COVIL", "UI_MAP_LAIR", 150.0, Vector2(846, 540)],   # o covil: roda de melhorias; a legenda mostra recorde e Almas
+	["collection", "m-library", "UI_MENU_LIBRARY", "", 104.0, Vector2(420, 330)],   # a Biblioteca (álbum e deck)
 	["compendium", "m-tower", "UI_COMPENDIUM", "", 104.0, Vector2(520, 760)],
 	["settings", "m-mill", "UI_SETTINGS", "", 104.0, Vector2(1240, 350)],
 	["quit", "m-boat", "UI_QUIT", "", 104.0, Vector2(1300, 730)],
-	["endless", "m-house", "UI_ENDLESS", "UI_ENDLESS_SUB", 92.0, Vector2(846, 300)],   # Horda sem fim (19/11/2026)
+	["tutorial", "m-house", "UI_MENU_TUTORIAL", "UI_MENU_TUTORIAL_SUB", 92.0, Vector2(846, 300)],   # fase 0 (a Horda sem fim saiu em 21/11/2026)
 ]
 
 signal chosen(id: String)
@@ -51,7 +51,7 @@ func build(villain_portrait: Texture2D) -> void:
 	# "Continuar": a bandeira no começo da estrada vermelha que chega ao covil.
 	continue_btn = _node_button("continue", "m-tent", "UI_CONTINUE", 76.0, Vector2(846, 826), false)
 	for p in PLACES:
-		_node_button(p[0], p[1], p[2], p[4], p[5], p[0] == "new_run")
+		_node_button(p[0], p[1], p[2], p[4], p[5], p[0] == "covil")
 		if p[3] != "":
 			var h := UiParch.label(p[3], "italic", 21, UiParch.INK_SOFT)
 			# contorno da cor do papel: a estrada vermelha passa por baixo sem riscar o texto
@@ -120,6 +120,13 @@ func _node_button(id: String, sym: String, key: String, sz: float, at: Vector2, 
 	return b
 
 
-## Ordem dos botões como no menu de hoje (main_buttons.get_child(1) = Nova run).
+## Ordem dos botões do menu: continuar, covil, biblioteca, compêndio, tutorial, configurações, sair.
 func ordered() -> Array:
-	return [continue_btn, buttons["new_run"], buttons["endless"], buttons["collection"], buttons["compendium"], buttons["settings"], buttons["quit"]]
+	return [continue_btn, buttons["covil"], buttons["collection"], buttons["compendium"], buttons["tutorial"], buttons["settings"], buttons["quit"]]
+
+
+## Legenda do covil: recorde (party) e Almas (texto já traduzido pelo menu).
+func set_status(text: String) -> void:
+	var cap: Label = captions.get("covil")
+	if cap:
+		cap.text = text

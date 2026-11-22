@@ -18,9 +18,6 @@ var event_ids: Array = []
 var hero_classes: Dictionary = {}  # id -> overlay (data/hero_classes.json)
 var phases: Array = []             # fases da campanha (data/campaign.json)
 var unlock_villain_at: Dictionary = {}   # vilão -> party que, ao ser derrotada, o libera (fase 1 de data/campaign.json)
-# SHIMS (plano 21/11/2026: sem Horda sem fim nem mapa da campanha): vazios para game/ seguir compilando; a frente G apaga.
-var endless: Dictionary = {}
-var campaign_map: Dictionary = {}
 var villains: Dictionary = {}      # id -> dict (data/villains.json): os 3 vilões (C3, 10/11/2026)
 var villain_ids: Array = []
 var free_cards: Array = []         # liberadas desde o início (data/unlocks.json)

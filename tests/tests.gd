@@ -34,7 +34,6 @@ func _ready() -> void:
 	t_save()
 	t_hero_ai()
 	t_party()
-	t_endless()
 	t_card_levels()
 	t_levels6()
 	t_location_rewards()
@@ -92,6 +91,7 @@ func _ready() -> void:
 	t_powers()
 	t_library_ui()
 	t_covil_ui()
+	t_menus()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -727,11 +727,8 @@ func t_meta() -> void:
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var m := MetaSave.load_or_new(data, path)
-	check(m.villains == ["plague"] and m.villain == "plague" and not m.phase_open(2), "começa só com a Praga e a fase 2 fechada")
+	check(m.villains == ["plague"] and m.villain == "plague", "começa só com a Praga")
 	check(m.is_unlocked("rat_horde") and m.is_unlocked("rat_king") and m.is_unlocked("web") and not m.is_unlocked("ogre") and not m.is_unlocked("gold_dart"), "coleção inicial: baralho base e cartas liberadas; o resto bloqueado por desafio")
-	check(m.win_phase(1) == "dragon" and m.villains.has("dragon") and m.is_unlocked("gold_dart") and m.is_unlocked("hell_hound") and not m.is_unlocked("mimic") and m.phase_open(2), "vencer a fase 1 libera o Dragão e as cartas liberadas dele")
-	m.win_phase(3)
-	check(m.rare_choices == 0, "fase 3 não paga mais rara à escolha")
 	# Save antigo de Pactos: migra.
 	var old := "user://test_meta_old.save"
 	var f := FileAccess.open(old, FileAccess.WRITE)
@@ -742,7 +739,6 @@ func t_meta() -> void:
 	check(mo.heroes_seen.has("escudeiro") and mo.heroes_seen.has("arqueira") and not mo.heroes_seen.has("mago"), "save antigo: os heróis das fases já vencidas contam como vistos (%s)" % str(mo.heroes_seen))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(old))
 	check(m.see_hero("besteiro") and not m.see_hero("besteiro"), "herói visto só conta na primeira vez")
-	check(not m.phase_open(5) and m.phase_open(4) == m.phases_won.has(3), "fase 5 fechada até vencer a 4")
 	m.add_run(path)
 	var m2 := MetaSave.load_or_new(data, path)
 	check(m2.is_unlocked("rat_king") and m2.runs == 1, "meta salva e carrega")
@@ -3633,7 +3629,6 @@ func _endless_kill(s: Sim) -> void:
 func t_run15() -> void:
 	var ph: Dictionary = data.phase(1)
 	check(ph.get("parties", []).size() == 15, "fase 1: 15 parties")
-	check(data.endless.is_empty() and data.campaign_map.is_empty(), "sem Horda sem fim nem mapa na campanha")
 	check(int(data.unlock_villain_at.get("dragon", 0)) == 3 and int(data.unlock_villain_at.get("lich", 0)) == 6, "unlock_villain_at: dragao 3, lich 6")
 	var sizes_ok := true
 	var classes: Array = data.hero_classes.keys()
@@ -3693,75 +3688,6 @@ func t_run15() -> void:
 		r.step()
 		n += 1
 	check(n > 0 and r.t > 0.0, "run curta com o bot sem erro (%.0f s simulados)" % r.t)
-
-func t_endless() -> void:
-	var E: Dictionary = data.endless
-	var cap: Dictionary = data.phase(6)
-	check(not E.is_empty() and data.phase(int(E["id"])) == E and E.get("endless", false), "Horda sem fim: data.phase(id) devolve a config")
-	check(is_equal_approx(float(E["hp_mult"]), float(cap["hp_mult"])) and is_equal_approx(float(E["damage_mult"]), float(cap.get("damage_mult", 1.0))), "Horda sem fim: força inicial = a da Capital")
-	var in_list := false
-	for ph in data.phases:
-		in_list = in_list or ph.get("endless", false)
-	check(not in_list, "Horda sem fim fica fora da lista de fases do mapa")
-	var s := _phase_sim(int(E["id"]), 5)
-	check(s.endless and s.party_mode(), "Horda sem fim liga a fila de parties")
-	var hp0 := s.hero.base_hp * s.followers.size() if s.followers.size() > 0 else s.hero.base_hp
-	var classes: Array = data.hero_classes.keys()
-	for k in 12:
-		_endless_kill(s)
-	check(s.phase != K.Phase.OVER and s.cur_party == 12, "12 parties derrubadas e a run segue (party %d, fase %d)" % [s.cur_party, s.phase])
-	check(s.party_count() >= s.cur_party + int(E["ahead"]), "fila sempre %d parties à frente" % int(E["ahead"]))
-	var sizes_ok := true
-	for p in s.party_count():
-		var n := s.party_members(p).size()
-		sizes_ok = sizes_ok and n >= 1 and n <= 4
-	for c in s.party:
-		sizes_ok = sizes_ok and classes.has(c)
-	check(sizes_ok, "toda party tem de 1 a 4 heróis de classes válidas")
-	var sum1 := 0.0
-	for hh in s.all_heroes():
-		sum1 += hh.base_hp
-	check(sum1 > hp0 * 5.0, "força cresce com a fila (vida da party 13 = %.0f, da 1ª = %.0f)" % [sum1, hp0])
-	var t2 := _phase_sim(int(E["id"]), 5)
-	t2._endless_extend()
-	var same := true
-	for k in 4:
-		same = same and t2.endless_party(5, k) == s.endless_party(5, k)
-	for i in t2.party.size():
-		same = same and t2.party[i] == s.party[i]
-	check(same, "mesma semente → mesma fila de parties")
-	check(s.endless_party(5, 3) != s.endless_party(6, 3) or s.endless_party(5, 4) != s.endless_party(6, 4), "semente diferente → fila diferente")
-	s.t = float(data.rules["sim"]["max_run_seconds"]) + 1.0
-	s._check_end()
-	check(s.phase != K.Phase.OVER, "Horda sem fim não acaba por tempo")
-	# Salvar e carregar no meio da fila.
-	check(SaveGame.save(s, "user://test_endless.save"), "salvou a Horda sem fim")
-	var c := SaveGame.load_run(data, "user://test_endless.save")
-	check(c != null and c.endless and c.party == s.party and c.cur_party == s.cur_party and c.state_hash() == s.state_hash(), "carregou a Horda sem fim com a mesma fila")
-	SaveGame.erase("user://test_endless.save")
-	# Arena: a party seguinte entra pelo portão, o dano do covil fica e a prorrogação recomeça.
-	s.enter_arena()
-	s.arena.part_hp[0] *= 0.5
-	var hurt: float = s.arena.part_hp[0]
-	s.t += 400.0
-	check(s.overtime() > 0.0, "prorrogação corre para a party da vez")
-	var p0 := s.cur_party
-	_endless_kill(s)
-	check(s.phase == K.Phase.ARENA and s.cur_party == p0 + 1, "na arena, a party seguinte chega")
-	check(is_equal_approx(s.arena.part_hp[0], hurt), "o dano no covil fica entre as parties")
-	check(s.overtime() == 0.0 and Vector2(s.hero.x, s.hero.y).distance_to(s.gate_pos) < 0.01, "a party nova entra pelo portão, sem prorrogação")
-	s.core_destroyed()
-	check(s.result == K.Result.LOSS and int(s.stats["parties_beaten"]) == p0 + 1, "covil caiu: derrota com %d parties derrubadas" % int(s.stats.get("parties_beaten", -1)))
-	# Recorde por vilão.
-	var mp := "user://test_meta_endless.save"
-	if FileAccess.file_exists(mp):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(mp))
-	var m := MetaSave.load_or_new(data, mp)
-	check(m.record_endless("plague", 7) and not m.record_endless("plague", 5) and m.record_endless("dragon", 2), "recorde só sobe, e é por vilão")
-	m.save()
-	var m2 := MetaSave.load_or_new(data, mp)
-	check(int(m2.endless_best.get("plague", 0)) == 7 and int(m2.endless_best.get("dragon", 0)) == 2, "recorde da Horda sem fim é salvo")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(mp))
 
 ## Rodada de UI de 20/11/2026: escala de espaçamento e auditoria de folga (game/spacing_audit.gd). A auditoria das telas
 ## inteiras roda fora daqui: bash tools/space_audit.sh <pasta> (sem janela, ~3 min; código de saída = nº de problemas).
@@ -4280,3 +4206,96 @@ func t_covil_ui() -> void:
 		check(m.almas == m.almas_earned and m.upgrades.is_empty(), "covil: reembolsar tudo devolve tudo")
 		sc.queue_free()
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+## Frente G (21/11/2026), fumaça: menu → Covil → escolher vilão monta o Sim com mods e deck; apply_run no fim de uma run
+## curta do bot alimenta a tela de fim; o save da run retoma com os mesmos mods; a pausa lista os poderes.
+func t_menus() -> void:
+	var path := "user://test_menus.save"
+	var rpath := "user://test_menus_run.save"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var m := MetaSave.load_or_new(data, path)
+	m.add_almas(500)
+	m.card_levels["rat_horde"] = 3
+	var first_node := ""
+	for id in data.meta_nodes:
+		if str(data.meta_nodes[id].get("parent", "")) == "":
+			first_node = str(id)
+			break
+	check(first_node != "" and m.buy(first_node), "menus: comprou um nó da raiz da árvore")
+	# O menu: título com recorde e Almas, Covil, escolha de vilão (deck 19/19, trancado), Biblioteca de volta.
+	var menu := MainMenu.new()
+	menu.theme = UiKit.make_theme()
+	menu.setup(data, m)
+	add_child(menu)
+	check(menu.screen == "title" and menu.status_text().contains(str(m.almas)), "menus: o título mostra as Almas (%s)" % menu.status_text())
+	m.best_party = 4
+	check(menu.status_text().contains("4"), "menus: o título mostra o recorde")
+	menu.covil.start_run.emit()
+	check(menu.screen == "decks" and menu.preview_row.get_child_count() == 19, "menus: Começar run do Covil abre a escolha com o deck de 19")
+	menu._focus_villain("dragon")
+	check(menu.v_pick.disabled and menu.unlock_party("dragon") == 3 and menu.unlock_party("lich") == 6 and menu.locked_text("dragon").contains("3"), "menus: vilão trancado pede a party 3")
+	menu._focus_villain("plague")
+	check(not menu.v_pick.disabled and menu.v_edit.disabled == false, "menus: vilão liberado pode começar e editar o deck")
+	menu.v_edit.pressed.emit()
+	check(menu.screen == "collection" and menu.collection.tab == "plague" and menu.lib_return == "decks", "menus: Editar deck abre a Biblioteca no vilão")
+	menu.collection.closed.emit()
+	check(menu.screen == "decks", "menus: a Biblioteca volta à escolha de vilão")
+	var picked := []
+	menu.deck_chosen.connect(func(id): picked.append(id))
+	menu.v_pick.pressed.emit()
+	check(picked == ["plague"] and m.villain == "plague", "menus: Começar escolhe o vilão")
+	menu.show_screen("covil")
+	check(menu.covil.visible and not menu.deck_screen.visible, "menus: o Covil abre")
+	menu.queue_free()
+	# O Sim que o main monta ao Começar: deck montado e mods da meta.
+	var sim := Sim.new()
+	sim.setup(data, 11, "plague", m.deck_for("plague"), m.unlocked, 1, MetaApply.run_mods(m))
+	check(sim.cards.size() == 19 and sim.mods["deck"].size() == 19, "menus: o Sim começa com o deck de 19")
+	check(int(sim.mods["card_levels"].get("rat_horde", 1)) == 3, "menus: o Sim leva os níveis de carta da meta")
+	# A pausa lista os poderes da party.
+	sim.powers.append({"id": "fire_burst", "level": 2, "cd_left": 0.0, "gap_left": 0.0})
+	var pl: Array = sim.party_powers()
+	var info: Dictionary = HeroPowers.describe(sim, "fire_burst", 2)
+	check(pl.size() == 1 and info.has("name") and str(info["desc"]) != "" and not str(info["desc"]).contains("{"), "menus: poder da party com nome e efeito para a pausa")
+	check(not Tips.power_entries(data, "fire_burst", 2).is_empty(), "menus: caixas de dica do poder")
+	# Save da run retomado com os mesmos mods.
+	for i in 300:
+		sim.step()
+	check(SaveGame.save(sim, rpath), "menus: salvou a run")
+	var c := SaveGame.load_run(data, rpath)
+	check(c != null and c.mods == sim.mods and c.cards.size() == 19 and int(c.mods["card_levels"].get("rat_horde", 1)) == 3, "menus: a run retomada guarda os mods")
+	check(c != null and c.party_powers().size() == 1, "menus: a run retomada guarda os poderes")
+	SaveGame.erase(rpath)
+	# Fim de uma run curta do bot: apply_run alimenta a tela de fim.
+	var r := Sim.new()
+	r.setup(data, 9, "plague", m.deck_for("plague"), m.unlocked, 1, MetaApply.run_mods(m))
+	r.auto_route = true
+	var bot := PlayerBot.load_bot("greedy", 9)
+	var n := 0
+	while r.phase != K.Phase.OVER and n < 3000:
+		bot.think(r)
+		r.step()
+		n += 1
+	r.cur_party = 6
+	r.stats["almas_dmg"] = 4000.0
+	r.stats["heroes_fallen"] = 8
+	r._finish(K.Result.LOSS)
+	var a0 := m.almas
+	var res := m.apply_run(r, path)
+	check(int(res["party"]) == 6 and bool(res["new_best"]) and m.best_party == 6 and int(res["best"]) == 6, "menus: apply_run guarda o recorde (party 6)")
+	check(int(res["almas"]["total"]) > 0 and m.almas == a0 + int(res["almas"]["total"]) and int(res["balance"]) == m.almas, "menus: apply_run soma as Almas ao saldo")
+	var end := RunEnd.new()
+	add_child(end)
+	end.show_result(data, m, r, res)
+	check(end.visible and end.menu_b != null and end.covil_b != null, "menus: a tela de fim monta com os botões")
+	check(end.find_child("NewBest", true, false) != null, "menus: novo recorde em destaque")
+	var tot := end.find_child("AlmasTotal", true, false)
+	check(tot != null and tot.find_children("*", "Label", true, false).any(func(l): return (l as Label).text == "+%d" % int(res["almas"]["total"])), "menus: a tela mostra o total de Almas")
+	var got := []
+	end.to_covil.connect(func(): got.append("covil"))
+	end.covil_b.disabled = false
+	end.covil_b.pressed.emit()
+	check(got == ["covil"], "menus: Ir ao Covil emite o sinal")
+	end.queue_free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

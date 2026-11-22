@@ -719,9 +719,9 @@ TUT_pack,Combo do [[pack|Bando]]: os Ratos Raivosos ficam mais fortes com mais r
 TUT_call,O Chamado do Bando deixa todos os seus ratos mais rápidos e fortes por alguns segundos. Use quando o bando estiver grande.,Pack Call makes all your rats faster and stronger for a few seconds. Use it when the pack is big.
 TUT_shield,"Heróis de escudo, como o Escudeiro, bloqueiam o que vem da frente. Monstros que chegam por trás e pelos lados acertam em cheio.","Shield heroes, like the Squire, block what comes from the front. Monsters coming from behind and the sides land full hits."
 TUT_location,Os locais na estrada (círculos) são disputas com uma barra de 3 marcos enquanto a party está lá. Cada marco que a barra alcança dá uma recompensa; os 3 marcos dão ainda mais ouro.,Places on the road (circles) are contests with a 3-mark bar while the party is there. Each mark the bar reaches gives a reward; all 3 marks also give bonus gold.
-TUT_fall,"Um herói caiu! Os que ficam aprendem uma habilidade nova, e a próxima party vem mais forte. Escolha a sua recompensa.","A hero fell! Those left standing learn a new ability, and the next party comes stronger. Pick your reward."
+TUT_fall,"Uma party inteira caiu! Escolha uma carta nova para o seu baralho. A próxima party vem mais forte e traz um poder novo (ou melhora um que já tem): um golpe de recarga longa que dispara no primeiro contato. Use isca para gastar o poder antes da sua carta forte.","A whole party fell! Pick a new card for your deck. The next party comes stronger and brings a new power (or upgrades one it has): a long-cooldown strike that fires on first contact. Use bait to burn the power before your strong card."
 TUT_arena,"Uma party chegou ao covil. Na arena, os heróis atacam as partes do seu corpo: defenda com monstros e feitiços. As cartas de Rota ficam fora do baralho até a arena acabar.",A party reached the lair. In the arena the heroes attack your body parts: defend with monsters and spells. Route cards stay out of your deck until the arena ends.
-TUT_done,Tutorial concluído! A Fase 1 está liberada.,Tutorial complete! Stage 1 is unlocked.
+TUT_done,"Tutorial concluído! No Covil você gasta as Almas em melhorias e na Biblioteca monta o seu deck de 19 cartas. Boa sorte contra as 15 parties.","Tutorial complete! In the Lair you spend Souls on upgrades and in the Library you build your 19-card deck. Good luck against the 15 parties."
 UI_TUT_OK,Entendi,Got it
 UI_SKIP_TUTORIAL,Pular tutorial,Skip tutorial
 LVLK_soaked,Encharcado (s),Soaked (s)
@@ -1551,3 +1551,53 @@ UI_COVIL_NEED_ALMAS,Faltam {n} Almas,{n} more Souls needed
 UI_COVIL_PIN,Clique para fixar e comprar,Click to pin and buy
 UI_COVIL_REFUND_BLOCKED,Reembolse antes os nós seguintes,Refund the following nodes first
 UI_COVIL_CLOSE,Fechar,Close
+# --- Frente G: menus, escolher vilão, pausa, fim da run, compêndio (21/11/2026): UI_MENU_*, UI_END_* ---
+UI_MENU_COVIL,Covil,Lair
+UI_MENU_LIBRARY,Biblioteca,Library
+UI_MENU_TUTORIAL,Tutorial,Tutorial
+UI_MENU_TUTORIAL_SUB,Aprenda o básico em 2 parties,Learn the basics in 2 parties
+UI_MENU_STATUS,Recorde: {b} de {m} parties · {a} Almas,Best: {b} of {m} parties · {a} Souls
+UI_MENU_STATUS_NONE,Sem recorde ainda · {a} Almas,No record yet · {a} Souls
+UI_MENU_LOCKED,Trancado: derrote a party {n},Locked: defeat party {n}
+UI_MENU_RECORD,Recorde: {n} de {m} parties derrubadas,Best: {n} of {m} parties defeated
+UI_MENU_NO_RECORD,Sem recorde ainda,No record yet
+UI_MENU_DECK_HEAD,Deck de {name} · {n}/{m} cartas,{name} deck · {n}/{m} cards
+UI_MENU_EDIT_DECK,Editar deck,Edit deck
+UI_MENU_START,Começar a run,Start the run
+UI_MENU_PICK_SUB,Cada vilão tem o próprio deck de 19 cartas e o próprio recorde. Dragão e Lich se liberam derrotando parties.,Each villain has its own 19-card deck and its own record. The Dragon and the Lich unlock by defeating parties.
+UI_MENU_PAUSE_POWERS,Poderes da party,Party powers
+UI_MENU_PAUSE_NO_POWERS,Nenhum ainda: a primeira party que cair traz o primeiro.,None yet: the first party to fall brings the first.
+UI_MENU_POWER_LINE,{name} · nível {lv} · recarga {cd} s,{name} · level {lv} · cooldown {cd} s
+UI_MENU_GIVE_UP,Desistir (mantém as Almas),Give up (keep the Souls)
+UI_MENU_GIVE_UP_ASK,Desistir desta run? Você mantém as Almas ganhas.,Give up this run? You keep the Souls earned.
+UI_MENU_GIVE_UP_YES,"Sim, desistir","Yes, give up"
+UI_MENU_GIVE_UP_NO,Continuar jogando,Keep playing
+UI_MENU_COMP_POWERS,Poderes,Powers
+UI_MENU_COMP_POWERS_SUB,Cada party que cai traz um poder novo ou melhora um que a party já tem (níveis 1 a 3). Eles se acumulam até o fim da run.,Each party that falls brings a new power or upgrades one the party already has (levels 1 to 3). They stack until the run ends.
+UI_MENU_COMP_COOLDOWN,Recarga {cd} s (nível 1),Cooldown {cd} s (level 1)
+UI_MENU_COMP_LEVEL,Nível {n}: {d},Level {n}: {d}
+UI_MENU_TRIG_first_enemy,No primeiro inimigo que encosta,On the first enemy to touch the party
+UI_MENU_TRIG_next_creature,Na próxima criatura que encosta,On the next creature to touch the party
+UI_MENU_TRIG_next_structure,Na próxima estrutura que encosta,On the next structure to touch the party
+UI_MENU_TRIG_next_spell,No próximo feitiço que acerta a party,On the next spell to hit the party
+UI_MENU_TRIG_on_hit_taken,Como reação ao que a party sofre,As a reaction to what the party suffers
+UI_MENU_TRIG_interval,"Sozinho, a cada recarga","By itself, on every cooldown"
+UI_END_TITLE_LOSS,O covil caiu na party {n} de {m},The lair fell at party {n} of {m}
+UI_END_TITLE_WIN,O covil resistiu às {m} parties!,The lair withstood all {m} parties!
+UI_END_NEW_BEST,NOVO RECORDE!,NEW RECORD!
+UI_END_RECORD,Recorde: {n} de {m} parties derrubadas,Best: {n} of {m} parties defeated
+UI_END_ALMAS,Almas ganhas,Souls earned
+UI_END_ALMAS_DMG,Dano nos heróis,Damage to heroes
+UI_END_ALMAS_HEROES,Heróis derrotados,Heroes defeated
+UI_END_ALMAS_BONUS,Bônus do Covil,Lair bonus
+UI_END_ALMAS_TOTAL,Total,Total
+UI_END_BALANCE,Saldo: {n} Almas,Balance: {n} Souls
+UI_END_VILLAIN,Vilão liberado: {p}!,Villain unlocked: {p}!
+UI_END_CHALLENGES,Desafios concluídos: {n},Challenges completed: {n}
+UI_END_NO_CHALLENGES,Nenhum desafio concluído desta vez.,No challenge completed this time.
+UI_END_MENU,Menu,Menu
+UI_END_COVIL,Ir ao Covil,Go to the Lair
+UI_END_TUT,Tutorial concluído! Agora o Covil e a Biblioteca estão à sua espera.,Tutorial complete! The Lair and the Library await you.
+UI_END_BEATEN,Parties derrubadas: {n},Parties defeated: {n}
+UI_END_RUN,Esta run,This run
+UI_MENU_COOLDOWN,Recarga {cd} s,Cooldown {cd} s
