@@ -1,3 +1,5 @@
+> **DESATUALIZADO (substituído pela metaprogressão de 21/11/2026, ver docs/METAPROGRESSAO.md)**: este documento descreve o que saiu (campanha de 7 fases, Horda sem fim, Almas antigas e/ou decks fixos); vale só como histórico.
+
 # Rodada de balanceamento e caça a bugs — 09/11/2026
 
 **Estado:** feita numa tarefa agendada, com você fora e autonomia total (sem perguntas, sem grilling). Tudo está no branch `balanceamento-2026-11-09`, em commits pequenos; a `main` não foi tocada e nada foi enviado ao GitHub. O primeiro commit do branch (`Snapshot antes da rodada…`) guarda tudo o que estava sem commit na `main`; as capturas brutas `docs/visual/antes` e `docs/visual/rodada_*` (~400 MB) ficaram fora do commit, mas continuam no disco.

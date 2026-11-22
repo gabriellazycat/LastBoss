@@ -1,3 +1,5 @@
+> **DESATUALIZADO (substituído pela metaprogressão de 21/11/2026, ver docs/METAPROGRESSAO.md)**: este documento descreve o que saiu (campanha de 7 fases, Horda sem fim, Almas antigas e/ou decks fixos); vale só como histórico.
+
 # Desbloqueio de cartas por desafio (13/11/2026)
 
 Substitui a compra com Almas. **Fase = uma run inteira** (~23–27 min); os contadores "numa mesma fase" zeram a cada fase.
