@@ -1551,3 +1551,13 @@ UI_COVIL_NEED_ALMAS,Faltam {n} Almas,{n} more Souls needed
 UI_COVIL_PIN,Clique para fixar e comprar,Click to pin and buy
 UI_COVIL_REFUND_BLOCKED,Reembolse antes os nós seguintes,Refund the following nodes first
 UI_COVIL_CLOSE,Fechar,Close
+# --- Frente H: HUD dos poderes (22/11/2026) ---
+UI_POWER_NEW,Poder novo!,New power!
+UI_POWER_EVOLVED,Poder evoluído!,Power evolved!
+UI_POWER_LEVEL,Nível {n},Level {n}
+UI_POWER_LEVEL_UP,Nível {a} → {b},Level {a} → {b}
+UI_POWER_COOLDOWN,Recarga,Cooldown
+UI_POWER_EVERY,A cada {s} s,Every {s} s
+UI_POWER_READY,Pronto,Ready
+UI_POWER_CHARGING,Recarregando: {s} s,Recharging: {s} s
+UI_POWER_HAVE,Poderes da party ({n}),Party powers ({n})

@@ -1099,6 +1099,25 @@ func _process(delta: float) -> void:
 	if auto_args.has("hand") and sim.hand_size != int(auto_args["hand"]):
 		sim.hand_size = int(auto_args["hand"])
 		sim._refill_hand()
+	# --powers=id:nivel,id:nivel: dá esses poderes à party (recargas variadas) uma vez; --powerat=<s>:id:nivel:anterior abre
+	# o painel de revelação desse poder (anterior 0 = novo). Capturas da HUD dos poderes (frente H, 22/11/2026).
+	if auto_args.has("powers") and sim.phase != K.Phase.OVER:
+		var pk := 0
+		for pw in str(auto_args["powers"]).split(",", false):
+			var pp := pw.split(":")
+			var pd: Dictionary = sim.data.hero_powers.get(pp[0], {})
+			if not pd.is_empty():
+				var plv := int(pp[1]) if pp.size() > 1 else 1
+				var pcd := float(pd["cooldown"][clampi(plv, 1, 3) - 1])
+				sim.powers.append({"id": pp[0], "level": plv, "cd_left": 0.0 if pk % 3 == 2 else pcd * (0.25 + 0.2 * (pk % 4)), "gap_left": 0.0})
+				pk += 1
+		auto_args.erase("powers")
+	if auto_args.has("powerat") and life >= float(str(auto_args["powerat"]).split(":")[0]):
+		var pa := str(auto_args["powerat"]).split(":")
+		auto_args.erase("powerat")
+		var pcd2 := float(sim.data.hero_powers[pa[1]]["cooldown"][clampi(int(pa[2]), 1, 3) - 1])
+		sim.offers.append({"source": "power", "options": [{"kind": "power", "id": pa[1], "level": int(pa[2]), "prev_level": int(pa[3]),
+			"new": int(pa[3]) == 0, "cooldown": pcd2}], "powers": sim.party_powers()})
 	# --killat=<s>: derruba o herói nesse instante (captura da cena da queda).
 	# --killat=5 derruba o herói da vez aos 5 s; --killat=5,7 derruba um aos 5 s e o próximo líder aos 7 s (party de 4
 	# nas capturas, 16/11/2026).
