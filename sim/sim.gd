@@ -1197,7 +1197,8 @@ func _relic_pickup(fx: Dictionary) -> void:
 	for k in int(fx.get("pickup_upgrade", 0)):
 		var cand: Array = cards.filter(func(ci): return ci.level < mx)
 		if cand.is_empty():
-			break
+			_upgrade_to_gold()   # todas no teto: o upgrade vira ouro
+			continue
 		cand[rng_offer.randi_range(0, cand.size() - 1)].level += 1
 	var picked: Array = []
 	for k in int(fx.get("pickup_discount", 0)):
@@ -2651,8 +2652,9 @@ func run_progress() -> float:
 	return clampf((float(act) + f) / float(maxi(acts(), 1)), 0.0, 1.0)
 
 
-## Nível das cartas de UMA oferta (10/11: uma sorteada por oferta, igual a raridade única): 1, 2 ou 3.
-## Chance de 2+ = p*lv2_end; de 3 = p*lv3_end. `end_act`: fim de ato dobra as chances (nível 3 com teto próprio).
+## Nível das cartas de UMA oferta (10/11: uma sorteada por oferta, igual a raridade única): 1 a VI (teto rules.card_levels.max).
+## Chance de ≥k = p*lvk_end (k = 2..6), encadeadas (nunca maior que a do nível anterior). `end_act`: fim de ato dobra as
+## chances, cada nível com teto próprio (act_end_lvK_cap). Contas e números em rules.offer_upgrades._doc.
 func roll_offer_level(end_act := false, p := -1.0) -> int:
 	var mx := int(R["card_levels"]["max"])
 	if mx < 2:
@@ -2661,15 +2663,18 @@ func roll_offer_level(end_act := false, p := -1.0) -> int:
 		p = run_progress()
 	var U: Dictionary = R["offer_upgrades"]
 	var m := float(U["act_end_mult"]) if end_act else 1.0
-	var c2 := clampf(p * float(U["lv2_end"]) * m, 0.0, 1.0)
-	var c3 := minf(p * float(U["lv3_end"]) * m, c2)
-	if end_act:
-		c3 = minf(c3, float(U["act_end_lv3_cap"]))
 	var u := rng_offer.randf()
-	if mx >= 3 and u < c3:
-		return 3
-	if u < c2:
-		return 2
+	var prev := clampf(p * float(U["lv2_end"]) * m, 0.0, 1.0)   # chance de ≥ k-1
+	var ch: Array = [0.0, 0.0, prev]                             # ch[k] = chance de nível ≥ k
+	for k in range(3, 7):
+		var c := p * float(U.get("lv%d_end" % k, 0.0)) * m
+		if end_act:
+			c = minf(c, float(U.get("act_end_lv%d_cap" % k, 1.0)))
+		prev = minf(c, prev)
+		ch.append(prev)
+	for k in range(mini(mx, 6), 1, -1):
+		if u < float(ch[k]):
+			return k
 	return 1
 
 
@@ -2817,14 +2822,22 @@ func _offer_marks(ty: String, n: int) -> void:
 			var fr: Array = LR["frac"]
 			var f := float(fr[mini(n, fr.size()) - 1])
 			var elig := cards.filter(func(ci): return ci.level < int(R["card_levels"]["max"]))
-			var pick := -1 if f >= 1.0 else maxi(1, roundi(elig.size() * f))
-			_push_offer("location", _pick_insts(elig, pick, "upgrade"), {"loc": ty, "won": won, "mark": n})
+			if elig.is_empty():
+				_upgrade_to_gold()   # todas as cartas no teto: o upgrade vira ouro
+			else:
+				var pick := -1 if f >= 1.0 else maxi(1, roundi(elig.size() * f))
+				_push_offer("location", _pick_insts(elig, pick, "upgrade"), {"loc": ty, "won": won, "mark": n})
 
 
 func _earn_gold(v: float) -> void:
 	v *= 1.0 + temp_sum("gold_mult")
 	gold += v
 	stats["gold_earned"] += v
+
+
+## Upgrade de carta sem carta elegível (todas no teto VI): vira ouro (rules.card_levels.upgrade_gold).
+func _upgrade_to_gold() -> void:
+	_earn_gold(float(R["card_levels"].get("upgrade_gold", 0.0)))
 
 
 ## Loja: abre quando o herói chega; sem disputa e sem desconto (rodada 09/11/2026).
@@ -2849,8 +2862,10 @@ func _open_shop() -> void:
 		if c:
 			ex.append(c.id)
 			# Carta já melhorada custa o preço da raridade + o preço de subir nível por nível extra (assumido).
-			var base := float(S["prices"][K.RARITIES[c.rarity]]) + float(S.get("card_upgrade", S["upgrade"])) * (lv - 1)
-			items.append({"kind": "buy", "item": {"kind": "card", "id": c.id, "level": lv}, "price": price.call(base)})
+			# Nunca abaixo do nível da meta dessa carta (MetaApply.card_level); o preço segue o nível real.
+			var clv := maxi(lv, MetaApply.card_level(self, c.id))
+			var base := float(S["prices"][K.RARITIES[c.rarity]]) + float(S.get("card_upgrade", S["upgrade"])) * (clv - 1)
+			items.append({"kind": "buy", "item": {"kind": "card", "id": c.id, "level": clv}, "price": price.call(base)})
 	if not _level_up_options(1).is_empty():
 		items.append({"kind": "buy", "item": {"kind": "pick", "what": "upgrade"}, "price": price.call(float(S["upgrade"]))})
 	var m := _mod_option([])
@@ -2923,7 +2938,7 @@ func _card_options(n: int, f: Callable, end_act := false) -> Array:
 		var c := _pick_card(f1, ex)
 		if c:
 			ex.append(c.id)
-			opts.append({"kind": "card", "id": c.id, "level": lv})
+			opts.append({"kind": "card", "id": c.id, "level": maxi(lv, MetaApply.card_level(self, c.id))})
 	return opts
 
 
@@ -2996,7 +3011,7 @@ func _offer_level() -> void:
 			var c := _pick_card(func(cd: CardDef): return cd.rarity == one, ex)
 			if c:
 				ex.append(c.id)
-				opts.append({"kind": "card", "id": c.id, "level": lv})
+				opts.append({"kind": "card", "id": c.id, "level": maxi(lv, MetaApply.card_level(self, c.id))})
 		else:
 			var m := _mod_option(ex)
 			if m.size() > 0:

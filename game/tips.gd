@@ -246,8 +246,8 @@ static func card_entries(d: CardDef, mod_ids: Array, with_card: bool, level := 1
 		for mid in mod_ids:
 			body += "\n★ [[%s]]: %s" % [mid, TranslationServer.translate("MODDESC_" + mid)]
 		# Na coleção e nas ofertas: o que o nível 3 acrescenta.
-		if level < 3 and d.n3.size() > 0:
-			var n3 := TranslationServer.translate("N3_" + d.id).format(UiKit.card_params(d, 3))
+		if level < CardDef.N3_LEVEL and d.n3.size() > 0:
+			var n3 := TranslationServer.translate("N3_" + d.id).format(UiKit.card_params(d, CardDef.N3_LEVEL))
 			body += "\n" + TranslationServer.translate("UI_N3_PREVIEW").format({"t": n3})
 		out.append(entry(UiKit.card_name(d, level), body))
 	var ids: Array = [d.type]

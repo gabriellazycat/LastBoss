@@ -36,6 +36,7 @@ func _ready() -> void:
 	t_party()
 	t_endless()
 	t_card_levels()
+	t_levels6()
 	t_location_rewards()
 	t_route()
 	t_rivers()
@@ -496,9 +497,9 @@ func t_card_levels() -> void:
 	var rats := data.card("rat_horde")
 	check(rats.count_at(1) == 8 and rats.count_at(2) == 10 and rats.count_at(3) == 12, "Horda: 8, 10 e 12 ratos por nível")
 	check(is_equal_approx(data.card("shadow_bolt").fxv("damage", 2), 156.25), "Raio Sombrio N2: 156 de dano (125 base, calibragem de 13/11/2026)")
-	check(data.card("burn_village").cost_at(1) == 4 and data.card("burn_village").cost_at(3) == 2, "Incêndio fica 1 mais barato por nível")
-	check(data.card("soul_feast").fxv("bonus_per_card", 2) == 1.0 and data.card("soul_feast").fxv("bonus_per_card", 3) == 2.0,
-		"especial do N3 só vale no nível 3")
+	check(data.card("burn_village").cost_at(1) == 4 and data.card("burn_village").cost_at(3) == 3 and data.card("burn_village").cost_at(5) == 2, "Incêndio: -1 no III e -1 no V")
+	check(data.card("soul_feast").fxv("bonus_per_card", 5) == 1.0 and data.card("soul_feast").fxv("bonus_per_card", 6) == 2.0,
+		"especial n3 só vale no nível VI")
 	var s := _sim()
 	var n0 := s.units.count
 	s._apply(_inst("rat_horde", 3), s.hero.x + 6.0, s.hero.y, )
@@ -512,7 +513,66 @@ func t_card_levels() -> void:
 	check(is_equal_approx(g1.units.hp[0] / g.units.hp[0], 1.5), "Ogro N3 tem +50% de vida")
 	var c := _sim()
 	c.elixir = 10.0
-	check(c.card_cost(_inst("burn_village", 2)) == 3, "Incêndio N2 custa 3")
+	check(c.card_cost(_inst("burn_village", 2)) == 4 and c.card_cost(_inst("burn_village", 3)) == 3, "Incêndio N2 custa 4 e N3 custa 3")
+
+
+## Níveis I a VI (frente C, 21/11/2026): só fumaça, sem varredura de balanço.
+func t_levels6() -> void:
+	var d := data.card("soul_feast")
+	for lv in range(1, 7):
+		check(is_equal_approx(d.mult(lv), 1.0 + 0.25 * (lv - 1)), "mult(%d) = %.2f" % [lv, 1.0 + 0.25 * (lv - 1)])
+	check(is_equal_approx(d.mult(6), 2.25), "VI = 2,25x")
+	check(int(data.rules["card_levels"]["max"]) == 6, "teto de nível é VI")
+	var bv := data.card("burn_village")   # custo 4 e escala o custo
+	var want := [4, 4, 3, 3, 2, 2]
+	for lv in range(1, 7):
+		check(bv.cost_at(lv) == want[lv - 1], "Incêndio custo no nível %d = %d (%d)" % [lv, want[lv - 1], bv.cost_at(lv)])
+	for lv in range(1, 7):
+		check(d.has_n3(lv, "bonus_per_card") == (lv == 6), "n3 do Banquete só no VI (nível %d)" % lv)
+	var top := 0
+	var bad_roll := 0
+	var seen := {}
+	for seed_ in range(1, 120):
+		var s := _sim(seed_)
+		for p in [0.5, 1.0]:
+			for ea in [false, true]:
+				var lv := s.roll_offer_level(ea, p)
+				top = maxi(top, lv)
+				seen[lv] = true
+				if lv < 1 or lv > 6:
+					bad_roll += 1
+	check(bad_roll == 0, "roll_offer_level nunca fora de 1..6")
+	check(top >= 4, "níveis altos aparecem (máx %d)" % top)
+	# Loja: nível e preço respeitam o teto e a escala; a meta nunca é rebaixada.
+	var s2 := Sim.new()
+	s2.setup(data, 5, "horde", [], [], 1, {"card_levels": {"rat_horde": 4}})
+	s2.auto_route = true
+	s2.act = s2.acts() - 1
+	s2.act_pending = true
+	for k in 6:
+		s2.offers.clear()
+		s2._open_shop()
+		for it in s2.offers[0]["options"]:
+			if it["item"]["kind"] == "card":
+				var cd: CardDef = data.card(it["item"]["id"])
+				var lv := int(it["item"]["level"])
+				var base := int(data.rules["shop"]["prices"][K.RARITIES[cd.rarity]]) + int(data.rules["shop"]["card_upgrade"]) * (lv - 1)
+				check(lv >= 1 and lv <= 6 and int(it["price"]) == base, "loja: nível %d e preço coerentes" % lv)
+	var co: Array = s2._card_options(3, func(cd: CardDef): return cd.id == "rat_horde")
+	for o in co:
+		check(int(o["level"]) >= 4, "oferta de carta da meta (IV) nunca abaixo de IV (%d)" % int(o["level"]))
+	# Martelo da Forja e upgrade da run ignoram cartas no VI; todas no VI vira ouro.
+	var s3 := _sim(7)
+	for ci in s3.cards:
+		ci.level = 6
+	check(s3._level_up_options(-1).is_empty(), "upgrade da run ignora cartas no VI")
+	var g0 := s3.gold
+	s3.gain_relic("forge_hammer")
+	for ci in s3.cards:
+		check(ci.level == 6, "Martelo da Forja não passa do VI")
+	check(s3.gold > g0, "upgrade sem carta elegível vira ouro")
+	s3.cards[0].level = 5
+	check(s3._level_up_options(-1).size() == 1, "só a carta abaixo do VI entra no upgrade")
 
 
 func t_location_rewards() -> void:

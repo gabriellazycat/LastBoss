@@ -365,16 +365,24 @@
  },
  "card_levels": {
   "growth": 0.25,
-  "max": 3
+"max": 6,
+  "upgrade_gold": 75,
+  "_doc": "Níveis I a VI (plano 21/11/2026). +25% por nível (growth): 1,00 / 1,25 / 1,50 / 1,75 / 2,00 / 2,25x. Custo -1 no III e -1 no V (CardDef.cost_at). Especial n3 só no VI. upgrade_gold: ouro que um upgrade de run vira quando todas as cartas já estão no VI (= o preço do upgrade na loja)."
  },
  "offer_upgrades": {
   "lv2_end": 1.0,
-  "lv3_end": 0.5,
+"lv3_end": 0.5,
+  "lv4_end": 0.2,
+  "lv5_end": 0.08,
+  "lv6_end": 0.03,
   "act_end_mult": 2.0,
-  "act_end_lv3_cap": 0.75,
+"act_end_lv3_cap": 0.75,
+  "act_end_lv4_cap": 0.3,
+  "act_end_lv5_cap": 0.15,
+  "act_end_lv6_cap": 0.06,
   "act_end_rare_mult": 2.0,
   "act_end_options": 3,
-  "_doc": "Oferta de carta já melhorada (11/11/2026): p = progresso da run (0 no começo do ato 1, 1 no fim do ato 3). Por oferta, uma sorteada: chance de nível 2+ = p*lv2_end; de nível 3 = p*lv3_end (todas as cartas da oferta no mesmo nível). A carta do fim de ato dobra as chances (act_end_mult; nível 3 limitado a act_end_lv3_cap) e dobra o peso de rara/lendária."
+  "_doc": "Oferta de carta já melhorada (11/11/2026): p = progresso da run (0 no começo do ato 1, 1 no fim do ato 3). Por oferta, uma sorteada: chance de nível 2+ = p*lv2_end; de nível k = p*lvk_end, k = 2..6, encadeadas (todas as cartas da oferta no mesmo nível). Conta (p = 1, fim da run): >=2 100%, >=3 50%, >=4 20%, >=5 8%, >=6 3%; no meio (p = 0,5) metade disso (>=4 10%, >=5 4%, >=6 1,5%); média sobre a run: >=4 10%, >=5 4%, >=6 1,5% por oferta, ou seja ~1 oferta de nível IV a cada 10 e uma de VI a cada ~65 (níveis 4-6 raros, como pedido). A carta do fim de ato dobra as chances (act_end_mult), cada nível limitado a act_end_lvK_cap (0,75/0,3/0,15/0,06), e dobra o peso de rara/lendária. Loja: preço = raridade + card_upgrade*(nível-1), linear até o VI. A oferta nunca fica abaixo do nível da meta daquela carta."
  },
  "deck": {
   "size": 10,

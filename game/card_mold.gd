@@ -41,6 +41,12 @@ static func _motion() -> float:
 	return clampf(float(Settings.v.get("shake", 1.0)), 0.0, 1.0)
 
 
+## Níveis IV a VI (metaprogressão): a moldura de ouro (lv3) tingida + brilho/raios próprios.
+const LV_ROMAN := ["I", "I", "II", "III", "IV", "V", "VI"]
+const LV_TINT := {4: Color(0.78, 0.62, 1.0), 5: Color(1.0, 0.5, 0.45), 6: Color(1.0, 0.97, 0.82)}
+const LV_GLOW := {4: Color(0.62, 0.4, 1.0, 0.95), 5: Color(1.0, 0.3, 0.25, 0.95), 6: Color(1.0, 0.95, 0.7, 1.0)}
+
+
 static func _layer(name: String, size: Vector2) -> TextureRect:
 	var t := TextureRect.new()
 	t.texture = tex(name)
@@ -130,8 +136,8 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 			sb.shadow_size = int(20.0 * sx)
 			sb.shadow_offset = Vector2.ZERO
 		elif level >= 3:
-			sb.shadow_color = Color(1.0, 0.78, 0.27, 0.92)
-			sb.shadow_size = int(24.0 * sx)
+			sb.shadow_color = LV_GLOW.get(level, Color(1.0, 0.78, 0.27, 0.92))
+			sb.shadow_size = int((24.0 + 4.0 * maxi(level - 3, 0)) * sx)
 			sb.shadow_offset = Vector2.ZERO
 	# O fundo colorido (cor do papel do modificador) e a sombra/brilho do nível ficam num Panel do tamanho exato da carta.
 	# Antes eram o estilo do próprio PanelContainer: quando um contêiner esticava a carta (oferta com o rótulo de cima
@@ -166,9 +172,9 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 		rays.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var rm := ShaderMaterial.new()
 		rm.shader = SH_RAYS
-		rm.set_shader_parameter("col", Color(1.0, 0.84, 0.43) if level >= 3 else Color(0.6, 0.8, 1.0))
-		rm.set_shader_parameter("count", 14.0 if level >= 3 else 18.0)
-		rm.set_shader_parameter("speed", 0.12 if level >= 3 else 0.05)
+		rm.set_shader_parameter("col", LV_GLOW.get(level, Color(1.0, 0.84, 0.43) if level >= 3 else Color(0.6, 0.8, 1.0)))
+		rm.set_shader_parameter("count", 14.0 + 2.0 * maxi(level - 3, 0) if level >= 3 else 18.0)
+		rm.set_shader_parameter("speed", 0.12 + 0.03 * maxi(level - 3, 0) if level >= 3 else 0.05)
 		rm.set_shader_parameter("motion", mo)
 		rays.material = rm
 		back.add_child(rays)
@@ -240,7 +246,10 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 	body.add_child(_layer("ribbon_%s_%s" % [type_id, sz], full))
 	# --- nível: moldura de aço (2) ou ouro (3); depois os modificadores por cima (o queimado, por exemplo, se sobressai)
 	if level >= 2:
-		body.add_child(_layer("lv%d_%s" % [mini(level, 3), sz], full))
+		var lvl_frame := _layer("lv%d_%s" % [mini(level, 3), sz], full)
+		if LV_TINT.has(level):
+			lvl_frame.modulate = LV_TINT[level]
+		body.add_child(lvl_frame)
 	for mid in mods:
 		var ov := _layer("mod_%s_%s" % [mid, sz], full)
 		if ov.texture != null:
@@ -255,8 +264,11 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 		sw.material = swm
 		body.add_child(sw)
 	if level >= 2 and not compact:   # na mão a placa taparia o nome; o nível já aparece na moldura e no "+"
-		body.add_child(_layer("plaque%d" % mini(level, 3), full))
-		var num := "II" if level == 2 else "III"
+		var plaque := _layer("plaque%d" % mini(level, 3), full)
+		if LV_TINT.has(level):
+			plaque.modulate = LV_TINT[level]
+		body.add_child(plaque)
+		var num: String = LV_ROMAN[clampi(level, 1, 6)]
 		body.add_child(_label(num, UiDiario.font("fell"), 16, Color(0.11, 0.15, 0.2) if level == 2 else Color(0.29, 0.16, 0.02), Rect2(110, DH - 31, 80, 28)))
 
 	# --- nome na fita

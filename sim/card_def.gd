@@ -33,7 +33,8 @@ var is_spell := false
 var is_structure := false
 var radius := 0.4
 var lvl: Array = []        # números que crescem com o nível: chaves de fx ou count, hp, dps, cost
-var n3: Dictionary = {}    # efeito especial do nível 3
+const N3_LEVEL := 6       # o especial `n3` só vale no nível VI (plano 21/11/2026; a chave segue chamando n3 nos JSON)
+var n3: Dictionary = {}    # efeito especial (nível VI)
 var growth := 0.25         # +25% por nível (rules.card_levels.growth)
 var owner := "common"      # vilão dono da carta: plague, dragon, lich ou common (sim/cards/<dono>.gd)
 var ops: Array = []        # efeito declarado em dados, rodado por CardFxLib ao jogar (docs/CARD_FX.md)
@@ -90,7 +91,7 @@ func is_field() -> bool:
 	return category == "field"
 
 
-## Multiplicador do nível: 1, 1 + g, 1 + 2g.
+## Multiplicador do nível: 1 + g·(nível−1); com g = 0,25 vai de 1× (I) a 2,25× (VI).
 func mult(level: int) -> float:
 	return 1.0 + growth * (level - 1)
 
@@ -99,9 +100,9 @@ func scales(key: String) -> bool:
 	return lvl.has(key)
 
 
-## Número de fx no nível dado (o especial do N3 sobrepõe a mesma chave).
+## Número de fx no nível dado (o especial n3 sobrepõe a mesma chave, só no nível VI).
 func fxv(key: String, level: int, default := 0.0) -> float:
-	if level >= 3 and n3.has(key):
+	if level >= N3_LEVEL and n3.has(key):
 		return float(n3[key])
 	var v := float(fx.get(key, default))
 	return v * mult(level) if scales(key) else v
@@ -119,10 +120,11 @@ func dps_at(level: int) -> float:
 	return dps * mult(level) if scales("dps") else dps
 
 
-## Cartas sem número para crescer ficam 1 mais baratas por nível (mínimo 1).
+## Cartas sem número para crescer ficam 1 mais baratas no nível III e mais 1 no V (desconto máx. 2; mínimo 1).
 func cost_at(level: int) -> int:
-	return maxi(1, cost - (level - 1)) if scales("cost") else cost
+	var off := (1 if level >= 3 else 0) + (1 if level >= 5 else 0)
+	return maxi(1, cost - off) if scales("cost") else cost
 
 
 func has_n3(level: int, key: String) -> bool:
-	return level >= 3 and n3.has(key)
+	return level >= N3_LEVEL and n3.has(key)
