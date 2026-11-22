@@ -1290,3 +1290,49 @@ UI_ENDLESS_OVER,{n} PARTIES,{n} PARTIES
 UI_ENDLESS_NEW_BEST,Novo recorde deste vilão!,New best for this villain!
 UI_ENDLESS_BEST,Recorde deste vilão: {n} parties.,Best for this villain: {n} parties.
 PHASE_ENDLESS,Horda sem fim,Endless Horde
+# ---- Frente E: tela do Covil radial (22/11/2026) ----,,
+UI_COVIL_TITLE,Covil,Lair
+UI_COVIL_ALMAS,Almas,Souls
+UI_COVIL_HINT,Arraste para mover. Roda do mouse para aproximar.,Drag to move. Mouse wheel to zoom.
+UI_COVIL_FIT,Ver tudo,Show all
+UI_COVIL_START,Começar run,Start run
+UI_COVIL_LIBRARY,Biblioteca,Library
+UI_COVIL_REFUND_ALL,Reembolsar tudo,Refund all
+UI_COVIL_REFUND_ASK,Devolver todas as melhorias? As Almas voltam por inteiro.,Return every upgrade? All Souls come back.
+UI_COVIL_YES,Sim,Yes
+UI_COVIL_NO,Não,No
+UI_COVIL_BACK,Voltar,Back
+UI_COVIL_CENTER,Coração do covil,Heart of the lair
+UI_COVIL_LEVEL,Nível {n}/{m},Level {n}/{m}
+UI_COVIL_NEXT,Próximo nível: {c} Almas,Next level: {c} Souls
+UI_COVIL_MAXED,Nível máximo,Max level
+UI_COVIL_BUY,Comprar · {c},Buy · {c}
+UI_COVIL_REFUND,Reembolsar,Refund
+UI_COVIL_NEED_PARENT,Compre antes: {p},Buy first: {p}
+UI_COVIL_SEALED,Chegue ao ato 2,Reach act 2
+UI_COVIL_NEED_ALMAS,Faltam {n} Almas,{n} more Souls needed
+UI_COVIL_PIN,Clique para fixar e comprar,Click to pin and buy
+UI_COVIL_REFUND_BLOCKED,Reembolse antes os nós seguintes,Refund the following nodes first
+UI_COVIL_CLOSE,Fechar,Close
+META_SEC_atributos,Atributos,Attributes
+META_SEC_locais,Locais,Places
+META_SEC_arena,Arena,Arena
+META_SEC_reliquias,Relíquias,Relics
+META_SEC_troca_ato,Troca de ato,Act switch
+META_SEC_geral,Geral,General
+META_atr_elixir_max_1,Elixir máximo,Max elixir
+META_atr_elixir_max_1_d,Aumenta o elixir máximo que você guarda.,Raises the maximum elixir you can hold.
+META_atr_elixir_regen_1,Fluxo de elixir,Elixir flow
+META_atr_elixir_regen_1_d,O elixir enche mais rápido.,Elixir refills faster.
+META_loc_ritual_1,Ritual generoso,Generous ritual
+META_loc_ritual_1_d,O ritual rende mais elixir e dura mais.,The ritual yields more elixir and lasts longer.
+META_are_boss_hp_1,Corpo do chefe,Boss body
+META_are_boss_hp_1_d,As partes do chefe têm mais vida.,The boss's parts have more health.
+META_rel_slot_1,Vitrine de relíquias,Relic showcase
+META_rel_slot_1_d,Uma opção a mais ao escolher relíquias.,One extra option when choosing relics.
+META_ato_switch_1,Fôlego da travessia,Crossing breath
+META_ato_switch_1_d,Ao trocar de ato o elixir volta em parte.,Elixir partly refills when the act changes.
+META_ger_offer_hero,Oferta por herói,Offer per hero
+META_ger_offer_hero_d,Uma oferta de carta a cada herói derrotado.,A card offer for every defeated hero.
+META_ger_gold_start_1,Cofre inicial,Starting purse
+META_ger_gold_start_1_d,Você começa a run com mais ouro.,You start the run with more gold.

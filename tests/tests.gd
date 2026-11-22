@@ -85,6 +85,7 @@ func _ready() -> void:
 	t_round_2026_11_13()
 	t_ui_spacing()
 	t_contracts()
+	t_covil_ui()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -3721,3 +3722,67 @@ func t_contracts() -> void:
 	var sim := Sim.new()
 	sim.setup(data, 1, "plague", [], [], 1, {"mao": {"inicial": 1}})
 	check(sim.party_powers().is_empty() and sim.hand_size >= 6, "setup com mods e party_powers vazio")
+
+
+## Covil radial (frente E, 22/11/2026): instancia com a arvore de mentira, posicoes sem sobreposicao, comprar/reembolsar.
+func t_covil_ui() -> void:
+	var path := "user://test_covil_ui.save"
+	var d2 := GameData.load_dir()
+	CovilDemo.use_fake_tree(d2)
+	for pair in [[data, "arvore do arquivo"], [d2, "arvore de mentira"]]:
+		var gd: GameData = pair[0]
+		var lay := MetaTreeView.compute_layout(gd.meta_tree)
+		var pos: Dictionary = lay["pos"]
+		check(pos.size() == gd.meta_nodes.size(), "covil: todo no tem posicao (%s: %d)" % [pair[1], pos.size()])
+		var ids: Array = pos.keys()
+		var min_d := 1e9
+		for i in ids.size():
+			min_d = minf(min_d, (pos[ids[i]] as Vector2).length() - MetaTreeView.HEART_R)
+			for j in range(i + 1, ids.size()):
+				min_d = minf(min_d, (pos[ids[i]] as Vector2).distance_to(pos[ids[j]]))
+		check(min_d >= MetaTreeView.NODE_R * 2.0 + 4.0, "covil: nos sem sobreposicao (%s, minimo %.1f)" % [pair[1], min_d])
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+		var m := MetaSave.load_or_new(gd, path)
+		m.add_almas(1000)
+		var sc := CovilScreen.new()
+		sc.act2_override = 0
+		sc.setup(gd, m)
+		add_child(sc)
+		check(sc.view != null and sc.almas_l.text == "1000", "covil: instancia sem erro (%s)" % pair[1])
+		# Compra e reembolso: filho so depois do pai, saldo e estado acompanham.
+		var root := ""
+		var child := ""
+		for id in gd.meta_nodes:
+			var nd: Dictionary = gd.meta_nodes[id]
+			if str(nd["parent"]) == "" and str(nd["sector"]) != "troca_ato" and root == "":
+				for k in gd.meta_nodes:
+					if str(gd.meta_nodes[k]["parent"]) == id:
+						root = id
+						child = k
+						break
+		check(root != "", "covil: achou par pai/filho (%s)" % pair[1])
+		var v: MetaTreeView = sc.view
+		check(v.state_of(root) == "available" and v.state_of(child) == "locked", "covil: estados antes da compra")
+		check(not v.buy_node(child), "covil: filho nao compra antes do pai")
+		var cost: int = m.node_cost(root)
+		check(v.buy_node(root) and m.almas == 1000 - cost and sc.almas_l.text == str(1000 - cost), "covil: comprar desconta e atualiza o saldo")
+		check(v.state_of(child) == "available", "covil: filho abre depois do pai")
+		check(v.buy_node(child), "covil: compra o filho")
+		check(v.refund_node(root) == 0 and m.node_level(root) == 1, "covil: pai nao reembolsa com filho comprado")
+		var back := v.refund_node(child)
+		check(back > 0 and m.node_level(child) == 0, "covil: reembolsa o filho")
+		check(v.refund_node(root) == cost and m.almas == 1000 and sc.almas_l.text == "1000", "covil: reembolsa o pai e o saldo volta")
+		# Setor da troca de ato: trancado ate chegar ao ato 2.
+		var ato := ""
+		for id in gd.meta_nodes:
+			if str(gd.meta_nodes[id]["sector"]) == "troca_ato" and str(gd.meta_nodes[id]["parent"]) == "":
+				ato = id
+		if ato != "":
+			check(v.state_of(ato) == "sealed" and not v.buy_node(ato), "covil: troca de ato trancada antes do ato 2")
+			sc.act2_override = 1
+			sc.refresh()
+			check(v.state_of(ato) == "available" and v.buy_node(ato), "covil: troca de ato abre depois do ato 2")
+		sc.confirm_refund_all()
+		check(m.almas == m.almas_earned and m.upgrades.is_empty(), "covil: reembolsar tudo devolve tudo")
+		sc.queue_free()
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
