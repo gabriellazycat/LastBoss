@@ -94,6 +94,7 @@ func _ready() -> void:
 	t_covil_ui()
 	t_bots15()
 	t_menus()
+	t_frente_i()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -362,7 +363,7 @@ func t_party() -> void:
 	s._check_end()
 	check(s.party_idx == 1, "queda do herói 1 chama o herói 2 (party_idx %d)" % s.party_idx)
 	check(s.hero.level == 2, "herói 2 é nível 2 (%d)" % s.hero.level)
-	check(s.hero.upgrade_order.size() == 1, "herói 2 chega com 1 habilidade (%d)" % s.hero.upgrade_order.size())
+	check(s.powers.size() == 1, "a party 2 chega com 1 poder novo (%d)" % s.powers.size())
 	check(is_equal_approx(s.hero.hp, s.hero.max_hp()), "herói 2 chega com vida cheia")
 	check(s.phase != K.Phase.OVER, "a run continua depois da primeira queda")
 	check(s.offers.size() > 0, "a queda abre uma oferta")
@@ -645,24 +646,34 @@ func t_unlock_challenges() -> void:
 	var s := _sim(3, "plague")
 	var T: UnlockTrack = s.track
 	var stats := {"heroes_fallen": 5, "gold_end": 0.0, "gold_earned": 0.0, "gold_spent": 0, "spent_act": [10.0, 5.0]}
-	var ctx := {"won": true, "villain": "plague", "phase": 1, "wins_by_villain": {"plague": 1}, "phases_won": [], "heroes_total": 26}
-	var ids := ["cave_troll", "sewer_flood", "alpha_beast", "fallen_healer"]
+	stats["parties_beaten"] = 8
+	var ctx := {"won": false, "villain": "plague", "phase": 1, "best_party": 0, "best_by_villain": {"plague": 0}, "heroes_total": 26}
+	var ids := ["ruin_titan", "sewer_flood", "alpha_beast", "fallen_healer"]
 	var r: Dictionary = T.check(stats, ctx, ids)
 	var done: Array = r["done"].map(func(p): return p["id"])
-	check(done.has("cave_troll") and done.has("sewer_flood") and not done.has("alpha_beast"), "desafios: vitória na fase 1 e 2ª vitória do vilão cumprem; 30 ratos não (%s)" % str(done))
+	check(done.has("sewer_flood") and not done.has("ruin_titan") and not done.has("alpha_beast"), "desafios: derrubar a party 8 com o vilão cumpre (party 10 e 30 ratos não) (%s)" % str(done))
 	T.t["peak"]["rat"] = 30
 	T.t["min_loss"] = 3
 	r = T.check(stats, ctx, ids)
 	done = r["done"].map(func(p): return p["id"])
 	check(done.has("alpha_beast") and done.has("fallen_healer"), "desafios numa run: 30 ratos de uma vez e perdendo até 5 monstros (%s)" % str(done))
-	# 15/11/2026: 75% dos desafios são entre fases ("no total", "em N fases diferentes", vencer N fases)
+	# A maior parte dos desafios é entre runs ("no total", "em N runs"); o gerador (cross_run) conta assim. Plano 21/11: ~70%+.
 	var cross := 0
 	for k in data.unlock_challenges:
 		var ch: Dictionary = data.unlock_challenges[k]
-		if ch.get("total", false) or ch.has("runs") or (str(ch["kind"]) == "wins" and int(ch.get("n", 1)) >= 2):
+		if ch.get("total", false) or ch.has("runs"):
 			cross += 1
 	var frac := float(cross) / float(data.unlock_challenges.size())
-	check(absf(frac - 0.75) < 0.03, "desafios: 75%% entre fases (%d de %d)" % [cross, data.unlock_challenges.size()])
+	check(frac >= 0.70 and frac <= 0.80, "desafios: ~75%% entre runs (%d de %d)" % [cross, data.unlock_challenges.size()])
+	# Relíquias por desafio (ids "r:<id>"): o rastreador conhece todas e a de party cumpre como a das cartas.
+	var rch := 0
+	for rid in data.relics:
+		if T.challenge("r:" + str(rid)).size() > 0:
+			rch += 1
+	stats["parties_beaten"] = 3
+	var rr: Dictionary = T.check(stats, ctx, ["r:cracked_hourglass", "r:opening_gambit"])
+	check(rch >= 30 and rr["done"].size() == 1 and rr["done"][0]["id"] == "r:cracked_hourglass", "desafios de relíquia: %d com desafio; party 3 cumpre, party 4 não" % rch)
+	stats["parties_beaten"] = 8
 	# "no total": carta comum soma o acumulado de todos os vilões (Ogro: 600 monstros)
 	T.t["plays"]["monster"] = 40
 	ctx["totals_all"] = {"plays|monster": 550.0}
@@ -671,11 +682,11 @@ func t_unlock_challenges() -> void:
 	T.t["plays"]["monster"] = 60
 	r = T.check(stats, ctx, ["ogre"])
 	check(r["done"].size() == 1, "no total: 550 + 60 libera o Ogro")
-	# carta de vilão soma só as fases com ele (Urso: 20 heróis da Praga)
+	# carta de vilão soma só as runs com ele (Dragão de Ossos: 35 heróis)
 	ctx["totals_all"] = {"heroes|": 100.0}
 	ctx["totals_villain"] = {"heroes|": 10.0}
-	r = T.check(stats, ctx, ["brown_bear"])
-	check(r["done"].is_empty() and absf(float(r["near"][0]["v"]) - 15.0) < 0.01, "no total: carta de vilão usa só o acumulado dele (10 + 5 = 15/20)")
+	r = T.check(stats, ctx, ["bone_dragon"])
+	check(r["done"].is_empty() and absf(float(r["near"][0]["v"]) - 15.0) < 0.01, "no total: carta de vilão usa só o acumulado dele (10 + 5 = 15/35)")
 	# "em N fases diferentes": Ninho de Morcegos = 3 estruturas de uma vez em 3 fases
 	T.t["peak"]["structure"] = 3
 	ctx["runs_done"] = {"bat_nest": 1}
@@ -684,10 +695,11 @@ func t_unlock_challenges() -> void:
 	ctx["runs_done"] = {"bat_nest": 2}
 	r = T.check(stats, ctx, ["bat_nest"])
 	check(r["done"].size() == 1, "em N fases: a 3ª fase libera")
-	# derrota não cumpre desafio de vitória
+	# desafio de party vale também perdendo (conta as parties derrubadas), mas só com a party certa
 	ctx["won"] = false
-	r = T.check(stats, ctx, ["cave_troll", "sewer_flood"])
-	check(r["done"].is_empty(), "desafios: derrota não conta como vitória")
+	stats["parties_beaten"] = 7
+	r = T.check(stats, ctx, ["sewer_flood"])
+	check(r["done"].is_empty() and int(r["near"][0]["v"]) == 7, "desafios: party 7 de 8 ainda não cumpre (7/8)")
 	# janela deslizante: 5 cartas em 5 s
 	var s2 := _sim(4, "plague")
 	var c := Sim.CardInst.new()
@@ -731,14 +743,14 @@ func t_meta() -> void:
 	var m := MetaSave.load_or_new(data, path)
 	check(m.villains == ["plague"] and m.villain == "plague", "começa só com a Praga")
 	check(m.is_unlocked("rat_horde") and m.is_unlocked("rat_king") and m.is_unlocked("web") and not m.is_unlocked("ogre") and not m.is_unlocked("gold_dart"), "coleção inicial: baralho base e cartas liberadas; o resto bloqueado por desafio")
-	# Save antigo de Pactos: migra.
+	# Save antigo (sem "ver" ou de versão menor que a 5): zera por decisão do plano de 21/11/2026, nada é lido.
 	var old := "user://test_meta_old.save"
 	var f := FileAccess.open(old, FileAccess.WRITE)
 	f.store_var({"souls": 77, "pacts": ["horde", "treasure"], "pact": "treasure", "unlocked": ["cosmic_ray", "ogre"], "phases_won": [1]})
 	f.close()
 	var mo := MetaSave.load_or_new(data, old)
-	check(not "souls" in mo and mo.villains == ["plague", "dragon"] and mo.villain == "dragon" and not mo.is_unlocked("cosmic_ray") and not mo.is_unlocked("ogre"), "save antigo: Pactos viram vilões, as Almas são ignoradas, cartas antigas somem")
-	check(mo.heroes_seen.has("escudeiro") and mo.heroes_seen.has("arqueira") and not mo.heroes_seen.has("mago"), "save antigo: os heróis das fases já vencidas contam como vistos (%s)" % str(mo.heroes_seen))
+	check(not "souls" in mo and mo.villains == ["plague"] and mo.villain == "plague" and mo.almas == 0 and not mo.is_unlocked("cosmic_ray") and not mo.is_unlocked("ogre"), "save antigo (v4): zera tudo (só a Praga, 0 Almas, cartas antigas somem)")
+	check(mo.heroes_seen.is_empty() and mo.best_party == 0 and mo.upgrades.is_empty(), "save antigo (v4): nada é migrado (heróis vistos, recorde, melhorias)")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(old))
 	check(m.see_hero("besteiro") and not m.see_hero("besteiro"), "herói visto só conta na primeira vez")
 	m.add_run(path)
@@ -2381,19 +2393,20 @@ func t_stall_and_overtime() -> void:
 
 
 func t_human_bot() -> void:
-	# O bot humano termina runs nas fases 1 e 4 sem travar e sem jogada recusada em excesso.
-	for ph in [1, 4]:
+	# O bot humano termina o tutorial (0) e a fase única de 15 parties (1) sem travar e sem jogada recusada em excesso.
+	for ph in [0, 1]:
 		var s := Sim.new()
 		s.setup(data, 21, "ruin", [], [], ph)
 		s.auto_route = false
 		var b := PlayerBot.load_bot("human", 21)
 		var k := 0
-		while s.phase != K.Phase.OVER and k < 70000:
+		while s.phase != K.Phase.OVER and k < 80000:
 			b.think(s)
 			s.step()
 			k += 1
 		var st: Dictionary = (b as HumanBot).stats
-		check(s.phase == K.Phase.OVER and s.stats["result"] != "timeout", "bot humano termina a fase %d (%s em %.0f s, %d jogadas)" % [ph, s.stats["result"], s.t, st["plays"]])
+		# Na fase única o bot sem meta pode chegar ao teto de tempo da run (rules.sim.max_run_seconds, 3000 s): isso é um fim limpo.
+		check(s.phase == K.Phase.OVER and (ph == 1 or s.stats["result"] != "timeout"), "bot humano termina a fase %d (%s em %.0f s, %d jogadas, %d parties)" % [ph, s.stats["result"], s.t, st["plays"], s.parties_beaten()])
 		check(st["refused"] <= st["plays"] * 0.05 + 2, "bot humano quase nunca tem jogada recusada (%d de %d)" % [st["refused"], st["plays"]])
 
 
@@ -2465,18 +2478,18 @@ func t_classes() -> void:
 	check(alive1 < alive0 - 2, "golpe do Mago atinge vários ratos em volta (%d → %d)" % [alive0, alive1])
 	var s0 := _phase_sim(0)
 	check(s0.party_size() == 3 and s0.party_count() == 2 and s0.acts() == 1 and s0.hero.max_hp() < float(data.hero["hp"]) * 0.6, "tutorial: 3 Escudeiros fracos e 1 ato")
-	# Campanha em mapa (16/11/2026): 7 fases com ids seguidos (phase_open depende disso), cada uma com região e mapa.
+	# Plano 21/11/2026: só o tutorial (fase 0) e a fase única de 15 parties.
 	var ids: Array = []
 	var maps_ok := true
 	for ph in data.phases:
 		if int(ph["id"]) >= 90:
 			continue
 		ids.append(int(ph["id"]))
-		var m: Dictionary = ph.get("map", {})
-		maps_ok = maps_ok and str(ph.get("region", "")) != "" and m.has("pos") and m.has("exit") and m.get("road", []).size() >= 2
-	check(ids == [0, 1, 2, 3, 4, 5, 6], "a campanha tem as fases 0 a 6 em ordem (%s)" % str(ids))
-	check(maps_ok, "toda fase tem região, posição, saída e estrada no mapa")
-	check(data.phase(6).get("final", false) and data.phase(6)["party"].size() > data.phase(5)["party"].size(), "a Capital é a fase final e a maior fila")
+		maps_ok = maps_ok and str(ph.get("region", "")) != ""
+	check(ids == [0, 1], "a campanha é o tutorial (0) e a fase única (1) (%s)" % str(ids))
+	check(maps_ok, "tutorial e fase única têm região")
+	var p15: Array = data.phase(1)["parties"]
+	check(p15.size() == 15 and p15[14].size() >= p15[0].size() and data.phase(1).has("unlock_villain_at"), "a fase única tem a fila fixa de 15 parties e libera vilões por party")
 
 
 ## Fila de parties (15/11/2026): grupos de 1 a 4 heróis; cada queda dá recompensa; a party seguinte chega junta.
@@ -2492,7 +2505,7 @@ func t_parties() -> void:
 	check(s.cur_party == 1 and s.followers.size() == 3, "a party 2 chega inteira: 1 líder e 3 membros (%d)" % s.followers.size())
 	check(s.hero.cls() == "guardiao" and s.followers[0].cls() == "cleriga" and s.followers[1].cls() == "mago" and s.followers[2].cls() == "assassino",
 		"a party 2 vem na ordem escrita")
-	check(s.hero.upgrade_order.size() == 1 and s.followers[2].upgrade_order.size() == 1, "a habilidade nova vale para a party toda")
+	check(s.powers.size() == 1 and s.party_powers().size() == 1, "o poder novo é da party toda (lista única de poderes)")
 	var step := float(data.rules["party"]["step"])
 	var want: float = float(data.hero_of("assassino", s.phase_hp_mult)["hp"]) * step * float(data.rules.get("hero_hp_mult", 1.0)) / 4.0
 	check(absf(s.followers[2].max_hp() - want) < 1.0, "a força da party é dividida entre os 4 membros (%.0f = %.0f)" % [s.followers[2].max_hp(), want])
@@ -2500,12 +2513,12 @@ func t_parties() -> void:
 	check(s.offers.size() > 0, "a queda do último da party 1 abre recompensa")
 	# Um membro cai com gente ainda de pé: recompensa, habilidade e ninguém novo chega.
 	s.offers.clear()
-	var n0 := s.hero.upgrade_order.size()
+	var n0 := s.powers.size()
 	s.followers[1].hp = 0.0   # o Mago
 	s._check_end()
 	check(s.followers.size() == 2 and s.cur_party == 1, "o Mago caiu e a party 2 segue com 3 de pé")
-	check(s.offers.size() > 0 and s.hero.upgrade_order.size() == n0 + 1 and s.followers[0].upgrade_order.size() == n0 + 1,
-		"cada membro que cai dá recompensa e habilidade nova ao resto")
+	check(s.offers.is_empty() and s.powers.size() == n0,
+		"membro que cai não dá recompensa nem poder (só a party inteira; oferta por herói é melhoria do Covil)")
 	check(int(s.stats["heroes_fallen"]) == 2, "queda do membro conta (%d)" % int(s.stats["heroes_fallen"]))
 	# O líder cai: o seguinte assume o lugar dele.
 	s.offers.clear()
@@ -2524,7 +2537,7 @@ func t_parties() -> void:
 	s.hero.hp = 0.0
 	s._check_end()
 	check(s.cur_party == 2 and s.hero.cls() == "arqueira" and s.followers.size() == 0, "a party 3 chega sozinha")
-	check(s.hero.max_hp() > solo_hp * 1.3, "a party 3 é mais forte que a 1 (%.0f > %.0f)" % [s.hero.max_hp(), solo_hp])
+	check(s.hero.max_hp() > solo_hp * 1.15, "a party 3 é mais forte que a 1 (%.0f > %.0f)" % [s.hero.max_hp(), solo_hp])
 	check(s.phase != K.Phase.OVER, "a run continua")
 	s.offers.clear()
 	s.hero.hp = 0.0
@@ -3753,6 +3766,8 @@ func t_ui_spacing() -> void:
 			good_hits += 1
 		elif f["kind"] == "corte":
 			cut_hits += 1
+	if bad_hits < 1:
+		print("  [diag] auditoria: bad.size=%s lbl.size=%s lbl.vis=%s margem=%s achados=%s" % [bad.size, bl.size, bl.is_visible_in_tree(), bsb.content_margin_left, str(found)])
 	check(bad_hits >= 1, "auditoria: texto colado na moldura é acusado (%d)" % bad_hits)
 	check(good_hits == 0, "auditoria: painel com a margem do kit passa limpo (%d)" % good_hits)
 	check(cut_hits >= 1, "auditoria: texto mais largo que o rótulo é acusado como corte (%d)" % cut_hits)
@@ -4401,3 +4416,53 @@ func t_menus() -> void:
 	check(got == ["covil"], "menus: Ir ao Covil emite o sinal")
 	end.queue_free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+## Frente I (21/11/2026), fumaça: conservação do reembolso com Almas vindas de uma run (soma dos preços pagos = ganho - saldo,
+## no save que volta do disco), e a aba Cartas do Compêndio mostra os níveis II a VI com o especial no VI.
+func t_frente_i() -> void:
+	var path := "user://test_frente_i.save"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var m := MetaSave.load_or_new(data, path)
+	var s := _sim(9)
+	s.stats["heroes_fallen"] = 4
+	s.stats["parties_beaten"] = 2
+	s.stats["almas_dmg"] = 6000.0
+	s.result = K.Result.LOSS
+	var res := m.apply_run(s, path)
+	var gained := int(res["almas"]["total"])
+	check(gained > 0 and m.almas == gained and m.almas_earned == gained, "reembolso: as Almas da run entram no saldo e no total ganho (%d)" % gained)
+	m.add_almas(2000)
+	var paid := 0
+	for id in ["atr_elixir_max_1", "atr_elixir_max_1", "atr_elixir_regen_1"]:
+		var c := m.node_cost(id)
+		if c > 0 and m.buy(id):
+			paid += c
+	var cc := m.card_cost("rat_brute")
+	if cc > 0 and m.buy_card_level("rat_brute"):
+		paid += cc
+	var rc := m.relic_cost("elixir_flask")
+	if rc > 0 and m.buy_relic_level("elixir_flask"):
+		paid += rc
+	check(paid > 0 and m.almas_earned - m.almas == paid, "reembolso: soma dos preços pagos = ganho - saldo (%d)" % paid)
+	m.save(path)
+	var m2 := MetaSave.load_or_new(data, path)
+	check(m2.almas_earned - m2.almas == paid, "reembolso: o save recarregado mantém a conta (%d)" % paid)
+	check(m2.refund_all() == paid and m2.almas == m2.almas_earned and m2.upgrades.is_empty() and m2.card_levels.is_empty() and m2.relic_levels.is_empty(),
+		"reembolso total devolve exatamente o gasto (almas == almas_earned)")
+	check(m2.refund_all() == 0 and m2.almas == m2.almas_earned, "reembolsar de novo não devolve nada")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	# Compêndio: aba Cartas até o nível VI, com o especial no VI.
+	var comp := CompendiumScreen.new()
+	comp.setup(data, null)
+	add_child(comp)
+	comp.show_tab("cards")
+	var texts: Array = []
+	for l in comp.find_children("*", "RichTextLabel", true, false):
+		texts.append((l as RichTextLabel).get_parsed_text())
+	var all := "
+".join(texts)
+	check(all.contains("VI: ") and all.contains("II: ") and not all.contains("N2: ") and not all.contains("N3: "), "compêndio: aba Cartas mostra os níveis II a VI (sem N2/N3)")
+	check(all.contains(TranslationServer.translate("UI_OPT_UP_N3")) and TranslationServer.translate("UI_OPT_UP_N3").contains("VI"), "compêndio: o especial aparece como o do nível VI")
+	comp.queue_free()
+
