@@ -336,3 +336,21 @@ G="/c/Users/gabri/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngin
 - `--menutest` (fluxo do menu com o mouse, janela real): `"$G" --position -6000,0 --path . -- --menutest --hud=7`.
 - Janela sempre em segundo plano (`--position -6000,0`), sem mover o mouse; capturas: `tools/capture_*.sh`.
 - Todo teste que salva usa caminho temporário (`user://test_*.save`).
+
+
+## 9. Verificação final (22/11/2026, coordenador)
+
+Script: `tools/final_check.gd` (`godot --headless --path . --script res://tools/final_check.gd -- --seeds=1,2 --cap=9000`).
+O limite `sim.max_run_seconds` foi elevado a 9000 s **só dentro do script** (o jogo segue com 3000 s em `data/rules.json`).
+
+- Save v5 ida e volta: OK. Reembolso total: `almas == almas_earned` (5000 de 5000): OK.
+- Bot `heuristic`, deck da Praga, 4 sementes (o bot não usa Biblioteca nem poderes ativos; é só um sinal de números absurdos):
+
+| Semente | Sem meta | Meta no máximo |
+|---|---|---|
+| 1 | perde na party 8 (3362 s) | perde na party 8 (2754 s) |
+| 2 | perde na party 8 (3385 s) | **vence** (4332 s) |
+| 3 | perde na party 5 (3270 s) | **vence** (WIN_EARLY, 4526 s) |
+| 4 | perde na party 8 (4004 s) | perde na party 13 (3180 s) |
+
+Leitura: sem meta o bot sempre perde (party 5 a 8, **acima** da meta de 4–5 do plano: o bot é melhor que o jogador médio ou a curva está branda no começo); com a meta no máximo vence em 2 de 4 e chega à party 13–14 nas demais. Duração de 3000–4500 s simulados (50–75 min), acima dos ~45 min visados. **Nada disso é calibração**: é a rodada de balanço seguinte (ver riscos, seção 7).
