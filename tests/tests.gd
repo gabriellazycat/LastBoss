@@ -87,6 +87,8 @@ func _ready() -> void:
 	t_round_2026_11_13()
 	t_ui_spacing()
 	t_contracts()
+	t_meta5()
+
 	t_powers()
 	t_library_ui()
 	print("falhas: ", fails)
@@ -3850,6 +3852,127 @@ func t_contracts() -> void:
 	sim.setup(data, 1, "plague", [], [], 1, {"mao": {"inicial": 1}})
 	check(sim.party_powers().is_empty() and sim.hand_size >= 6, "setup com mods e party_powers vazio")
 
+
+## Frente D (21/11/2026): MetaSave v5, Almas, reembolso, deck de 19, reliquias liberadas e fallback de raridade.
+func t_meta5() -> void:
+	var path := "user://test_meta5.save"
+	var abs_path := ProjectSettings.globalize_path(path)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(abs_path)
+	# arvore: pais existem, fx dentro de DEFAULTS, custos crescentes
+	var defs := MetaApply.defaults()
+	var ok_tree := data.meta_nodes.size() >= 40
+	for id in data.meta_nodes:
+		var nd: Dictionary = data.meta_nodes[id]
+		var par := str(nd["parent"])
+		ok_tree = ok_tree and (par == "" or data.meta_nodes.has(par))
+		for k in nd["fx"]:
+			var parts := str(k).split(".")
+			if parts[0] == "locais":
+				continue   # locais.<local>.<chave>: deltas sobre a regra do local
+			var d: Variant = defs
+			for pk in parts:
+				if d is Dictionary and (d as Dictionary).has(pk):
+					d = d[pk]
+				else:
+					ok_tree = false
+					printerr("fx fora de DEFAULTS: ", id, " ", k)
+					break
+	check(ok_tree, "meta_tree: pais existem e todo fx esta em MetaApply.DEFAULTS (%d nos)" % data.meta_nodes.size())
+	# save v5 ida e volta; save antigo zera
+	var m := MetaSave.load_or_new(data, path)
+	check(m.relics_unlocked.size() == 12 and m.is_relic_unlocked("elixir_flask") and not m.is_relic_unlocked("heart_of_well"), "comeca so com as 12 reliquias livres")
+	m.add_almas(5000)
+	check(m.buy("atr_elixir_max_1") and m.buy("atr_elixir_max_1") and m.buy("atr_elixir_regen_1") and m.buy("ger_card_disc_1"), "compra nos")
+	if not m.unlocked.has("ogre"):
+		m.unlocked.append("ogre")
+	check(m.buy_card_level("rat_brute") and m.buy_card_level("rat_brute") and m.card_level("rat_brute") == 3, "sobe a carta ate III")
+	check(not m.buy_card_level("ogre") or m.unlocked.has("ogre"), "carta bloqueada nao sobe")
+	var locked_card := ""
+	for c in data.pool:
+		if not m.unlocked.has(c.id):
+			locked_card = c.id
+			break
+	check(locked_card != "" and not m.buy_card_level(locked_card), "carta nao liberada nao sobe")
+	for k in 10:
+		m.buy_card_level("rat_brute")
+	check(m.card_level("rat_brute") == 6 and m.card_cost("rat_brute") == -1 and not m.buy_card_level("rat_brute"), "teto da carta e VI")
+	check(m.buy_relic_level("elixir_flask") and m.buy_relic_level("elixir_flask") and not m.buy_relic_level("elixir_flask") and m.relic_level("elixir_flask") == 3, "reliquia sobe de 1 a 3")
+	check(not m.buy_relic_level("heart_of_well"), "reliquia bloqueada nao sobe")
+	m.relics_unlocked.append("heart_of_well")
+	check(m.buy_relic_level("heart_of_well"), "reliquia liberada sobe")
+	m.see_act2()
+	m.reach_party(7)
+	m.save()
+	var m2 := MetaSave.load_or_new(data, path)
+	check(m2.almas == m.almas and m2.almas_earned == 5000 and m2.node_level("atr_elixir_max_1") == 2 and m2.card_level("rat_brute") == 6 \
+		and m2.relic_level("elixir_flask") == 3 and m2.best_party == 7 and m2.act2_reached and m2.is_relic_unlocked("heart_of_well"), "save v5 ida e volta")
+	var ver4 := FileAccess.open(path, FileAccess.WRITE)
+	ver4.store_var({"ver": 4, "almas": 999, "upgrades": {"atr_elixir_max_1": 3}, "phases_won": [1, 2]})
+	ver4 = null
+	check(MetaSave.load_or_new(data, path).almas == 0, "save de versao menor zera")
+	# reembolso conserva
+	var spent := m2.almas_earned - m2.almas
+	var back := m2.refund_all()
+	check(back == spent and spent > 0 and m2.almas == m2.almas_earned and m2.upgrades.is_empty() and m2.card_levels.is_empty() and m2.relic_levels.is_empty(), "refund_all conserva (%d de volta)" % back)
+	check(not m2.buy("atr_elixir_regen_1") and m2.buy("atr_elixir_max_1"), "filho so compra depois do pai")
+	check(m2.refund("atr_elixir_max_1") > 0 and m2.almas == m2.almas_earned, "refund de no devolve o preco")
+	# Almas por dano: teto na vida maxima de cada heroi
+	var s := _sim(3)
+	var hp := s.hero.max_hp()
+	for k in 4:
+		s.hero.hp = s.hero.max_hp()
+		s.damage_hero(hp * 0.5, s.hero.x + 1.0, s.hero.y, 0, SimHero.DMG_PIERCE, "test")
+	var ad := float(s.stats.get("almas_dmg", 0.0))
+	check(ad > 0.0 and ad <= hp + 0.01, "dano em Almas conta so ate a vida maxima do heroi (%.0f de %.0f)" % [ad, hp])
+	var g := m2.almas_for(60000.0, 6)
+	check(int(g["dmg"]) == 200 and int(g["heroes"]) == 48 and int(g["total"]) == 248, "almas_for: dano/300 + 8 por heroi (%s)" % str(g))
+	# apply_run grava e mantem Almas ao perder
+	s.stats["heroes_fallen"] = 2
+	s.stats["parties_beaten"] = 3
+	s.result = K.Result.LOSS
+	var m3 := MetaSave.load_or_new(data, path)
+	m3.file = path
+	var before := m3.almas
+	var res := m3.apply_run(s, path)
+	check(m3.almas == before + int(res["almas"]["total"]) and int(res["almas"]["total"]) > 0 and m3.best_party == 3 and m3.runs == 1 and res["new_best"], "apply_run soma Almas ao perder, recorde e run")
+	check(m3.villains.has("dragon") and res["villains"] == ["dragon"], "party 3 libera o Dragao")
+	DirAccess.remove_absolute(abs_path)
+	# deck de 19
+	var dk: Array = data.deck("plague")["cards"]
+	check(m3.deck_ok("plague", dk) and m3.set_deck("plague", dk) and m3.deck_for("plague").size() == 19, "deck inicial e valido (19)")
+	var bad4: Array = dk.duplicate()
+	for i in 4:
+		bad4[i] = "rat_brute"
+	check(not m3.deck_ok("plague", bad4), "mais de 3 copias nao vale")
+	check(not m3.deck_ok("plague", dk.slice(0, 18)), "18 cartas nao vale")
+	var other := ""
+	for c in data.pool:
+		if c.owner == "lich":
+			other = c.id
+			break
+	var bad_owner: Array = dk.duplicate()
+	bad_owner[0] = other
+	check(not m3.deck_ok("plague", bad_owner), "carta de outro vilao nao vale")
+	# reliquia bloqueada nao aparece; fallback de raridade
+	var sm := Sim.new()
+	sm.setup(data, 5, "plague", [], [], 1, {"reliquias": {"unlocked": ["elixir_flask", "quick_spring", "torn_banner", "heart_of_well"]}})
+	var pool := sm._relic_pool()
+	check(pool.size() == 4 and not pool.has("deep_cauldron") and not pool.has("bone_crown"), "pool so tem as reliquias liberadas (%s)" % str(pool))
+	var seen_rare := false
+	for sd in 12:
+		sm.rng_offer.seed = sd + 1
+		sm._offer_relics("act")
+		var offer: Dictionary = sm.offers[sm.offers.size() - 1] if sm.offers is Array and sm.offers.size() > 0 else {}
+		if offer.is_empty():
+			continue
+		var n := 0
+		for o in offer.get("options", []):
+			n += 1
+			check(pool.has(str(o["id"])), "oferta so com liberadas")
+		seen_rare = seen_rare or n >= 3
+		sm.offers.clear()
+	check(seen_rare, "fallback de raridade: a oferta fecha 3 opcoes mesmo com a raridade sorteada curta")
 
 ## Biblioteca (frente F, 21/11/2026): teste de fumaça da tela (instancia, filtro por custo, regras do deck, compra de nível).
 func t_library_ui() -> void:

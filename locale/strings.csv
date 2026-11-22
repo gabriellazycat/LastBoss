@@ -1231,53 +1231,93 @@ N3_hoard_dragon,N3: a Cobiça chega a +160%.,L3: Greed reaches +160%.
 UNLOCK_alpha_beast,Tenha 30 ratos em campo ao mesmo tempo,Have 30 rats on the field at once
 UNLOCK_arcane_apocalypse,Jogue 7 feitiços em 20 segundos,Play 7 spells within 20 seconds
 UNLOCK_arcane_spark,Jogue 120 feitiços de Sombra no total,Play 120 Shadow spells in total
-UNLOCK_ash_phoenix,Termine 4 fases com 1000 de ouro,Finish 4 phases with 1000 gold
-UNLOCK_bat_cloud,Tenha 12 bichos de Bando em campo ao mesmo tempo em 2 fases diferentes,"Have 12 Pack creatures on the field at once, in 2 different phases"
-UNLOCK_bat_nest,Tenha 3 estruturas em campo ao mesmo tempo em 3 fases diferentes,"Have 3 structures on the field at once, in 3 different phases"
+UNLOCK_ash_phoenix,Termine 4 runs com 1000 de ouro,Finish 4 runs with 1000 gold
+UNLOCK_bat_cloud,Tenha 12 bichos de Bando em campo ao mesmo tempo em 2 runs diferentes,"Have 12 Pack creatures on the field at once, in 2 different runs"
+UNLOCK_bat_nest,Tenha 3 estruturas em campo ao mesmo tempo em 3 runs diferentes,"Have 3 structures on the field at once, in 3 different runs"
 UNLOCK_black_pestilence,Jogue 150 feitiços no total,Play 150 spells in total
 UNLOCK_blood_tax,Jogue 100 feitiços no total,Play 100 spells in total
 UNLOCK_boiling_oil,Mantenha o herói Encharcado por 75 segundos no total,Keep the hero Soaked for 75 seconds in total
 UNLOCK_bone_colossus,Faça 3000 dos seus monstros morrerem no total,Have 3000 of your monsters die in total
 UNLOCK_bone_dragon,Derrote 35 heróis no total,Defeat 35 heroes in total
-UNLOCK_bone_totem,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_bone_totem,Derrote a party 8 com este vilão,Defeat party 8 with this villain
 UNLOCK_burn_village,Queime o herói por 150 segundos no total,Burn the hero for 150 seconds in total
 UNLOCK_corrupt_piper,Faça 2000 ratos morrerem no total,Have 2000 of your rats die in total
-UNLOCK_devour,Vença uma fase jogando só 10 feitiços,Win a phase playing only 10 spells
+UNLOCK_devour,Derrote a party 5 jogando só 10 feitiços,Defeat party 5 playing only 10 spells
 UNLOCK_dragon_exchange,Encharque o herói e incendeie-o em até 1 segundo,Soak the hero and set them on fire within 1 second(s)
 UNLOCK_elder_dragon,Tenha 5 monstros de Fogo em campo ao mesmo tempo,Have 5 Fire monsters on the field at once
-UNLOCK_eruption,Vença uma fase sem jogar estruturas,Win a phase without playing structures
-UNLOCK_eternal_army,Tenha 12 mortos-vivos em campo ao mesmo tempo em 5 fases diferentes,"Have 12 undead on the field at once, in 5 different phases"
+UNLOCK_eruption,Derrote a party 5 sem jogar estruturas,Defeat party 5 without playing structures
+UNLOCK_eternal_army,Tenha 12 mortos-vivos em campo ao mesmo tempo em 5 runs diferentes,"Have 12 undead on the field at once, in 5 different runs"
 UNLOCK_fallen_healer,Derrote um herói perdendo no máximo 5 monstros,Defeat a hero while losing at most 5 monsters
-UNLOCK_flooded_pit,"Jogue 5 cartas Temporárias numa mesma fase, em 4 fases diferentes","Play 5 Temporary cards in a single phase, in 4 different phases"
-UNLOCK_furnace,Vença 2 fases com este vilão,Win 2 phases with this villain
-UNLOCK_ghost,Tenha 40 esqueletos em campo ao mesmo tempo em 3 fases diferentes,"Have 40 skeletons on the field at once, in 3 different phases"
+UNLOCK_flooded_pit,"Jogue 5 cartas Temporárias numa mesma run, em 4 runs diferentes","Play 5 Temporary cards in a single run, in 4 different runs"
+UNLOCK_furnace,Derrote a party 8 com este vilão,Defeat party 8 with this villain
+UNLOCK_ghost,Tenha 40 esqueletos em campo ao mesmo tempo em 3 runs diferentes,"Have 40 skeletons on the field at once, in 3 different runs"
 UNLOCK_gold_bait,Faça o herói parar nas Moedas Malditas 25 vezes no total,Make the hero stop at the Cursed Coins 25 times in total
 UNLOCK_gold_rain,Gaste 3000 de ouro no total,Spend 3000 gold in total
 UNLOCK_hoard_dragon,Ganhe 10000 de ouro no total,Earn 10000 gold in total
-UNLOCK_hollow_armor,Tenha 20 de Elixir máximo em 4 fases diferentes,"Reach 20 maximum Elixir, in 4 different phases"
+UNLOCK_hollow_armor,Tenha 20 de Elixir máximo em 4 runs diferentes,"Reach 20 maximum Elixir, in 4 different runs"
 UNLOCK_hunt_instinct,Jogue 40 feitiços no total,Play 40 spells in total
-UNLOCK_life_drain,"Aplique 5 Maldições no herói numa mesma fase, em 2 fases diferentes","Put 5 Curses on the hero in a single phase, in 2 different phases"
-UNLOCK_magma_golem,Tenha 10 monstros seus em campo ao mesmo tempo em 4 fases diferentes,"Have 10 monsters on the field at once, in 4 different phases"
+UNLOCK_life_drain,"Aplique 5 Maldições no herói numa mesma run, em 2 runs diferentes","Put 5 Curses on the hero in a single run, in 2 different runs"
+UNLOCK_magma_golem,Tenha 10 monstros seus em campo ao mesmo tempo em 4 runs diferentes,"Have 10 monsters on the field at once, in 4 different runs"
 UNLOCK_male_rat,Faça 1000 ratos morrerem no total,Have 1000 of your rats die in total
 UNLOCK_meteor_storm,Jogue 80 feitiços de Fogo no total,Play 80 Fire spells in total
 UNLOCK_mimic,Jogue 60 estruturas no total,Play 60 structures in total
 UNLOCK_molten_gold,Gaste 2000 de Elixir no total,Spend 2000 Elixir in total
-UNLOCK_mother_nest,Tenha 20 bichos de Bando em campo ao jogar um feitiço em 3 fases diferentes,"Have 20 Pack creatures on the field when you play a spell, in 3 different phases"
+UNLOCK_mother_nest,Tenha 20 bichos de Bando em campo ao jogar um feitiço em 3 runs diferentes,"Have 20 Pack creatures on the field when you play a spell, in 3 different runs"
 UNLOCK_ogre,Jogue 600 monstros no total,Play 600 monsters in total
 UNLOCK_pack_den,Jogue 40 estruturas no total,Play 40 structures in total
-UNLOCK_plague_carrion,Tenha 40 monstros seus em campo ao mesmo tempo em 3 fases diferentes,"Have 40 monsters on the field at once, in 3 different phases"
+UNLOCK_plague_carrion,Tenha 40 monstros seus em campo ao mesmo tempo em 3 runs diferentes,"Have 40 monsters on the field at once, in 3 different runs"
 UNLOCK_primal_beast,Jogue 600 cartas de Bando no total,Play 600 Pack cards in total
-UNLOCK_rat_tide,"Use a mesma carta de monstro 40 vezes numa mesma fase, em 3 fases diferentes","Play the same monster card 40 times in a single phase, in 3 different phases"
-UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo em 2 fases diferentes,"Stack 5 Plague on the hero at once, in 2 different phases"
-UNLOCK_ruin_titan,Vença a segunda fase,Win the second phase
-UNLOCK_sewer_flood,Vença 2 fases com este vilão,Win 2 phases with this villain
+UNLOCK_rat_tide,"Use a mesma carta de monstro 40 vezes numa mesma run, em 3 runs diferentes","Play the same monster card 40 times in a single run, in 3 different runs"
+UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo em 2 runs diferentes,"Stack 5 Plague on the hero at once, in 2 different runs"
+UNLOCK_relic_act_hoard,Termine uma run com 300 de ouro,Finish a run with 300 gold
+UNLOCK_relic_aether_heart,Tenha 20 de Elixir máximo em 3 runs diferentes,"Reach 20 maximum Elixir, in 3 different runs"
+UNLOCK_relic_arcane_ink,Jogue 300 feitiços no total,Play 300 spells in total
+UNLOCK_relic_bad_blood,Derrote a party 9,Defeat party 9
+UNLOCK_relic_chain_ring,Jogue 6 cartas em 8 segundos,Play 6 cards within 8 seconds
+UNLOCK_relic_cracked_hourglass,Derrote a party 3,Defeat party 3
+UNLOCK_relic_deep_cauldron,Tenha 14 de Elixir máximo,Reach 14 maximum Elixir
+UNLOCK_relic_deep_cistern,Tenha 15 de Elixir máximo,Reach 15 maximum Elixir
+UNLOCK_relic_eternal_fountain,Tenha 18 de Elixir máximo em 2 runs diferentes,"Reach 18 maximum Elixir, in 2 different runs"
+UNLOCK_relic_fine_sand,Gaste 600 de Elixir numa mesma run,Spend 600 Elixir in a single run
+UNLOCK_relic_forge_hammer,Jogue 20 estruturas no total,Play 20 structures in total
+UNLOCK_relic_frost_shard,Jogue 6 cartas Temporárias numa mesma run,Play 6 Temporary cards in a single run
+UNLOCK_relic_giant_scale,Use a mesma carta de monstro 25 vezes numa mesma run,Play the same monster card 25 times in a single run
+UNLOCK_relic_grave_call,Faça 150 dos seus monstros morrerem numa mesma run,Have 150 of your monsters die in a single run
+UNLOCK_relic_greedy_seal,Derrote 80 heróis no total,Defeat 80 heroes in total
+UNLOCK_relic_hand_pocket,Derrote a party 7,Defeat party 7
+UNLOCK_relic_hanged_hand,Jogue 12 cartas em 12 segundos,Play 12 cards within 12 seconds
+UNLOCK_relic_heart_of_well,Tenha 17 de Elixir máximo,Reach 17 maximum Elixir
+UNLOCK_relic_heavy_grimoire,Jogue 50 feitiços numa mesma run,Play 50 spells in a single run
+UNLOCK_relic_jailer_chains,Derrote 12 heróis no total,Defeat 12 heroes in total
+UNLOCK_relic_living_library,Jogue 200 cartas no total,Play 200 cards in total
+UNLOCK_relic_living_vault,Gaste 500 de ouro numa mesma run,Spend 500 gold in a single run
+UNLOCK_relic_lucky_coin,Termine uma run com 600 de ouro,Finish a run with 600 gold
+UNLOCK_relic_merchant_purse,Ganhe 800 de ouro numa mesma run,Earn 800 gold in a single run
+UNLOCK_relic_opening_gambit,Derrote a party 4,Defeat party 4
+UNLOCK_relic_pack_howl,Tenha 8 bichos de Bando em campo ao mesmo tempo,Have 8 Pack creatures on the field at once
+UNLOCK_relic_phylactery,Derrote a party 12,Defeat party 12
+UNLOCK_relic_profane_earth,Derrote a party 8,Defeat party 8
+UNLOCK_relic_raider_pack,Jogue 7 cartas em 10 segundos,Play 7 cards within 10 seconds
+UNLOCK_relic_rift_key,Jogue 10 cartas em 15 segundos,Play 10 cards within 15 seconds
+UNLOCK_relic_rushing_tide,Gaste 400 de Elixir numa mesma run,Spend 400 Elixir in a single run
+UNLOCK_relic_shortcut_stone,Derrote a party 6,Defeat party 6
+UNLOCK_relic_stamp_ink,Derrote 30 heróis no total,Defeat 30 heroes in total
+UNLOCK_relic_still_aether,Tenha 16 de Elixir máximo,Reach 16 maximum Elixir
+UNLOCK_relic_tally_stick,Jogue 120 cartas numa mesma run,Play 120 cards in a single run
+UNLOCK_relic_tar_pit,Cause 800 de dano ao herói em menos de 4 segundos,Deal 800 damage to the hero in under 4 seconds
+UNLOCK_relic_tinker_file,Jogue 60 feitiços no total,Play 60 spells in total
+UNLOCK_relic_twin_litter,Tenha 30 monstros seus em campo ao mesmo tempo,Have 30 monsters on the field at once
+UNLOCK_relic_victory_mark,Derrote 60 heróis no total,Defeat 60 heroes in total
+UNLOCK_relic_watchful_eye,Jogue 150 cartas no total,Play 150 cards in total
+UNLOCK_ruin_titan,Derrote a party 10,Defeat party 10
+UNLOCK_sewer_flood,Derrote a party 8 com este vilão,Defeat party 8 with this villain
 UNLOCK_shadow_mark,Jogue 1000 cartas no total,Play 1000 cards in total
 UNLOCK_slime,Tenha 2 Feras e 8 ratos em campo ao mesmo tempo,Have 2 Beasts and 8 rats on the field at once
 UNLOCK_soul_collector,Cause 2000 de dano ao herói em menos de 4 segundos,Deal 2000 damage to the hero in under 4 seconds
 UNLOCK_soul_feast,Jogue 400 feitiços no total,Play 400 spells in total
-UNLOCK_soul_harvest,Vença 2 fases sem jogar estruturas,Win 2 phases without playing structures
-UNLOCK_soul_storm,Acerte o herói com 6 feitiços diferentes numa mesma fase,Hit the hero with 6 different spells in a single phase
-UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos em 2 fases diferentes,"Soak the hero and set them on fire within 8 second(s), in 2 different phases"
+UNLOCK_soul_harvest,"Derrote a party 5 sem jogar estruturas, em 2 runs diferentes","Defeat party 5 without playing structures, in 2 different runs"
+UNLOCK_soul_storm,Acerte o herói com 6 feitiços diferentes numa mesma run,Hit the hero with 6 different spells in a single run
+UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos em 2 runs diferentes,"Soak the hero and set them on fire within 8 second(s), in 2 different runs"
 UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
 UNLOCK_spitting_viper,Jogue 150 Feras no total,Play 150 Beasts in total
 UNLOCK_tar_net,Gaste 2000 de ouro no total,Spend 2000 gold in total
@@ -1365,3 +1405,125 @@ POWER_war_hound,Cão de Guerra,War Hound
 POWER_war_hound_d,"Um cão de guerra aliado se junta à party (até {max} ao mesmo tempo, {hp} de vida) e ataca as criaturas por perto.","An allied war hound joins the party (up to {max} at once, {hp} health) and attacks nearby creatures."
 POWER_field_medic,Curandeira,Field Medic
 POWER_field_medic_d,Cura {heal_frac_pct}% da vida máxima de cada herói da party quando alguém está ferido.,Heals {heal_frac_pct}% of each hero's max health when someone is hurt.
+#META,"Frente D (metaprogressao, 21/11/2026): bloco META_*","Front D (meta progression, 21/11/2026): META_* block"
+META_SEC_atributos,Atributos,Attributes
+META_SEC_locais,Locais,Locations
+META_SEC_arena,Arena,Arena
+META_SEC_reliquias,Relíquias,Relics
+META_SEC_troca_ato,Troca de ato,Act change
+META_SEC_geral,Geral,General
+META_CENTER,Coração do covil,Heart of the lair
+META_BR_ritual,Ritual,Ritual
+META_BR_tavern,Taverna,Tavern
+META_BR_fountain,Fonte,Fountain
+META_BR_shrine,Santuário,Shrine
+META_BR_bridge,Ponte,Bridge
+META_BR_shop,Loja,Shop
+META_BR_helper,Ajudante,Helper
+META_BR_event,Evento,Event
+META_atr_elixir_max_1,Poço fundo,Deep well
+META_atr_elixir_max_1_d,+1 de elixir máximo por nível (até +3).,+1 maximum Elixir per level (up to +3).
+META_atr_elixir_max_2,Poço mais fundo,Deeper well
+META_atr_elixir_max_2_d,+1 de elixir máximo por nível (soma com o Poço fundo).,+1 maximum Elixir per level (stacks with Deep well).
+META_atr_elixir_regen_1,Fonte viva,Living spring
+META_atr_elixir_regen_1_d,+5% de ganho de elixir por nível.,+5% Elixir gain per level.
+META_atr_elixir_regen_2,Fonte caudalosa,Roaring spring
+META_atr_elixir_regen_2_d,+5% de ganho de elixir por nível (soma com a Fonte viva).,+5% Elixir gain per level (stacks with Living spring).
+META_atr_elixir_start_1,Cálice cheio,Full chalice
+META_atr_elixir_start_1_d,+1 de elixir no começo da run por nível.,+1 starting Elixir per level.
+META_atr_elixir_start_2,Cálice transbordando,Overflowing chalice
+META_atr_elixir_start_2_d,+1 de elixir no começo da run por nível (soma com o Cálice cheio).,+1 starting Elixir per level (stacks with Full chalice).
+META_atr_hand_1,Mão maior,Bigger hand
+META_atr_hand_1_d,+1 carta na mão por nível (até +2).,+1 card in hand per level (up to +2).
+META_atr_hand_2,Mão cheia de ases,Hand full of aces
+META_atr_hand_2_d,+1 carta na mão (soma com a Mão maior).,+1 card in hand (stacks with Bigger hand).
+META_atr_recharge_1,Compra veloz,Quick draw
+META_atr_recharge_1_d,A vaga da carta recarrega 8% mais rápido por nível.,Card slots recharge 8% faster per level.
+META_atr_recharge_2,Compra relâmpago,Lightning draw
+META_atr_recharge_2_d,A vaga da carta recarrega 6% mais rápido por nível (soma com a Compra veloz).,Card slots recharge 6% faster per level (stacks with Quick draw).
+META_loc_ritual_1,Ritual generoso,Generous ritual
+META_loc_ritual_1_d,"Ritual: elixir ×3 no nível 1 e ×4 no nível 2, e dura 25% / 50% mais.","Ritual: Elixir ×3 at level 1 and ×4 at level 2, and it lasts 25% / 50% longer."
+META_loc_ritual_2,Ritual fácil,Easy ritual
+META_loc_ritual_2_d,O ritual pede 20% / 40% menos mortes.,The ritual asks for 20% / 40% fewer kills.
+META_loc_ritual_3,Ritual farto,Bountiful ritual
+META_loc_ritual_3_d,O ritual melhora mais as cartas (+15% / +30% na fração da melhoria).,The ritual upgrades cards more (+15% / +30% upgrade fraction).
+META_loc_tavern_1,Taverna firme,Sturdy tavern
+META_loc_tavern_1_d,Taverna: casas com +25% / +50% de vida e +15% / +30% de tempo.,Tavern: houses have +25% / +50% HP and +15% / +30% time.
+META_loc_tavern_2,Taverna farta,Bountiful tavern
+META_loc_tavern_2_d,Taverna: +1 / +2 opções de modificador na recompensa.,Tavern: +1 / +2 modifier options in the reward.
+META_loc_fountain_1,Fonte calma,Calm fountain
+META_loc_fountain_1_d,Fonte: +30% / +60% de tempo e o herói demora 25% / 50% menos para beber.,Fountain: +30% / +60% time and the hero drinks 25% / 50% faster.
+META_loc_fountain_2,Fonte limpa,Cleansing fountain
+META_loc_fountain_2_d,Fonte: remove +1 / +2 cartas na recompensa.,Fountain: removes +1 / +2 extra cards in the reward.
+META_loc_shrine_1,Santuário frágil,Frail shrine
+META_loc_shrine_1_d,Santuário: o herói precisa de 20% / 40% menos para vencer e você ganha +20% / +40% de tempo.,Shrine: the hero needs 20% / 40% less time and you get +20% / +40% time.
+META_loc_shrine_2,Santuário farto,Bountiful shrine
+META_loc_shrine_2_d,Santuário: recompensa +50% / +100%.,Shrine: reward +50% / +100%.
+META_loc_bridge_1,Ponte curta,Short bridge
+META_loc_bridge_1_d,Ponte: +25% / +50% de tempo e a meta de dano é 20% / 40% menor.,Bridge: +25% / +50% time and the damage goal is 20% / 40% lower.
+META_loc_bridge_2,Ponte farta,Bountiful bridge
+META_loc_bridge_2_d,Ponte: recompensa +50% / +100%.,Bridge: reward +50% / +100%.
+META_loc_shop_1,Barganha,Haggling
+META_loc_shop_1_d,Loja do mercador: preços 10% / 20% menores.,Merchant shop: prices 10% / 20% lower.
+META_loc_shop_2,Prateleira cheia,Full shelves
+META_loc_shop_2_d,Loja do mercador: +1 / +2 cartas à venda.,Merchant shop: +1 / +2 cards for sale.
+META_loc_helper_1,Ajudante cansado,Tired helper
+META_loc_helper_1_d,Herói ajudante: 20% / 40% menos vida e +25% / +50% de tempo.,Helper hero: 20% / 40% less HP and +25% / +50% time.
+META_loc_helper_2,Ajudante generoso,Generous helper
+META_loc_helper_2_d,Herói ajudante: +1 opção de relíquia na recompensa.,Helper hero: +1 relic option in the reward.
+META_loc_event_1,Mais escolhas,More choices
+META_loc_event_1_d,Eventos de texto: +1 opção de resposta.,Text events: +1 answer option.
+META_loc_event_2,Boa sorte,Good fortune
+META_loc_event_2_d,Eventos de texto: +15% / +30% de chance do resultado bom.,Text events: +15% / +30% chance of the good outcome.
+META_are_boss_hp_1,Carne do covil,Flesh of the lair
+META_are_boss_hp_1_d,+10% de vida das partes do chefe por nível.,+10% boss part HP per level.
+META_are_boss_hp_2,Couro do covil,Hide of the lair
+META_are_boss_hp_2_d,+10% de vida das partes do chefe por nível (soma com a Carne do covil).,+10% boss part HP per level (stacks with Flesh of the lair).
+META_are_arm_1,Braço pesado,Heavy arm
+META_are_arm_1_d,+10% de dano do braço do chefe por nível.,+10% boss arm damage per level.
+META_are_arm_2,Braço de ferro,Iron arm
+META_are_arm_2_d,+10% de dano do braço do chefe por nível (soma com o Braço pesado).,+10% boss arm damage per level (stacks with Heavy arm).
+META_are_struct_1,Altares firmes,Firm altars
+META_are_struct_1_d,+15% de vida dos altares e pilares da arena por nível.,+15% arena altar and pillar HP per level.
+META_are_struct_2,Pilares de pedra,Stone pillars
+META_are_struct_2_d,+15% de vida dos altares e pilares da arena por nível (soma com os Altares firmes).,+15% arena altar and pillar HP per level (stacks with Firm altars).
+META_rel_slot_1,Mais uma escolha,One more choice
+META_rel_slot_1_d,+1 opção em toda oferta de relíquia.,+1 option in every relic offer.
+META_rel_slot_2,Mais duas escolhas,Two more choices
+META_rel_slot_2_d,+1 opção em toda oferta de relíquia (soma com Mais uma escolha).,+1 option in every relic offer (stacks with One more choice).
+META_rel_discount_1,Oficina de relíquias,Relic workshop
+META_rel_discount_1_d,Subir o nível das relíquias custa 10% menos por nível.,Upgrading relic levels costs 10% less per level.
+META_rel_start_1,Presente de abertura,Opening gift
+META_rel_start_1_d,A run começa com uma oferta de relíquia.,The run starts with a relic offer.
+META_ato_switch_1,Respiro,Breather
+META_ato_switch_1_d,"Ao trocar de ato, devolve 50% / 100% do elixir máximo.","On act change, refills 50% / 100% of maximum Elixir."
+META_ato_gold_1,Saque do ato,Act loot
+META_ato_gold_1_d,"Ao trocar de ato, +30 / +60 / +100 de ouro.","On act change, +30 / +60 / +100 gold."
+META_ato_hand_1,Mão nova,Fresh hand
+META_ato_hand_1_d,"Ao trocar de ato, a mão volta cheia.","On act change, your hand refills completely."
+META_ato_gold_2,Grande saque,Big loot
+META_ato_gold_2_d,"Ao trocar de ato, +40 / +80 / +140 de ouro (soma com o Saque do ato).","On act change, +40 / +80 / +140 gold (stacks with Act loot)."
+META_ger_gold_start_1,Bolsa inicial,Starting purse
+META_ger_gold_start_1_d,Começa a run com +10 / +25 / +45 de ouro.,Start the run with +10 / +25 / +45 gold.
+META_ger_gold_start_2,Cofre inicial,Starting vault
+META_ger_gold_start_2_d,Começa a run com +20 / +45 / +80 de ouro (soma com a Bolsa inicial).,Start the run with +20 / +45 / +80 gold (stacks with Starting purse).
+META_ger_almas_1,Sede de almas,Thirst for souls
+META_ger_almas_1_d,+5% de Almas por run por nível (até +20%).,+5% Almas per run per level (up to +20%).
+META_ger_almas_2,Fome de almas,Hunger for souls
+META_ger_almas_2_d,+5% / +10% de Almas por run (soma com a Sede de almas).,+5% / +10% Almas per run (stacks with Thirst for souls).
+META_ger_card_disc_1,Escriba do covil,Lair scribe
+META_ger_card_disc_1_d,Subir o nível das cartas custa 5% menos por nível.,Upgrading card levels costs 5% less per level.
+META_ger_card_disc_2,Mestre escriba,Master scribe
+META_ger_card_disc_2_d,Subir o nível das cartas custa 20% / 25% menos (substitui o Escriba do covil).,Upgrading card levels costs 20% / 25% less (replaces Lair scribe).
+META_ger_offer_hero,Despojos de cada herói,Spoils of every hero
+META_ger_offer_hero_d,"Toda queda de herói oferece uma carta, não só a da party inteira.","Every fallen hero offers a card, not just the whole party."
+META_ALMAS,Almas,Almas
+META_ALMAS_DMG,Dano nos heróis,Damage to heroes
+META_ALMAS_HEROES,Heróis derrotados,Heroes defeated
+META_ALMAS_BONUS,Bônus de Almas,Almas bonus
+META_ALMAS_TOTAL,Total de Almas,Total Almas
+META_ACT2_LOCKED,Chegue ao ato 2,Reach act 2
+META_NEW_BEST,Novo recorde!,New record!
+META_VILLAIN_FREED,Vilão liberado: {name},Villain unlocked: {name}
+META_REFUND_ALL,Reembolsar tudo,Refund all
+META_DECK_COUNT,{n}/19 no deck,{n}/19 in deck

@@ -13,12 +13,12 @@ const DEFAULTS := {
 	"recarga": {"carta": 0.0},                                    # fracao a menos no DRAW_DELAY da vaga
 	"locais": {},                                                 # {id_do_local: {chave: delta}}, ex.: ritual.elixir_mult, ritual.dur_mult
 	"arena": {"boss_hp_mult": 1.0, "arm_dmg_mult": 1.0, "struct_mult": 1.0},   # o "covil": vida das partes, dano do braco, estruturas
-	"ato": {"elixir_refill": 0.0},                                # troca de ato (setor so abre depois do ato 2)
-	"reliquias": {"unlocked": [], "levels": {}, "extra_options": 0.0},   # unlocked vazio = sem filtro (testes/tutorial)
+	"ato": {"elixir_refill": 0.0, "gold": 0.0, "hand_refill": 0.0},   # troca de ato (setor so abre depois do ato 2): +fracao do elixir, +ouro, mao cheia (0/1)
+	"reliquias": {"unlocked": [], "levels": {}, "extra_options": 0.0, "level_discount": 0.0, "start_offer": 0.0},   # unlocked vazio = sem filtro (testes/tutorial); level_discount so o MetaSave le; start_offer = ofertas de reliquia no inicio da run
 	"card_levels": {},                                            # {id_da_carta: nivel I..VI} (1 = sem melhoria)
 	"deck": [],                                                   # deck montado (19 ids); vazio = o deck do vilao
 	"oferta_por_heroi": false,                                    # oferta de carta a cada heroi morto, nao so por party
-	"geral": {"ouro_inicial": 0.0, "almas_mult": 0.0},            # +ouro inicial, +fracao de Almas
+	"geral": {"ouro_inicial": 0.0, "almas_mult": 0.0, "card_discount": 0.0},   # +ouro inicial, +fracao de Almas, desconto (fracao) no preco de subir carta (so o MetaSave le)
 }
 
 
@@ -55,6 +55,35 @@ static func add_path(mods: Dictionary, path: String, v) -> void:
 		d[key] = float(v)
 
 
+## Soma de um caminho de fx ("geral.almas_mult") em todos os nos comprados de `meta` (delta sobre o neutro).
+static func fx_total(meta: MetaSave, path: String) -> float:
+	var tot := 0.0
+	for id in meta.upgrades:
+		var lv := int(meta.upgrades[id])
+		var fx: Dictionary = meta.data.meta_nodes.get(id, {}).get("fx", {})
+		if lv > 0 and fx.has(path):
+			var arr: Array = fx[path]
+			tot += float(arr[mini(lv, arr.size()) - 1])
+	return tot
+
+
+## Efeito de UMA chave de uma reliquia ja multiplicado pelo nivel dela (sim.mods.reliquias.levels, 1..3 = x1/x1,5/x2,
+## data/meta_tree.json "relic_level_mult"). So escala o que esta em "relic_scalable" (bonus positivos) e draw_delay
+## negativo (bonus); flags, limites, contagens e penalidades ficam como estao. Gancho de Sim.rebuild_rfx.
+static func relic_fx(sim, id: String, key: String, v: float) -> float:
+	var lv := int(sim.mods["reliquias"]["levels"].get(id, 1))
+	if lv <= 1:
+		return v
+	var tree: Dictionary = sim.data.meta_tree
+	var mults: Array = tree.get("relic_level_mult", [1.0])
+	var m := float(mults[mini(lv, mults.size()) - 1])
+	var keys: Array = tree.get("relic_scalable", [])
+	if not keys.has(key) or (v < 0.0 and key != "draw_delay") or v == 0.0:
+		return v
+	var out := v * m
+	return snappedf(out, 0.5) if key == "elixir_max" else out
+
+
 ## Mods da run a partir do MetaSave (null = sem meta). Percorre os nos comprados de data/meta_tree.json.
 static func run_mods(meta: MetaSave) -> Dictionary:
 	var mods := defaults()
@@ -76,7 +105,7 @@ static func run_mods(meta: MetaSave) -> Dictionary:
 	mods["card_levels"] = meta.card_levels.duplicate()
 	mods["reliquias"]["unlocked"] = meta.relics_unlocked.duplicate()
 	mods["reliquias"]["levels"] = meta.relic_levels.duplicate()
-	mods["deck"] = meta.decks.get(meta.villain, []).duplicate()
+	mods["deck"] = meta.deck_for(meta.villain)
 	return mods
 
 

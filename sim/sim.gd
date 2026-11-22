@@ -1146,7 +1146,7 @@ func rebuild_rfx() -> void:
 	for id in relics:
 		var r: Dictionary = data.relics.get(id, {})
 		for k in r.get("fx", {}):
-			rfx[k] = float(rfx.get(k, 0.0)) + float(r["fx"][k])
+			rfx[k] = float(rfx.get(k, 0.0)) + MetaApply.relic_fx(self, id, k, float(r["fx"][k]))   # nivel da reliquia (Covil)
 
 
 ## Ganha a relíquia. Relíquias empilham (11/11/2026): a mesma pode vir de novo e os efeitos somam, menos as
@@ -1269,7 +1269,13 @@ func _offer_relics(source := "act") -> void:
 				var r2: int = r0 + dr
 				if by.has(r2) and by[r2].size() > by[best].size():
 					best = r2
-		pool = by[best]
+		pool = by[best].duplicate()
+		if pool.size() < want:
+			# Fallback (Covil, 21/11/2026): com poucas reliquias liberadas, completa com as raridades vizinhas.
+			for dr in [-1, 1, -2, 2, -3, 3]:
+				for id in by.get(best + dr, []):
+					if pool.size() < want and not pool.has(id):
+						pool.append(id)
 	for k in want:
 		if pool.is_empty():
 			break
@@ -1662,11 +1668,28 @@ func damage_hero(amount: float, sx: float, sy: float, tags: int, kind: int, card
 		var pm := float(R["locations"]["bridge"]["shield_mult"]) if contest.get("variant", "") == "shield" else 1.0
 		contest["progress"] += real * pm
 	track.on_hero_damage(self, real)
+	_almas_count(hh, real)
 	stats["hero_dmg"] = float(stats.get("hero_dmg", 0.0)) + real   # vida de herói tirada (métrica contínua do ajustador)
 	_earn_gold(gain / float(R["gold"]["damage_per_gold"]) * (1.0 + rv("gold")))
 	var dbc: Dictionary = stats["dmg_by_card"]
 	dbc[card_id] = float(dbc.get(card_id, 0.0)) + gain
 	return real
+
+
+## Almas (meta, plano 21/11/2026): o dano no heroi so conta ate a vida maxima de cada heroi da fila (anti-farm de
+## cura e escudo). stats.almas_dmg = soma; stats.almas_by = {pidx do heroi: dano ja contado}.
+func _almas_count(h: SimHero, real: float) -> void:
+	if real <= 0.0:
+		return
+	var by: Dictionary = stats.get("almas_by", {})
+	var k := h.pidx
+	var room := maxf(0.0, h.max_hp() - float(by.get(k, 0.0)))
+	var add := minf(real, room)
+	if add <= 0.0:
+		return
+	by[k] = float(by.get(k, 0.0)) + add
+	stats["almas_by"] = by
+	stats["almas_dmg"] = float(stats.get("almas_dmg", 0.0)) + add
 
 
 func _player_next() -> float:

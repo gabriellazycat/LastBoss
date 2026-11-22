@@ -77,44 +77,43 @@ const MODELS = [
   "Jogue {n} {plays} no total",
   "Faça {n} {died} morrerem no total",
   "Derrote {n} heróis no total",
-  "Vença {n} fases com este vilão",
+  "Derrote a party {n} com este vilão",
   "Ganhe {n} de ouro no total",
   "Gaste {n} de ouro no total",
   "Gaste {n} de Elixir no total",
   "Mantenha o herói Encharcado por {n} segundos no total",
   "Queime o herói por {n} segundos no total",
   "Faça o herói parar nas Moedas Malditas {n} vezes no total",
-  "Tenha {n} {peak} em campo ao mesmo tempo em {r} fases diferentes",
-  "Jogue {n} {plays} numa mesma fase, em {r} fases diferentes",
-  "Jogue {n} {win} em {s} segundos em {r} fases diferentes",
-  "Vença {r} fases sem jogar estruturas",
-  "Termine {r} fases com {n} de ouro",
-  "Tenha {n} de Elixir máximo em {r} fases diferentes",
+  "Tenha {n} {peak} em campo ao mesmo tempo em {r} runs diferentes",
+  "Jogue {n} {plays} numa mesma run, em {r} runs diferentes",
+  "Jogue {n} {win} em {s} segundos em {r} runs diferentes",
+  "Derrote a party {n} sem jogar estruturas, em {r} runs diferentes",
+  "Termine {r} runs com {n} de ouro",
+  "Tenha {n} de Elixir máximo em {r} runs diferentes",
  ]],
  ["Numa run", [
   "Tenha {n} {peak} em campo ao mesmo tempo",
   "Tenha {n} Feras e {m} ratos em campo ao mesmo tempo",
   "Tenha {n} bichos de Bando em campo ao jogar um feitiço",
-  "Jogue {n} {plays} numa mesma fase",
+  "Jogue {n} {plays} numa mesma run",
   "Jogue {n} {win} em {s} segundos",
-  "Use a mesma carta de monstro {n} vezes numa mesma fase",
+  "Use a mesma carta de monstro {n} vezes numa mesma run",
   "Cause {n} de dano ao herói em menos de {s} segundos",
   "Encharque o herói e incendeie-o em até {s} segundos",
   "Aplique {n} acúmulos de Peste no herói ao mesmo tempo",
-  "Aplique {n} Maldições no herói numa mesma fase",
-  "Acerte o herói com {n} feitiços diferentes numa mesma fase",
-  "Faça {n} {died} morrerem numa mesma fase",
-  "Termine uma fase com {n} de ouro",
+  "Aplique {n} Maldições no herói numa mesma run",
+  "Acerte o herói com {n} feitiços diferentes numa mesma run",
+  "Faça {n} {died} morrerem numa mesma run",
+  "Termine uma run com {n} de ouro",
   "Tenha {n} de Elixir máximo",
-  "Vença a primeira fase",
-  "Vença a segunda fase",
-  "Vença uma fase sem jogar estruturas",
-  "Vença uma fase jogando só {n} feitiços",
+  "Derrote a party {n}",
+  "Derrote a party {n} sem jogar estruturas",
+  "Derrote a party {n} jogando só {m} feitiços",
   "Derrote um herói perdendo no máximo {n} monstros",
   "Derrote o herói sem perder nenhum monstro",
  ]],
 ];
-const NUMLBL = {n: "número", m: "ratos", r: "fases", s: "segundos"};
+const NUMLBL = {n: "número", m: "ratos", r: "runs", s: "segundos"};
 let D = null, tab = "all", open = null;
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -123,11 +122,11 @@ function prefs(){try{const p=JSON.parse(localStorage.getItem("desafios")||"{}");
 function savePrefs(){try{localStorage.setItem("desafios",JSON.stringify({tab,fk:$("#fk").value,free:$("#ffree").checked}))}catch(e){}}
 async function api(p, body){const r=await fetch(p,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});return r.json()}
 async function load(){D=await api("/api/data");render()}
-function group(r){return r.owner==="common"?"common":r.owner}
+function group(r){return r.owner==="common"?"common":r.owner}  // owner "relic" = reliquia (id r:<id>)
 function kindOf(r){if(r.state!=="L")return "free";if(!r.info||!r.info.ok)return "bad";return r.info.cross?"cross":"run"}
 
 function render(){
- const tabs=[["all","Todas"],["plague",D.names.plague],["dragon",D.names.dragon],["lich",D.names.lich],["common","Comuns"]];
+ const tabs=[["all","Todas"],["plague",D.names.plague],["dragon",D.names.dragon],["lich",D.names.lich],["common","Comuns"],["relic","Relíquias"]];
  $("#tabs").innerHTML=tabs.map(([k,n])=>`<button class="tab ${k===tab?"on":""}" data-t="${k}">${esc(n)}</button>`).join("");
  const scope=D.rows.filter(r=>r.state==="L"&&(tab==="all"||group(r)===tab));
  const c=scope.filter(r=>kindOf(r)==="cross").length, u=scope.filter(r=>kindOf(r)==="run").length, b=scope.length-c-u;
@@ -137,7 +136,7 @@ function render(){
  const fk=$("#fk").value, q=$("#fq").value.trim().toLowerCase(), showFree=$("#ffree").checked;
  const rows=D.rows.filter(r=>(tab==="all"||group(r)===tab)&&(showFree||r.state==="L")&&(!fk||kindOf(r)===fk)
    &&(!q||(r.name+" "+r.id+" "+r.text).toLowerCase().includes(q)));
- const order=["plague","dragon","lich","common"];
+ const order=["plague","dragon","lich","common","relic"];
  let h="";
  for(const g of order){
   const rs=rows.filter(r=>group(r)===g); if(!rs.length) continue;
