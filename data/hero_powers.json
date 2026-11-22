@@ -1,12 +1,601 @@
 {
-	"_doc": "Poderes de party (plano 21/11/2026, docs/PLANO_METAPROGRESSAO.md). ESQUEMA DO CONTRATO; os dados de mentira abaixo (3 poderes) serao trocados pelos reais pela frente B. Cada poder: id; trigger = first_enemy (primeiro inimigo que encosta) | next_creature | next_spell | interval | on_hit_taken; cooldown = segundos de recarga por nivel [n1,n2,n3]; lv = parametros por nivel (mesma chave nas 3 entradas); weight = peso do sorteio; counters = o que o poder responde (como os upgrades antigos: pack, spell, tank...). Textos: strings.csv POWER_<id> (nome) e POWER_<id>_d (efeito). Icone: assets/ui/powers/<id>.svg. Regras gerais em 'rules'.",
-	"rules": {"gap": 1.5, "evolution_chance": 0.34, "max_level": 3},
-	"powers": [
-		{"id": "fire_burst", "trigger": "first_enemy", "cooldown": [18, 15, 12], "weight": 1.0, "counters": ["pack"],
-			"lv": [{"radius": 6.0, "dmg_mult": 4.0}, {"radius": 7.0, "dmg_mult": 6.0}, {"radius": 8.0, "dmg_mult": 8.0}]},
-		{"id": "slay_next", "trigger": "next_creature", "cooldown": [20, 17, 14], "weight": 1.0, "counters": ["tank"],
-			"lv": [{"hp_frac": 1.0}, {"hp_frac": 1.0, "chain": 1}, {"hp_frac": 1.0, "chain": 2}]},
-		{"id": "ally_rat", "trigger": "interval", "cooldown": [5, 5, 4], "weight": 1.0, "counters": ["swarm"],
-			"lv": [{"max": 5, "hp": 30.0, "dps": 6.0}, {"max": 5, "hp": 45.0, "dps": 9.0}, {"max": 6, "hp": 60.0, "dps": 12.0}]}
-	]
+ "_doc": "Poderes de party (plano 21/11/2026, docs/PLANO_METAPROGRESSAO.md; frente B). Cada poder: id; trigger = first_enemy (primeiro inimigo que encosta) | next_creature (proxima criatura que encosta) | next_structure (proxima estrutura que encosta) | next_spell (proximo feitico que acerta a party) | on_hit_taken (reacao ao dano/estado; chave 'cond': curse, low_hp, control, fire, projectile, burst) | interval (a cada 'cooldown' s, sem contato); cooldown = recarga em s por nivel [n1,n2,n3]; weight = peso do sorteio; counters = o que o poder responde (chaves de Hero.note: pack, undead, shadow, fire, construct, projectile, spell, burst, surround, curse, knockback, slow); lv = parametros por nivel. Textos: strings.csv POWER_<id> (nome) e POWER_<id>_d (efeito, com {chaves} = parametros do nivel). Icone: assets/ui/powers/<id>.svg. Regras gerais em 'rules' (gap = s entre gatilhos, evolution_chance, max_level, counter_gain = ganho do estilo no sorteio).\nCONTA DOS NUMEROS. D = dano de referencia da party = dano do heroi da classe x 1,21^(party-1) (rules.party.step), SEM dividir pelos membros (a party toda soma 1 golpe de D por segundo; cartas tem vida fixa, o heroi cresce 1,21 por party: por isso os poderes de dano escalam em multiplos de D e nao em numeros fixos). Orcamento: contribuicao de um poder de dano = soma(M x alvos)/recarga, em D por segundo (a party sozinha faz 1,0). Com ~3 alvos medios no raio: nivel 1 fica em 0,25-0,35 D/s e nivel 3 em 0,9-1,3 D/s, de modo que cada poder isolado vale 25-35% (n1) a ~100% (n3) do DPS da party quando ha alvo, e com contato ~60% do tempo ~15-20% (n1). Ex.: fire_burst n1 = 2,0 x 3 alvos / 18 s = 0,33 D/s; n3 = 4,5 x 3 / 12 = 1,13 D/s. smite (1 alvo) n1 = 4 / 12 = 0,33; n3 = 10 / 10 = 1,0. Cura e escudo (ward) em fracao da vida maxima de cada membro (vida do heroi P1 = 1450 x 2 = 2900 por herois da party): ward 12-40% = 350-1160 de vida extra no P1, o que equivale a 6-20 s de uma criatura de 60 de dano por segundo (ogro); recarga 14-18 s. Execucao (slay_next) mata ate kill_hp_mult x D de vida maxima (P1: 460/830/1380; criaturas das cartas vao de 40 a 6000) e dá frac da vida nas maiores; titan_blow tem teto cap_mult x D para nao fatiar chefes. Aliados (ally_rat/war_hound): vida fixa (monstros nao escalam), dano = dps_mult x D por segundo. Os ratos absorvem mordidas aproximadamente: cada inimigo a menos de 1,6 do rato lhe tira metade do dano por segundo dele (aproximacao; os monstros nao miram aliados no motor). \nREVISAO DAS 15 ANTIGAS (data/hero_escudeiro.json, upgrades; fora do fluxo, JSON mantido sem uso): sword_spin>whirlwind, tower_shield>arrow_wall, dash>iron_will, war_cry>war_cry, fireproof>fire_ward, holy_water>holy_nova, treasure_nose>structure_breaker, stone_hammer>shockwave, steady_boots>iron_will, purifying_blade>purify, reflect_shield>spell_ward, hero_fury>retaliation/ally_rat (enxame), soul_absorb>soul_drain, second_wind>second_wind, heroic_strike>titan_blow. Novos: fire_burst, chain_lightning, smite, slay_next, retaliation, ally_rat, war_hound, field_medic.",
+ "rules": {
+  "gap": 1.5,
+  "evolution_chance": 0.34,
+  "max_level": 3,
+  "counter_gain": 3.0,
+  "contact_reach": 1.0
+ },
+ "powers": [
+  {
+   "id": "fire_burst",
+   "trigger": "first_enemy",
+   "cooldown": [
+    18,
+    15,
+    12
+   ],
+   "weight": 1.0,
+   "counters": [
+    "pack"
+   ],
+   "lv": [
+    {
+     "radius": 5.0,
+     "dmg_mult": 2.0
+    },
+    {
+     "radius": 6.0,
+     "dmg_mult": 3.0
+    },
+    {
+     "radius": 7.0,
+     "dmg_mult": 4.5
+    }
+   ]
+  },
+  {
+   "id": "whirlwind",
+   "trigger": "first_enemy",
+   "cooldown": [
+    14,
+    12,
+    10
+   ],
+   "weight": 1.0,
+   "counters": [
+    "pack",
+    "surround"
+   ],
+   "lv": [
+    {
+     "radius": 3.0,
+     "dmg_mult": 1.5
+    },
+    {
+     "radius": 3.5,
+     "dmg_mult": 2.2
+    },
+    {
+     "radius": 4.0,
+     "dmg_mult": 3.2
+    }
+   ]
+  },
+  {
+   "id": "holy_nova",
+   "trigger": "first_enemy",
+   "cooldown": [
+    16,
+    14,
+    12
+   ],
+   "weight": 1.0,
+   "counters": [
+    "undead",
+    "shadow"
+   ],
+   "lv": [
+    {
+     "radius": 4.5,
+     "dmg_mult": 1.5,
+     "holy_mult": 2.5
+    },
+    {
+     "radius": 5.5,
+     "dmg_mult": 2.2,
+     "holy_mult": 3.0
+    },
+    {
+     "radius": 6.5,
+     "dmg_mult": 3.2,
+     "holy_mult": 3.5
+    }
+   ]
+  },
+  {
+   "id": "shockwave",
+   "trigger": "first_enemy",
+   "cooldown": [
+    16,
+    14,
+    12
+   ],
+   "weight": 1.0,
+   "counters": [
+    "construct"
+   ],
+   "lv": [
+    {
+     "radius": 4.0,
+     "dmg_mult": 1.5,
+     "struct_mult": 3.0
+    },
+    {
+     "radius": 4.5,
+     "dmg_mult": 2.2,
+     "struct_mult": 3.5
+    },
+    {
+     "radius": 5.0,
+     "dmg_mult": 3.0,
+     "struct_mult": 4.0
+    }
+   ]
+  },
+  {
+   "id": "war_cry",
+   "trigger": "first_enemy",
+   "cooldown": [
+    18,
+    16,
+    14
+   ],
+   "weight": 1.0,
+   "counters": [
+    "burst",
+    "pack"
+   ],
+   "lv": [
+    {
+     "ward_frac": 0.12,
+     "dmg_bonus": 0.2,
+     "dur": 5.0
+    },
+    {
+     "ward_frac": 0.18,
+     "dmg_bonus": 0.3,
+     "dur": 6.0
+    },
+    {
+     "ward_frac": 0.26,
+     "dmg_bonus": 0.4,
+     "dur": 7.0
+    }
+   ]
+  },
+  {
+   "id": "chain_lightning",
+   "trigger": "first_enemy",
+   "cooldown": [
+    15,
+    13,
+    11
+   ],
+   "weight": 1.0,
+   "counters": [
+    "pack"
+   ],
+   "lv": [
+    {
+     "targets": 4,
+     "dmg_mult": 1.2,
+     "range": 9.0
+    },
+    {
+     "targets": 5,
+     "dmg_mult": 1.8,
+     "range": 9.0
+    },
+    {
+     "targets": 6,
+     "dmg_mult": 2.2,
+     "range": 10.0
+    }
+   ]
+  },
+  {
+   "id": "smite",
+   "trigger": "first_enemy",
+   "cooldown": [
+    12,
+    11,
+    10
+   ],
+   "weight": 1.0,
+   "counters": [
+    "burst"
+   ],
+   "lv": [
+    {
+     "dmg_mult": 4.0
+    },
+    {
+     "dmg_mult": 6.5
+    },
+    {
+     "dmg_mult": 10.0
+    }
+   ]
+  },
+  {
+   "id": "slay_next",
+   "trigger": "next_creature",
+   "cooldown": [
+    20,
+    17,
+    14
+   ],
+   "weight": 1.0,
+   "counters": [
+    "burst"
+   ],
+   "lv": [
+    {
+     "kill_hp_mult": 10.0,
+     "hp_frac": 0.35,
+     "chain": 0
+    },
+    {
+     "kill_hp_mult": 18.0,
+     "hp_frac": 0.5,
+     "chain": 1
+    },
+    {
+     "kill_hp_mult": 30.0,
+     "hp_frac": 0.65,
+     "chain": 2
+    }
+   ]
+  },
+  {
+   "id": "titan_blow",
+   "trigger": "next_creature",
+   "cooldown": [
+    16,
+    14,
+    12
+   ],
+   "weight": 1.0,
+   "counters": [
+    "burst"
+   ],
+   "lv": [
+    {
+     "big_hp": 500,
+     "hp_frac": 0.3,
+     "cap_mult": 20.0
+    },
+    {
+     "big_hp": 500,
+     "hp_frac": 0.45,
+     "cap_mult": 30.0
+    },
+    {
+     "big_hp": 500,
+     "hp_frac": 0.6,
+     "cap_mult": 45.0
+    }
+   ]
+  },
+  {
+   "id": "soul_drain",
+   "trigger": "next_creature",
+   "cooldown": [
+    14,
+    12,
+    10
+   ],
+   "weight": 1.0,
+   "counters": [
+    "pack"
+   ],
+   "lv": [
+    {
+     "dmg_mult": 3.0,
+     "heal_frac": 0.04
+    },
+    {
+     "dmg_mult": 4.5,
+     "heal_frac": 0.06
+    },
+    {
+     "dmg_mult": 6.5,
+     "heal_frac": 0.09
+    }
+   ]
+  },
+  {
+   "id": "structure_breaker",
+   "trigger": "next_structure",
+   "cooldown": [
+    16,
+    13,
+    10
+   ],
+   "weight": 1.0,
+   "counters": [
+    "construct"
+   ],
+   "lv": [
+    {
+     "kill_hp": 400,
+     "hp_frac": 0.5
+    },
+    {
+     "kill_hp": 700,
+     "hp_frac": 0.6
+    },
+    {
+     "kill_hp": 2000,
+     "hp_frac": 0.7
+    }
+   ]
+  },
+  {
+   "id": "spell_ward",
+   "trigger": "next_spell",
+   "cooldown": [
+    20,
+    16,
+    12
+   ],
+   "weight": 1.0,
+   "counters": [
+    "spell"
+   ],
+   "lv": [
+    {
+     "window": 1.0,
+     "heal_frac": 0.03
+    },
+    {
+     "window": 1.2,
+     "heal_frac": 0.06
+    },
+    {
+     "window": 1.5,
+     "heal_frac": 0.12
+    }
+   ]
+  },
+  {
+   "id": "purify",
+   "trigger": "on_hit_taken",
+   "cond": "curse",
+   "cooldown": [
+    18,
+    14,
+    10
+   ],
+   "weight": 1.0,
+   "counters": [
+    "curse"
+   ],
+   "lv": [
+    {
+     "heal_frac": 0.0
+    },
+    {
+     "heal_frac": 0.05
+    },
+    {
+     "heal_frac": 0.1
+    }
+   ]
+  },
+  {
+   "id": "second_wind",
+   "trigger": "on_hit_taken",
+   "cond": "low_hp",
+   "cooldown": [
+    20,
+    17,
+    14
+   ],
+   "weight": 1.0,
+   "counters": [
+    "burst"
+   ],
+   "lv": [
+    {
+     "below": 0.3,
+     "heal_frac": 0.3
+    },
+    {
+     "below": 0.35,
+     "heal_frac": 0.4
+    },
+    {
+     "below": 0.4,
+     "heal_frac": 0.55
+    }
+   ]
+  },
+  {
+   "id": "iron_will",
+   "trigger": "on_hit_taken",
+   "cond": "control",
+   "cooldown": [
+    18,
+    15,
+    12
+   ],
+   "weight": 1.0,
+   "counters": [
+    "slow",
+    "knockback"
+   ],
+   "lv": [
+    {
+     "immune_s": 3.0
+    },
+    {
+     "immune_s": 5.0
+    },
+    {
+     "immune_s": 8.0
+    }
+   ]
+  },
+  {
+   "id": "fire_ward",
+   "trigger": "on_hit_taken",
+   "cond": "fire",
+   "cooldown": [
+    16,
+    14,
+    12
+   ],
+   "weight": 1.0,
+   "counters": [
+    "fire"
+   ],
+   "lv": [
+    {
+     "dur": 4.0,
+     "taken_mult": 0.4
+    },
+    {
+     "dur": 6.0,
+     "taken_mult": 0.25
+    },
+    {
+     "dur": 8.0,
+     "taken_mult": 0.1
+    }
+   ]
+  },
+  {
+   "id": "arrow_wall",
+   "trigger": "on_hit_taken",
+   "cond": "projectile",
+   "cooldown": [
+    18,
+    15,
+    12
+   ],
+   "weight": 1.0,
+   "counters": [
+    "projectile"
+   ],
+   "lv": [
+    {
+     "ward_frac": 0.18
+    },
+    {
+     "ward_frac": 0.28
+    },
+    {
+     "ward_frac": 0.4
+    }
+   ]
+  },
+  {
+   "id": "retaliation",
+   "trigger": "on_hit_taken",
+   "cond": "burst",
+   "cooldown": [
+    14,
+    12,
+    10
+   ],
+   "weight": 1.0,
+   "counters": [
+    "burst",
+    "surround"
+   ],
+   "lv": [
+    {
+     "radius": 4.0,
+     "dmg_mult": 1.5
+    },
+    {
+     "radius": 4.5,
+     "dmg_mult": 2.2
+    },
+    {
+     "radius": 5.0,
+     "dmg_mult": 3.2
+    }
+   ]
+  },
+  {
+   "id": "ally_rat",
+   "trigger": "interval",
+   "cooldown": [
+    5,
+    5,
+    4
+   ],
+   "weight": 0.8,
+   "counters": [
+    "pack",
+    "surround"
+   ],
+   "lv": [
+    {
+     "max": 5,
+     "hp": 60.0,
+     "dps_mult": 0.1
+    },
+    {
+     "max": 5,
+     "hp": 90.0,
+     "dps_mult": 0.15
+    },
+    {
+     "max": 6,
+     "hp": 130.0,
+     "dps_mult": 0.22
+    }
+   ]
+  },
+  {
+   "id": "war_hound",
+   "trigger": "interval",
+   "cooldown": [
+    14,
+    12,
+    10
+   ],
+   "weight": 0.8,
+   "counters": [
+    "surround",
+    "burst"
+   ],
+   "lv": [
+    {
+     "max": 2,
+     "hp": 300.0,
+     "dps_mult": 0.35
+    },
+    {
+     "max": 2,
+     "hp": 450.0,
+     "dps_mult": 0.5
+    },
+    {
+     "max": 3,
+     "hp": 650.0,
+     "dps_mult": 0.7
+    }
+   ]
+  },
+  {
+   "id": "field_medic",
+   "trigger": "interval",
+   "cooldown": [
+    10,
+    9,
+    8
+   ],
+   "weight": 0.7,
+   "counters": [
+    "burst"
+   ],
+   "lv": [
+    {
+     "heal_frac": 0.03
+    },
+    {
+     "heal_frac": 0.05
+    },
+    {
+     "heal_frac": 0.08
+    }
+   ]
+  }
+ ]
 }

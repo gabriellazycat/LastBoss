@@ -69,6 +69,7 @@ func _ready() -> void:
 	t_classes()
 	t_group()
 	t_parties()
+	t_run15()
 	t_group_spells()
 	t_stall_and_overtime()
 	t_human_bot()
@@ -86,6 +87,9 @@ func _ready() -> void:
 	t_ui_spacing()
 	t_contracts()
 	t_meta5()
+
+	t_powers()
+	t_library_ui()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -3564,6 +3568,71 @@ func _endless_kill(s: Sim) -> void:
 	s.offers.clear()
 
 
+## Frente A (21/11/2026): fase unica de 15 parties, oferta so por party, mods neutros, run curta com o bot.
+func t_run15() -> void:
+	var ph: Dictionary = data.phase(1)
+	check(ph.get("parties", []).size() == 15, "fase 1: 15 parties")
+	check(data.endless.is_empty() and data.campaign_map.is_empty(), "sem Horda sem fim nem mapa na campanha")
+	check(int(data.unlock_villain_at.get("dragon", 0)) == 3 and int(data.unlock_villain_at.get("lich", 0)) == 6, "unlock_villain_at: dragao 3, lich 6")
+	var sizes_ok := true
+	var classes: Array = data.hero_classes.keys()
+	for g in ph["parties"]:
+		sizes_ok = sizes_ok and g.size() >= 1 and g.size() <= 4
+		for c in g:
+			sizes_ok = sizes_ok and classes.has(str(c))
+	check(sizes_ok, "parties de 1 a 4 heroes de classes validas")
+	check(data.phase(0).get("tutorial", false), "tutorial segue na fase 0")
+	var a := Sim.new()
+	a.setup(data, 5, "horde", [], [], 1)
+	var b := Sim.new()
+	b.setup(data, 5, "horde", [], [], 1, MetaApply.defaults())
+	check(a.party_count() == 15 and a.party_mode(), "Sim.setup fase 1: fila de 15 parties")
+	check(a.elixir_max == b.elixir_max and is_equal_approx(a.draw_delay(), b.draw_delay()) and is_equal_approx(a.seconds_per_elixir(), b.seconds_per_elixir()), "mods neutros nao mudam os numeros")
+	var m := MetaApply.defaults()
+	m["recarga"]["carta"] = 0.5
+	m["elixir"]["max"] = 2.0
+	var c := Sim.new()
+	c.setup(data, 5, "horde", [], [], 1, m)
+	check(is_equal_approx(c.draw_delay(), a.draw_delay() * 0.5) and is_equal_approx(c.elixir_max, a.elixir_max + 2.0), "mods de recarga e elixir max aplicam")
+	# Oferta so por party morta (ha 1 heroi por party na party 1 e 2: use a party 3, de 2 herois).
+	var s := Sim.new()
+	s.setup(data, 5, "horde", [], [], 1)
+	s.auto_route = true
+	while s.cur_party < 2:
+		s.hero.hp = 0.0
+		s._check_end()
+		s.offers.clear()
+	check(s.party_members(s.cur_party).size() == 2, "party 3 tem 2 herois")
+	s.offers.clear()
+	s.followers[0].hp = 0.0
+	s._check_end()
+	check(s.offers.is_empty(), "heroi morto sem a melhoria: sem oferta de carta")
+	s.hero.hp = 0.0
+	s._check_end()
+	check(s.offers.size() > 0, "party inteira morta: oferta de carta")
+	var m2 := MetaApply.defaults()
+	m2["oferta_por_heroi"] = true
+	var s2 := Sim.new()
+	s2.setup(data, 5, "horde", [], [], 1, m2)
+	s2.auto_route = true
+	while s2.cur_party < 2:
+		s2.hero.hp = 0.0
+		s2._check_end()
+		s2.offers.clear()
+	s2.offers.clear()
+	s2.followers[0].hp = 0.0
+	s2._check_end()
+	check(s2.offers.size() > 0, "oferta_por_heroi: heroi morto oferece carta")
+	# Run curta com o bot (so fumaca).
+	var r := _phase_sim(1, 9)
+	var bot := PlayerBot.load_bot("greedy", 9)
+	var n := 0
+	while r.phase != K.Phase.OVER and n < 4000:
+		bot.think(r)
+		r.step()
+		n += 1
+	check(n > 0 and r.t > 0.0, "run curta com o bot sem erro (%.0f s simulados)" % r.t)
+
 func t_endless() -> void:
 	var E: Dictionary = data.endless
 	var cap: Dictionary = data.phase(6)
@@ -3796,8 +3865,8 @@ func t_meta5() -> void:
 		s.damage_hero(hp * 0.5, s.hero.x + 1.0, s.hero.y, 0, SimHero.DMG_PIERCE, "test")
 	var ad := float(s.stats.get("almas_dmg", 0.0))
 	check(ad > 0.0 and ad <= hp + 0.01, "dano em Almas conta so ate a vida maxima do heroi (%.0f de %.0f)" % [ad, hp])
-	var g := m2.almas_for(24000.0, 6)
-	check(int(g["dmg"]) == 200 and int(g["heroes"]) == 48 and int(g["total"]) == 248, "almas_for: dano/120 + 8 por heroi (%s)" % str(g))
+	var g := m2.almas_for(60000.0, 6)
+	check(int(g["dmg"]) == 200 and int(g["heroes"]) == 48 and int(g["total"]) == 248, "almas_for: dano/300 + 8 por heroi (%s)" % str(g))
 	# apply_run grava e mantem Almas ao perder
 	s.stats["heroes_fallen"] = 2
 	s.stats["parties_beaten"] = 3
@@ -3844,3 +3913,247 @@ func t_meta5() -> void:
 		seen_rare = seen_rare or n >= 3
 		sm.offers.clear()
 	check(seen_rare, "fallback de raridade: a oferta fecha 3 opcoes mesmo com a raridade sorteada curta")
+
+## Biblioteca (frente F, 21/11/2026): teste de fumaça da tela (instancia, filtro por custo, regras do deck, compra de nível).
+func t_library_ui() -> void:
+	var path := "user://test_library.save"
+	var prev_look = Settings.v.get("look_hud", 7)
+	Settings.v["look_hud"] = 7
+	UiSkins.apply()
+	var m := LibraryDemo.seed_meta(data, path)
+	var scr := CollectionScreen.new()
+	scr.setup(data, m)
+	scr.api = LibraryDemo.make_api(m)
+	var holder := Control.new()
+	holder.size = Vector2(1688, 1008)
+	add_child(holder)
+	holder.add_child(scr)
+	scr.open()
+	check(scr.tabs.size() == data.villain_ids.size() + 1 and scr.grid.get_child_count() > 0 and scr.grid.get_child_count() <= CollectionScreen.PER_PAGE, "biblioteca instancia com abas e a primeira pagina")
+	scr.set_cost_filter(1)
+	var all_two := scr.shown.size() > 0
+	for d in scr.shown:
+		if CollectionScreen.bucket_of(d.cost_at(int(m.card_levels.get(d.id, 1)))) != 1:
+			all_two = false
+	check(all_two, "filtro por custo mostra so a faixa escolhida (%d cartas)" % scr.shown.size())
+	scr.set_cost_filter(1)
+	check(scr.cost_filter == -1, "clicar de novo no filtro limpa")
+	# Deck: 19 cartas e ate 3 copias.
+	scr.set_tab("plague")
+	check(scr.work.size() == CollectionScreen.DECK_SIZE and scr.deck_valid(), "deck inicial do vilao tem 19 e vale")
+	var extra := ""
+	for d in data.pool:
+		if d.owner == "plague" and m.is_unlocked(d.id) and scr.deck_count(d.id) == 0:
+			extra = d.id
+			break
+	check(extra != "" and not scr.deck_add(extra), "deck cheio nao aceita mais carta")
+	var drop: Array = []
+	for id in scr.work:
+		if not drop.has(id) and drop.size() < 4:
+			drop.append(id)
+	for id in drop:
+		check(scr.deck_remove(id), "tira uma copia de " + str(id))
+	check(scr.work.size() == 15 and not scr.deck_valid(), "deck com 15 cartas nao vale")
+	check(m.decks.get("plague", []).size() in [0, 19], "deck incompleto nao vai para o save")
+	var ok3 := true
+	for k in 3:
+		ok3 = ok3 and scr.deck_add(extra)
+	check(ok3 and scr.deck_count(extra) == 3, "ate 3 copias da mesma carta")
+	check(not scr.deck_add(extra) and scr.deck_count(extra) == 3, "a 4a copia e recusada")
+	var dragon_card := ""
+	for d in data.pool:
+		if d.owner == "dragon":
+			dragon_card = d.id
+			break
+	check(not scr.can_add(dragon_card), "carta de outro vilao nao entra no deck")
+	scr.deck_add(str(drop[0]))
+	check(scr.work.size() == 19 and scr.deck_valid() and m.decks.get("plague", []).size() == 19, "deck completo volta a valer e e gravado")
+	# Comprar nivel: saldo e nivel mudam; no VI ou sem Almas, nada.
+	var buy := ""
+	for d in data.pool:
+		if d.owner == "plague" and m.is_unlocked(d.id) and int(m.card_levels.get(d.id, 1)) < 6:
+			buy = d.id
+			break
+	var lv0 := int(m.card_levels.get(buy, 1))
+	var bal0 := m.almas
+	var price := MetaApply.card_upgrade_cost(data, buy, lv0 + 1)
+	check(scr.buy_level(buy) and int(m.card_levels[buy]) == lv0 + 1 and m.almas == bal0 - price and price > 0, "comprar nivel desconta o preco e sobe a carta")
+	m.almas = 0
+	check(not scr.buy_level(buy) and int(m.card_levels[buy]) == lv0 + 1, "sem Almas nao compra")
+	m.almas = 99999
+	m.card_levels[buy] = 6
+	check(not scr.buy_level(buy) and m.almas == 99999, "no nivel VI nao compra mais")
+	scr._open_zoom(buy)
+	check(scr.zoom_layer.get_child_count() > 0, "zoom abre")
+	scr._close_zoom()
+	holder.queue_free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	Settings.v["look_hud"] = prev_look
+	UiSkins.apply()
+
+## Poderes de party (frente B, 21/11/2026): dados, sorteio na queda da party, recarga, gatilho com 1,5 s entre
+## disparos, save v8 e runs curtas do bot. Fumaça: nada de balanço.
+func t_powers() -> void:
+	var ids: Array = data.power_ids
+	var ok_data := ids.size() >= 20 and ids.size() <= 24
+	for id in ids:
+		var d: Dictionary = data.hero_powers[id]
+		var keys0: Array = d["lv"][0].keys()
+		ok_data = ok_data and d["lv"].size() == 3 and d["cooldown"].size() == 3 and d["lv"][2].keys() == keys0
+		ok_data = ok_data and float(d["cooldown"][0]) >= float(d["cooldown"][2]) and float(d["cooldown"][2]) >= 4.0 and float(d["cooldown"][0]) <= 20.0
+		ok_data = ok_data and TranslationServer.translate("POWER_" + str(id)) != "" and d.has("counters") and d.has("weight")
+	check(ok_data, "poderes: %d com 3 niveis, recargas 4-20 s e mesmas chaves por nivel" % ids.size())
+	# Sorteio: cada queda de party dá exatamente 1 poder novo ou 1 evolucao; a oferta-aviso vem depois da de carta.
+	var s := _sim(7, "ruin")
+	check(s.powers.is_empty(), "a run comeca sem poderes")
+	var falls := 0
+	var order_ok := true
+	var evolved := false
+	while falls < 8 and s.cur_party < s.party_count() - 1:
+		s.offers.clear()
+		var lv_before := 0
+		for p in s.powers:
+			lv_before += int(p["level"])
+		s.hero.hp = 0.0
+		for f in s.followers:
+			f.hp = 0.0
+		s._check_end()
+		falls += 1
+		var lv_after := 0
+		for p in s.powers:
+			lv_after += int(p["level"])
+		order_ok = order_ok and lv_after == lv_before + 1 and str(s.offers.back()["source"]) == "power"
+		var op: Dictionary = s.offers.back()["options"][0]
+		order_ok = order_ok and op["kind"] == "power" and int(op["level"]) >= 1 and (s.offers.back()["powers"] as Array).size() == s.powers.size()
+		if not bool(op["new"]):
+			evolved = true
+	check(falls >= 2 and order_ok, "cada queda de party da +1 (poder novo ou nivel) e a oferta-aviso vem por ultimo (%d quedas)" % falls)
+	check(s.powers.size() >= 1 and s.party_powers().size() == s.powers.size(), "party_powers lista os poderes (%d)" % s.powers.size())
+	var top := 0
+	for p in s.powers:
+		top = maxi(top, int(p["level"]))
+	check(top <= 3, "nivel maximo 3")
+	s.offers.clear()
+	s.choose(0)   # aviso vazio: nao quebra
+	# Probabilidade de evolucao ~1 em 3 e estilo do jogador (dano da party toda) pesa o sorteio.
+	var r := _sim(3, "ruin")
+	for id in ["fire_burst", "whirlwind", "slay_next", "ally_rat"]:
+		r.powers.append({"id": id, "level": 1, "cd_left": 0.0, "gap_left": 0.0})
+	var evo := 0
+	for k in 600:
+		if not bool(HeroPowers.roll(r)["new"]):
+			evo += 1
+	check(evo > 150 and evo < 270, "cerca de 1 em 3 sorteios e evolucao (%d de 600)" % evo)
+	var q := _sim(3, "ruin")
+	HeroPowers.note(q, "fire", 1000.0)
+	var fw := 0
+	for k in 600:
+		if HeroPowers.roll(q)["id"] == "fire_ward":
+			fw += 1
+	check(fw > 60, "dano de fogo da party puxa o poder de fogo (%d de 600; base ~29)" % fw)
+	var q2 := _sim(3, "ruin")
+	q2.hero.note("burst", 500.0)
+	q2.followers.clear()
+	check(float(q2.power_state["taken"].get("burst", 0.0)) == 500.0, "Hero.note soma o dano da party no motor")
+	# Recarga conta; gatilho respeita 1,5 s entre disparos e a recarga do poder.
+	var c := _sim(5, "ruin")
+	c.record_events = true
+	c.hero.base_hp = 1.0e6
+	c.hero.hp = 1.0e6
+	c.powers.append({"id": "fire_burst", "level": 1, "cd_left": 5.0, "gap_left": 0.0})
+	for k in 20:
+		c.step()
+	check(absf(float(c.powers[0]["cd_left"]) - 4.0) < 0.1, "recarga conta (%.2f)" % float(c.powers[0]["cd_left"]))
+	var a := _sim(5, "ruin")
+	a.record_events = true
+	a.hero.base_hp = 1.0e6
+	a.hero.hp = 1.0e6
+	a.powers.append({"id": "fire_burst", "level": 1, "cd_left": 0.0, "gap_left": 0.0})
+	a.powers.append({"id": "whirlwind", "level": 1, "cd_left": 0.0, "gap_left": 0.0})
+	for k in 4:
+		a.units.spawn(data.card("ogre"), a.hero.x + 1.2 + k * 0.3, a.hero.y + 0.2 * k, 0.0, 0.0, 0, 900 + k)
+	var trig_t: Array = []
+	var ready_seen := 0
+	for k in 120:
+		a.events.clear()
+		a.step()
+		for e in a.events:
+			if e[0] == K.Ev.POWER_TRIGGER:
+				trig_t.append(a.t)
+	check(trig_t.size() == 2, "dois poderes prontos disparam um por vez (%d disparos em 6 s)" % trig_t.size())
+	if trig_t.size() >= 2:
+		check(float(trig_t[1]) - float(trig_t[0]) >= 1.45, "1,5 s entre gatilhos (%.2f s)" % (float(trig_t[1]) - float(trig_t[0])))
+	check(float(a.powers[0]["cd_left"]) > 5.0 and float(a.powers[1]["cd_left"]) > 5.0, "depois de disparar a recarga longa comeca")
+	check(float(a.hero.hp) <= 1.0e6, "gatilho nao quebra o heroi")
+	# Todo poder dispara (nivel 1 e 3) quando a condicao dele acontece, sem erro de script.
+	var fired_all := true
+	var not_fired: Array = []
+	for pid in ids:
+		for lvl in [1, 3]:
+			var f := _sim(5, "ruin")
+			f.record_events = true
+			f.hero.base_hp = 1.0e6
+			f.hero.hp = 1.0e5
+			f.hero.curses = 1
+			f.powers.append({"id": pid, "level": lvl, "cd_left": 0.0, "gap_left": 0.0})
+			for k in 3:
+				f.units.spawn(data.card("ogre"), f.hero.x + 1.2 + k * 0.3, f.hero.y + 0.3 * k, 0.0, 0.0, 0, 800 + k)
+			f.units.spawn(data.card("barricade"), f.hero.x - 1.2, f.hero.y, 0.0, 0.0, 0, 810)
+			f.hero.slow_t = 1.0
+			f.hero.note("fire", 300.0)
+			f.hero.note("projectile", 300.0)
+			f.hero.note("burst", 300.0)
+			f.hero.take_damage(10.0, f.hero.x + 3.0, f.hero.y, 0, SimHero.DMG_SPELL)
+			var got := false
+			for e in f.events:
+				if e[0] == K.Ev.POWER_TRIGGER:
+					got = true   # spell_ward reage ja no golpe de feitiço
+			for k in 100:
+				if got:
+					break
+				f.events.clear()
+				f.step()
+				for e in f.events:
+					if e[0] == K.Ev.POWER_TRIGGER:
+						got = true
+				if got:
+					break
+			if not got:
+				fired_all = false
+				not_fired.append("%s:%d" % [pid, lvl])
+	check(fired_all, "todos os poderes disparam nos niveis 1 e 3 (sem disparo: %s)" % str(not_fired))
+	# Rato aliado: nasce a cada 5 s, maximo 5.
+	var rt := _sim(5, "ruin")
+	rt.hero.base_hp = 1.0e6
+	rt.hero.hp = 1.0e6
+	rt.powers.append({"id": "ally_rat", "level": 1, "cd_left": 5.0, "gap_left": 0.0})
+	for k in int(32.0 / rt.dt):
+		rt.step()
+	var rats: Array = rt.power_state["allies"]
+	check(rats.size() == 5, "rato aliado: 1 a cada 5 s, maximo 5 (%d)" % rats.size())
+	# Save v8: poderes, niveis e recargas ida e volta.
+	var sv := _sim(11, "ruin")
+	var b := PlayerBot.load_bot("greedy", 11)
+	for k in 6:
+		sv.offers.clear()
+		sv.hero.hp = 0.0
+		for f in sv.followers:
+			f.hp = 0.0
+		sv._check_end()
+	sv.offers.clear()
+	for i in 300:
+		b.think(sv)
+		sv.step()
+	sv.powers[0]["cd_left"] = 7.25
+	check(SaveGame.VERSION == 8 and SaveGame.save(sv, "user://test_powers.save"), "save v8 grava")
+	var ld := SaveGame.load_run(data, "user://test_powers.save")
+	var same := ld != null and ld.powers.size() == sv.powers.size()
+	if same:
+		for j in sv.powers.size():
+			same = same and ld.powers[j]["id"] == sv.powers[j]["id"] and int(ld.powers[j]["level"]) == int(sv.powers[j]["level"]) 				and absf(float(ld.powers[j]["cd_left"]) - float(sv.powers[j]["cd_left"])) < 0.001
+	check(same, "poderes, niveis e recargas voltam do save (%d)" % sv.powers.size())
+	SaveGame.erase("user://test_powers.save")
+	# 3 runs curtas do bot sem erro (limite de ticks; falha de script derruba o teste).
+	for sd in [21, 22, 23]:
+		var rs := _run(sd, "ruin", "greedy", 9000)
+		check(rs.t > 100.0 and rs.powers.size() >= 0, "run curta com poderes sem erro (semente %d, %d poderes, party %d)" % [sd, rs.powers.size(), rs.cur_party])

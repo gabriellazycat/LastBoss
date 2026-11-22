@@ -36,8 +36,7 @@ var hit_hero: SimHero = null       # herói que a unidade da vez acerta (null = 
 var group_falls := 0
 var party_of: Array = []            # número da party de cada herói da fila (parties de 1 a 4, 15/11/2026)
 var cur_party := 0                  # party em campo
-var endless := false                # Horda sem fim (19/11/2026): fila de parties infinita, só acaba com o covil
-var arena_party_t := -1.0           # Horda sem fim: quando a party da vez chegou na arena (a prorrogação conta por party)
+const endless := false              # SHIM (sem Horda sem fim desde 21/11/2026): game/ ainda lê; a frente G apaga
 var road := SimRoad.new()
 var past_lines: Array = []    # linhas (pontos) das estradas dos atos anteriores: o ato novo não encosta nelas (C17)
 var arena := SimArena.new()
@@ -73,6 +72,7 @@ const ELIXIR_CAP := 999.0
 var next_uid := 1
 var mods: Dictionary = {}          # meta da run (sim/meta_apply.gd, plano 21/11/2026): MetaApply.merge(mods de setup)
 var powers: Array = []             # poderes de party da run (sim/hero_powers.gd)
+var power_state: Dictionary = {}   # estado interno do motor de poderes (dano da party, efeitos, aliados, aviso pendente)
 var party_idx := 0                 # herói da fila (0 a size-1); o nível dele é party_idx + 1
 var campaign_phase := 1            # fase da campanha (data/campaign.json); 1 = a run clássica de 7 Escudeiros
 var phase_cfg: Dictionary = {}
@@ -168,11 +168,6 @@ func setup(d: GameData, seed_: int, deck: String, card_list: Array = [], unlocke
 	party = []
 	party_of = []
 	var groups: Array = phase_cfg.get("parties", [])
-	endless = bool(phase_cfg.get("endless", false))
-	if endless:
-		groups = []
-		for k in int(phase_cfg.get("ahead", 3)) + 1:
-			groups.append(endless_party(seed_, k))
 	if groups.is_empty():
 		for c in phase_cfg.get("party", []):
 			groups.append([c])
@@ -274,36 +269,11 @@ func party_n_of(i: int) -> int:
 
 
 ## Alguma party tem mais de um herói: os membros andam juntos e as quedas contam uma a uma.
-## Na Horda sem fim é sempre a fila de parties (o sorteio pode trazer só parties de 1 no começo).
 func party_mode() -> bool:
-	return endless or party.size() > party_count()
+	return party.size() > party_count()
 
 
-## Horda sem fim (19/11/2026): a party `k` da fila, sorteada só de `seed_` e `k` (a mesma semente dá a mesma fila,
-## em qualquer ordem de geração): de party_min a party_max heróis entre todas as classes.
-func endless_party(seed_: int, k: int) -> Array:
-	var r := RandomNumberGenerator.new()
-	r.seed = hash([seed_, k, "horda"])
-	var classes: Array = data.hero_classes.keys()
-	classes.sort()
-	var out: Array = []
-	for i in r.randi_range(int(phase_cfg.get("party_min", 1)), int(phase_cfg.get("party_max", 4))):
-		out.append(str(classes[r.randi_range(0, classes.size() - 1)]))
-	return out
-
-
-## Horda sem fim: a fila fica sempre `ahead` parties à frente da que está em campo.
-func _endless_extend() -> void:
-	if not endless:
-		return
-	while party_count() <= cur_party + int(phase_cfg.get("ahead", 3)):
-		var k := party_count()
-		for c in endless_party(run_seed, k):
-			party.append(c)
-			party_of.append(k)
-
-
-## Parties derrubadas inteiras (o placar da Horda sem fim).
+## Parties derrubadas inteiras (o placar da run: "o covil caiu na party N de 15").
 func parties_beaten() -> int:
 	return cur_party
 
@@ -314,6 +284,8 @@ func fallen_count() -> int:
 
 
 func _act_cfg(k: int) -> Dictionary:
+	if phase_cfg.has("road"):
+		return phase_cfg["road"]   # a fase (o tutorial) fixa a própria estrada
 	var A: Array = R.get("acts", [])
 	return A[mini(k, A.size() - 1)].get("road", {}) if A.size() > 0 else {}
 
@@ -484,19 +456,19 @@ func max_offer_cost() -> int:
 
 ## Elixir máximo sem os efeitos passageiros (Temporários e eventos do ato).
 func perm_elixir_max() -> float:
-	return maxf(3.0, act_elixir_base + rv("elixir_max") + relic_max_gain)
+	return maxf(3.0, act_elixir_base + rv("elixir_max") + relic_max_gain + float(mods["elixir"]["max"]))
 
 
 ## Segundos por ponto de elixir agora, sem ritual, arena e Temporários (métrica e texto da relíquia).
 func seconds_per_elixir() -> float:
-	return float(R["elixir"]["seconds_per_point"]) / maxf(0.1, 1.0 + rv("elixir_regen")) / maxf(0.1, _act_elixir("regen_mult", 1.0))
+	return float(R["elixir"]["seconds_per_point"]) / maxf(0.1, 1.0 + rv("elixir_regen") + float(mods["elixir"]["regen_mult"])) / maxf(0.1, _act_elixir("regen_mult", 1.0))
 
 
 ## Elixir máximo = base + relíquias + eventos do ato + Temporários, no mínimo 3 (sem teto prático).
 func recalc_elixir_max() -> void:
 	act_elixir_base = _act_elixir("max", float(R["elixir"]["max"]))   # piso do ato (13/11/2026)
 	_elixir_act_seen = act
-	elixir_max = clampf(act_elixir_base + rv("elixir_max") + relic_max_gain + act_elixir_bonus + temp_sum("elixir_max"), 3.0, ELIXIR_CAP)
+	elixir_max = clampf(act_elixir_base + rv("elixir_max") + relic_max_gain + float(mods["elixir"]["max"]) + act_elixir_bonus + temp_sum("elixir_max"), 3.0, ELIXIR_CAP)
 	elixir = minf(elixir, elixir_max)
 
 
@@ -735,7 +707,7 @@ func _start_bar() -> void:
 	contest["t"] = 0.0
 	contest["progress"] = 0.0
 	contest["won"] = 0
-	contest["window"] = float(P["window"]) * (1.0 + rv("contest_window"))
+	contest["window"] = float(P["window"]) * (1.0 + rv("contest_window")) * (1.0 + _loc_mod(ty, "dur_mult"))
 	contest["r"] = float(loc["r"])
 	contest.erase("p2")
 	contest["inside"] = {}
@@ -794,7 +766,7 @@ func _contest_tick() -> void:
 	contest["t"] += dt
 	match str(contest["type"]):
 		"ritual":
-			ritual_mult = float(P["elixir_mult"])
+			ritual_mult = float(P["elixir_mult"]) + _loc_mod("ritual", "elixir_mult")   # Covil: ritual x3 etc. (delta somado ao x2 base)
 			if var_ == "expel":
 				_expel(p, float(contest["r"]), float(P["expel_s"]))
 		"shrine":
@@ -1142,6 +1114,9 @@ func _next_act() -> void:
 	act_elixir_bonus = 0.0
 	hero.clear_act_bonus()   # bônus do Herói Ajudante valem só o ato
 	recalc_elixir_max()
+	var refill := float(mods["ato"]["elixir_refill"])
+	if refill > 0.0:
+		elixir = minf(elixir_max, elixir + elixir_max * refill)   # Covil, setor Troca de ato: fração do máximo
 	if rv("act_gold") > 0.0:
 		_earn_gold(rv("act_gold"))   # Tesouro de Ato
 	stats["route_len"] = float(stats.get("route_len", 0.0)) + road.length()
@@ -1376,7 +1351,6 @@ func event_option_ok(op: Dictionary) -> bool:
 func enter_arena() -> void:
 	phase = K.Phase.ARENA
 	stats["arena_t"] = t
-	arena_party_t = t
 	stats["hero_level_arena"] = hero.level
 	stats["player_level_arena"] = player_level
 	# Métrica da calibração de 11/11/2026: poder de elixir ao fim do ato 3 (meta 18 de máximo e 1,5 s por ponto).
@@ -1389,10 +1363,17 @@ func enter_arena() -> void:
 	gate_pos = gate
 	var center := gate + dir * (float(A["radius"]) - 1.5)
 	arena.setup(self, center, dir)
-	if boss_hp_mult != 1.0:
+	var bhm := boss_hp_mult * float(mods["arena"]["boss_hp_mult"])
+	if bhm != 1.0:
 		for k in arena.part_hp.size():
-			arena.part_max[k] *= boss_hp_mult
+			arena.part_max[k] *= bhm
 			arena.part_hp[k] = arena.part_max[k]
+	var sm := float(mods["arena"]["struct_mult"])   # Covil: estruturas da arena (altares e pilares)
+	if sm != 1.0:
+		for k in arena.altar_hp.size():
+			arena.altar_hp[k] = float(arena.altar_hp[k]) * sm
+		for k in arena.pillar_hp.size():
+			arena.pillar_hp[k] = float(arena.pillar_hp[k]) * sm
 	# Monstros vivos perto do herói entram junto; o resto fica para trás.
 	for i in units.hi:
 		if units.alive[i] == 0:
@@ -1433,7 +1414,7 @@ func _bench_route_cards() -> void:
 func overtime() -> float:
 	if phase != K.Phase.ARENA or float(stats.get("arena_t", -1.0)) < 0.0:
 		return 0.0
-	var t0 := arena_party_t if endless and arena_party_t >= 0.0 else float(stats["arena_t"])
+	var t0 := float(stats["arena_t"])
 	return maxf(0.0, (t - t0 -float(R["arena"].get("overtime_s", 1e9))) / 60.0)
 
 
@@ -1510,7 +1491,6 @@ func _group_check() -> void:
 ## Fila de parties (15/11/2026): os membros da party andam juntos; cada um que cai conta como uma queda
 ## (recompensa e habilidade nova para quem ficou). Quando o último cai, a party seguinte chega inteira.
 func _party_check() -> void:
-	_endless_extend()
 	var k := followers.size() - 1
 	while k >= 0:
 		var f: SimHero = followers[k]
@@ -1534,7 +1514,7 @@ func _party_check() -> void:
 			stats["heroes_fallen"] = group_falls
 			emit(K.Ev.HERO_FALL, hero.x, hero.y, group_falls, 0)
 			_finish(K.Result.WIN_EARLY if phase == K.Phase.ROAD else K.Result.WIN)
-	elif t >= float(R["sim"]["max_run_seconds"]) and not endless:
+	elif t >= float(R["sim"]["max_run_seconds"]):
 		_finish(K.Result.TIMEOUT)
 
 
@@ -1546,15 +1526,11 @@ func _member_down(pidx_: int, x_: float, y_: float, e: int) -> void:
 	stats["heroes_fallen"] = group_falls
 	if pidx_ == slow_hero:
 		slow_hero = -1
-	var cls_ := party_class(pidx_)
-	var bless: float = float(data.hero_classes.get(cls_, {}).get("bless_next", 0.0))
-	if bless > 0.0:
-		next_hp_mult *= 1.0 + bless
 	emit(K.Ev.HERO_FALL, x_, y_, group_falls, e)
-	HeroPowers.on_member_down(self, pidx_)
-	_learn_ability()
+	HeroPowers.on_member_down(self, pidx_)   # a bênção da Clériga e o poder novo valem na queda da party (_hero_fell)
 	emit(K.Ev.HERO_LEVEL, hero.x, hero.y, hero.level, 0)
-	_offer_level()
+	if bool(mods["oferta_por_heroi"]):
+		_offer_level()   # plano 21/11/2026: 1 de 3 só por party morta; por herói só com a melhoria do Covil
 	if rv("fall_mod_offer") > 0.0:
 		var mo: Array = []
 		var ex: Array = []
@@ -1566,15 +1542,10 @@ func _member_down(pidx_: int, x_: float, y_: float, e: int) -> void:
 		_push_offer("level", mo)
 
 
-## Habilidade nova do grupo: 3 sorteadas, vale a que melhor responde ao que mais feriu; todos de pé a recebem.
+## Poder novo da party que chega (plano 21/11/2026): novo ou evolução, ponderado pelo dano da party toda
+## (sim/hero_powers.gd). As 15 habilidades antigas do herói saíram do fluxo.
 func _learn_ability() -> void:
-	for extra in (2 if next_extra_ability else 1):
-		var opts := _upgrade_options(3)
-		if opts.size() > 0:
-			var id := hero.choose_upgrade(opts)
-			for hh in [hero] + followers:
-				hh.apply_upgrade(id)
-	next_extra_ability = false
+	HeroPowers.learn(self)
 
 
 func _revive(fallen: SimHero) -> void:
@@ -2077,9 +2048,9 @@ func _hero_fell() -> void:
 	stats["heroes_fallen"] = fell
 	if hero.pidx == slow_hero:
 		slow_hero = -1   # Piche: vale até o herói cair
-	var bless: float = hero.H.get("bless_next", 0.0)
+	var bless := HeroPowers.take_bless(self, float(hero.H.get("bless_next", 0.0)))
 	if bless > 0.0:
-		# Clériga: a bênção dela fica para o próximo herói.
+		# Clériga: a bênção dela (qualquer membro da party que caiu) fica para a party seguinte.
 		next_hp_mult *= 1.0 + bless
 	emit(K.Ev.HERO_FALL, hero.x, hero.y, fell, 0)
 	var arriving: Array = [party_idx + 1]   # quem chega (fila de parties: a party seguinte inteira)
@@ -2113,7 +2084,6 @@ func _hero_fell() -> void:
 	else:
 		hero.x = gate_pos.x
 		hero.y = gate_pos.y
-		arena_party_t = t   # Horda sem fim: a prorrogação recomeça para a party que chega
 	hero.ox = hero.x
 	hero.oy = hero.y
 	HeroPowers.on_party_down(self)
@@ -2138,6 +2108,7 @@ func _hero_fell() -> void:
 				ex.append(str(m["uid"]) + str(m["mod"]))
 				mo.append(m)
 		_push_offer("level", mo)
+	HeroPowers.push_offer(self)   # aviso do poder novo: segunda tela, depois da oferta de carta
 
 
 ## O herói aprende uma habilidade a cada `upgrade_every` níveis, até `upgrade_max` (poucas, para o jogador acompanhar).
@@ -2147,24 +2118,9 @@ func _hero_learns() -> bool:
 	return hero.level % every == 0 and hero.upgrade_order.size() < int(X.get("upgrade_max", 99))
 
 
+## Candidatos a poder da party (ids, novos e evoluções juntos, pelo mesmo peso do sorteio; sim/hero_powers.gd).
 func _upgrade_options(n: int) -> Array:
-	var pool: Array = []
-	for u in data.hero["upgrades"]:
-		if not hero.has(u["id"]):
-			pool.append(u)
-	var out: Array = []
-	while out.size() < n and pool.size() > 0:
-		var tot := 0.0
-		for u in pool:
-			tot += float(u["weight"])
-		var r := rng_offer.randf() * tot
-		for k in pool.size():
-			r -= float(pool[k]["weight"])
-			if r <= 0.0 or k == pool.size() - 1:
-				out.append(pool[k]["id"])
-				pool.remove_at(k)
-				break
-	return out
+	return HeroPowers.options(self, n)
 
 
 func _forge() -> float:
@@ -2514,8 +2470,14 @@ func _tick_draws() -> void:
 
 
 ## Recarga da vaga com relíquias (Areia Fina, Mochila do Saqueador): DRAW_DELAY × (1 + soma de "draw_delay").
+## Delta do Covil para o local `ty` (mods["locais"][ty][key]); 0 sem meta.
+func _loc_mod(ty: String, key: String) -> float:
+	var d: Dictionary = mods["locais"].get(ty, {})
+	return float(d.get(key, 0.0))
+
+
 func draw_delay() -> float:
-	return DRAW_DELAY * draw_delay_mult * maxf(0.15, 1.0 + rv("draw_delay"))
+	return DRAW_DELAY * draw_delay_mult * maxf(0.15, 1.0 + rv("draw_delay")) * maxf(0.15, 1.0 - float(mods["recarga"]["carta"]))
 
 
 ## Experimentos de balanceamento (headless/batch.gd): multiplicador da recarga e evento forçado. Só o lote mexe.
@@ -2793,6 +2755,8 @@ func _opt_key(o: Dictionary) -> String:
 			return "buy:" + _opt_key(o["item"])
 		"relic":
 			return "relic:" + str(o["id"])
+		"power":
+			return "power:" + str(o["id"])
 		"event_opt":
 			return "ev:%s:%d" % [o["event"], int(o["opt"])]
 		"transform", "copy":
@@ -3037,7 +3001,7 @@ func choose(k: int) -> bool:
 		return false
 	var o: Dictionary = offers[0]
 	var opts: Array = o["options"]
-	if o["source"] == "give":
+	if o["source"] == "give" or o["source"] == "power":
 		offers.pop_front()   # só um aviso: Continuar (qualquer carta ou SKIP) fecha, sem efeito
 		return true
 	if k == SKIP:

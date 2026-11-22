@@ -17,8 +17,10 @@ var events_def: Dictionary = {}  # id -> dict (data/events.json): eventos de tex
 var event_ids: Array = []
 var hero_classes: Dictionary = {}  # id -> overlay (data/hero_classes.json)
 var phases: Array = []             # fases da campanha (data/campaign.json)
-var endless: Dictionary = {}       # Horda sem fim (data/campaign.json "endless"); phase(id) devolve ela
-var campaign_map: Dictionary = {}  # papel e covil do mapa da campanha (data/campaign.json "map", 16/11/2026)
+var unlock_villain_at: Dictionary = {}   # vilão -> party que, ao ser derrotada, o libera (fase 1 de data/campaign.json)
+# SHIMS (plano 21/11/2026: sem Horda sem fim nem mapa da campanha): vazios para game/ seguir compilando; a frente G apaga.
+var endless: Dictionary = {}
+var campaign_map: Dictionary = {}
 var villains: Dictionary = {}      # id -> dict (data/villains.json): os 3 vilões (C3, 10/11/2026)
 var villain_ids: Array = []
 var free_cards: Array = []         # liberadas desde o início (data/unlocks.json)
@@ -71,17 +73,10 @@ static func load_dir(dir := "res://data") -> GameData:
 	g.hero_classes = _read(dir + "/hero_classes.json").get("classes", {})
 	var camp := _read(dir + "/campaign.json")
 	g.phases = camp.get("phases", [])
-	g.campaign_map = camp.get("map", {})
-	# Horda sem fim (19/11/2026): fica fora de `phases`; a força vem da última fase com mapa (a Capital).
-	g.endless = camp.get("endless", {}).duplicate(true)
-	if not g.endless.is_empty():
-		var last: Dictionary = {}
-		for ph in g.phases:
-			if ph.has("map"):
-				last = ph
-		g.endless["endless"] = true
-		g.endless["hp_mult"] = float(last.get("hp_mult", 1.0))
-		g.endless["damage_mult"] = float(last.get("damage_mult", 1.0))
+	g.unlock_villain_at = {}
+	for ph in g.phases:
+		for vid in ph.get("unlock_villain_at", {}):
+			g.unlock_villain_at[str(vid)] = int(ph["unlock_villain_at"][vid])
 	# "parties" (fila de parties) é a fonte; "party" (lista plana de classes) e "party_of" (número da party de cada
 	# herói) saem dela para o menu e os testes.
 	for ph in g.phases:
@@ -128,8 +123,6 @@ func hero_of(cls: String, hp_mult := 1.0, dmg_mult := 1.0) -> Dictionary:
 
 
 func phase(n: int) -> Dictionary:
-	if not endless.is_empty() and n == int(endless["id"]):
-		return endless
 	for p in phases:
 		if int(p["id"]) == n:
 			return p

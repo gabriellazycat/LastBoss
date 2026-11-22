@@ -419,7 +419,7 @@
  },
  "party": {
   "size": 7,
-  "step": 1.21,
+  "step": 1.17,
   "share_exp": 1.0,
   "arrive_s": 8.0
  },
@@ -461,10 +461,10 @@
   {
    "ground_look": 2,
    "road": {
-    "target_length": 300.0,
+    "target_length": 500.0,
     "route_locations": [
-     7,
-     8
+     10,
+     11
     ]
    },
    "rarity": [
@@ -482,10 +482,10 @@
   {
    "ground_look": 3,
    "road": {
-    "target_length": 300.0,
+    "target_length": 800.0,
     "route_locations": [
-     7,
-     8
+     14,
+     15
     ]
    },
    "rarity": [
@@ -503,10 +503,10 @@
   {
    "ground_look": 4,
    "road": {
-    "target_length": 300.0,
+    "target_length": 1100.0,
     "route_locations": [
-     7,
-     8
+     17,
+     18
     ]
    },
    "rarity": [

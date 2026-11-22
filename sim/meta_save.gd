@@ -224,11 +224,13 @@ func apply_unlocks(sim: Sim, won: bool, path := "") -> Dictionary:
 	return res
 
 
-## Parties que liberam cada vilão ({"dragon": 3, "lich": 6}): da fase da run (unlock_villain_at) ou, sem ela, do
-## fallback "villain_unlock_at" de data/meta_tree.json.
+## Parties que liberam cada vilão ({"dragon": 3, "lich": 6}): GameData.unlock_villain_at (fase 1 de data/campaign.json,
+## "unlock_villain_at") ou, se estiver vazio, o fallback "villain_unlock_at" de data/meta_tree.json.
 func villain_unlock_at(sim: Sim = null) -> Dictionary:
 	if sim != null and sim.phase_cfg is Dictionary and sim.phase_cfg.has("unlock_villain_at"):
 		return sim.phase_cfg["unlock_villain_at"]
+	if not data.unlock_villain_at.is_empty():
+		return data.unlock_villain_at
 	return data.meta_tree.get("villain_unlock_at", {})
 
 
