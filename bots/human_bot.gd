@@ -63,7 +63,8 @@ func think(sim: Sim) -> void:
 	if fallen > _last_fallen:
 		_tilt_until = sim.t + float(P.get("tilt_s", 0.0))
 	_last_fallen = fallen
-	var pace := 1.0 + float(P.get("fatigue", 0.0)) * sim.t / 1500.0
+	# Run longa de 15 parties: o cansaço satura (senão o ritmo cresce sem limite e o bot trava).
+	var pace := 1.0 + minf(float(P.get("fatigue", 0.0)) * sim.t / 1500.0, 1.0)
 	if sim.t < _tilt_until:
 		pace *= 0.6
 	next_t = sim.t + rng.randf_range(float(P.get("think_min", 0.35)), float(P.get("think_max", 0.8))) * pace
@@ -81,8 +82,13 @@ func think(sim: Sim) -> void:
 
 ## Oferta: a escolha do heurístico; se o Sim recusar, pula; se nem pular dá, a primeira opção que entrar.
 func _human_offer(sim: Sim) -> void:
-	var k := _pick_offer(sim)
 	var of: Dictionary = sim.offers[0]
+	if of["source"] == "power":   # aviso de poder de party: fecha (Continuar)
+		if not hands.choose(Sim.SKIP):
+			stats["offer_skips"] += 1
+			hands.choose(0)
+		return
+	var k := _pick_offer(sim)
 	# Ruído de decisão do perfil: às vezes escolhe uma opção qualquer (nunca na loja nem em evento, onde há regra própria).
 	if float(P.get("offer_noise", 0.0)) > 0.0 and of["source"] in ["relic", "level", "act_card", "location"] and rng.randf() < float(P.get("offer_noise", 0.0)):
 		k = rng.randi_range(0, of["options"].size() - 1)

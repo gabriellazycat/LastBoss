@@ -92,6 +92,7 @@ func _ready() -> void:
 	t_powers()
 	t_library_ui()
 	t_covil_ui()
+	t_bots15()
 	print("falhas: ", fails)
 	get_tree().quit(fails)
 
@@ -4280,3 +4281,37 @@ func t_covil_ui() -> void:
 		check(m.almas == m.almas_earned and m.upgrades.is_empty(), "covil: reembolsar tudo devolve tudo")
 		sc.queue_free()
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+## Frente J (21/11/2026): bots na run de 15 parties. Fumaça: oferta de poder fecha, BotRun.run devolve o dicionário,
+## mods de meta maxada aplicam. Nada de balanço.
+func t_bots15() -> void:
+	# Oferta "power": o bot fecha (os dois bots).
+	for bid in ["heuristic", "human"]:
+		var s := _phase_sim(1, 5)
+		s.offers.append({"source": "power", "options": [{"kind": "power", "id": "x", "level": 1, "prev_level": 0, "new": true}]})
+		var b := PlayerBot.load_bot(bid, 5)
+		b.think(s)
+		check(s.offers.is_empty(), "bot %s fecha a oferta de poder" % bid)
+	# Run completa com limite de tempo simulado pequeno.
+	var r := BotRun.run(data, 3, MetaApply.defaults(), [], {"max_t": 120.0})
+	check(r.has("result") and r.has("parties_beaten") and r.has("t") and r.has("stats"), "BotRun.run devolve o dicionario")
+	check(float(r["t"]) > 0.0 and float(r["t"]) < 200.0 and int(r["parties_beaten"]) >= 0, "BotRun.run respeita o limite de tempo (%.0f s)" % float(r["t"]))
+	# Meta maxada.
+	var mm := BotRun.maxed_mods(data)
+	var nm := MetaApply.defaults()
+	check(float(mm["elixir"]["max"]) > float(nm["elixir"]["max"]), "meta maxada: elixir maximo maior (+%.1f)" % float(mm["elixir"]["max"]))
+	var lv_ok: bool = mm["card_levels"].size() > 0
+	for id in mm["card_levels"]:
+		lv_ok = lv_ok and int(mm["card_levels"][id]) == 6
+	check(lv_ok and mm["deck"].size() == MetaSave.DECK_SIZE, "meta maxada: cartas no nivel VI e deck de 19")
+	check(mm["reliquias"]["unlocked"].size() == data.relics.size(), "meta maxada: reliquias liberadas")
+	var r2 := BotRun.run(data, 3, mm, [], {"max_t": 60.0})
+	check(r2.has("result") and float(r2["t"]) > 0.0, "BotRun.run com meta maxada sem erro")
+	# Opcional (--runs): runs completas de verificação de números absurdos (não faz parte da fumaça).
+	if "--runs" in OS.get_cmdline_user_args():
+		for sd in [1, 2, 3]:
+			for tag in ["sem meta", "meta maxada"]:
+				var t0 := Time.get_ticks_msec()
+				var rr := BotRun.run(data, sd, MetaApply.defaults() if tag == "sem meta" else mm, [], {"max_t": 6000.0})
+				print("RUN %s seed %d: %s, parties %d, t %.0f s, ticks %d, quedas %d, %d ms reais" % [tag, sd, rr["result"], rr["parties_beaten"], rr["t"], rr["ticks"], int(rr["stats"].get("heroes_fallen", 0)), Time.get_ticks_msec() - t0])

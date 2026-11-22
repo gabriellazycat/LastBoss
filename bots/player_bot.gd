@@ -562,6 +562,9 @@ func _contest_ahead(sim: Sim) -> Dictionary:
 func _pick_offer(sim: Sim) -> int:
 	var of: Dictionary = sim.offers[0]
 	var opts: Array = of["options"]
+	# Poder de party (21/11/2026): só um aviso do Sim; qualquer escolha (ou SKIP) fecha, sem efeito.
+	if of["source"] == "power":
+		return Sim.SKIP
 	if of["source"] == "shop":
 		return _pick_buy(sim, opts)
 	if of["source"] == "event" and opts.size() > 0 and opts[0]["kind"] == "event_opt":
