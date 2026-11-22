@@ -391,7 +391,7 @@ static func card_params(d: CardDef, level := 1, mark := false, mids: Array = [])
 	# Carta upada: os números que cresceram saem em verde com ▲ (o texto já mostra o valor novo).
 	if mark and level > 1:
 		for k in p.keys():
-			var grew: bool = (k == "count" and d.scales("count")) or (d.scales(k) and d.fx.has(k)) or (level >= 3 and d.n3.has(k))
+			var grew: bool = (k == "count" and d.scales("count")) or (d.scales(k) and d.fx.has(k)) or (level >= CardDef.N3_LEVEL and d.n3.has(k))
 			if grew and not str(k).ends_with("_pct") and not vet_keys.has(k):
 				p[k] = "[color=%s]%s▲[/color]" % [UP_COLOR, str(p[k])]
 				if p.has(k + "_pct"):
@@ -433,7 +433,7 @@ static func card_name(d: CardDef, level := 1) -> String:
 static func card_desc(d: CardDef, level := 1, mark := false, mids: Array = [], stats := true) -> String:
 	var p := card_params(d, level, mark, mids)
 	var t := TranslationServer.translate("DESC_" + d.id).format(p)
-	if level >= 3 and d.n3.size() > 0:
+	if level >= CardDef.N3_LEVEL and d.n3.size() > 0:
 		var n3 := TranslationServer.translate("N3_" + d.id).format(p)
 		t += (" [color=%s]★ %s[/color]" % [N3_COLOR, n3]) if mark else " " + n3
 	if stats and d.is_unit:

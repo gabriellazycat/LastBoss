@@ -37,6 +37,8 @@ static func _one(sim: Sim, a: Dictionary) -> void:
 					var o := sim._level_up_options(1)
 					if o.size() > 0:
 						sim.give_option(o[0])
+					else:
+						sim._upgrade_to_gold()
 			else:
 				sim._push_offer("event", sim._level_up_options(n), {"event_step": "upgrade"})
 		"remove":

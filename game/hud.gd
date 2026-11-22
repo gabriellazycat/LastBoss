@@ -1717,7 +1717,7 @@ func _build_offer_options(o: Dictionary) -> void:
 				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
 				# Só o "depois" em tamanho cheio; o que mudou vem em linhas embaixo (Opção A, 12/11/2026).
 				var ch := UiKit.level_changes(cd, lv - 1, lv).replace(" · ", "\n")
-				if lv >= 3 and cd.n3.size() > 0:
+				if lv >= CardDef.N3_LEVEL and cd.n3.size() > 0:
 					ch += ("
 " if ch != "" else "") + tr("UI_OPT_UP_N3")
 				foot.add_theme_font_size_override("normal_font_size", 18)

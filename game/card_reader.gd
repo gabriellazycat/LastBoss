@@ -329,7 +329,7 @@ func _levels(d: CardDef) -> String:
 		if t != "":
 			lines.append("[b]%s[/b]  %s" % [tr("UI_COL_LV").format({"a": a, "b": a + 1}), t])
 	if d.n3.size() > 0:
-		var n3 := tr("N3_" + d.id).format(UiKit.card_params(d, 3))
+		var n3 := tr("N3_" + d.id).format(UiKit.card_params(d, CardDef.N3_LEVEL))
 		lines.append("[b]★[/b] " + Tips.rich(tr("UI_N3_PREVIEW").format({"t": n3}), false))
 	if lines.is_empty() and (d.lvl.size() > 0 or d.n3.size() > 0):
 		lines.append(tr("UI_COL_LV_SAME"))
