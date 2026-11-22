@@ -1322,3 +1322,46 @@ UI_LIB_OTHER_VILLAIN,Esta carta é de outro vilão: não entra neste deck.,This 
 UI_LIB_MAX_COPIES,Já são {m} cópias no deck.,Already {m} copies in the deck.
 UI_LIB_DECK_FULL,Deck cheio: tire uma carta antes.,Deck full: remove a card first.
 UI_LIB_DECK_OF,Deck de {v}: {a}/{b},{v} deck: {a}/{b}
+# --- Frente B: poderes de party (21/11/2026): POWER_<id> = nome, POWER_<id>_d = efeito com {numeros do nivel} ---
+POWER_fire_burst,Explosão de Fogo,Fire Burst
+POWER_fire_burst_d,"No primeiro inimigo que encosta, uma explosão de {radius} m causa {dmg_mult}x o golpe da party em todos.","On the first enemy to touch the party, a {radius} m blast deals {dmg_mult}x the party's hit to all."
+POWER_whirlwind,Redemoinho de Lâminas,Blade Whirl
+POWER_whirlwind_d,"No primeiro inimigo que encosta, um giro de {radius} m causa {dmg_mult}x o golpe da party em volta do herói.","On the first enemy to touch the party, a {radius} m spin deals {dmg_mult}x the party's hit around the hero."
+POWER_holy_nova,Nova Sagrada,Holy Nova
+POWER_holy_nova_d,"No primeiro inimigo que encosta, uma onda de luz de {radius} m causa {dmg_mult}x o golpe da party, {holy_mult}x contra mortos-vivos e sombrios.","On the first enemy to touch the party, a {radius} m wave of light deals {dmg_mult}x the party's hit, {holy_mult}x against undead and shadows."
+POWER_shockwave,Onda de Choque,Shockwave
+POWER_shockwave_d,"No primeiro inimigo que encosta, o chão treme em {radius} m: {dmg_mult}x o golpe da party, {struct_mult}x contra construtos e estruturas.","On the first enemy to touch the party, the ground shakes in {radius} m: {dmg_mult}x the party's hit, {struct_mult}x against constructs and structures."
+POWER_war_cry,Grito de Guerra,War Cry
+POWER_war_cry_d,"No primeiro inimigo que encosta, cada herói ganha uma barreira de {ward_frac_pct}% da vida máxima e a party bate {dmg_bonus_pct}% mais forte por {dur} s.","On the first enemy to touch the party, each hero gains a barrier of {ward_frac_pct}% max health and the party hits {dmg_bonus_pct}% harder for {dur} s."
+POWER_chain_lightning,Raio em Cadeia,Chain Lightning
+POWER_chain_lightning_d,"No primeiro inimigo que encosta, um raio acerta as {targets} criaturas mais próximas por {dmg_mult}x o golpe da party.","On the first enemy to touch the party, lightning hits the {targets} nearest creatures for {dmg_mult}x the party's hit."
+POWER_smite,Punição,Smite
+POWER_smite_d,"No primeiro inimigo que encosta, um golpe único de {dmg_mult}x o golpe da party.","On the first enemy to touch the party, a single blow of {dmg_mult}x the party's hit."
+POWER_slay_next,Execução,Execution
+POWER_slay_next_d,Mata a próxima criatura que encostar se ela tiver até {kill_hp_mult}x o golpe da party em vida; as maiores perdem {hp_frac_pct}% da vida. Repete em {chain} criatura(s) próxima(s).,Kills the next creature to touch the party if it has up to {kill_hp_mult}x the party's hit in health; bigger ones lose {hp_frac_pct}% of their health. Repeats on {chain} nearby creature(s).
+POWER_titan_blow,Golpe de Titã,Titan Blow
+POWER_titan_blow_d,A próxima criatura com {big_hp} de vida ou mais que encostar perde {hp_frac_pct}% da vida máxima (no máximo {cap_mult}x o golpe da party).,The next creature with {big_hp} health or more to touch the party loses {hp_frac_pct}% of its max health (at most {cap_mult}x the party's hit).
+POWER_soul_drain,Sorver Alma,Soul Drain
+POWER_soul_drain_d,A próxima criatura que encostar leva {dmg_mult}x o golpe da party e a party cura {heal_frac_pct}% da vida máxima de cada herói.,The next creature to touch the party takes {dmg_mult}x the party's hit and the party heals {heal_frac_pct}% of each hero's max health.
+POWER_structure_breaker,Quebra-Armadilhas,Trap Breaker
+POWER_structure_breaker_d,A próxima estrutura que encostar é destruída se tiver até {kill_hp} de vida; as maiores perdem {hp_frac_pct}% da vida.,The next structure to touch the party is destroyed if it has up to {kill_hp} health; bigger ones lose {hp_frac_pct}% of their health.
+POWER_spell_ward,Escudo Anti-Magia,Spell Ward
+POWER_spell_ward_d,Anula o próximo feitiço que acertar a party (e os efeitos dele por {window} s). Cura {heal_frac_pct}% da vida máxima de cada herói quando anula.,Cancels the next spell that hits the party (and its effects for {window} s). Heals {heal_frac_pct}% of each hero's max health when it cancels.
+POWER_purify,Purificação,Purify
+POWER_purify_d,"Quando um herói está amaldiçoado, remove todas as maldições da party.","When a hero is cursed, removes every curse from the party."
+POWER_second_wind,Segundo Fôlego,Second Wind
+POWER_second_wind_d,"Quando um herói cai abaixo de {below_pct}% da vida, ele cura {heal_frac_pct}% da vida máxima.","When a hero drops below {below_pct}% health, they heal {heal_frac_pct}% of max health."
+POWER_iron_will,Vontade de Ferro,Iron Will
+POWER_iron_will_d,"Quando a party é retardada, presa, assustada ou empurrada, ela se liberta e ignora esses efeitos por {immune_s} s.","When the party is slowed, rooted, frightened or knocked back, it breaks free and ignores those effects for {immune_s} s."
+POWER_fire_ward,Escudo Ignífugo,Fireproof Ward
+POWER_fire_ward_d,"Quando o fogo atinge a party, ela recebe {taken_pct}% menos dano de fogo por {dur} s.","When fire hits the party, it takes {taken_pct}% less fire damage for {dur} s."
+POWER_arrow_wall,Muralha de Escudos,Shield Wall
+POWER_arrow_wall_d,"Quando um projétil acerta a party, cada herói ganha uma barreira de {ward_frac_pct}% da vida máxima.","When a projectile hits the party, each hero gains a barrier of {ward_frac_pct}% max health."
+POWER_retaliation,Represália,Retaliation
+POWER_retaliation_d,"Quando a party sofre um golpe forte, uma onda de {radius} m causa {dmg_mult}x o golpe da party em volta do herói.","When the party takes a heavy hit, a {radius} m wave deals {dmg_mult}x the party's hit around the hero."
+POWER_ally_rat,Rato Aliado,Allied Rat
+POWER_ally_rat_d,"Um rato aliado se junta à party (até {max} ao mesmo tempo, {hp} de vida) e morde as criaturas por perto.","An allied rat joins the party (up to {max} at once, {hp} health) and bites nearby creatures."
+POWER_war_hound,Cão de Guerra,War Hound
+POWER_war_hound_d,"Um cão de guerra aliado se junta à party (até {max} ao mesmo tempo, {hp} de vida) e ataca as criaturas por perto.","An allied war hound joins the party (up to {max} at once, {hp} health) and attacks nearby creatures."
+POWER_field_medic,Curandeira,Field Medic
+POWER_field_medic_d,Cura {heal_frac_pct}% da vida máxima de cada herói da party quando alguém está ferido.,Heals {heal_frac_pct}% of each hero's max health when someone is hurt.

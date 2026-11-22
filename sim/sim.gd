@@ -72,6 +72,7 @@ const ELIXIR_CAP := 999.0
 var next_uid := 1
 var mods: Dictionary = {}          # meta da run (sim/meta_apply.gd, plano 21/11/2026): MetaApply.merge(mods de setup)
 var powers: Array = []             # poderes de party da run (sim/hero_powers.gd)
+var power_state: Dictionary = {}   # estado interno do motor de poderes (dano da party, efeitos, aliados, aviso pendente)
 var party_idx := 0                 # herói da fila (0 a size-1); o nível dele é party_idx + 1
 var campaign_phase := 1            # fase da campanha (data/campaign.json); 1 = a run clássica de 7 Escudeiros
 var phase_cfg: Dictionary = {}
@@ -1519,13 +1520,8 @@ func _member_down(pidx_: int, x_: float, y_: float, e: int) -> void:
 	stats["heroes_fallen"] = group_falls
 	if pidx_ == slow_hero:
 		slow_hero = -1
-	var cls_ := party_class(pidx_)
-	var bless: float = float(data.hero_classes.get(cls_, {}).get("bless_next", 0.0))
-	if bless > 0.0:
-		next_hp_mult *= 1.0 + bless
 	emit(K.Ev.HERO_FALL, x_, y_, group_falls, e)
-	HeroPowers.on_member_down(self, pidx_)
-	_learn_ability()
+	HeroPowers.on_member_down(self, pidx_)   # a bênção da Clériga e o poder novo valem na queda da party (_hero_fell)
 	emit(K.Ev.HERO_LEVEL, hero.x, hero.y, hero.level, 0)
 	if bool(mods["oferta_por_heroi"]):
 		_offer_level()   # plano 21/11/2026: 1 de 3 só por party morta; por herói só com a melhoria do Covil
@@ -1540,15 +1536,10 @@ func _member_down(pidx_: int, x_: float, y_: float, e: int) -> void:
 		_push_offer("level", mo)
 
 
-## Habilidade nova do grupo: 3 sorteadas, vale a que melhor responde ao que mais feriu; todos de pé a recebem.
+## Poder novo da party que chega (plano 21/11/2026): novo ou evolução, ponderado pelo dano da party toda
+## (sim/hero_powers.gd). As 15 habilidades antigas do herói saíram do fluxo.
 func _learn_ability() -> void:
-	for extra in (2 if next_extra_ability else 1):
-		var opts := _upgrade_options(3)
-		if opts.size() > 0:
-			var id := hero.choose_upgrade(opts)
-			for hh in [hero] + followers:
-				hh.apply_upgrade(id)
-	next_extra_ability = false
+	HeroPowers.learn(self)
 
 
 func _revive(fallen: SimHero) -> void:
@@ -2034,9 +2025,9 @@ func _hero_fell() -> void:
 	stats["heroes_fallen"] = fell
 	if hero.pidx == slow_hero:
 		slow_hero = -1   # Piche: vale até o herói cair
-	var bless: float = hero.H.get("bless_next", 0.0)
+	var bless := HeroPowers.take_bless(self, float(hero.H.get("bless_next", 0.0)))
 	if bless > 0.0:
-		# Clériga: a bênção dela fica para o próximo herói.
+		# Clériga: a bênção dela (qualquer membro da party que caiu) fica para a party seguinte.
 		next_hp_mult *= 1.0 + bless
 	emit(K.Ev.HERO_FALL, hero.x, hero.y, fell, 0)
 	var arriving: Array = [party_idx + 1]   # quem chega (fila de parties: a party seguinte inteira)
@@ -2094,6 +2085,7 @@ func _hero_fell() -> void:
 				ex.append(str(m["uid"]) + str(m["mod"]))
 				mo.append(m)
 		_push_offer("level", mo)
+	HeroPowers.push_offer(self)   # aviso do poder novo: segunda tela, depois da oferta de carta
 
 
 ## O herói aprende uma habilidade a cada `upgrade_every` níveis, até `upgrade_max` (poucas, para o jogador acompanhar).
@@ -2103,24 +2095,9 @@ func _hero_learns() -> bool:
 	return hero.level % every == 0 and hero.upgrade_order.size() < int(X.get("upgrade_max", 99))
 
 
+## Candidatos a poder da party (ids, novos e evoluções juntos, pelo mesmo peso do sorteio; sim/hero_powers.gd).
 func _upgrade_options(n: int) -> Array:
-	var pool: Array = []
-	for u in data.hero["upgrades"]:
-		if not hero.has(u["id"]):
-			pool.append(u)
-	var out: Array = []
-	while out.size() < n and pool.size() > 0:
-		var tot := 0.0
-		for u in pool:
-			tot += float(u["weight"])
-		var r := rng_offer.randf() * tot
-		for k in pool.size():
-			r -= float(pool[k]["weight"])
-			if r <= 0.0 or k == pool.size() - 1:
-				out.append(pool[k]["id"])
-				pool.remove_at(k)
-				break
-	return out
+	return HeroPowers.options(self, n)
 
 
 func _forge() -> float:
@@ -2755,6 +2732,8 @@ func _opt_key(o: Dictionary) -> String:
 			return "buy:" + _opt_key(o["item"])
 		"relic":
 			return "relic:" + str(o["id"])
+		"power":
+			return "power:" + str(o["id"])
 		"event_opt":
 			return "ev:%s:%d" % [o["event"], int(o["opt"])]
 		"transform", "copy":
@@ -2999,7 +2978,7 @@ func choose(k: int) -> bool:
 		return false
 	var o: Dictionary = offers[0]
 	var opts: Array = o["options"]
-	if o["source"] == "give":
+	if o["source"] == "give" or o["source"] == "power":
 		offers.pop_front()   # só um aviso: Continuar (qualquer carta ou SKIP) fecha, sem efeito
 		return true
 	if k == SKIP:

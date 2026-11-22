@@ -214,7 +214,7 @@ func damage() -> float:
 	# golpe na arena mais forte. Chegar à arena sem ter derrubado heróis na estrada passa a custar caro.
 	if sim.phase == K.Phase.ARENA:
 		m *= 1.0 + float(sim.data.rules["arena"].get("queue_dmg", 0.0)) * maxi(0, sim.party_size() - 1 - sim.party_idx)
-	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * m * (1.0 + bonus_dmg) * share
+	return float(H["damage"]) * pow(float(sim.data.rules["party"]["step"]), level - 1) * m * (1.0 + bonus_dmg) * share * HeroPowers.dmg_mult(sim)
 
 
 ## Parte da força da party que cabe a este membro: a party soma a força de um herói só, dividida entre os membros
@@ -965,6 +965,8 @@ func level_up() -> void:
 func note(key: String, v: float) -> void:
 	taken[key] = float(taken.get(key, 0.0)) + v
 	taken_total += v
+	if self != sim.helper:
+		HeroPowers.note(sim, key, v)   # dano da party toda: estilo do jogador no sorteio dos poderes
 
 
 ## Aplica dano vindo de (sx, sy). Devolve o dano que chegou à vida.
@@ -977,6 +979,9 @@ func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) 
 			amount *= float(sim.data.rules["fire_vs_soaked"])
 		if has("fireproof"):
 			amount *= float(upgrades["fireproof"]["fire_mult"])
+		amount *= HeroPowers.fire_mult(sim)   # poder fire_ward
+	if (kind & DMG_SPELL) and self != sim.helper and HeroPowers.spell_hit(sim):
+		return 0.0   # poder spell_ward: o feitiço é anulado
 	if (kind & DMG_SPELL) and has("reflect_shield") and reflect_t <= 0.0:
 		reflect_t = upgrades["reflect_shield"]["cooldown"]
 		sim.emit(K.Ev.SHIELD_BREAK, x, y, 0.0, 1)
