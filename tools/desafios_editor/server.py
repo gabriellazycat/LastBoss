@@ -97,9 +97,20 @@ def _payload():
         for cid in base:
             if cid in cards and cid not in rows:
                 rows[cid] = dict(cards[cid], villains=[v], state="B", text="")
+    # reliquias (plano 21/11/2026): linhas com id "r:<id>", grupo "relic"
+    with open(os.path.join(ROOT, "data", "relics.json"), encoding="utf-8") as f:
+        for rel in json.load(f)["relics"]:
+            x = src.get("relics", {}).get(rel["id"], "F")
+            row = {"id": "r:" + rel["id"], "name": s.get("REL_" + rel["id"], rel["id"]), "owner": "relic",
+                   "rarity": rel.get("rarity", "common"), "type": "relic", "cost": 0, "art": False,
+                   "villains": [], "state": "F" if x == "F" else "L", "text": "" if x == "F" else x[2:],
+                   "relic_owner": rel.get("owner", "common")}
+            if x != "F":
+                row["info"] = _info(x[2:])
+            rows[row["id"]] = row
     return {"rows": sorted(rows.values(), key=lambda r: (r["owner"], r["name"])),
             "names": {"plague": s.get("DECK_plague", "Praga"), "dragon": s.get("DECK_dragon", "Dragão"),
-                      "lich": s.get("DECK_lich", "Lich"), "common": "Comuns"},
+                      "lich": s.get("DECK_lich", "Lich"), "common": "Comuns", "relic": "Relíquias"},
             "requests": _requests()}
 
 
@@ -117,6 +128,20 @@ def _set_text(cid, text):
     src = _load_src()
     old = {}
     hit = False
+    if cid.startswith("r:"):
+        rid = cid[2:]
+        if rid not in src.get("relics", {}):
+            return {"ok": False, "error": "Relíquia %s não está em desbloqueios.json." % rid}
+        prev = src["relics"][rid]
+        src["relics"][rid] = "L|" + text
+        _save_src(src)
+        ok, out = _regenerate()
+        if not ok:
+            src["relics"][rid] = prev
+            _save_src(src)
+            _regenerate()
+            return {"ok": False, "error": "O gerador recusou: " + out}
+        return {"ok": True, "msg": out, "info": info}
     for v in VILLAINS:
         u = src[v]["unlocks"]
         if cid in u:

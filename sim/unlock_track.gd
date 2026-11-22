@@ -3,8 +3,9 @@ extends RefCounted
 ## Desafios que liberam cartas (data/unlocks.json, gerado por tools/gerar_unlocks.py).
 ## Durante a fase o Sim chama os ganchos abaixo e o rastreador só conta (nenhuma regra muda). No fim da fase
 ## `check()` compara os números com cada desafio e devolve o que foi cumprido e o quanto faltou.
-## Fase = uma run inteira: os contadores "numa mesma fase" zeram a cada fase. Desafios entre fases ("total" e
-## "runs", 15/11/2026) somam o que o MetaSave guardou; ver check().
+## Plano 21/11/2026: a "fase" e uma run inteira de 15 parties (os textos dizem "run"/"party"); os contadores "numa
+## mesma run" zeram a cada run. Desafios entre runs ("total" e "runs") somam o que o MetaSave guardou; ver check().
+## Os desafios das reliquias (data/relics.json "challenge") entram junto, com o id "r:<id>".
 
 const SAMPLE_EVERY := 8   # amostra o campo a cada N passos (não precisa de todo passo)
 
@@ -17,7 +18,8 @@ var data: GameData
 var fam_mask := PackedInt32Array()     # índice da carta -> bits das famílias de campo
 var windows: Array = []                # [fam, segundos] que os desafios pedem
 var burst_s := 0.0                     # janela do desafio de dano em rajada (0 = nenhum)
-var t := {}                            # contadores da fase
+var t := {}                            # contadores da run
+var party_marks: Array = []            # parties que algum desafio "sem jogar"/"jogando so" pede (foto das jogadas)
 
 
 const FAMS := ["monster", "rat", "bat", "skeleton", "undead", "fire_monster", "pack", "beast", "structure"]
@@ -49,14 +51,16 @@ func setup(d: GameData) -> void:
 		if c.arch == K.Arch.STRUCTURE:
 			m |= 1 << 8
 		fam_mask[i] = m
-	for k in d.unlock_challenges:
-		var ch: Dictionary = d.unlock_challenges[k]
+	for k in all_ids():
+		var ch: Dictionary = challenge(k)
 		if str(ch["kind"]) == "burst":
 			burst_s = maxf(burst_s, float(ch["s"]))
 		if str(ch["kind"]) == "plays_window":
 			var w := [str(ch["fam"]), float(ch["s"])]
 			if not windows.has(w):
 				windows.append(w)
+		if str(ch["kind"]) in ["party_without", "party_max"] and not party_marks.has(int(ch["party"])):
+			party_marks.append(int(ch["party"]))
 	t = {
 		"peak": {},          # família -> máximo de unidades de uma vez
 		"multi": {},         # "beast+rat" -> melhor valor mínimo; ver _sample
@@ -71,7 +75,23 @@ func setup(d: GameData) -> void:
 		"soak_t": -1000.0, "soak_ignite": 1000.0, "prev_soak": 0.0, "prev_burn": 0.0,
 		"soaked_time": 0.0, "burn_time": 0.0,
 		"peste": 0.0, "curses": 0, "elixir_max": 0.0, "coins": 0,
+		"pb": 0, "snap": {},  # parties derrubadas ate agora e {party: jogadas por familia quando ela caiu}
 	}
+
+
+## Ids de todos os desafios: cartas (data.unlock_challenges) e reliquias ("r:<id>", data.relics[id].challenge).
+func all_ids() -> Array:
+	var out: Array = data.unlock_challenges.keys()
+	for rid in data.relic_ids:
+		if data.relics[rid].has("challenge"):
+			out.append("r:" + rid)
+	return out
+
+
+func challenge(id: String) -> Dictionary:
+	if id.begins_with("r:"):
+		return data.relics.get(id.substr(2), {}).get("challenge", {})
+	return data.unlock_challenges.get(id, {})
 
 
 # ------------------------------------------------------------------ ganchos do Sim
@@ -97,6 +117,13 @@ func on_tick(sim: Sim) -> void:
 		var e: Array = sim.cstate["plague"].get("peste", {}).get(str(h.pidx), [0.0, 0.0])
 		if float(e[0]) > float(t["peste"]):
 			t["peste"] = float(e[0])
+	if party_marks.size() > 0:
+		var pb := sim.parties_beaten()
+		if pb != int(t["pb"]):
+			t["pb"] = pb
+			for n in party_marks:
+				if pb >= int(n) and not t["snap"].has(n):
+					t["snap"][n] = t["plays"].duplicate()
 	if sim.tick % SAMPLE_EVERY == 0:
 		_sample(sim)
 
@@ -240,6 +267,21 @@ func progress(ch: Dictionary, stats: Dictionary, ctx: Dictionary) -> Dictionary:
 		"soak_ignite":
 			v = 1.0 if float(t["soak_ignite"]) <= float(ch["s"]) else 0.0
 			g = 1.0
+		"party":
+			# "Derrote a party N" (com `mine`: com o vilao jogado): o recorde guardado ou o desta run.
+			var best := int(ctx.get("best_by_villain", {}).get(str(ctx.get("villain", "")), 0)) if ch.get("mine", false) \
+				else int(ctx.get("best_party", 0))
+			v = float(maxi(best, int(stats.get("parties_beaten", 0))))
+			g = float(ch["party"])
+		"party_without":
+			# Derrote a party N sem jogar a familia: as jogadas da familia ate o instante em que a party N caiu.
+			var sn: Dictionary = t["snap"].get(int(ch["party"]), {})
+			v = 1.0 if t["snap"].has(int(ch["party"])) and int(sn.get(str(ch["fam"]), 0)) == 0 else 0.0
+			g = 1.0
+		"party_max":
+			var sm: Dictionary = t["snap"].get(int(ch["party"]), {})
+			v = 1.0 if t["snap"].has(int(ch["party"])) and int(sm.get(str(ch["fam"]), 0)) <= int(ch["n"]) else 0.0
+			g = 1.0
 		"win_phase":
 			v = 1.0 if (ctx.get("phases_won", []).has(int(ch["phase"])) or (won and int(ctx.get("phase", -1)) == int(ch["phase"]))) else 0.0
 			g = 1.0
@@ -297,8 +339,8 @@ static func total_key(ch: Dictionary) -> String:
 ## Valor desta fase de cada contador acumulado que algum desafio "total" usa (para o MetaSave somar).
 func phase_totals(stats: Dictionary, ctx: Dictionary) -> Dictionary:
 	var out := {}
-	for k in data.unlock_challenges:
-		var ch: Dictionary = data.unlock_challenges[k]
+	for k in all_ids():
+		var ch: Dictionary = challenge(k)
 		if ch.get("total", false):
 			out[total_key(ch)] = float(progress(ch, stats, ctx)["v"])
 	return out
@@ -313,15 +355,17 @@ func check(stats: Dictionary, ctx: Dictionary, locked: Array) -> Dictionary:
 	var done: Array = []
 	var near: Array = []
 	for id in locked:
-		if not data.unlock_challenges.has(id):
+		var ch: Dictionary = challenge(id).duplicate()
+		if ch.is_empty():
 			continue
-		var ch: Dictionary = data.unlock_challenges[id].duplicate()
 		ch["_id"] = id
 		var p := progress(ch, stats, ctx)
 		p["id"] = id
 		if ch.get("total", false):
 			var cd := data.card(id)
 			var common := cd != null and cd.owner == "common"
+			if id.begins_with("r:"):
+				common = str(data.relics.get(id.substr(2), {}).get("owner", "common")) == "common"
 			var tot: Dictionary = ctx.get("totals_all" if common else "totals_villain", {})
 			p["v"] = float(tot.get(total_key(ch), 0.0)) + float(p["v"])
 			p["done"] = float(p["v"]) >= float(p["g"]) - 0.0001

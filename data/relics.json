@@ -9,7 +9,8 @@
     "death_elixir_every": 10
    },
    "owner": "lich",
-   "unique": true
+   "unique": true,
+   "free": true
   },
   {
    "id": "lair_tithe",
@@ -18,7 +19,8 @@
    "fx": {
     "gold": 0.3
    },
-   "owner": "dragon"
+   "owner": "dragon",
+   "free": true
   },
   {
    "id": "black_mortar",
@@ -27,7 +29,8 @@
    "fx": {
     "structure": 0.5
    },
-   "owner": "common"
+   "owner": "common",
+   "free": true
   },
   {
    "id": "victory_horn",
@@ -36,7 +39,8 @@
    "fx": {
     "contest_elixir": 2
    },
-   "owner": "common"
+   "owner": "common",
+   "free": true
   },
   {
    "id": "cracked_hourglass",
@@ -45,7 +49,11 @@
    "fx": {
     "contest_window": 0.3
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "party",
+    "party": 3
+   }
   },
   {
    "id": "jailer_chains",
@@ -54,7 +62,12 @@
    "fx": {
     "cc": 0.5
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "heroes",
+    "n": 12,
+    "total": true
+   }
   },
   {
    "id": "watchful_eye",
@@ -63,7 +76,13 @@
    "fx": {
     "free_after_ability": 3.0
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "plays",
+    "fam": "any",
+    "n": 150,
+    "total": true
+   }
   },
   {
    "id": "pack_howl",
@@ -74,7 +93,12 @@
     "pack_dmg": 0.25
    },
    "owner": "plague",
-   "unique": true
+   "unique": true,
+   "challenge": {
+    "kind": "peak",
+    "fam": "pack",
+    "n": 8
+   }
   },
   {
    "id": "merchant_purse",
@@ -84,7 +108,11 @@
     "shop_cards": 1,
     "shop_price": -0.25
    },
-   "owner": "dragon"
+   "owner": "dragon",
+   "challenge": {
+    "kind": "gold_earned",
+    "n": 800
+   }
   },
   {
    "id": "overflowing_chalice",
@@ -94,7 +122,8 @@
     "act_full_elixir": 1
    },
    "owner": "common",
-   "unique": true
+   "unique": true,
+   "free": true
   },
   {
    "id": "shortcut_stone",
@@ -103,7 +132,11 @@
    "fx": {
     "contest_first_discount": 99
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "party",
+    "party": 6
+   }
   },
   {
    "id": "profane_earth",
@@ -112,7 +145,11 @@
    "fx": {
     "loc_raise": 0.25
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "party",
+    "party": 8
+   }
   },
   {
    "id": "bad_blood",
@@ -122,7 +159,11 @@
     "fall_mod_offer": 1
    },
    "owner": "common",
-   "unique": true
+   "unique": true,
+   "challenge": {
+    "kind": "party",
+    "party": 9
+   }
   },
   {
    "id": "heavy_grimoire",
@@ -132,7 +173,12 @@
     "hand": 2,
     "elixir_max": -2
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "plays",
+    "fam": "spell",
+    "n": 50
+   }
   },
   {
    "id": "elixir_flask",
@@ -143,7 +189,8 @@
     "elixir_regen": 0.15
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "free": true
   },
   {
    "id": "quick_spring",
@@ -154,7 +201,8 @@
     "elixir_regen": 0.344
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "free": true
   },
   {
    "id": "deep_cauldron",
@@ -165,7 +213,11 @@
     "elixir_regen": 0.25
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "challenge": {
+    "kind": "elixir_max",
+    "n": 14
+   }
   },
   {
    "id": "rushing_tide",
@@ -176,7 +228,11 @@
     "elixir_regen": 0.45
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "challenge": {
+    "kind": "elixir_spent",
+    "n": 400
+   }
   },
   {
    "id": "victory_mark",
@@ -188,7 +244,12 @@
    },
    "owner": "common",
    "unique": true,
-   "weight": 2.5
+   "weight": 2.5,
+   "challenge": {
+    "kind": "heroes",
+    "n": 60,
+    "total": true
+   }
   },
   {
    "id": "heart_of_well",
@@ -199,7 +260,11 @@
     "elixir_regen": 0.5
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "challenge": {
+    "kind": "elixir_max",
+    "n": 17
+   }
   },
   {
    "id": "eternal_fountain",
@@ -210,7 +275,12 @@
     "elixir_regen": 1.0
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "challenge": {
+    "kind": "elixir_max",
+    "n": 18,
+    "runs": 2
+   }
   },
   {
    "id": "living_vault",
@@ -222,7 +292,11 @@
    },
    "owner": "dragon",
    "unique": true,
-   "weight": 2.5
+   "weight": 2.5,
+   "challenge": {
+    "kind": "gold_spent",
+    "n": 500
+   }
   },
   {
    "id": "hand_pocket",
@@ -231,7 +305,11 @@
    "fx": {
     "hand": 1
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "party",
+    "party": 7
+   }
   },
   {
    "id": "opening_gambit",
@@ -241,7 +319,11 @@
     "hero_first_free": 1
    },
    "owner": "common",
-   "unique": true
+   "unique": true,
+   "challenge": {
+    "kind": "party",
+    "party": 4
+   }
   },
   {
    "id": "act_hoard",
@@ -250,7 +332,11 @@
    "fx": {
     "act_gold": 80
    },
-   "owner": "dragon"
+   "owner": "dragon",
+   "challenge": {
+    "kind": "gold_end",
+    "n": 300
+   }
   },
   {
    "id": "twin_litter",
@@ -259,7 +345,12 @@
    "fx": {
     "pack_extra": 1
    },
-   "owner": "plague"
+   "owner": "plague",
+   "challenge": {
+    "kind": "peak",
+    "fam": "monster",
+    "n": 30
+   }
   },
   {
    "id": "phylactery",
@@ -269,7 +360,11 @@
     "revive_once": 1
    },
    "owner": "lich",
-   "unique": true
+   "unique": true,
+   "challenge": {
+    "kind": "party",
+    "party": 12
+   }
   },
   {
    "id": "greedy_seal",
@@ -278,7 +373,12 @@
    "fx": {
     "relic_options": 1
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "heroes",
+    "n": 80,
+    "total": true
+   }
   },
   {
    "id": "grave_call",
@@ -287,7 +387,12 @@
    "fx": {
     "skeleton_return": 0.25
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "died",
+    "fam": "monster",
+    "n": 150
+   }
   },
   {
    "id": "lucky_coin",
@@ -296,7 +401,11 @@
    "fx": {
     "free_play_chance": 0.2
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "gold_end",
+    "n": 600
+   }
   },
   {
    "id": "war_drum",
@@ -305,7 +414,8 @@
    "fx": {
     "contest_enter_elixir": 3
    },
-   "owner": "common"
+   "owner": "common",
+   "free": true
   },
   {
    "id": "forge_hammer",
@@ -314,7 +424,13 @@
    "fx": {
     "pickup_upgrade": 3
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "plays",
+    "fam": "structure",
+    "n": 20,
+    "total": true
+   }
   },
   {
    "id": "tinker_file",
@@ -323,7 +439,13 @@
    "fx": {
     "pickup_discount": 2
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "plays",
+    "fam": "spell",
+    "n": 60,
+    "total": true
+   }
   },
   {
    "id": "blood_tithe",
@@ -332,7 +454,8 @@
    "fx": {
     "pickup_hero_dmg": 0.05
    },
-   "owner": "common"
+   "owner": "common",
+   "free": true
   },
   {
    "id": "tar_pit",
@@ -341,7 +464,12 @@
    "fx": {
     "hero_slow": 0.25
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "burst",
+    "n": 800,
+    "s": 4.0
+   }
   },
   {
    "id": "stamp_ink",
@@ -350,7 +478,12 @@
    "fx": {
     "pickup_mods": 2
    },
-   "owner": "common"
+   "owner": "common",
+   "challenge": {
+    "kind": "heroes",
+    "n": 30,
+    "total": true
+   }
   },
   {
    "id": "deep_cistern",
@@ -360,7 +493,11 @@
     "elixir_max": 4
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "challenge": {
+    "kind": "elixir_max",
+    "n": 15
+   }
   },
   {
    "id": "still_aether",
@@ -371,7 +508,11 @@
     "elixir_regen": 0.7
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "challenge": {
+    "kind": "elixir_max",
+    "n": 16
+   }
   },
   {
    "id": "aether_heart",
@@ -382,7 +523,12 @@
     "elixir_regen": 0.8
    },
    "owner": "common",
-   "weight": 1
+   "weight": 1,
+   "challenge": {
+    "kind": "elixir_max",
+    "n": 20,
+    "runs": 3
+   }
   },
   {
    "id": "living_library",
@@ -392,7 +538,13 @@
     "draw_on_shuffle": 1
    },
    "owner": "common",
-   "weight": 2.0
+   "weight": 2.0,
+   "challenge": {
+    "kind": "plays",
+    "fam": "any",
+    "n": 200,
+    "total": true
+   }
   },
   {
    "id": "fine_sand",
@@ -402,7 +554,11 @@
     "draw_delay": -0.4
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "challenge": {
+    "kind": "elixir_spent",
+    "n": 600
+   }
   },
   {
    "id": "bronze_bell",
@@ -412,7 +568,8 @@
     "refill_elixir": 0.3
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "free": true
   },
   {
    "id": "raider_pack",
@@ -423,7 +580,13 @@
     "draw_delay": 0.5
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "challenge": {
+    "kind": "plays_window",
+    "fam": "any",
+    "n": 7,
+    "s": 10.0
+   }
   },
   {
    "id": "hanged_hand",
@@ -435,7 +598,13 @@
    },
    "owner": "common",
    "new": "2026-11-15",
-   "unique": true
+   "unique": true,
+   "challenge": {
+    "kind": "plays_window",
+    "fam": "any",
+    "n": 12,
+    "s": 12.0
+   }
   },
   {
    "id": "arcane_ink",
@@ -445,7 +614,13 @@
     "spell_discount": 1
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "challenge": {
+    "kind": "plays",
+    "fam": "spell",
+    "n": 300,
+    "total": true
+   }
   },
   {
    "id": "torn_banner",
@@ -455,7 +630,8 @@
     "unit_dmg": 0.1
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "free": true
   },
   {
    "id": "giant_scale",
@@ -465,7 +641,11 @@
     "big_discount": 1
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "challenge": {
+    "kind": "plays_same",
+    "n": 25
+   }
   },
   {
    "id": "tally_stick",
@@ -476,7 +656,12 @@
    },
    "owner": "common",
    "new": "2026-11-15",
-   "unique": true
+   "unique": true,
+   "challenge": {
+    "kind": "plays",
+    "fam": "any",
+    "n": 120
+   }
   },
   {
    "id": "chain_ring",
@@ -486,7 +671,13 @@
     "chain_elixir": 1
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "challenge": {
+    "kind": "plays_window",
+    "fam": "any",
+    "n": 6,
+    "s": 8.0
+   }
   },
   {
    "id": "miser_ledger",
@@ -497,7 +688,8 @@
     "shop_price": 0.1
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "free": true
   },
   {
    "id": "frost_shard",
@@ -508,7 +700,12 @@
     "elixir_max": -1
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "challenge": {
+    "kind": "plays",
+    "fam": "lair",
+    "n": 6
+   }
   },
   {
    "id": "rift_key",
@@ -519,7 +716,13 @@
     "teleport_cost": -1
    },
    "owner": "common",
-   "new": "2026-11-15"
+   "new": "2026-11-15",
+   "challenge": {
+    "kind": "plays_window",
+    "fam": "any",
+    "n": 10,
+    "s": 15.0
+   }
   }
  ]
 }

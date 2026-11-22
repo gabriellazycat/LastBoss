@@ -1,5 +1,5 @@
 {
- "_doc": "Gerado por tools/gerar_unlocks.py a partir de tools/desbloqueios.json. free = cartas liberadas desde o início (podem ser sorteadas nas ofertas); challenges = desafio que libera cada carta bloqueada (texto em UNLOCK_<id>). Fase = uma run inteira; contadores 'numa mesma fase' zeram a cada fase. total = soma entre fases (carta de vilão: só as fases com ele; comum: todas); runs = em quantas fases diferentes o feito aconteceu.",
+ "_doc": "Gerado por tools/gerar_unlocks.py a partir de tools/desbloqueios.json. free = cartas liberadas desde o início (podem ser sorteadas nas ofertas); challenges = desafio que libera cada carta bloqueada (texto em UNLOCK_<id>). Run = uma partida inteira (15 parties); contadores 'numa mesma run' zeram a cada run. total = soma entre runs (carta de vilão: só as runs com ele; comum: todas); runs = em quantas runs diferentes o feito aconteceu; party = recorde de parties derrubadas. As reliquias guardam free/challenge no proprio data/relics.json (texto em UNLOCK_relic_<id>).",
  "free": [
   "barricade",
   "brown_bear",
@@ -107,8 +107,9 @@
    "total": true
   },
   "bone_totem": {
-   "kind": "wins",
-   "n": 2
+   "kind": "party",
+   "party": 8,
+   "mine": true
   },
   "burn_village": {
    "kind": "burn_time",
@@ -122,8 +123,9 @@
    "total": true
   },
   "devour": {
-   "kind": "win_max",
+   "kind": "party_max",
    "fam": "spell",
+   "party": 5,
    "n": 10
   },
   "dragon_exchange": {
@@ -136,8 +138,9 @@
    "n": 5
   },
   "eruption": {
-   "kind": "win_without",
-   "fam": "structure"
+   "kind": "party_without",
+   "fam": "structure",
+   "party": 5
   },
   "eternal_army": {
    "kind": "peak",
@@ -156,8 +159,9 @@
    "runs": 4
   },
   "furnace": {
-   "kind": "wins",
-   "n": 2
+   "kind": "party",
+   "party": 8,
+   "mine": true
   },
   "ghost": {
    "kind": "peak",
@@ -266,12 +270,13 @@
    "runs": 2
   },
   "ruin_titan": {
-   "kind": "win_phase",
-   "phase": 2
+   "kind": "party",
+   "party": 10
   },
   "sewer_flood": {
-   "kind": "wins",
-   "n": 2
+   "kind": "party",
+   "party": 8,
+   "mine": true
   },
   "shadow_mark": {
    "kind": "plays",
@@ -298,8 +303,9 @@
    "total": true
   },
   "soul_harvest": {
-   "kind": "win_without",
+   "kind": "party_without",
    "fam": "structure",
+   "party": 5,
    "runs": 2
   },
   "soul_storm": {
