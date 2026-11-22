@@ -1527,3 +1527,27 @@ META_NEW_BEST,Novo recorde!,New record!
 META_VILLAIN_FREED,Vilão liberado: {name},Villain unlocked: {name}
 META_REFUND_ALL,Reembolsar tudo,Refund all
 META_DECK_COUNT,{n}/19 no deck,{n}/19 in deck
+# ---- Frente E: tela do Covil radial (22/11/2026) ----,,
+UI_COVIL_TITLE,Covil,Lair
+UI_COVIL_ALMAS,Almas,Souls
+UI_COVIL_HINT,Arraste para mover. Roda do mouse para aproximar.,Drag to move. Mouse wheel to zoom.
+UI_COVIL_FIT,Ver tudo,Show all
+UI_COVIL_START,Começar run,Start run
+UI_COVIL_LIBRARY,Biblioteca,Library
+UI_COVIL_REFUND_ALL,Reembolsar tudo,Refund all
+UI_COVIL_REFUND_ASK,Devolver todas as melhorias? As Almas voltam por inteiro.,Return every upgrade? All Souls come back.
+UI_COVIL_YES,Sim,Yes
+UI_COVIL_NO,Não,No
+UI_COVIL_BACK,Voltar,Back
+UI_COVIL_CENTER,Coração do covil,Heart of the lair
+UI_COVIL_LEVEL,Nível {n}/{m},Level {n}/{m}
+UI_COVIL_NEXT,Próximo nível: {c} Almas,Next level: {c} Souls
+UI_COVIL_MAXED,Nível máximo,Max level
+UI_COVIL_BUY,Comprar · {c},Buy · {c}
+UI_COVIL_REFUND,Reembolsar,Refund
+UI_COVIL_NEED_PARENT,Compre antes: {p},Buy first: {p}
+UI_COVIL_SEALED,Chegue ao ato 2,Reach act 2
+UI_COVIL_NEED_ALMAS,Faltam {n} Almas,{n} more Souls needed
+UI_COVIL_PIN,Clique para fixar e comprar,Click to pin and buy
+UI_COVIL_REFUND_BLOCKED,Reembolse antes os nós seguintes,Refund the following nodes first
+UI_COVIL_CLOSE,Fechar,Close
