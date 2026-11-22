@@ -12,9 +12,9 @@ signal node_clicked(id: String)
 signal changed
 
 const NODE_R := 30.0        # raio do nó (unidades do mundo)
-const SPACING := 82.0       # distância mínima entre centros de nós vizinhos no mesmo raio
-const R0 := 185.0           # raio do primeiro nível
-const STEP := 128.0         # distância entre níveis
+const SPACING := 100.0       # distância mínima entre centros de nós vizinhos no mesmo raio
+const R0 := 215.0           # raio do primeiro nível
+const STEP := 140.0         # distância entre níveis
 const HEART_R := 64.0
 const GAP := 0.07           # folga entre setores (rad)
 const ZMIN := 0.28
@@ -42,7 +42,6 @@ var _moved := false
 var _btn := 0
 var _press := Vector2.ZERO
 var _fit_pending := true
-var _icon_cache: Dictionary = {}
 
 
 func setup(d: GameData, m: MetaSave) -> void:
@@ -145,7 +144,7 @@ static func compute_layout(tree: Dictionary) -> Dictionary:
 		var rr := snappedf((pos[id] as Vector2).length(), 0.5)
 		if not rings.has(rr):
 			rings.append(rr)
-	return {"pos": pos, "wedges": wedge_list, "max_r": maxr + 96.0, "depth": depth, "rings": rings}
+	return {"pos": pos, "wedges": wedge_list, "max_r": maxr + 124.0, "depth": depth, "rings": rings}
 
 
 static func _lane_widths(sectors: Array, lanes: Dictionary, groups: Dictionary, s: float) -> Dictionary:
@@ -397,10 +396,29 @@ func _gui_input(e: InputEvent) -> void:
 # ---------------------------------------------------------------- desenho
 
 func _icon(name: String) -> Texture2D:
-	if not _icon_cache.has(name):
-		var p := ICONS + name + ".svg"
-		_icon_cache[name] = load(p) if name != "" and ResourceLoader.exists(p) else null
-	return _icon_cache[name]
+	return icon_tex(name)
+
+
+static var _icons: Dictionary = {}
+
+
+## Ícone do nó (assets/ui/meta/<nome>.svg). Importado quando houver; senão o SVG é lido e rasterizado na hora
+## (cobre ícone novo ainda sem reimportação). null se não existir.
+static func icon_tex(name: String) -> Texture2D:
+	if name == "":
+		return null
+	if _icons.has(name):
+		return _icons[name]
+	var p := ICONS + name + ".svg"
+	var t: Texture2D = null
+	if ResourceLoader.exists(p):
+		t = load(p)
+	if t == null and FileAccess.file_exists(p):
+		var img := Image.new()
+		if img.load_svg_from_string(FileAccess.get_file_as_string(p), 1.0) == OK:
+			t = ImageTexture.create_from_image(img)
+	_icons[name] = t
+	return t
 
 
 func _arc_pts(c: Vector2, r: float, a0: float, a1: float) -> PackedVector2Array:
@@ -468,7 +486,7 @@ func _draw() -> void:
 	for w in wedges:
 		var sid := str(w["id"])
 		var am := (float(w["a0"]) + float(w["a1"])) * 0.5
-		var rr := (max_r - 40.0) * z
+		var rr := (max_r - 24.0) * z
 		var lp := c + Vector2(cos(am), sin(am)) * rr
 		var col: Color = SEC_COLORS.get(sid, UiParch.INK).darkened(0.25)
 		var fs := int(clampf(24.0 * z, 13, 34))

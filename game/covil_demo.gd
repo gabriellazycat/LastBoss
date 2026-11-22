@@ -22,6 +22,7 @@ func _ready() -> void:
 			var kv := a.substr(2).split("=", true, 1)
 			args[kv[0]] = kv[1]
 	Settings.load_all()
+	TranslationServer.set_locale(str(Settings.v.get("language", "pt")))
 	UiSkins.apply()
 	theme = UiKit.make_theme()
 	data = GameData.load_dir()
@@ -77,7 +78,8 @@ func _shoot() -> void:
 func _save(path: String) -> void:
 	await _frames(4)
 	var img := get_viewport().get_texture().get_image()
-	img.save_png(ProjectSettings.globalize_path(path) if path.begins_with("res://") or path.begins_with("user://") else path)
+	var out := path if (path.is_absolute_path() and not path.begins_with("res://") and not path.begins_with("user://")) else ProjectSettings.globalize_path(path if path.contains("://") else "res://" + path)
+	img.save_png(out)
 	print("covil_demo: salvo ", path, " ", img.get_size())
 
 

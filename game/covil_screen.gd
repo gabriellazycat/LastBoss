@@ -42,14 +42,14 @@ func setup(d: GameData, m: MetaSave) -> void:
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
 	bg.color = Color(0.09, 0.065, 0.05)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	var row := HBoxContainer.new()
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.offset_left = 26
 	row.offset_top = 22
 	row.offset_right = -26
@@ -62,7 +62,7 @@ func _ready() -> void:
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	row.add_child(stage)
 	var paper := PanelContainer.new()
-	paper.set_anchors_preset(Control.PRESET_FULL_RECT)
+	paper.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	paper.add_theme_stylebox_override("panel", UiParch.box("gold", 22))
 	stage.add_child(paper)
 	view = MetaTreeView.new()
@@ -250,11 +250,8 @@ func _update_detail() -> void:
 	var n: Dictionary = data.meta_nodes[id]
 	var lv := meta.node_level(id)
 	var mx: int = (n["costs"] as Array).size()
-	var icon := str(n.get("icon", ""))
-	var path := "res://assets/ui/meta/%s.svg" % icon
-	if not ResourceLoader.exists(path):
-		path = "res://assets/ui/meta/dim.svg"
-	_d_icon.texture = load(path) if ResourceLoader.exists(path) else null
+	var itex := MetaTreeView.icon_tex(str(n.get("icon", "")))
+	_d_icon.texture = itex if itex != null else MetaTreeView.icon_tex("dim")
 	_d_name.text = view.node_name(id)
 	_d_sector.text = view.sector_name(view.node_sector(id))
 	var desc := view.node_desc(id)
