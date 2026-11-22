@@ -3721,3 +3721,82 @@ func t_contracts() -> void:
 	var sim := Sim.new()
 	sim.setup(data, 1, "plague", [], [], 1, {"mao": {"inicial": 1}})
 	check(sim.party_powers().is_empty() and sim.hand_size >= 6, "setup com mods e party_powers vazio")
+
+
+## Biblioteca (frente F, 21/11/2026): teste de fumaça da tela (instancia, filtro por custo, regras do deck, compra de nível).
+func t_library_ui() -> void:
+	var path := "user://test_library.save"
+	var prev_look = Settings.v.get("look_hud", 7)
+	Settings.v["look_hud"] = 7
+	UiSkins.apply()
+	var m := LibraryDemo.seed_meta(data, path)
+	var scr := CollectionScreen.new()
+	scr.setup(data, m)
+	scr.api = LibraryDemo.make_api(m)
+	var holder := Control.new()
+	holder.size = Vector2(1688, 1008)
+	add_child(holder)
+	holder.add_child(scr)
+	scr.open()
+	check(scr.tabs.size() == data.villain_ids.size() + 1 and scr.grid.get_child_count() > 0 and scr.grid.get_child_count() <= CollectionScreen.PER_PAGE, "biblioteca instancia com abas e a primeira pagina")
+	scr.set_cost_filter(1)
+	var all_two := scr.shown.size() > 0
+	for d in scr.shown:
+		if CollectionScreen.bucket_of(d.cost_at(int(m.card_levels.get(d.id, 1)))) != 1:
+			all_two = false
+	check(all_two, "filtro por custo mostra so a faixa escolhida (%d cartas)" % scr.shown.size())
+	scr.set_cost_filter(1)
+	check(scr.cost_filter == -1, "clicar de novo no filtro limpa")
+	# Deck: 19 cartas e ate 3 copias.
+	scr.set_tab("plague")
+	check(scr.work.size() == CollectionScreen.DECK_SIZE and scr.deck_valid(), "deck inicial do vilao tem 19 e vale")
+	var extra := ""
+	for d in data.pool:
+		if d.owner == "plague" and m.is_unlocked(d.id) and scr.deck_count(d.id) == 0:
+			extra = d.id
+			break
+	check(extra != "" and not scr.deck_add(extra), "deck cheio nao aceita mais carta")
+	var drop: Array = []
+	for id in scr.work:
+		if not drop.has(id) and drop.size() < 4:
+			drop.append(id)
+	for id in drop:
+		check(scr.deck_remove(id), "tira uma copia de " + str(id))
+	check(scr.work.size() == 15 and not scr.deck_valid(), "deck com 15 cartas nao vale")
+	check(m.decks.get("plague", []).size() in [0, 19], "deck incompleto nao vai para o save")
+	var ok3 := true
+	for k in 3:
+		ok3 = ok3 and scr.deck_add(extra)
+	check(ok3 and scr.deck_count(extra) == 3, "ate 3 copias da mesma carta")
+	check(not scr.deck_add(extra) and scr.deck_count(extra) == 3, "a 4a copia e recusada")
+	var dragon_card := ""
+	for d in data.pool:
+		if d.owner == "dragon":
+			dragon_card = d.id
+			break
+	check(not scr.can_add(dragon_card), "carta de outro vilao nao entra no deck")
+	scr.deck_add(str(drop[0]))
+	check(scr.work.size() == 19 and scr.deck_valid() and m.decks.get("plague", []).size() == 19, "deck completo volta a valer e e gravado")
+	# Comprar nivel: saldo e nivel mudam; no VI ou sem Almas, nada.
+	var buy := ""
+	for d in data.pool:
+		if d.owner == "plague" and m.is_unlocked(d.id) and int(m.card_levels.get(d.id, 1)) < 6:
+			buy = d.id
+			break
+	var lv0 := int(m.card_levels.get(buy, 1))
+	var bal0 := m.almas
+	var price := MetaApply.card_upgrade_cost(data, buy, lv0 + 1)
+	check(scr.buy_level(buy) and int(m.card_levels[buy]) == lv0 + 1 and m.almas == bal0 - price and price > 0, "comprar nivel desconta o preco e sobe a carta")
+	m.almas = 0
+	check(not scr.buy_level(buy) and int(m.card_levels[buy]) == lv0 + 1, "sem Almas nao compra")
+	m.almas = 99999
+	m.card_levels[buy] = 6
+	check(not scr.buy_level(buy) and m.almas == 99999, "no nivel VI nao compra mais")
+	scr._open_zoom(buy)
+	check(scr.zoom_layer.get_child_count() > 0, "zoom abre")
+	scr._close_zoom()
+	holder.queue_free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	Settings.v["look_hud"] = prev_look
+	UiSkins.apply()
+

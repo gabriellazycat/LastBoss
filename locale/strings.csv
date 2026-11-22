@@ -1290,3 +1290,35 @@ UI_ENDLESS_OVER,{n} PARTIES,{n} PARTIES
 UI_ENDLESS_NEW_BEST,Novo recorde deste vilão!,New best for this villain!
 UI_ENDLESS_BEST,Recorde deste vilão: {n} parties.,Best for this villain: {n} parties.
 PHASE_ENDLESS,Horda sem fim,Endless Horde
+# --- Frente F: Biblioteca (21/11/2026)
+UI_LIB_TITLE,Biblioteca,Library
+UI_LIB_SUB,o álbum de cartas do covil,the lair's card album
+UI_LIB_ALMAS,Almas: {n},Souls: {n}
+UI_LIB_COUNT,{a}/{b} cartas,{a}/{b} cards
+UI_LIB_COST,Custo,Cost
+UI_LIB_ALL,Todas,All
+UI_LIB_SHOWN,{n} cartas nesta aba,{n} cards in this tab
+UI_LIB_PAGE,Página {p} de {t},Page {p} of {t}
+UI_LIB_PREV,Anterior,Previous
+UI_LIB_NEXT,Próxima,Next
+UI_LIB_IN_DECK,{n}/{m} no deck,{n}/{m} in deck
+UI_LIB_LOCKED,Bloqueada,Locked
+UI_LIB_CURVE,Curva de elixir,Elixir curve
+UI_LIB_VILLAIN_LOCKED,Vilão ainda trancado: o deck não pode ser editado.,Villain still locked: the deck cannot be edited.
+UI_LIB_DECK_INCOMPLETE,Faltam {n} cartas para o deck valer,{n} more cards needed for a valid deck
+UI_LIB_DECK_RULES,19 cartas · até {m} cópias de cada,19 cards · up to {m} copies of each
+UI_LIB_NOW,Atual · nível {l},Current · level {l}
+UI_LIB_NEXT_LV,Próximo · nível {l},Next · level {l}
+UI_LIB_MAXED,Nível máximo,Max level
+UI_LIB_NO_SPECIAL,Esta carta não tem efeito especial.,This card has no special effect.
+UI_LIB_NUMBERS,Números: atual e próximo nível,Numbers: current and next level
+UI_LIB_SPECIAL_VI,Especial do nível VI,Level VI special
+UI_LIB_UPGRADE,Subir · {p} Almas,Upgrade · {p} Souls
+UI_LIB_BALANCE,Você tem {n} Almas,You have {n} Souls
+UI_LIB_NEED,Faltam {n} Almas,{n} more Souls needed
+UI_LIB_ADD,+ no deck ({n}/{m}),+ to deck ({n}/{m})
+UI_LIB_REMOVE,- do deck,- from deck
+UI_LIB_OTHER_VILLAIN,Esta carta é de outro vilão: não entra neste deck.,This card belongs to another villain: it cannot join this deck.
+UI_LIB_MAX_COPIES,Já são {m} cópias no deck.,Already {m} copies in the deck.
+UI_LIB_DECK_FULL,Deck cheio: tire uma carta antes.,Deck full: remove a card first.
+UI_LIB_DECK_OF,Deck de {v}: {a}/{b},{v} deck: {a}/{b}
