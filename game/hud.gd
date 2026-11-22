@@ -120,8 +120,6 @@ var result_sub: Label
 var result_grid: GridContainer
 var result_btn: Button
 var result_shown := false
-var endless_record := false   # Horda sem fim: a run bateu o recorde do vilão (main.gd, no fim da run)
-var endless_best := 0          # Horda sem fim: recorde do vilão (parties derrubadas)
 
 
 func _ready() -> void:
@@ -1157,8 +1155,6 @@ func _refresh_top() -> void:
 	hero_of_label.text = tr("UI_HERO_OF").format({"k": sim.party_idx + 1, "n": sim.party_size()}) + " · " + tr("HERO_" + sim.hero.cls())
 	if sim.party_mode():
 		hero_of_label.text = tr("UI_PARTY_OF").format({"k": sim.cur_party + 1, "n": sim.party_count()}) + " · " + tr("UI_FALLEN_OF").format({"k": sim.group_falls, "n": sim.party_size()})
-		if sim.endless:
-			hero_of_label.text = tr("UI_ENDLESS_PARTY").format({"k": sim.cur_party + 1}) + " · " + tr("UI_ENDLESS_FALLEN").format({"k": sim.group_falls})
 	_refresh_party()
 	if LAYOUT > 0:
 		hero_hp.visible = not party_box.visible
@@ -1955,10 +1951,6 @@ func _show_result() -> void:
 		result_icon.modulate = Color.WHITE if won else Color(0.78, 0.7, 0.62)
 		UiKit.title_color(result_title, UiParch.INK if won else UiParch.BLOOD)
 	result_sub.text = tr("UI_RESULT_" + r)
-	if sim.endless:
-		# Horda sem fim: só acaba com o covil caindo; o placar são as parties derrubadas e o recorde do vilão.
-		result_title.text = tr("UI_ENDLESS_OVER").format({"n": int(st.get("parties_beaten", 0))})
-		result_sub.text = tr("UI_ENDLESS_NEW_BEST") if endless_record else tr("UI_ENDLESS_BEST").format({"n": endless_best})
 	var top := ""
 	var best := 0
 	for cid in st["played"]:
@@ -1968,8 +1960,6 @@ func _show_result() -> void:
 	UiKit.clear(result_grid)
 	# Rodada 16/11/2026: sem Almas, nível do herói nem Santuários (sistemas que saíram). A arena só aparece se houve.
 	var you := "%d / %d" % [int(st.get("heroes_fallen", 0)), sim.party_size()]
-	if sim.endless:
-		you = str(int(st.get("heroes_fallen", 0)))
 	var tiles := [["UI_ST_you", you], ["UI_ST_time", _clock(sim.t)],
 		["UI_ST_contests", "%d / %d" % [int(st["locs_won"]), int(st["locs_visited"])]], ["UI_ST_gold", str(int(st["gold_earned"]))],
 		["UI_ST_relics", str(st["relics"].size())], ["UI_ST_kills", str(st["kills"])],

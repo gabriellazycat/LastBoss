@@ -1,6 +1,6 @@
 class_name Tips
 extends CanvasLayer
-## Caixas de explicação, como no Hearthstone: passar o mouse num objeto (carta, ícone de habilidade) abre caixas ao
+## Caixas de explicação, como no Hearthstone: passar o mouse num objeto (carta, ícone de poder) abre caixas ao
 ## lado; passar o mouse numa palavra-chave colorida abre a caixa dela. Caixas aninham: uma palavra dentro de uma
 ## caixa abre outra, até MAX_DEPTH níveis. Cada nível espera GRACE s antes de fechar e fica aberto enquanto o mouse
 ## está na sua âncora, numa das suas caixas ou num nível mais fundo.
@@ -268,6 +268,18 @@ static func text_entries(title: String, body: String, icon: Control = null) -> A
 	for id in keywords(body):
 		out.append(kw_entry(id))
 	return out
+
+
+## Caixas de um poder de party (21/11/2026): nome com o nível, o efeito do nível, o gatilho e a recarga. Para a HUD,
+## a pausa e o compêndio no lugar das antigas caixas de habilidade do herói.
+static func power_entries(d: GameData, id: String, level: int, icon: Control = null) -> Array:
+	var pd: Dictionary = d.hero_powers.get(id, {})
+	if pd.is_empty():
+		return []
+	var body := TranslationServer.translate("POWER_" + id + "_d").format(HeroPowers.params(pd, level))
+	body += "\n" + TranslationServer.translate("UI_MENU_TRIG_" + str(pd.get("trigger", "")))
+	body += " · " + TranslationServer.translate("UI_MENU_COOLDOWN").format({"cd": int(HeroPowers.params(pd, level)["cd"])})
+	return text_entries(TranslationServer.translate("POWER_" + id) + " " + str(level), body, icon)
 
 
 # ---------------------------------------------------------------- níveis

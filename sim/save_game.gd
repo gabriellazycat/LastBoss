@@ -74,7 +74,9 @@ static func erase(path := "") -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
-static func load_run(data: GameData, path := "") -> Sim:
+## `mods` (opcional): mods da meta para um save sem "mods" (de antes do campo existir); o normal é o save guardar os
+## mods da run (a variável `mods` do Sim vai no dump) e a retomada refazer o setup com eles.
+static func load_run(data: GameData, path := "", mods := {}) -> Sim:
 	path = _p(path)
 	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
@@ -83,7 +85,8 @@ static func load_run(data: GameData, path := "") -> Sim:
 	if typeof(d) != TYPE_DICTIONARY or int(d.get("__ver", 1)) < VERSION:
 		return null
 	var sim := Sim.new()
-	sim.setup(data, int(d["run_seed"]), str(d["deck_id"]), [], [], int(d.get("campaign_phase", 1)))
+	var run_mods: Dictionary = d["mods"] if d.get("mods") is Dictionary else mods
+	sim.setup(data, int(d["run_seed"]), str(d["deck_id"]), [], [], int(d.get("campaign_phase", 1)), run_mods)
 	if d["phase"] != K.Phase.ROAD:
 		sim.arena.setup(sim, Vector2.ZERO, Vector2(0, -1))
 	for part in PARTS:

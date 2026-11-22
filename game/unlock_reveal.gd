@@ -39,7 +39,9 @@ static func near_text(result: Dictionary) -> String:
 	near.sort_custom(func(a, b): return float(a["v"]) / float(a["g"]) > float(b["v"]) / float(b["g"]))
 	var parts: Array = []
 	for p in near.slice(0, 3):
-		parts.append("%s %d/%d" % [TranslationServer.translate("CARD_" + str(p["id"])), int(floor(float(p["v"]))), int(round(float(p["g"])))])
+		var pid := str(p["id"])
+		var pname := TranslationServer.translate("REL_" + pid.substr(2)) if pid.begins_with("r:") else TranslationServer.translate("CARD_" + pid)
+		parts.append("%s %d/%d" % [pname, int(floor(float(p["v"]))), int(round(float(p["g"])))])
 	if parts.is_empty():
 		return ""
 	return TranslationServer.translate("UI_UNLOCK_NEAR").format({"l": " · ".join(parts)})
@@ -98,7 +100,9 @@ func _process(_d: float) -> void:
 
 func _slot(i: int) -> Control:
 	var it: Dictionary = items[i]
-	var d: CardDef = data.card(str(it["id"]))
+	# Desafio de relíquia vem com o id "r:<id>" (MetaSave._check_unlocks): a frente mostra o ícone e o nome dela.
+	var rid := str(it["id"]).substr(2) if str(it["id"]).begins_with("r:") else ""
+	var d: CardDef = data.card(str(it["id"])) if rid == "" else null
 	# Coluna (carta + bilhete): o clique em qualquer ponto vira a carta; o teclado usa o botão de baixo.
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
@@ -107,7 +111,7 @@ func _slot(i: int) -> Control:
 	col.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			_flip(i))
-	var front := UiKit.card(d, d.cost, [], "", card_w, 1)
+	var front: Control = UiKit.card(d, d.cost, [], "", card_w, 1) if d != null else _relic_front(rid)
 	var cs := front.custom_minimum_size
 	var stage := Control.new()
 	stage.custom_minimum_size = cs
@@ -136,7 +140,7 @@ func _slot(i: int) -> Control:
 	var l1 := UiKit.label(11, UiKit.MUTED, 0)
 	l1.text = tr("UI_UNLOCK_GOAL")
 	var l2 := UiKit.label(13, UiKit.TEXT, 0)
-	l2.text = tr("UNLOCK_" + d.id)
+	l2.text = tr("UNLOCK_" + (d.id if d != null else "relic_" + rid))
 	l2.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l2.custom_minimum_size = Vector2(cs.x - 12.0, 0)
 	var l3 := UiKit.label(13, UiKit.GOLD, 0)
@@ -151,6 +155,30 @@ func _slot(i: int) -> Control:
 	col.add_child(note)
 	slots.append({"stage": stage, "back": back, "front": front, "note": note, "flipped": false, "busy": false})
 	return col
+
+
+## Frente da "carta" de uma relíquia liberada: ícone, nome e efeito num painel do tamanho de uma carta.
+func _relic_front(rid: String) -> Control:
+	var p := UiKit.panel(UiKit.BG, UiKit.GOLD, 14)
+	p.custom_minimum_size = Vector2(card_w, card_w * 1.4)
+	var v := VBoxContainer.new()
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_theme_constant_override("separation", 6)
+	v.add_child(UiKit.relic_icon(rid, card_w * 0.5))
+	var n := UiKit.title(maxi(16, int(card_w * 0.12)), UiKit.GOLD)
+	n.text = tr("REL_" + rid)
+	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	n.custom_minimum_size = Vector2(card_w - 20.0, 0)
+	v.add_child(n)
+	var e := UiKit.label(12, UiKit.TEXT, 0)
+	e.text = tr("RELD_" + rid)
+	e.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	e.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	e.custom_minimum_size = Vector2(card_w - 20.0, 0)
+	v.add_child(e)
+	p.add_child(v)
+	return p
 
 
 func _flip(i: int) -> void:

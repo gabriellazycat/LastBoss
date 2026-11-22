@@ -145,8 +145,8 @@ func _ready() -> void:
 	if liberar:
 		SaveGame.current = "user://liberar_run.save"
 		meta = MetaSave.load_or_new(data, "user://liberar_meta.save")
-		for ph in data.phases:
-			meta.win_phase(int(ph["id"]))
+		for vid in data.villain_ids:
+			meta.unlock_villain(vid)
 		meta.save()
 	Tips.data = data
 	add_child(Tips.new())
@@ -208,7 +208,17 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 	menu.setup(data, meta)
 	layer.add_child(menu)
 	menu.deck_chosen.connect(_start)
+	menu.tutorial_chosen.connect(_start_tutorial)
 	menu.continue_run.connect(_continue)
+	_build_pause_extras()
+	run_end = RunEnd.new()
+	run_end.visible = false
+	run_end.to_menu.connect(func(): _to_menu(false))
+	run_end.to_covil.connect(func(): _to_menu(false, "covil"))
+	end_layer = CanvasLayer.new()
+	end_layer.layer = 3
+	end_layer.add_child(run_end)
+	add_child(end_layer)
 	menu.settings_changed.connect(_on_settings)
 	hud.minimap_clicked.connect(_minimap_click)
 	hud.route_clicked.connect(_route_click)
@@ -270,10 +280,8 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		_menu_test()
 	if auto_args.has("villaintest"):
 		_villain_layout_test()
-	if auto_args.has("campaignshot"):
-		_campaign_shot()
-	if auto_args.has("endlessshot"):
-		_endless_shot()
+	if auto_args.has("gshots"):
+		_g_shots()
 	if auto_args.has("mapvars"):
 		_map_variants()
 	if auto_args.has("mapicons"):
@@ -523,6 +531,11 @@ var result_played := false
 var menu_root: Node3D
 var menu_t := 0.0
 var menu: MainMenu
+var run_end: RunEnd                 # tela de fim da run (Almas, recorde, desafios; frente G, 21/11/2026)
+var end_layer: CanvasLayer
+var end_info: Dictionary = {}       # o que MetaSave.apply_run devolveu para a run que acabou
+var pause_powers_box: VBoxContainer # "Poderes da party" na pausa
+var give_up_row: HBoxContainer      # confirmação de "Desistir"
 var sun: DirectionalLight3D
 var rim_light: DirectionalLight3D
 var built_act := -1                 # ato cujo mundo está montado (cada ato tem o seu chão, rodada 09/11/2026)
@@ -536,11 +549,14 @@ func _show_menu(screen: String) -> void:
 	menu.show_screen(screen)
 
 
-## Sai da run para o menu. A run em andamento fica salva (o menu oferece Continuar).
-func _to_menu(decks: bool) -> void:
+## Sai da run para o menu. A run em andamento fica salva (o menu oferece Continuar). `target` abre outra tela
+## (o fim da run leva ao "covil"); `decks` abre a escolha de vilão.
+func _to_menu(decks: bool, target := "") -> void:
 	if running and sim and sim.phase != K.Phase.OVER and not auto_args.has("autoplay"):
 		SaveGame.save(sim)
 	running = false
+	run_end.visible = false
+	end_info = {}
 	tutorial.visible = false
 	tutorial.sim = null
 	Engine.time_scale = 1.0
@@ -551,9 +567,7 @@ func _to_menu(decks: bool) -> void:
 	_build_menu_scene()
 	audio.music_menu()
 	audio.set_intensity(0.0)
-	# "Nova run" volta ao mapa da campanha (19/11/2026): antes pulava o mapa e abria a escolha de vilão, uma segunda
-	# tela de baralho fora do fluxo mapa → vilão. A fase que estava escolhida continua escolhida.
-	_show_menu("campaign" if decks else "title")
+	_show_menu(target if target != "" else ("decks" if decks else "title"))
 
 
 func _quit() -> void:
@@ -744,7 +758,7 @@ var menu_shift := 3.4
 
 
 func _continue() -> void:
-	var s := SaveGame.load_run(data)
+	var s := SaveGame.load_run(data, "", MetaApply.run_mods(meta))   # o save guarda os mods da run; a meta atual só cobre save sem eles
 	if s == null:
 		SaveGame.erase()
 		_show_menu("title")
@@ -760,13 +774,17 @@ func _notification(what: int) -> void:
 		_toggle_pause()
 
 
-func _start(deck: String) -> void:
+## Tutorial (fase 0, config própria em data/campaign.json): sem mods da meta, deck pronto da Praga.
+func _start_tutorial() -> void:
+	_start("plague", 0)
+
+
+## Começa a run do vilão: o deck montado (19 cartas) e os mods da meta (Covil, níveis, relíquias). Os modos de teste
+## e de captura (qualquer --x=y) jogam o deck pronto do vilão sem mods (reproduzível); o tutorial (fase 0) também.
+func _start(deck: String, phase := -1) -> void:
 	var s := Sim.new()
 	var seed_ := int(auto_args.get("seed", int(Time.get_unix_time_from_system()) % 1000000))
-	# Os modos de teste e de captura jogam o deck pronto do Pacto com a coleção inteira (reproduzível).
-	var ph := int(auto_args.get("phase", menu.pending_phase if menu else 1))
-	if ph < 0:
-		ph = 1
+	var ph := phase if phase >= 0 else int(auto_args.get("phase", 1))
 	if data.phase(ph).has("deck"):
 		deck = str(data.phase(ph)["deck"])
 	# --firstparty=guardiao.cleriga.mago.assassino: a primeira party da fase, só nesta execução (capturas da HUD com 4 heróis).
@@ -781,7 +799,12 @@ func _start(deck: String) -> void:
 	# --herohp=50: multiplica a vida dos heróis só nesta execução (capturas que precisam chegar ao ato 3).
 	if auto_args.has("herohp"):
 		data.phase(ph)["hp_mult"] = float(auto_args["herohp"])
-	if auto_args.is_empty():
+	# --menutest e --gshots usam o fluxo real do menu (deck e mods da meta de teste); os outros modos, não.
+	var meta_run := auto_args.is_empty() or auto_args.has("menutest") or auto_args.has("gshots")
+	if meta_run and ph > 0:
+		meta.villain = data.villain_id(deck)
+		s.setup(data, seed_, deck, meta.deck_for(deck), meta.unlocked, ph, MetaApply.run_mods(meta))
+	elif meta_run:
 		s.setup(data, seed_, deck, [], meta.unlocked, ph)
 	else:
 		s.setup(data, seed_, deck, [], [], ph)
@@ -1177,6 +1200,9 @@ func _process(delta: float) -> void:
 				acc = 0.0
 				break
 	_mark_heroes_seen()
+	# Chegar ao ato 2 pela primeira vez abre o setor "Troca de ato" do Covil.
+	if sim.act >= 1 and not sim.phase_cfg.get("tutorial", false) and meta.see_act2():
+		meta.save()
 	# Ato novo: estrada nova, chão e luz do ato.
 	if sim.phase == K.Phase.ROAD and sim.act != built_act:
 		var first := built_act < 0 or world.sim != sim
@@ -1205,21 +1231,10 @@ func _process(delta: float) -> void:
 	if sim.phase == K.Phase.OVER and not result_played:
 		result_played = true
 		SaveGame.erase()
-		if auto_args.is_empty():
-			meta.add_run()
-			# Desafios de desbloqueio: vitória ou derrota, confere as cartas ainda bloqueadas (antes de win_phase).
-			hud.unlock_result = meta.apply_unlocks(sim, sim.result in [K.Result.WIN, K.Result.WIN_EARLY])
-		if sim.endless and auto_args.is_empty():
-			# Horda sem fim: recorde de parties derrubadas, por vilão.
-			hud.endless_record = meta.record_endless(sim.deck_id, sim.parties_beaten())
-			hud.endless_best = int(meta.endless_best.get(data.villain_id(sim.deck_id), 0))
-			meta.save()
-		if sim.result in [K.Result.WIN, K.Result.WIN_EARLY] and auto_args.is_empty():
-			# Campanha: vencer a fase libera a próxima e, às vezes, um vilão novo.
-			var np := meta.win_phase(sim.campaign_phase)
-			meta.save()
-			if np != "":
-				hud.say(tr("UI_NEW_VILLAIN").format({"p": tr("DECK_" + np)}))
+		# Fim da run (vitória ou derrota): Almas (dano + heróis, mantidas ao perder), recorde, desafios e vilões
+		# liberados. apply_run grava no arquivo da meta (nos modos de teste, o de teste) e devolve o resumo.
+		end_info = meta.apply_run(sim)
+		run_end.show_result(data, meta, sim, end_info)
 		audio.result_music(sim.result in [K.Result.WIN, K.Result.WIN_EARLY])
 	var alpha := 1.0 if sim.waiting_choice() else clampf(acc / sim.dt, 0.0, 1.0)
 	world.look_freeze = hud.fan != null and (hud.fan.hover >= 0 or hud.fan.press_i >= 0)
@@ -1228,6 +1243,10 @@ func _process(delta: float) -> void:
 	_update_placement()
 	hud.pad = pad_active
 	hud.refresh(delta, Engine.get_frames_per_second())
+	if sim.phase == K.Phase.OVER and run_end.visible and hud.result_layer.visible:
+		# A tela de fim da run (game/run_end.gd) toma o lugar do painel antigo do HUD.
+		hud.result_layer.visible = false
+		run_end.focus_first.call_deferred()
 
 
 ## Teste da entrada real: injeta teclas e cliques e confere o efeito no Sim.
@@ -1560,7 +1579,14 @@ func _villain_layout_test() -> void:
 	get_tree().quit()
 
 
-## Teste do menu com entrada real: Nova run → deck → pausa → configurações → salvar e voltar → Continuar.
+## Esc e espera a tela anterior sair: durante a descida (0,3 s) ela ainda existe e pega o Esc seguinte.
+func _esc() -> void:
+	await _key(KEY_ESCAPE)
+	await get_tree().create_timer(0.5).timeout
+
+
+## Teste do menu com entrada real (frente G, 21/11/2026): Menu → Covil ⇄ Biblioteca → Escolher vilão (deck 19/19, vilão
+## trancado, Editar deck) → run com mods e deck → pausa (poderes, Desistir) → salvar e continuar → fim da run → Covil.
 func _menu_test() -> void:
 	var fails: Array = []   # lambdas capturam por valor: um bool não voltaria daqui
 	SaveGame.erase()   # o arquivo de teste; a run salva do jogador fica em outro
@@ -1570,144 +1596,72 @@ func _menu_test() -> void:
 		print("menutest ", name, ": ", cond)
 		if not cond:
 			fails.append(name)
-	await _click(_button(menu, "UI_NEW_RUN"))
-	step.call("Nova run abre o mapa da campanha", menu.screen == "campaign")
-	await get_tree().create_timer(1.2).timeout
-	_ui_shot("menu_campaign")
-	# Defender numa fase aberta (a 1, com o tutorial vencido) leva à escolha do vilão.
-	var won0: Array = meta.phases_won.duplicate()
-	meta.phases_won = [0]
-	menu.campaign.open(1)
-	await _click(_button(menu.campaign, "UI_CAMPAIGN_DEFEND"))
-	step.call("Defender abre a escolha de vilão", menu.screen == "decks" and menu.pending_phase == 1)
-	# Capturas esperam a folha subir da mesa; depois, com os 3 vilões liberados (o teste não grava o meta do jogo).
+	var mm := menu.title_root as MapMenu
+	if mm == null:
+		print("menutest: o teste usa o menu da pele Mapa aberto (--hud=7)")
+		get_tree().quit(1)
+		return
+	# Menu → Covil.
+	await _click(mm.buttons["covil"])
+	step.call("o lugar Covil abre a roda", menu.screen == "covil")
+	await get_tree().create_timer(0.6).timeout
+	_ui_shot("menu_covil")
+	# Covil → Biblioteca (Esc volta ao Covil).
+	await _click(_button(menu.covil, tr("UI_COVIL_LIBRARY")))
+	step.call("Biblioteca abre a partir do Covil", menu.screen == "collection" and menu.lib_return == "covil")
+	await get_tree().create_timer(0.4).timeout
+	await _esc()
+	step.call("Esc da Biblioteca volta ao Covil", menu.screen == "covil")
+	# Covil → Começar run → Escolher vilão: deck 19/19, vilão trancado "derrote a party N".
+	await _click(_button(menu.covil, tr("UI_COVIL_START")))
+	step.call("Começar run abre a escolha de vilão", menu.screen == "decks")
 	await get_tree().create_timer(1.2).timeout
 	_ui_shot("menu_decks")
-	var villains_before: Array = meta.villains.duplicate()
-	for vid in data.villain_ids:
-		meta.unlock_villain(vid)
-	menu.show_screen("decks")
-	await get_tree().create_timer(1.2).timeout
-	_ui_shot("menu_decks3")
-	# Trocar o vilão em foco não pode mexer em nada: Voltar, cartas do baralho e a folha ficam onde estão.
-	if menu.has_method("_focus_villain") and not menu.v_tabs.is_empty():
-		var back_b: Button = _button(menu.deck_screen, "UI_BACK")
-		var marks: Array = []
-		for vid in data.villain_ids:
-			menu._focus_villain(vid)
-			await get_tree().create_timer(0.3).timeout
-			marks.append([back_b.global_position, back_b.size, menu.preview_row.global_position, menu.deck_screen.size])
-			print("menutest layout ", vid, ": ", marks[-1])
-		var same := true
-		for m in marks:
-			same = same and m == marks[0]
-		step.call("Trocar de vilão não muda a altura nem o tamanho de nada", same)
-	meta.villains = villains_before
-	menu.show_screen("decks")
+	step.call("o deck da escolha tem 19 cartas", menu.preview_row.get_child_count() == 19)
+	menu._focus_villain("dragon")
+	step.call("vilão trancado: Começar desligado e texto da party", menu.v_pick.disabled and menu.v_pick.text == tr("UI_MENU_LOCKED").format({"n": 3}))
+	menu._focus_villain("plague")
+	step.call("vilão liberado: Começar ligado", not menu.v_pick.disabled)
+	# Editar deck abre a Biblioteca naquele vilão; Esc volta à escolha.
+	await _click(_button(menu, "UI_MENU_EDIT_DECK"))
+	step.call("Editar deck abre a Biblioteca no vilão", menu.screen == "collection" and menu.collection.tab == "plague" and menu.collection.deck_vid == "plague")
+	await get_tree().create_timer(0.4).timeout
+	await _esc()
+	step.call("Esc da Biblioteca volta à escolha de vilão", menu.screen == "decks")
+	await _esc()
+	step.call("Esc da escolha volta ao Covil", menu.screen == "covil")
+	await _esc()
+	step.call("Esc do Covil volta ao título", menu.screen == "title")
+	# Lugares do mapa: Biblioteca e Compêndio.
+	await _click(mm.buttons["collection"])
+	step.call("Biblioteca abre pelo menu", menu.screen == "collection" and menu.lib_return == "title")
+	await _esc()
+	step.call("Esc da Biblioteca volta ao título", menu.screen == "title")
+	await _click(mm.buttons["compendium"])
+	for _f in 4:
+		await get_tree().process_frame
+	step.call("Compêndio abre", menu.screen == "compendium")
+	await _click(_button(menu.compendium, "UI_MENU_COMP_POWERS"))
+	step.call("aba Poderes do Compêndio lista os poderes", menu.compendium.tab == "hero" and menu.compendium.body.get_child_count() >= data.power_ids.size())
+	await _esc()
+	step.call("Esc do Compêndio volta ao título", menu.screen == "title")
+	# Começar a run: deck montado e mods da meta no Sim.
+	meta.card_levels["rat_horde"] = 3
+	meta.upgrades = {}
+	await _click(mm.buttons["covil"])
+	await _click(_button(menu.covil, tr("UI_COVIL_START")))
+	await get_tree().create_timer(0.8).timeout
+	await _click(menu.v_pick)
+	step.call("Começar a run do vilão", running and sim != null and sim.deck_id == "plague" and sim.campaign_phase == 1 and not menu.visible)
+	step.call("a run leva o deck de 19 e os mods da meta", sim.cards.size() == 19 and sim.mods["deck"].size() == 19 and int(sim.mods["card_levels"].get("rat_horde", 1)) == 3)
 	await get_tree().create_timer(0.3).timeout
-	await _key(KEY_ESCAPE)
-	step.call("Esc volta ao mapa da campanha", menu.screen == "campaign")
-	await _key(KEY_ESCAPE)
-	step.call("Esc volta ao título", menu.screen == "title")
-	# Horda sem fim (19/11/2026): o botão vai direto à escolha do vilão, e Esc volta ao título (não ao mapa).
-	await _click(menu.endless_btn)
-	step.call("Horda sem fim abre a escolha de vilão", menu.screen == "decks" and menu.is_endless())
-	await get_tree().create_timer(0.3).timeout
-	await _key(KEY_ESCAPE)
-	step.call("Esc na escolha do vilão da Horda volta ao título", menu.screen == "title")
-	meta.phases_won = won0
-	if UiSkins.mapa() and menu.title_root is MapMenu:
-		# Pele "Mapa aberto": os papéis da mesa saem; o clique no lugar "Compêndio" do mapa abre a tela.
-		await _click((menu.title_root as MapMenu).buttons["compendium"])
-		for _f in 4:
-			await get_tree().process_frame
-		step.call("Lugar do mapa abre a tela", menu.screen == "compendium")
-		await _key(KEY_ESCAPE)
-		await _click(null)
-	elif menu_root is DeskScene:
-		# Clique no papel da Coleção deitado na mesa (picking 3D) abre a tela; Esc devolve o título.
-		var dp := get_viewport().get_final_transform() * (menu_root as DeskScene).screen_point("compendium")
-		# Como uma pessoa: o mouse chega no papel antes do clique (o picking 3D usa a última posição).
-		var mm := InputEventMouseMotion.new()
-		mm.position = dp
-		mm.global_position = dp
-		Input.parse_input_event(mm)
-		for _f in 3:
-			await get_tree().physics_frame
-		for down in [true, false]:
-			var mb := InputEventMouseButton.new()
-			mb.button_index = MOUSE_BUTTON_LEFT
-			mb.pressed = down
-			mb.position = dp
-			mb.global_position = dp
-			Input.parse_input_event(mb)
-			await get_tree().physics_frame
-			await get_tree().process_frame
-		for _f in 4:
-			await get_tree().process_frame
-		step.call("Papel da mesa abre a tela", menu.screen == "compendium")
-		await _key(KEY_ESCAPE)
-		await _click(null)
-	# Coleção por vilão: cada aba só mostra as cartas do dono.
-	await _click(_button(menu, "UI_COLLECTION"))
-	step.call("Coleção abre", menu.screen == "collection")
-	_ui_shot("menu_collection_plague")
-	await _click(_button(menu.collection, "UI_TAB_V_dragon"))
-	var only_dragon := menu.collection.grid.get_child_count() > 0 and menu.collection.tab == "dragon"
-	step.call("Aba do Dragão mostra só cartas dele", only_dragon)
-	_ui_shot("menu_collection_dragon")
-	await _click(_button(menu.collection, "UI_TAB_V_lich"))
-	_ui_shot("menu_collection_lich")
-	await _click(_button(menu.collection, "UI_TAB_V_common"))
-	_ui_shot("menu_collection_common")
-	await _key(KEY_ESCAPE)
-	step.call("Esc volta ao título da coleção", menu.screen == "title")
-	# Rara à escolha: com uma escolha pendente, voltar ao menu abre as 3 raras.
-	meta.unlock_villain("dragon")
-	meta.rare_choices = 1
-	# Hoje as raras iniciais já cobrem todas as raras dos vilões: o teste devolve 3 para a oferta ter o que sortear.
-	var lent := 0
-	for c in data.pool:
-		if lent < 3 and c.rarity == 2 and meta.villains.has(c.owner) and meta.unlocked.has(c.id):
-			meta.unlocked.erase(c.id)
-			lent += 1
-	var had_unlocked := meta.unlocked.size()
-	menu.show_screen("title")
-	await get_tree().create_timer(1.2).timeout
-	step.call("Rara à escolha abre ao voltar ao menu", menu.screen == "rare" and menu.rare_row.get_child_count() >= 1)
-	_ui_shot("menu_rare")
-	await _click(_button(menu, "UI_RARE_PICK"))
-	step.call("Escolher a rara grava na coleção", meta.rare_choices == 0 and meta.unlocked.size() == had_unlocked + 1 and menu.screen == "title")
-	# Mapa da campanha: fases vencidas escuras, a aberta, as trancadas sob névoa; a seta anda e a câmera passa pelo covil.
-	var won_before: Array = meta.phases_won.duplicate()
-	var seen_before: Array = meta.heroes_seen.duplicate()
-	meta.phases_won = [0, 1, 2]
-	meta.heroes_seen = ["escudeiro", "arqueira", "barbaro"]
-	await _click(_button(menu, "UI_NEW_RUN"))
-	step.call("o mapa abre na próxima fase a vencer", menu.screen == "campaign" and menu.campaign.phase == 3)
-	await get_tree().create_timer(1.2).timeout
-	_ui_shot("menu_campaign_3")
-	await _key(KEY_RIGHT)
-	step.call("seta para a direita vai à fase 4", menu.campaign.phase == 4 and not menu.campaign.animating())
-	await get_tree().create_timer(0.75).timeout
-	_ui_shot("menu_campaign_move")
-	await get_tree().create_timer(1.0).timeout
-	_ui_shot("menu_campaign_locked")
-	step.call("fase trancada: Defender desligado", menu.campaign.go_b.disabled)
-	await _key(KEY_LEFT)
-	await _key(KEY_LEFT)
-	await _key(KEY_LEFT)
-	step.call("seta para a esquerda volta (fase 1)", menu.campaign.phase == 1)
-	await get_tree().create_timer(1.7).timeout
-	await _click(_button(menu.campaign, "UI_CAMPAIGN_DEFEND"))
-	step.call("Defender a fase 1 abre a escolha de vilão", menu.screen == "decks" and menu.pending_phase == 1)
-	await _click(_button(menu, "UI_PICK_VILLAIN"))
-	step.call("Começar a run com o vilão na fase do mapa", running and sim != null and sim.deck_id == "plague" and sim.campaign_phase == 1 and not menu.visible)
-	meta.phases_won = won_before
-	meta.heroes_seen = seen_before
-	await get_tree().create_timer(0.3).timeout
-	await _key(KEY_ESCAPE)
+	await _esc()
 	step.call("Esc pausa", paused and hud.pause_layer.visible)
+	step.call("a pausa tem Poderes da party e Desistir", pause_powers_box != null and _button(hud, "UI_MENU_GIVE_UP") != null)
+	sim.powers.append({"id": "fire_burst", "level": 1, "cd_left": 0.0, "gap_left": 0.0})
+	_fill_pause_extras()
+	step.call("a pausa lista o poder da party", pause_powers_box.get_child_count() == 2)
+	_ui_shot("menu_pause")
 	await _click(_button(hud, "UI_SETTINGS"))
 	step.call("Configurações abre na pausa", hud.settings.visible)
 	await _click(_button(hud.settings, "UI_TAB_game"))
@@ -1720,65 +1674,83 @@ func _menu_test() -> void:
 	await _click(fps_btn)
 	step.call("Botão liga/desliga muda a configuração", Settings.v["show_fps"] != was)
 	await _click(fps_btn)
-	await _key(KEY_ESCAPE)
+	await _esc()
 	step.call("Esc fecha as configurações e mantém a pausa", not hud.settings.visible and paused and hud.pause_layer.visible)
-	await _key(KEY_ESCAPE)
-	step.call("Esc despausa", not paused and not hud.pause_layer.visible)
+	# Salvar e voltar → Continuar retoma a run com os mesmos mods.
 	if not had_save:
-		await _key(KEY_ESCAPE)
 		await _click(_button(hud, "UI_SAVE_MENU"))
 		step.call("Salvar e voltar ao menu", not running and menu.visible and SaveGame.exists())
 		await _click(_button(menu, "UI_CONTINUE"))
 		step.call("Continuar retoma a run", running and sim != null and sim.deck_id == "plague")
+		step.call("a run retomada guarda os mods", sim != null and int(sim.mods["card_levels"].get("rat_horde", 1)) == 3 and sim.mods["deck"].size() == 19)
 		SaveGame.erase()
-	# Horda sem fim: do jogo de volta ao menu, botão da Horda, vilão e a run começa com a fila infinita.
-	if running:
-		await _key(KEY_ESCAPE)
-		await _click(_button(hud, "UI_SAVE_MENU"))
-	await _click(menu.endless_btn)
+	# Desistir: a run acaba como derrota, as Almas entram e a tela de fim aparece.
+	var runs0 := meta.runs
 	await get_tree().create_timer(0.3).timeout
-	await _click(_button(menu, "UI_PICK_VILLAIN"))
-	step.call("Horda sem fim começa a run infinita", running and sim != null and sim.endless and sim.campaign_phase == int(data.endless["id"]) and not menu.visible)
+	await _esc()
+	await _click(_button(hud, "UI_MENU_GIVE_UP"))
+	await _click(_button(hud, "UI_MENU_GIVE_UP_YES"))
+	for _f in 6:
+		await get_tree().process_frame
+	step.call("Desistir termina a run como derrota", sim.phase == K.Phase.OVER and sim.result == K.Result.LOSS)
+	step.call("a tela de fim da run aparece e o painel antigo some", run_end.visible and not hud.result_layer.visible and meta.runs == runs0 + 1)
+	_ui_shot("menu_end")
+	await get_tree().create_timer(1.0).timeout
+	await _click(_button(run_end, "UI_END_COVIL"))
+	step.call("Ir ao Covil leva ao Covil", not running and menu.visible and menu.screen == "covil" and not run_end.visible)
+	# Tutorial pelo menu.
+	await _esc()
+	await _click(mm.buttons["tutorial"])
+	step.call("Tutorial começa a fase 0", running and sim != null and sim.campaign_phase == 0 and not menu.visible)
 	SaveGame.erase()
 	print("menutest resultado: ", "OK" if fails.is_empty() else "FALHOU " + str(fails))
 	get_tree().quit(0 if fails.is_empty() else 1)
 
 
-## Capturas do mapa da campanha (16/11/2026), para comparar as peles (--hud=N): fases 0 a 2 vencidas, a 3 aberta,
-## a câmera no meio da viagem para a 4 (trancada) e parada nela. Usa o meta de teste; não mexe nas configurações.
-func _campaign_shot() -> void:
-	meta.phases_won = [0, 1, 2]
-	meta.heroes_seen = ["escudeiro", "arqueira", "barbaro", "assassino"]
-	await get_tree().create_timer(0.5).timeout
-	menu.show_screen("campaign")
-	await get_tree().create_timer(1.6).timeout
-	_ui_shot("campaign_hud%s_open" % str(auto_args.get("hud", "")))
-	menu.campaign.step(1)
-	await get_tree().create_timer(0.7).timeout
-	_ui_shot("campaign_hud%s_move" % str(auto_args.get("hud", "")))
-	await get_tree().create_timer(1.2).timeout
-	_ui_shot("campaign_hud%s_locked" % str(auto_args.get("hud", "")))
-	menu.campaign.select(2)
-	await get_tree().create_timer(1.8).timeout
-	_ui_shot("campaign_hud%s_won" % str(auto_args.get("hud", "")))
-	if auto_args.has("out") and menu.campaign.bg != null:
-		menu.campaign.bg.get_image().save_png(str(auto_args["out"]) + "campaign_fundo.png")
-	print("campaignshot ok")
-	get_tree().quit(0)
-
-
-## --endlessshot=1 --hud=N --out=pasta/: capturas da Horda sem fim (19/11/2026): o menu com o botão e um recorde
-## de mentira (só nesta execução, sem gravar) e a escolha do vilão aberta pelo botão.
-func _endless_shot() -> void:
-	meta.endless_best = {"plague": 23}
-	await get_tree().create_timer(0.5).timeout
+## --gshots=1 --out=pasta/ (--hud=7): capturas da frente G com uma meta de teste: menu, covil, escolher vilão, pausa
+## com poderes e fim da run. Só usa o meta de teste (user://test_meta.save); nada do jogador é tocado.
+func _g_shots() -> void:
+	meta.almas = 138
+	meta.almas_earned = 138
+	meta.best_party = 5
+	meta.best_by_villain = {"plague": 5}
+	meta.act2_reached = true
+	meta.card_levels = {"rat_horde": 3, "rat_king": 2}
+	await get_tree().create_timer(1.0).timeout
 	menu.show_screen("title")
+	await get_tree().create_timer(1.5).timeout
+	_ui_shot("g_menu")
+	menu.show_screen("covil")
 	await get_tree().create_timer(1.2).timeout
-	_ui_shot("endless_hud%s_title" % str(auto_args.get("hud", "")))
-	menu._open_endless()
-	await get_tree().create_timer(1.2).timeout
-	_ui_shot("endless_hud%s_villain" % str(auto_args.get("hud", "")))
-	print("endlessshot ok: tela=%s fase=%d" % [menu.screen, menu.pending_phase])
+	_ui_shot("g_covil")
+	menu.decks_back = "covil"
+	menu.show_screen("decks")
+	await get_tree().create_timer(2.2).timeout
+	_ui_shot("g_villain")
+	menu._focus_villain("dragon")
+	await get_tree().create_timer(0.8).timeout
+	_ui_shot("g_villain_locked")
+	_start("plague")
+	await get_tree().create_timer(1.0).timeout
+	for pw in [["fire_burst", 2], ["spell_ward", 1], ["slay_next", 1], ["ally_rat", 3]]:
+		sim.powers.append({"id": pw[0], "level": pw[1], "cd_left": 0.0, "gap_left": 0.0})
+	_toggle_pause()
+	await get_tree().create_timer(0.8).timeout
+	_ui_shot("g_pause")
+	_toggle_pause()
+	sim.cur_party = 6
+	sim.stats["almas_dmg"] = 5400.0
+	sim.stats["heroes_fallen"] = 9
+	_give_up()
+	await get_tree().create_timer(1.6).timeout
+	_ui_shot("g_end_reveal")
+	if is_instance_valid(run_end.reveal):
+		var rv: UnlockReveal = run_end.reveal
+		rv.finished.emit()
+		rv.queue_free()
+	await get_tree().create_timer(1.0).timeout
+	_ui_shot("g_end")
+	print("gshots ok")
 	get_tree().quit(0)
 
 
@@ -2268,6 +2240,102 @@ func _toggle_pause() -> void:
 		return
 	paused = not paused
 	hud.show_pause(paused)
+	if paused:
+		_fill_pause_extras()
+
+
+## Pausa (frente G, 21/11/2026): "Desistir" no fim do menu (mantém as Almas: a run acaba como derrota e passa por
+## MetaSave.apply_run) e "Poderes da party" no painel da direita (Sim.party_powers com nome e efeito de HeroPowers).
+func _build_pause_extras() -> void:
+	var gu := Button.new()
+	gu.text = "UI_MENU_GIVE_UP"
+	gu.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	gu.custom_minimum_size = Vector2(320, 54)
+	gu.add_theme_font_size_override("font_size", 22)
+	gu.mouse_entered.connect(func(): gu.grab_focus())
+	hud.pause_menu.add_child(gu)
+	give_up_row = HBoxContainer.new()
+	give_up_row.visible = false
+	give_up_row.add_theme_constant_override("separation", 8)
+	var ask := UiKit.label(16, UiKit.MUTED, 3)
+	ask.text = "UI_MENU_GIVE_UP_ASK"
+	ask.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ask.custom_minimum_size = Vector2(320, 0)
+	ask.name = "Ask"
+	var confirm := VBoxContainer.new()
+	confirm.name = "GiveUpBox"
+	confirm.visible = false
+	confirm.add_theme_constant_override("separation", 6)
+	confirm.add_child(ask)
+	give_up_row.add_theme_constant_override("separation", 8)
+	var yes := Button.new()
+	yes.text = "UI_MENU_GIVE_UP_YES"
+	yes.custom_minimum_size = Vector2(150, 46)
+	yes.pressed.connect(_give_up)
+	var no := Button.new()
+	no.text = "UI_MENU_GIVE_UP_NO"
+	no.custom_minimum_size = Vector2(160, 46)
+	no.pressed.connect(func(): confirm.visible = false)
+	give_up_row.visible = true
+	give_up_row.add_child(yes)
+	give_up_row.add_child(no)
+	confirm.add_child(give_up_row)
+	hud.pause_menu.add_child(confirm)
+	gu.pressed.connect(func(): confirm.visible = not confirm.visible)
+	# Poderes da party: dentro do painel de baralho e habilidades da pausa.
+	var iv: Control = hud.pause_build.get_parent()
+	# As habilidades do herói saíram do jogo (21/11/2026): o bloco antigo some, os poderes ocupam o lugar.
+	hud.pause_build.visible = false
+	for c in iv.get_children():
+		if c is Label and (c as Label).text == "UI_HERO_BUILD":
+			c.visible = false
+	var head := UiKit.title(26)
+	head.text = "UI_MENU_PAUSE_POWERS"
+	iv.add_child(head)
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.custom_minimum_size = Vector2(0, 150)
+	iv.add_child(sc)
+	pause_powers_box = VBoxContainer.new()
+	pause_powers_box.add_theme_constant_override("separation", 6)
+	pause_powers_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(pause_powers_box)
+
+
+func _fill_pause_extras() -> void:
+	var gub := hud.pause_menu.get_node_or_null("GiveUpBox")
+	if gub:
+		gub.visible = false
+	UiKit.clear(pause_powers_box)
+	var list: Array = sim.party_powers()
+	if list.is_empty():
+		var none := UiKit.label(15, UiKit.MUTED, 3)
+		none.text = tr("UI_MENU_PAUSE_NO_POWERS")
+		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		none.custom_minimum_size = Vector2(380, 0)
+		pause_powers_box.add_child(none)
+		return
+	for p in list:
+		var info: Dictionary = HeroPowers.describe(sim, str(p["id"]), int(p["level"]))
+		if info.is_empty():
+			continue
+		var name_l := UiKit.label(16, UiKit.GOLD, 3)
+		name_l.text = tr("UI_MENU_POWER_LINE").format({"name": info["name"], "lv": info["level"], "cd": int(round(float(info["cooldown"])))})
+		pause_powers_box.add_child(name_l)
+		var d := UiKit.label(14, Color(0.9, 0.88, 1.0), 3)
+		d.text = str(info["desc"])
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(400, 0)
+		pause_powers_box.add_child(d)
+
+
+## "Desistir": a run acaba como derrota (o laço principal chama apply_run: as Almas ganhas ficam).
+func _give_up() -> void:
+	if sim == null or sim.phase == K.Phase.OVER:
+		return
+	paused = false
+	hud.show_pause(false)
+	sim._finish(K.Result.LOSS)
 
 
 ## Mapa grande da rota (M, Select ou ao escolher uma carta de rota). No dia a dia, a faixa de rota na borda esquerda.

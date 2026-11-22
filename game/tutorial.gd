@@ -108,7 +108,8 @@ func tick() -> void:
 		_show("TUT_shield")
 	if sim.contest.size() > 0:
 		_show("TUT_location")
-	if int(st["heroes_fallen"]) >= 1:
+	# A party inteira caiu (o novo fluxo: carta por party e poder novo para a próxima; sem oferta por herói).
+	if sim.parties_beaten() >= 1:
 		_show("TUT_fall")
 	if sim.phase == K.Phase.ARENA:
 		_show("TUT_arena")

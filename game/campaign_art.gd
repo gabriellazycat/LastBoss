@@ -82,7 +82,7 @@ static func paper_color(_n: int) -> Color:
 
 ## Desenha o reino com o estilo n numa SubViewport filha de `parent` e devolve a textura (no dobro do papel).
 static func bake(parent: Node, d: GameData, n: int) -> Texture2D:
-	var p: Array = d.campaign_map.get("paper", [1640, 960])
+	var p: Array = [1640, 960]   # papel do mapa da campanha (o mapa saiu em 21/11/2026; o desenhista segue nos mapas)
 	var vp := SubViewport.new()
 	vp.disable_3d = true
 	vp.transparent_bg = false
@@ -1577,12 +1577,12 @@ func _tf(p: Vector2, s: float) -> void:
 
 
 func _paper() -> Vector2:
-	var p: Array = data.campaign_map.get("paper", [1640, 960])
+	var p: Array = [1640, 960]
 	return Vector2(float(p[0]), float(p[1]))
 
 
 func _lair() -> Vector2:
-	var l: Array = data.campaign_map.get("lair", [820, 500])
+	var l: Array = [820, 500]
 	return Vector2(float(l[0]), float(l[1]))
 
 
