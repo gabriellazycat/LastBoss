@@ -183,7 +183,7 @@ func update(dt: float) -> void:
 			var h := sim.hero
 			if Vector2(h.x - bx, h.y - by).length() <= float(A["arm_aura_radius"]) + h.radius + 1.0:
 				var m := 1.0 + fury_dmg if fury_t > 0.0 else 1.0
-				sim.damage_hero(float(sim.data.boss["right_arm_dps"]) * m, bx, by, 0, SimHero.DMG_AREA, "boss")
+				sim.damage_hero(float(sim.data.boss["right_arm_dps"]) * m * float(sim.mods["arena"]["arm_dmg_mult"]), bx, by, 0, SimHero.DMG_AREA, "boss")
 
 
 func hero_in_front(cone_deg: float, rng_m: float) -> bool:
