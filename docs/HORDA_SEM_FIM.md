@@ -1,3 +1,5 @@
+> **DESATUALIZADO (substituído pela metaprogressão de 21/11/2026, ver docs/METAPROGRESSAO.md)**: este documento descreve o que saiu (campanha de 7 fases, Horda sem fim, Almas antigas e/ou decks fixos); vale só como histórico.
+
 # Horda sem fim (19–20/11/2026)
 
 Modo infinito decidido com você no grilling de 19/11: "vai vindo tropa atrás de tropa até você morrer". Nada foi commitado.

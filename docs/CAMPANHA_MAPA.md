@@ -1,3 +1,5 @@
+> **DESATUALIZADO (substituído pela metaprogressão de 21/11/2026, ver docs/METAPROGRESSAO.md)**: este documento descreve o que saiu (campanha de 7 fases, Horda sem fim, Almas antigas e/ou decks fixos); vale só como histórico.
+
 # Campanha em mapa: o reino ao redor do covil (16/11/2026)
 
 Decidido com você no grilling de 16/11. O plano aprovado está em `C:\Users\gabri\.claude\plans\falta-criar-uma-campanha-warm-hummingbird.md`.
