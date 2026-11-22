@@ -81,6 +81,15 @@ var hint_t := 0.0
 var hints_seen: Dictionary = {}
 # Sobreposições.
 var offer_layer: Control
+# Poderes de party (plano 21/11/2026, frente H): fileira de ícones com recarga sobre a party e painel de revelação.
+var power_row: Control
+var power_badges: Array = []           # PowerBadge, na ordem de Sim.party_powers()
+var power_sig := ""
+var power_flash: Dictionary = {}       # índice -> "trigger" | "ready" | "gained" (aplicado no próximo refresh)
+var power_layer: Control               # painel de revelação (acima da offer_layer; pausa pelo Sim.step)
+var power_box: PanelContainer
+var power_panel_sig := ""
+var power_continue: Button
 var offer_title: Label
 var offer_box: VBoxContainer   # linhas (HBox) de cartas, dentro de offer_scroll
 var offer_scroll: ScrollContainer
@@ -124,7 +133,9 @@ func _ready() -> void:
 	_build_right()
 	_build_bottom()
 	_build_messages()
+	_build_power_row()
 	_build_offer()
+	_build_power_panel()
 	_build_pause()
 	_build_result()
 	var cf := ConfigFile.new()
@@ -725,7 +736,7 @@ func _layout() -> void:
 		rel_y = parts_panel.position.y + parts_panel.size.y + 8
 	relic_row.position = Vector2(vs.x - relic_row.size.x - m, rel_y)
 	hint_panel.position = Vector2((vs.x - hint_panel.size.x) * 0.5, below + 6)
-	for layer in [offer_layer, pause_layer, result_layer]:
+	for layer in [offer_layer, power_layer, pause_layer, result_layer]:
 		# O escurecimento cobre a tela inteira (pela âncora ele ficava com tamanho zero e não aparecia).
 		layer.position = Vector2.ZERO
 		layer.size = vs
@@ -734,6 +745,7 @@ func _layout() -> void:
 	settings.position = (vs - settings.size) * 0.5
 	if LAYOUT > 0:
 		_layout_variant(vs, m)
+	_layout_powers(vs, m)
 
 
 ## Área real da mão: do monte de compra ao de descarte (o retângulo do leque é mais largo que as cartas).
@@ -746,7 +758,7 @@ func hand_rect() -> Rect2:
 
 ## Pares de elementos da HUD visíveis que se sobrepõem (capturas das variações, 17/11/2026). Vazio = nada encavalado.
 func overlap_report() -> Array:
-	var named := {"grupo": duel, "missao": contest_panel, "relogio": run_panel, "botoes": tool_row, "reliquias": relic_row,
+	var named := {"grupo": duel, "poderes": power_row, "missao": contest_panel, "relogio": run_panel, "botoes": tool_row, "reliquias": relic_row,
 		"elixir": elixir_tray, "mao": fan, "ajuda": help_label, "fps": info_label, "aprendeu": learn_panel, "dica": hint_panel,
 		"faixa": strip, "corpo": parts_panel, "ouro": gold_label, "aviso": toast}
 	var out: Array = []
@@ -876,6 +888,7 @@ func show_run(on: bool) -> void:
 	if not on:
 		sim = null
 		offer_layer.visible = false
+		power_layer.visible = false
 		pause_layer.visible = false
 		result_layer.visible = false
 
@@ -1044,7 +1057,7 @@ func blocks_world(p: Vector2) -> bool:
 	if not get_viewport().get_visible_rect().has_point(p):
 		return true
 	# Painéis da HUD 7 (17/11/2026): soltar a carta em cima do grupo, da missão ou das relíquias cancela, como nos botões.
-	for c in [hero_badge, elixir_tray, tool_row, gold_label, duel, contest_panel, relic_row]:
+	for c in [hero_badge, elixir_tray, tool_row, gold_label, duel, contest_panel, relic_row, power_row]:
 		if c and c.is_visible_in_tree() and c.get_global_rect().has_point(p):
 			return true
 	return false
@@ -1101,6 +1114,7 @@ func refresh(delta: float, fps: float) -> void:
 	_refresh_offer()
 	_refresh_contest()
 	_refresh_relics()
+	_refresh_powers()
 	_refresh_arena()
 	if sim.phase == K.Phase.ROAD and minimap.visible:
 		minimap.queue_redraw()
@@ -1495,6 +1509,13 @@ func _refresh_relics() -> void:
 func handle_events(evs: Array) -> void:
 	for e in evs:
 		match int(e[0]):
+			K.Ev.POWER_TRIGGER:
+				power_flash[int(e[3])] = "trigger"
+			K.Ev.POWER_READY:
+				if not power_flash.has(int(e[3])):
+					power_flash[int(e[3])] = "ready"
+			K.Ev.POWER_GAINED:
+				power_flash[int(e[3])] = "gained"
 			K.Ev.CONTEST:
 				var code := int(e[4])
 				if code == 0 and sim.contest.size() > 0:
@@ -1528,7 +1549,9 @@ func handle_events(evs: Array) -> void:
 
 func _refresh_offer() -> void:
 	var on := sim.offers.size() > 0 and not hold_offers
-	offer_layer.visible = on
+	var is_power: bool = on and str(sim.offers[0]["source"]) == "power"
+	offer_layer.visible = on and not is_power
+	power_layer.visible = is_power
 	var shop_ui: bool = on and (sim.offers[0]["source"] == "shop" or sim.offers[0]["source"] == "shop_pick")
 	# Saiu da loja: o cursor do livro não pode virar a carta selecionada da mão.
 	if ledger.visible and not shop_ui:
@@ -1536,6 +1559,11 @@ func _refresh_offer() -> void:
 	ledger.visible = shop_ui
 	if not on:
 		offer_sig = ""
+		power_panel_sig = ""
+		return
+	if is_power:
+		offer_sig = ""
+		_refresh_power_panel(sim.offers[0])
 		return
 	var o: Dictionary = sim.offers[0]
 	# Loja e escolha da carta do serviço: o livro-caixa desenha tudo (sem a caixa de ofertas comum).
@@ -1576,6 +1604,8 @@ func choose_offer(k: int, reset := false) -> void:
 
 ## Pontos da tela para o teste com o mouse escolher a opção k (SKIP: sair/voltar). Vazio: a opção não está à vista.
 func offer_click_points(k: int) -> Array:
+	if power_layer.is_visible_in_tree():
+		return [power_continue.get_global_transform() * (power_continue.size * 0.5)]
 	if ledger.is_visible_in_tree():
 		return ledger.click_points(k)
 	if k == Sim.SKIP:
@@ -1588,6 +1618,8 @@ func offer_click_points(k: int) -> Array:
 
 
 func offer_ready() -> bool:
+	if power_layer.is_visible_in_tree():
+		return power_continue.is_visible_in_tree()
 	return ledger.is_visible_in_tree() or (offer_slots.size() > 0 and offer_skip.is_visible_in_tree())
 
 
@@ -1988,3 +2020,304 @@ func _map_doodle(panel: Control, icon: String, sz: Vector2, from_corner: Vector2
 		if left:
 			at.x = from_corner.x
 		panel.draw_texture_rect(tex, Rect2(at, sz), false))
+
+# ---------------------------------------------------------------- poderes de party (frente H, 22/11/2026)
+
+const ROMAN := ["", "I", "II", "III"]
+
+
+## Ícone do poder: assets/ui/powers/<id>.svg (tools/art/power_icons.py). Sem arquivo, quadrado vazio do mesmo tamanho.
+static func power_icon(id: String, px: float) -> TextureRect:
+	var tr_ := TextureRect.new()
+	var path := "res://assets/ui/powers/%s.svg" % id
+	if ResourceLoader.exists(path):
+		tr_.texture = load(path)
+	tr_.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr_.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr_.custom_minimum_size = Vector2(px, px)
+	tr_.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	tr_.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	tr_.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return tr_
+
+
+func _build_power_row() -> void:
+	power_row = Control.new()
+	power_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	power_row.visible = false
+	add_child(power_row)
+
+
+func _power_status(it: Dictionary) -> String:
+	if str(it.get("trigger", "")) == "interval":
+		return tr("UI_POWER_EVERY").format({"s": int(ceil(float(it["cd_total"])))})
+	if bool(it["ready"]):
+		return tr("UI_POWER_READY")
+	return tr("UI_POWER_CHARGING").format({"s": int(ceil(float(it["cd_left"])))})
+
+
+func _power_entries(i: int) -> Array:
+	if sim == null:
+		return []
+	var list := sim.party_powers()
+	if i >= list.size():
+		return []
+	var it: Dictionary = list[i]
+	var d := HeroPowers.describe(sim, str(it["id"]), int(it["level"]))
+	if d.is_empty():
+		return []
+	var body := "%s\n\n%s: %d s\n%s" % [d["desc"], tr("UI_POWER_COOLDOWN"), int(d["cooldown"]), _power_status(it)]
+	return [Tips.entry("%s %s" % [d["name"], ROMAN[clampi(int(it["level"]), 1, 3)]], body, power_icon(str(it["id"]), 30))]
+
+
+## Fileira de ícones sobre a party: refaz quando muda a lista; todo quadro atualiza recarga, segundos e brilhos.
+func _refresh_powers() -> void:
+	var list := sim.party_powers()
+	var sig := ""
+	for it in list:
+		sig += "%s%d," % [it["id"], int(it["level"])]
+	sig += TranslationServer.get_locale()
+	if sig != power_sig:
+		power_sig = sig
+		UiKit.clear(power_row)
+		power_badges.clear()
+		for i in list.size():
+			var b := PowerBadge.new()
+			b.setup(str(list[i]["id"]), int(list[i]["level"]))
+			var idx := i
+			Tips.attach(b, func(): return _power_entries(idx))
+			power_row.add_child(b)
+			power_badges.append(b)
+	power_row.visible = not list.is_empty() and sim.phase != K.Phase.OVER and not pause_layer.visible
+	for i in power_badges.size():
+		var b: PowerBadge = power_badges[i]
+		var it: Dictionary = list[i]
+		var tot := maxf(float(it["cd_total"]), 0.01)
+		b.interval = str(it.get("trigger", "")) == "interval"
+		b.ok_ready = bool(it["ready"])
+		b.frac = clampf(float(it["cd_left"]) / tot, 0.0, 1.0)
+		b.secs = int(ceil(float(it["cd_left"]))) if not b.ok_ready else 0
+		if power_flash.has(i):
+			match str(power_flash[i]):
+				"trigger":
+					b.flash = 1.0
+				"ready":
+					b.pop = 1.0
+				"gained":
+					b.pop = 2.0
+	power_flash.clear()
+
+
+## Posição da fileira: logo abaixo do grupo, centrada nele; quebra em linhas e encolhe os ícones se forem muitos.
+func _layout_powers(vs: Vector2, m: float) -> void:
+	var n := power_badges.size()
+	if n == 0 or not power_row.visible:
+		return
+	var px := 46.0 if n <= 10 else (36.0 if n <= 24 else 28.0)
+	var gap := 4.0
+	var wmax := clampf(maxf(duel.size.x, 320.0), 320.0, vs.x * 0.5)
+	var per := maxi(1, int(floor((wmax + gap) / (px + gap))))
+	var cols := mini(n, per)
+	var rows := int(ceil(float(n) / float(per)))
+	power_row.size = Vector2(cols * (px + gap) - gap, rows * (px + gap) - gap)
+	for i in n:
+		var b: PowerBadge = power_badges[i]
+		b.size = Vector2(px, px)
+		b.position = Vector2((i % per) * (px + gap), (i / per) * (px + gap))
+	var y := duel.position.y + duel.size.y + 6.0
+	var x := duel.position.x + (duel.size.x - power_row.size.x) * 0.5
+	if contest_panel.visible and contest_panel.position.y + contest_panel.size.y > y:
+		x = maxf(x, contest_panel.position.x + contest_panel.size.x + 12.0)
+	x = clampf(x, m, maxf(vs.x - power_row.size.x - m, m))
+	power_row.position = Vector2(x, y)
+	var dy := power_row.size.y + 8.0
+	learn_panel.position.y += dy
+	hint_panel.position.y += dy
+
+
+func _build_power_panel() -> void:
+	power_layer = _dim()
+	power_layer.color.a = 0.6
+	power_box = UiKit.panel(UiKit.BG, UiKit.GOLD, 22)
+	power_box.name = "Box"
+	power_layer.add_child(power_box)
+	power_layer.visible = false
+	add_child(power_layer)
+
+
+## Painel de revelação do poder (oferta-aviso "power"): novo ou evolução, efeito, recarga e os poderes que a party já tem.
+func _refresh_power_panel(o: Dictionary) -> void:
+	var sig := TranslationServer.get_locale() + str(o)
+	if sig == power_panel_sig:
+		return
+	var first := power_panel_sig == ""
+	power_panel_sig = sig
+	UiKit.clear(power_box)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 14)
+	var opts: Array = o["options"]
+	var any_new := false
+	for op in opts:
+		if bool(op.get("new", false)):
+			any_new = true
+	var title := UiKit.title(38)
+	title.text = tr("UI_POWER_NEW" if any_new else "UI_POWER_EVOLVED")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if UiSkins.diario():
+		v.add_child(UiDiario.tape_title(title))
+	else:
+		v.add_child(title)
+	var changed: Array = []
+	for op in opts:
+		var id := str(op["id"])
+		changed.append(id)
+		var lv := int(op["level"])
+		var d := HeroPowers.describe(sim, id, lv)
+		if d.is_empty():
+			continue
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 16)
+		var badge := PowerBadge.new()
+		badge.setup(id, lv)
+		badge.custom_minimum_size = Vector2(88, 88)
+		badge.static_view = true
+		badge.pop = 2.0
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(badge)
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 4)
+		col.custom_minimum_size = Vector2(470, 0)
+		var nm := UiKit.title(30)
+		nm.text = str(d["name"])
+		col.add_child(nm)
+		var prev := int(op.get("prev_level", 0))
+		var lvl := UiKit.label(17, UiKit.GOLD, 3)
+		lvl.text = tr("UI_POWER_LEVEL_UP").format({"a": ROMAN[clampi(prev, 0, 3)], "b": ROMAN[clampi(lv, 1, 3)]}) if prev > 0 and not bool(op.get("new", false)) else tr("UI_POWER_LEVEL").format({"n": ROMAN[clampi(lv, 1, 3)]})
+		col.add_child(lvl)
+		col.add_child(Tips.label(str(d["desc"]), 18, UiKit.TEXT, 470.0, false))
+		var cd := UiKit.label(17, UiKit.MUTED, 3)
+		if str(d["trigger"]) == "interval":
+			cd.text = tr("UI_POWER_EVERY").format({"s": int(op.get("cooldown", d["cooldown"]))})
+		else:
+			cd.text = "%s: %d s" % [tr("UI_POWER_COOLDOWN"), int(op.get("cooldown", d["cooldown"]))]
+		col.add_child(cd)
+		row.add_child(col)
+		v.add_child(row)
+	var have: Array = o.get("powers", [])
+	if not have.is_empty():
+		v.add_child(UiParch.divider(560.0) if UiSkins.diario() else HSeparator.new())
+		var hl := UiKit.label(17, UiKit.MUTED, 3)
+		hl.text = tr("UI_POWER_HAVE").format({"n": have.size()})
+		hl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(hl)
+		var fl := HFlowContainer.new()
+		fl.add_theme_constant_override("h_separation", 6)
+		fl.add_theme_constant_override("v_separation", 6)
+		fl.alignment = FlowContainer.ALIGNMENT_CENTER
+		fl.custom_minimum_size = Vector2(574, 0)
+		for it in have:
+			var mb := PowerBadge.new()
+			mb.setup(str(it["id"]), int(it["level"]))
+			mb.static_view = true
+			mb.custom_minimum_size = Vector2(44, 44)
+			mb.hilite = changed.has(str(it["id"]))
+			mb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			fl.add_child(mb)
+		v.add_child(fl)
+	power_continue = Button.new()
+	power_continue.text = tr("UI_OFFER_CONTINUE")
+	power_continue.custom_minimum_size = Vector2(240, 46)
+	power_continue.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	power_continue.pressed.connect(func(): offer_chosen.emit(0))
+	v.add_child(power_continue)
+	power_box.add_child(v)
+	power_box.size = Vector2.ZERO
+	if first:
+		Juice.slam(title)
+		if sfx.is_valid():
+			sfx.call("reward", 0.9)
+
+
+## Medalhão de um poder: ícone sobre papel, varredura radial da recarga que falta, segundos, brilho quando pronto,
+## piscar ao disparar e selo do nível (I a III). `static_view`: sem recarga (painel de revelação).
+class PowerBadge extends Control:
+	var id := ""
+	var level := 1
+	var frac := 0.0
+	var secs := 0
+	var ok_ready := false
+	var interval := false
+	var flash := 0.0
+	var pop := 0.0
+	var static_view := false
+	var hilite := false
+	var tex: Texture2D
+
+	func setup(id_: String, level_: int) -> void:
+		id = id_
+		level = level_
+		custom_minimum_size = Vector2(40, 40)
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		var path := "res://assets/ui/powers/%s.svg" % id
+		if ResourceLoader.exists(path):
+			tex = load(path)
+
+	func _process(delta: float) -> void:
+		if flash > 0.0:
+			flash = maxf(flash - delta * 2.5, 0.0)
+		if pop > 0.0:
+			pop = maxf(pop - delta, 0.0)
+		if flash > 0.0 or pop > 0.0 or (ok_ready and not interval and not static_view):
+			queue_redraw()
+
+	func _draw() -> void:
+		var s := minf(size.x, size.y)
+		var c := size * 0.5
+		var r := s * 0.5
+		var tt := Time.get_ticks_msec() * 0.001
+		var glow := 0.5 + 0.5 * sin(tt * 4.0) if (ok_ready and not interval and not static_view) else 0.0
+		if glow > 0.0:
+			draw_circle(c, r, Color(1.0, 0.85, 0.35, 0.25 + 0.2 * glow))
+		var popk := minf(pop, 1.0)
+		draw_circle(c, r * 0.9, Color(0.07, 0.05, 0.1))
+		draw_circle(c, r * 0.84, Color(0.89, 0.81, 0.62))
+		if tex != null:
+			var q := r * 1.34
+			draw_texture_rect(tex, Rect2(c - Vector2(q, q) * 0.5, Vector2(q, q)), false)
+		if not static_view and frac > 0.0:
+			var pts := PackedVector2Array([c])
+			var steps := maxi(6, int(32.0 * frac) + 2)
+			for i in steps + 1:
+				var a := -PI * 0.5 + TAU * frac * float(i) / float(steps)
+				pts.append(c + Vector2(cos(a), sin(a)) * r * 0.84)
+			draw_colored_polygon(pts, Color(0.05, 0.03, 0.08, 0.62))
+		var ring := Color(0.24, 0.17, 0.11)
+		if glow > 0.0:
+			ring = Color(1.0, 0.82, 0.3).lerp(Color(1, 0.95, 0.7), glow)
+		elif hilite or popk > 0.0:
+			ring = Color(1.0, 0.82, 0.3)
+		draw_arc(c, r * 0.9, 0.0, TAU, 40, ring, maxf(1.8, s * 0.07), true)
+		if popk > 0.0:
+			draw_arc(c, r * (1.0 + (1.0 - popk) * 0.35), 0.0, TAU, 40, Color(1.0, 0.9, 0.5, popk), 2.0, true)
+		if flash > 0.0:
+			draw_circle(c, r * 0.9, Color(1, 1, 1, 0.55 * flash))
+			draw_arc(c, r * (1.0 + (1.0 - flash) * 0.6), 0.0, TAU, 40, Color(1, 0.95, 0.7, flash), 3.0, true)
+		var font := get_theme_default_font()
+		if font == null:
+			font = ThemeDB.fallback_font
+		if not static_view and secs > 0 and not ok_ready:
+			var fs := int(maxf(12.0, s * 0.42))
+			var t := str(secs)
+			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+			var tp := Vector2(c.x - tw.x * 0.5, c.y + fs * 0.34)
+			draw_string_outline(font, tp, t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 5, Color(0.05, 0.03, 0.08, 0.95))
+			draw_string(font, tp, t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 0.96, 0.85))
+		# Selo do nível, no canto de baixo à direita.
+		var sc := c + Vector2(r, r) * 0.66
+		var sr := maxf(7.0, s * 0.2)
+		draw_circle(sc, sr, Color(0.07, 0.05, 0.1))
+		draw_circle(sc, sr * 0.82, Color(0.85, 0.65, 0.25))
+		var lt: String = Hud.ROMAN[clampi(level, 1, 3)]
+		var lfs := int(maxf(9.0, sr * 1.15))
+		var lw := font.get_string_size(lt, HORIZONTAL_ALIGNMENT_LEFT, -1, lfs)
+		draw_string(font, Vector2(sc.x - lw.x * 0.5, sc.y + lfs * 0.34), lt, HORIZONTAL_ALIGNMENT_LEFT, -1, lfs, Color(0.12, 0.07, 0.03))

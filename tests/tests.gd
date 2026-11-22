@@ -90,6 +90,7 @@ func _ready() -> void:
 	t_meta5()
 
 	t_powers()
+	t_power_hud()
 	t_library_ui()
 	t_covil_ui()
 	print("falhas: ", fails)
@@ -4280,3 +4281,73 @@ func t_covil_ui() -> void:
 		check(m.almas == m.almas_earned and m.upgrades.is_empty(), "covil: reembolsar tudo devolve tudo")
 		sc.queue_free()
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+## Frente H (22/11/2026): HUD dos poderes. Ícones com recarga, painel de revelação (novo e evolução) e Continuar.
+func t_power_hud() -> void:
+	var s := _sim(7, "ruin")
+	s.powers.append({"id": "fire_burst", "level": 2, "cd_left": 9.0, "gap_left": 0.0})
+	s.powers.append({"id": "ally_rat", "level": 1, "cd_left": 0.0, "gap_left": 0.0})
+	var h := Hud.new()
+	add_child(h)
+	h.offer_chosen.connect(func(k): s.choose(k))
+	h.bind(s)
+	h.refresh(0.016, 60.0)
+	h._layout()
+	check(h.power_badges.size() == 2 and h.power_row.visible, "hud: um icone por poder da party (%d)" % h.power_badges.size())
+	var b0: Hud.PowerBadge = h.power_badges[0]
+	var tot := float(s.party_powers()[0]["cd_total"])
+	check(absf(b0.frac - 9.0 / tot) < 0.01 and b0.secs == 9 and not b0.ok_ready, "hud: recarga cheia de segundos (%.2f, %d s)" % [b0.frac, b0.secs])
+	check(ResourceLoader.exists("res://assets/ui/powers/fire_burst.svg") and b0.tex != null, "hud: icone SVG do poder carregado")
+	for k in 20:
+		s.step()
+	h.refresh(0.016, 60.0)
+	check(b0.frac < 9.0 / tot and b0.secs <= 9, "hud: recarga atualiza com o tempo (%.3f)" % b0.frac)
+	h.handle_events([[K.Ev.POWER_TRIGGER, 0.0, 0.0, 0, 0]])
+	h.refresh(0.016, 60.0)
+	check(b0.flash > 0.9, "hud: icone pisca quando o poder dispara")
+	check(not Hud.power_icon("nao_existe", 20.0).texture and Hud.power_icon("war_hound", 20.0).texture != null, "hud: icone ausente nao quebra")
+	# Muitos poderes: quebra em linhas dentro da largura, sem estourar.
+	var many := _sim(7, "ruin")
+	for i in 30:
+		many.powers.append({"id": data.power_ids[i % data.power_ids.size()], "level": 1 + i % 3, "cd_left": float(i), "gap_left": 0.0})
+	var h2 := Hud.new()
+	add_child(h2)
+	h2.bind(many)
+	h2.refresh(0.016, 60.0)
+	h2._layout()
+	check(h2.power_badges.size() == 30 and h2.power_row.size.x <= get_viewport().get_visible_rect().size.x * 0.5 + 1.0 and h2.power_row.size.y > 28.0, "hud: 30 poderes quebram em linhas (%s)" % str(h2.power_row.size))
+	h2.queue_free()
+	# Painel de revelacao: depois da oferta de carta; novo e evolucao; Continuar fecha.
+	var n := _sim(9, "ruin")
+	var seen_new := false
+	var seen_evo := false
+	for k in 8:
+		n.offers.clear()
+		n.hero.hp = 0.0
+		for f in n.followers:
+			f.hp = 0.0
+		n._check_end()
+		if n.offers.is_empty() or str(n.offers.back()["source"]) != "power":
+			break
+		var op: Dictionary = n.offers.back()["options"][0]
+		seen_new = seen_new or bool(op["new"])
+		seen_evo = seen_evo or not bool(op["new"])
+		var h3 := Hud.new()
+		add_child(h3)
+		h3.offer_chosen.connect(func(kk): n.choose(kk))
+		h3.bind(n)
+		var keep: Array = [n.offers.back()]
+		n.offers = keep
+		h3.refresh(0.016, 60.0)
+		h3._layout()
+		check(h3.power_layer.visible and not h3.offer_layer.visible and h3.offer_ready(), "hud: painel do poder aparece com a oferta power (%s)" % str(op["id"]))
+		check(h3.power_box.size.x > 300.0 and h3.power_box.get_child_count() == 1, "hud: painel montado com o poder e a lista da party")
+		h3.power_continue.pressed.emit()
+		h3.refresh(0.016, 60.0)
+		check(n.offers.is_empty() and not h3.power_layer.visible, "hud: Continuar fecha o painel (choose)")
+		h3.queue_free()
+		if seen_new and seen_evo:
+			break
+	check(seen_new, "hud: painel de poder novo exercitado")
+	h.queue_free()

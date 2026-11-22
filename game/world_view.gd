@@ -62,6 +62,17 @@ var cine_enabled := true
 var cine_t := -1.0                # tempo real desde a queda; < 0 sem cena
 var cine_from := Vector3.ZERO
 var corpse: Node3D
+var fall_party := -1               # party em campo na última queda vista (queda longa só quando a party inteira cai)
+var short_falls: Array = []        # membros que caem com a party de pé: {"n": Node3D, "t": s}
+var ally_nodes: Array = []         # vultos dos aliados dos poderes (rato / cão de guerra), um por sim.power_state["allies"]
+const FALL_SHORT_S := 0.7
+const POWER_COLORS := {"fire_burst": Color(1, 0.5, 0.15), "whirlwind": Color(0.8, 0.9, 1.0), "holy_nova": Color(1, 0.92, 0.5),
+	"shockwave": Color(0.75, 0.6, 0.4), "war_cry": Color(1, 0.4, 0.3), "chain_lightning": Color(0.6, 0.8, 1.0),
+	"smite": Color(1, 0.9, 0.5), "slay_next": Color(1, 0.35, 0.3), "titan_blow": Color(1, 0.55, 0.3),
+	"soul_drain": Color(0.7, 1.0, 0.9), "structure_breaker": Color(0.9, 0.7, 0.4), "spell_ward": Color(0.7, 0.5, 1.0),
+	"purify": Color(0.7, 0.95, 1.0), "second_wind": Color(0.5, 1.0, 0.6), "iron_will": Color(0.8, 0.85, 0.95),
+	"fire_ward": Color(1, 0.6, 0.25), "arrow_wall": Color(0.85, 0.8, 0.6), "retaliation": Color(1, 0.6, 0.3),
+	"field_medic": Color(0.5, 1.0, 0.6)}
 const CINE_FOCUS := 1.6           # no corpo, em câmera lenta
 const CINE_TRAVEL := 1.2          # recuando até o herói novo
 const CINE_SLOW := 0.3            # Engine.time_scale no foco
@@ -262,6 +273,9 @@ func build(s: Sim, camera: Camera3D, append := false) -> void:
 	ring_rad.clear()
 	fx.clear()
 	follower_nodes.clear()
+	ally_nodes.clear()
+	short_falls.clear()
+	fall_party = sim.cur_party
 	helper_node = null
 	helper_of = null
 	arena_root = null
@@ -2066,6 +2080,8 @@ func _draw_hero(alpha: float, delta: float) -> void:
 		if hero_rig_node:
 			parent_.add_child(hero_rig_node)
 	_draw_followers(alpha, delta)
+	_draw_allies(alpha, delta)
+	_tick_short_falls(delta)
 	_draw_helper(alpha, delta)
 	var p := hero_pos(alpha)
 	var speed := 0.0 if sim.waiting_choice() else Vector2(h.x - h.ox, h.y - h.oy).length() / sim.dt
@@ -2372,6 +2388,129 @@ func _tick_pools(delta: float, alpha: float) -> void:
 	if flash_t > 0.0:
 		flash_t -= delta
 		flash_light.light_energy = maxf(0.0, flash_t / 0.3) * 8.0
+
+
+## A party inteira caiu? e = 1: um seguidor caiu (a party segue); e = 0 pode ser o líder substituído (party segue) ou
+## a party toda (a party em campo mudou, ou a run acabou). Fora da fila de parties a queda sempre é a longa.
+func _party_fell(e: int) -> bool:
+	if sim == null:
+		return true
+	var cp := sim.cur_party
+	var changed := cp != fall_party
+	fall_party = cp
+	if e == 1:
+		return false
+	if not sim.party_mode():
+		return true
+	return changed or sim.phase == K.Phase.OVER or (sim.hero.hp <= 0.0 and sim.followers.is_empty())
+
+
+## Queda curta: o corpo do membro tomba de lado em ~0,7 s e some; o mundo não desacelera nem a câmera para.
+func short_fall(p: Vector3) -> void:
+	var src: Node3D = null
+	for f in follower_nodes.keys():
+		if not sim.followers.has(f):
+			src = follower_nodes[f]
+			follower_nodes.erase(f)   # o corpo fica com o nó (senão _draw_followers o apaga no quadro seguinte)
+			break
+	if src == null:
+		src = hero_root.duplicate() as Node3D
+		add_child(src)
+	src.position = Vector3(p.x, surface_y(p.x, p.z), p.z)
+	short_falls.append({"n": src, "t": 0.0})
+
+
+func _tick_short_falls(delta: float) -> void:
+	for e in short_falls.duplicate():
+		var n: Node3D = e["n"]
+		if not is_instance_valid(n):
+			short_falls.erase(e)
+			continue
+		e["t"] = float(e["t"]) + delta
+		var k := clampf(float(e["t"]) / FALL_SHORT_S, 0.0, 1.0)
+		var ease_k := k * k * (3.0 - 2.0 * k)
+		n.rotation.z = PI * 0.5 * ease_k
+		if k >= 0.6:
+			n.scale = n.scale.lerp(Vector3.ONE * 0.01, clampf(delta * 7.0, 0.0, 1.0))
+		if float(e["t"]) >= FALL_SHORT_S + 0.5:
+			n.queue_free()
+			short_falls.erase(e)
+
+
+## Um poder disparou: anel + brilho na cor dele, no raio do poder (quando o nível tem `radius`).
+func _power_fx(p: Vector3, idx: int) -> void:
+	var list := sim.party_powers()
+	var id := ""
+	var r := 3.0
+	if idx >= 0 and idx < list.size():
+		id = str(list[idx]["id"])
+		var d: Dictionary = sim.data.hero_powers.get(id, {})
+		if not d.is_empty():
+			var lv: Array = d["lv"]
+			r = float(lv[clampi(int(list[idx]["level"]), 1, lv.size()) - 1].get("radius", 3.0))
+	var col: Color = POWER_COLORS.get(id, Color(1, 0.9, 0.5))
+	ring_burst(p, clampf(r, 2.0, 9.0), col)
+	emit_fx("spark", p + Vector3(0, 1.0, 0), 1.0, col)
+	light_flash(p, col)
+	add_trauma(0.15)
+
+
+## Aliados dos poderes (ratos e cães de guerra; sim.power_state["allies"]): vultos pequenos, sem modelo novo.
+func _draw_allies(_alpha: float, delta: float) -> void:
+	var al: Array = sim.power_state.get("allies", [])
+	while ally_nodes.size() > al.size():
+		var dead: Node3D = ally_nodes.pop_back()
+		if is_instance_valid(dead):
+			dead.queue_free()
+	while ally_nodes.size() < al.size():
+		var root := Node3D.new()
+		var is_hound: bool = str(al[ally_nodes.size()].get("id", "")) == "war_hound"
+		var m := StandardMaterial3D.new()
+		m.albedo_color = Color(0.32, 0.24, 0.17) if is_hound else Color(0.28, 0.25, 0.27)
+		m.roughness = 1.0
+		var sc := 1.0 if is_hound else 0.55
+		var body := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.35
+		sm.height = 0.7
+		body.mesh = sm
+		body.material_override = m
+		body.scale = Vector3(0.8, 0.7, 1.5) * sc
+		body.position.y = 0.35 * sc
+		root.add_child(body)
+		var head := MeshInstance3D.new()
+		var hm := SphereMesh.new()
+		hm.radius = 0.2
+		hm.height = 0.4
+		head.mesh = hm
+		head.material_override = m
+		head.scale = Vector3(1, 0.9, 1.2) * sc
+		head.position = Vector3(0, 0.45 * sc, -0.55 * sc)
+		root.add_child(head)
+		var tail := MeshInstance3D.new()
+		var tm := CylinderMesh.new()
+		tm.top_radius = 0.02
+		tm.bottom_radius = 0.05
+		tm.height = 0.5 * sc
+		tail.mesh = tm
+		tail.material_override = m
+		tail.rotation.x = PI * 0.5
+		tail.position = Vector3(0, 0.3 * sc, 0.65 * sc)
+		root.add_child(tail)
+		add_child(root)
+		ally_nodes.append(root)
+	for i in al.size():
+		var a: Dictionary = al[i]
+		var n: Node3D = ally_nodes[i]
+		var target := Vector3(float(a["x"]), 0.0, float(a["y"]))
+		target.y = surface_y(target.x, target.z)
+		var d := target - n.position
+		if d.length() > 6.0:
+			n.position = target
+		else:
+			n.position = n.position.lerp(target, clampf(delta * 12.0, 0.0, 1.0))
+		if Vector2(d.x, d.z).length() > 0.05:
+			n.rotation.y = lerp_angle(n.rotation.y, atan2(-d.x, -d.z), clampf(delta * 10.0, 0.0, 1.0))
 
 
 func cine_active() -> bool:
@@ -2973,13 +3112,27 @@ func handle_events(evs: Array) -> void:
 				if int(ev[3]) % 3 == 0:
 					say("SAY_HERO", 4, false, Color(0.75, 0.88, 1.0))
 			K.Ev.HERO_FALL:
-				if cine_enabled:
-					fall_cinematic(p)
-				number(p + Vector3(0, 2.5, 0), tr("UI_HERO_FALLEN").format({"n": int(ev[3])}), Color(1, 0.82, 0.25), 80)
-				ring_burst(p, 4.5, Color(1, 0.8, 0.3))
-				light_flash(p, Color(1, 0.85, 0.4))
-				add_trauma(0.3)
-				screen_flash = Color(1, 0.9, 0.6, 0.3)
+				# Queda curta por membro que cai com a party de pé; longa (a cena toda) só quando a party inteira cai.
+				var party_fell := _party_fell(int(ev[4]))
+				if party_fell:
+					if cine_enabled:
+						fall_cinematic(p)
+					number(p + Vector3(0, 2.5, 0), tr("UI_HERO_FALLEN").format({"n": int(ev[3])}), Color(1, 0.82, 0.25), 80)
+					ring_burst(p, 5.5, Color(1, 0.8, 0.3))
+					light_flash(p, Color(1, 0.85, 0.4))
+					add_trauma(0.4)
+					screen_flash = Color(1, 0.9, 0.6, 0.4)
+				else:
+					short_fall(p)
+					number(p + Vector3(0, 2.0, 0), tr("UI_HERO_FALLEN").format({"n": int(ev[3])}), Color(1, 0.82, 0.25), 56)
+					ring_burst(p, 2.2, Color(1, 0.8, 0.3))
+					add_trauma(0.12)
+			K.Ev.POWER_GAINED:
+				ring_burst(p, 5.0, Color(1, 0.9, 0.4))
+				emit_fx("level", p + Vector3(0, 0.5, 0), 1.0)
+				light_flash(p, Color(1, 0.9, 0.5))
+			K.Ev.POWER_TRIGGER:
+				_power_fx(p, int(ev[3]))
 			K.Ev.SHIELD_BREAK:
 				emit_fx("shield", p + Vector3(0, 1.2, 0), 1.0)
 				add_trauma(0.2)
