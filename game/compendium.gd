@@ -1,7 +1,7 @@
 class_name CompendiumScreen
 extends VBoxContainer
 ## Compêndio do menu (rodada 09/11/2026): tudo o que existe no jogo e o que faz.
-## Abas: Cartas (bloqueadas também, níveis, especial do N3), Relíquias, Modificadores, Locais e Poderes (de party).
+## Abas: Cartas (bloqueadas também, níveis I a VI, especial do VI), Relíquias, Modificadores, Locais e Poderes (de party).
 
 signal closed
 
@@ -115,12 +115,10 @@ func _cards_of(g: GridContainer, owner: String) -> void:
 		Tips.attach(c, func(): return Tips.card_entries(dd, [], false, 1))
 		v.add_child(c)
 		var lines: Array = []
-		var l2 := UiKit.level_changes(d, 1, 2)
-		var l3 := UiKit.level_changes(d, 2, 3)
-		if l2 != "":
-			lines.append("N2: " + l2)
-		if l3 != "":
-			lines.append("N3: " + l3)
+		for lv in range(2, CardDef.N3_LEVEL + 1):   # níveis I a VI (plano 21/11/2026); o especial vale no VI
+			var ch := UiKit.level_changes(d, lv - 1, lv)
+			if ch != "":
+				lines.append("%s: %s" % [CardMold.LV_ROMAN[lv], ch])
 		if d.n3.size() > 0:
 			lines.append(tr("UI_OPT_UP_N3"))
 		if meta and not meta.is_unlocked(d.id):

@@ -365,7 +365,7 @@ N3_mimic,N3: morde {bites} vezes.,L3: bites {bites} times.
 N3_ogre,N3: o golpe deixa o herói [[root|Preso]] por {root} s.,L3: its blow leaves the hero [[root|Rooted]] for {root} s.
 N3_gargoyle_tower,"N3: em pedra, devolve {reflect_pct}% do golpe que leva.","L3: as stone, returns {reflect_pct}% of the blows it takes."
 N3_soul_feast,N3: +{bonus_per_card} por carta.,L3: +{bonus_per_card} per card.
-UI_N3_PREVIEW,No nível 3: {t},At level 3: {t}
+UI_N3_PREVIEW,No nível VI: {t},At level VI: {t}
 UI_OFFER_LOC_tavern,Taverna: escolha um modificador,Tavern: pick a modifier
 UI_OFFER_LOC_fountain,Fonte: tire uma carta do deck,Fountain: remove a card from your deck
 UI_OFFER_LOC_ritual,Ritual: suba o nível de uma carta,Ritual: level up a card
@@ -376,7 +376,7 @@ UI_OFFER_WON,Disputa vencida: recompensa completa,Contest won: full reward
 UI_OFFER_LOST,Disputa perdida: recompensa menor,Contest lost: smaller reward
 UI_OFFER_SKIP,Recusar,Skip
 UI_OPT_UP_HEAD,Nível {a} → {b} ★,Level {a} → {b} ★
-UI_OPT_UP_N3,Ganha o efeito especial do nível 3.,Gains its level 3 special effect.
+UI_OPT_UP_N3,Ganha o efeito especial do nível VI.,Gains its level VI special effect.
 UI_OPT_PICK_HEAD,Escolha o tipo,Choose the type
 UI_PICK_card,Carta nova,New card
 UI_PICK_upgrade,Subir nível,Level up
@@ -693,20 +693,10 @@ HEROD_barbaro,Golpe largo que acerta uma roda de monstros; sem escudo.,Wide swin
 HEROD_besteiro,"Atira de longe, devagar, com tiro pesado num alvo só; sem escudo.","Shoots from afar, slowly, with a heavy shot on one target; no shield."
 HEROD_guardiao,"Muita vida e escudo enorme, quase nenhum dano: segura os monstros para os outros.","Lots of health and a huge shield, almost no damage: holds monsters for the others."
 UI_CAMPAIGN,Campanha,Campaign
-UI_PHASE,Fase {n},Stage {n}
-UI_PHASE_LOCKED,Vença a fase anterior para liberar.,Beat the previous stage to unlock.
-UI_PHASE_WON,Vencida,Won
-UI_PHASE_PARTY,Grupo: {list},Party: {list}
 PHASE_0,Tutorial: O Primeiro Invasor,Tutorial: The First Intruder
 PHASE_1,Os Escudeiros,The Squires
-PHASE_2,A Patrulha,The Patrol
-PHASE_3,A Cruzada,The Crusade
-PHASE_4,A Muralha,The Wall
 PHASED_0,"Na fazenda ao pé do covil, escudeiros novatos ouviram falar de você. Um ato só, para aprender a jogar cartas, combinar o Bando e defender o covil.","At the farm below the lair, rookie squires heard about you. A single act to learn to play cards, combine the Pack and defend the lair."
 PHASED_1,"A vila manda os seus escudeiros, com uma arqueira de apoio. O escudo absorve golpes: cerque o herói e ataque por vários lados.","The village sends its squires, with an archer in support. The shield soaks blows: surround the hero and strike from several sides."
-PHASED_2,"Caçadores da mata vêm em grupos pequenos: atiradores de longe, um bárbaro de golpe largo e um assassino rápido.","Forest hunters come in small groups: ranged shooters, a barbarian with a wide swing and a fast assassin."
-PHASED_3,"Os monges mandam clérigas que se curam e abençoam a party seguinte, protegidas por um guardião. Derrube as clérigas primeiro.","The monks send clerics who heal themselves and bless the next party, guarded by a guardian. Bring the clerics down first."
-PHASED_4,A guarnição do forte é uma muralha: guardiões e bárbaros que aguentam muito e batem em área. Enxames apanham; fogo e mortes rendem mais.,The fort's garrison is a wall: guardians and barbarians who take a lot and hit in an area. Swarms suffer; fire and deaths pay off more.
 UI_HEROES_STANDING,{n} de pé,{n} standing
 UI_PARTY_OF,Party {k} de {n},Party {k} of {n}
 UI_PARTY_ORD,Party {p} · {k} de {n},Party {p} · {k} of {n}
@@ -736,15 +726,12 @@ UI_STRIP_ACT_END,Fim do ato {n} · {m} m,End of act {n} · {m} m
 UI_CHOOSE_VILLAIN,Escolha o vilão da run,Choose the villain for this run
 UI_CHOOSE_VILLAIN_SUB,Passe o mouse num vilão para ver o baralho inicial. Cada vilão tem passiva e combos próprios; novos vilões se liberam vencendo fases.,Hover a villain to see its starting deck. Each villain has its own passive and combos; new villains unlock by beating stages.
 UI_PICK_VILLAIN,Escolher este vilão,Pick this villain
-UI_VILLAIN_LOCKED,Bloqueado: vença a fase {n}.,Locked: beat stage {n}.
 UI_VILLAIN_COMBOS,Ideias de combo,Combo ideas
 UI_VILLAIN_DECK,Baralho inicial de {name} · {n} cartas,{name} starting deck · {n} cards
 UI_VILLAIN_TAG,VILÃO,VILLAIN
 UI_GROUP_VILLAIN,Vilão escolhido: {name},Chosen villain: {name}
-UI_PHASE_UNLOCKS_V,Libera o vilão: {p},Unlocks the villain: {p}
 UI_NEW_VILLAIN,Novo vilão liberado: {p}!,New villain unlocked: {p}!
 UI_RARE_CHOICE,Rara à escolha,Rare of your choice
-UI_RARE_CHOICE_SUB,Você venceu uma fase: escolha 1 carta rara para a sua coleção. Restam {n} escolha(s).,You beat a stage: pick 1 rare card for your collection. {n} pick(s) left.
 UI_RARE_PICK,Levar esta carta,Take this card
 UI_TAB_V_plague,Praga,Plague
 UI_TAB_V_dragon,Dragão,Dragon
@@ -1012,7 +999,6 @@ UI_GROUP_VS,o seu vilão,your villain
 UI_GROUP_QUEUE,A fila: {n} heróis,The queue: {n} heroes
 UI_HERO_ORD,{k}º da fila,#{k} in line
 UI_PHASE_TUTORIAL,Tutorial,Tutorial
-UI_GROUP_TOGETHER,Nesta fase os heróis andam juntos: quem chega levanta o caído (uma vez cada).,In this stage the heroes travel together: whoever arrives raises the fallen (once each).
 UI_GROUP_SKILL0,Sem habilidades,No skills
 UI_GROUP_SKILL1,1 habilidade,1 skill
 CARD_lone_wolf,Lobo Solitário,Lone Wolf
@@ -1190,29 +1176,13 @@ REGION_mosteiro,Mosteiro da Colina,Hill Monastery
 REGION_forte,Forte da Fronteira,Border Fort
 REGION_torre,Torre dos Arcanos,Tower of the Arcane
 REGION_capital,Capital de Aurévia,"Aurevia, the Capital"
-PHASE_5,O Círculo Arcano,The Arcane Circle
-PHASE_6,A Companhia Real,The Royal Company
-PHASED_5,"Os magos da torre atacam de longe e em área, com clérigas curando. São frágeis: chegue perto antes que eles limpem o campo.","The tower's mages strike from afar and in an area, with clerics healing. They are frail: close in before they clear the field."
-PHASED_6,"A capital manda a companhia real: parties grandes, com todas as classes juntas. É a última defesa do reino.",The capital sends the royal company: large parties with every class together. It is the kingdom's last defence.
-UI_CAMPAIGN_FACE,Você vai enfrentar,You will face
-UI_CAMPAIGN_PARTY,Party {n},Party {n}
-UI_CAMPAIGN_COUNT,{p} parties · {h} heróis,{p} parties · {h} heroes
-UI_CAMPAIGN_UNSEEN,Você ainda não enfrentou este herói.,You have not faced this hero yet.
-UI_CAMPAIGN_MYSTERY,Os heróis desta região ainda são um mistério.,The heroes of this region are still a mystery.
-UI_CAMPAIGN_DEFEND,Defender o covil,Defend the lair
 UI_CAMPAIGN_EXIT,Saída: {r},Setting out: {r}
-UI_CAMPAIGN_FINAL,Recompensa: o reino é seu,Reward: the kingdom is yours
-UI_CAMPAIGN_PREV,Fase anterior,Previous stage
-UI_CAMPAIGN_NEXT,Próxima fase,Next stage
-UI_CAMPAIGN_KINGDOM,Reino de Aurévia,Kingdom of Aurevia
-UI_CAMPAIGN_LEAGUES,léguas,leagues
 UI_OFFER_FALL,Herói caído! Escolha 1,Hero down! Pick 1
 UI_HERO_PARTY,A PARTY,THE PARTY
 UI_ST_contests,Disputas vencidas,Contests won
 UI_ST_gold,Ouro ganho,Gold earned
 UI_ST_relics,Relíquias,Relics
 UI_COLLECTION_OWNED,Cartas liberadas: {n} de {t},Cards unlocked: {n} of {t}
-UI_PHASE_NEXT_REGION,Libera a próxima região: {r},Unlocks the next region: {r}
 CARD_gold_dart,Dardo de Ouro,Gold Dart
 DESC_gold_dart,"Custa {gold_cost} de [[gold|Ouro]]. Lança uma moeda afiada: {damage} de dano no herói mais perto.","Costs {gold_cost} [[gold|Gold]]. Hurls a sharpened coin: {damage} damage to the nearest hero."
 N3_gold_dart,N3: {damage} de dano.,L3: {damage} damage.
@@ -1321,15 +1291,6 @@ UNLOCK_spark,Encharque o herói e incendeie-o em até 8 segundos em 2 runs difer
 UNLOCK_spike_trap,Jogue 5 cartas em 5 segundos,Play 5 cards within 5 seconds
 UNLOCK_spitting_viper,Jogue 150 Feras no total,Play 150 Beasts in total
 UNLOCK_tar_net,Gaste 2000 de ouro no total,Spend 2000 gold in total
-UI_ENDLESS,Horda sem fim,Endless Horde
-UI_ENDLESS_SUB,"Parties sem fim, até o covil cair","Endless parties, until your lair falls"
-UI_ENDLESS_BEST_BTN,Recorde: {n} parties,Best: {n} parties
-UI_ENDLESS_PARTY,Party {k},Party {k}
-UI_ENDLESS_FALLEN,{k} caídos,{k} fallen
-UI_ENDLESS_OVER,{n} PARTIES,{n} PARTIES
-UI_ENDLESS_NEW_BEST,Novo recorde deste vilão!,New best for this villain!
-UI_ENDLESS_BEST,Recorde deste vilão: {n} parties.,Best for this villain: {n} parties.
-PHASE_ENDLESS,Horda sem fim,Endless Horde
 # --- Frente F: Biblioteca (21/11/2026)
 UI_LIB_TITLE,Biblioteca,Library
 UI_LIB_SUB,o álbum de cartas do covil,the lair's card album

@@ -1841,6 +1841,10 @@ func _tip_test() -> void:
 	var t0 := sim.t
 	for attempt in 3:
 		await _hover((icons[0] as Control).get_global_rect().get_center())
+		if bg_mode:
+			# Janela fora da tela e sem foco: o Godot não entrega mouse_entered ao evento sintético; avisa o controle
+			# na mão (o resto do teste, as caixas e as palavras, usa Tips.mouse_override e roda de verdade).
+			(icons[0] as Control).mouse_entered.emit()
 		await get_tree().create_timer(0.2).timeout
 		t0 = sim.t
 		await get_tree().create_timer(0.3).timeout
