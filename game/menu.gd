@@ -215,7 +215,9 @@ func _on_map_choice(id: String) -> void:
 		"continue":
 			continue_run.emit()
 		"covil":
-			show_screen("covil")
+			# Direto à escolha do vilão/deck; "Voltar" e Esc levam ao título.
+			decks_back = "title"
+			show_screen("decks")
 		"collection":
 			lib_return = "title"
 			show_screen("collection")

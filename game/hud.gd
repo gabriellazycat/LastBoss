@@ -1193,8 +1193,48 @@ func _ward_layer(bar: ProgressBar, h: SimHero) -> void:
 			var x1: float = minf(x0 + w / base * sz.x, sz.x)
 			x0 = maxf(minf(x0, x1 - minf(w / base * sz.x, sz.x)), 0.0)
 			var r := Rect2(x0, 1.0, maxf(x1 - x0, 2.0), sz.y - 2.0)
-			o.draw_rect(r, Color(0.55, 0.82, 1.0, 0.85))
-			o.draw_rect(r, Color(0.9, 0.97, 1.0, 0.95), false, 1.5))
+			# Corpo em degradê vertical (gelo): escuro embaixo, claro em cima.
+			var bands := 6
+			for i in bands:
+				var t := float(i) / float(bands - 1)
+				var c := Color(0.62, 0.88, 1.0, 0.92).lerp(Color(0.22, 0.45, 0.85, 0.92), t)
+				var bh := r.size.y / float(bands)
+				o.draw_rect(Rect2(r.position.x, r.position.y + bh * i, r.size.x, bh + 0.5), c)
+			# Listras diagonais de brilho, recortadas na faixa.
+			var step := 7.0
+			var sx := r.position.x - r.size.y
+			while sx < r.end.x:
+				var a := Vector2(sx, r.end.y)
+				var b := Vector2(sx + r.size.y, r.position.y)
+				var ca := clampf(a.x, r.position.x, r.end.x)
+				var cb := clampf(b.x, r.position.x, r.end.x)
+				if cb > ca:
+					var ya := r.end.y - (ca - a.x)
+					var yb := r.end.y - (cb - a.x)
+					o.draw_line(Vector2(ca, ya), Vector2(cb, yb), Color(1, 1, 1, 0.22), 2.0)
+				sx += step
+			# Faixa de luz no topo e linha escura na base.
+			o.draw_rect(Rect2(r.position.x, r.position.y, r.size.x, maxf(r.size.y * 0.22, 1.0)), Color(1, 1, 1, 0.45))
+			o.draw_rect(Rect2(r.position.x, r.end.y - 1.0, r.size.x, 1.0), Color(0.05, 0.15, 0.4, 0.6))
+			o.draw_rect(r, Color(0.92, 0.98, 1.0, 0.95), false, 1.5)
+			# Brasão de escudo na ponta direita da faixa.
+			var hh := sz.y - 2.0
+			if hh >= 8.0 and r.size.x >= hh * 0.9:
+				var cx := r.end.x - hh * 0.5
+				var cy := sz.y * 0.5
+				var s := hh * 0.5
+				var pts := PackedVector2Array([
+					Vector2(cx - s * 0.8, cy - s * 0.85), Vector2(cx + s * 0.8, cy - s * 0.85),
+					Vector2(cx + s * 0.8, cy + s * 0.1), Vector2(cx, cy + s * 1.0),
+					Vector2(cx - s * 0.8, cy + s * 0.1)])
+				var inner := PackedVector2Array()
+				for p in pts:
+					inner.append(Vector2(cx, cy) + (p - Vector2(cx, cy)) * 0.62)
+				o.draw_colored_polygon(pts, Color(0.06, 0.16, 0.42, 0.95))
+				o.draw_colored_polygon(inner, Color(0.8, 0.95, 1.0, 0.98))
+				var closed := pts.duplicate()
+				closed.append(pts[0])
+				o.draw_polyline(closed, Color(1, 1, 1, 0.95), 1.2))
 		bar.add_child(o)
 	if absf(float(o.get_meta("ward", -1.0)) - h.ward) > 0.01 or absf(float(o.get_meta("hp", -1.0)) - h.hp) > 0.01:
 		o.set_meta("ward", h.ward)
@@ -2241,6 +2281,7 @@ class PowerBadge extends Control:
 	var pop := 0.0
 	var static_view := false
 	var hilite := false
+	var _drawn_secs := 0
 	var tex: Texture2D
 
 	func setup(id_: String, level_: int) -> void:
@@ -2257,7 +2298,9 @@ class PowerBadge extends Control:
 			flash = maxf(flash - delta * 2.5, 0.0)
 		if pop > 0.0:
 			pop = maxf(pop - delta, 0.0)
-		if flash > 0.0 or pop > 0.0 or (ok_ready and not interval and not static_view):
+		# Recarga em andamento: segundos e varredura mudam todo quadro, então redesenha (antes só brilho/pop redesenhavam).
+		if flash > 0.0 or pop > 0.0 or (ok_ready and not interval and not static_view) or (not static_view and (frac > 0.0 or secs != _drawn_secs)):
+			_drawn_secs = secs
 			queue_redraw()
 
 	func _draw() -> void:

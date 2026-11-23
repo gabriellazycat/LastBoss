@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Árvores e Chão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: uma coluna de leitura (~1100px), cada decisão é uma folha de pergaminho com a comparação grande em cima e os botões embaixo. */
+:root {
+  --bg: #e9dfc8;          /* mesa de papel, como a UI do jogo */
+  --sheet: #f5eedc;       /* folha */
+  --ink: #2c2620;         /* tinta */
+  --muted: #6e6352;
+  --line: #cbbd9d;
+  --accent: #2f5d45;      /* verde de bosque */
+  --accent-ink: #f5eedc;
+  --mark: #9c2f2a;        /* vermelho da barra de vida, só para o escolhido */
+  --shadow: 0 1px 0 #d8caa9, 0 6px 18px rgba(60, 44, 20, .12);
+  --f-display: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1d1a16; --sheet: #28241e; --ink: #ece3cf; --muted: #b0a48c; --line: #4a4235;
+    --accent: #7fb08f; --accent-ink: #1d1a16; --mark: #e0796f;
+    --shadow: 0 1px 0 #151310, 0 6px 18px rgba(0, 0, 0, .35); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1d1a16; --sheet: #28241e; --ink: #ece3cf; --muted: #b0a48c; --line: #4a4235;
+  --accent: #7fb08f; --accent-ink: #1d1a16; --mark: #e0796f;
+  --shadow: 0 1px 0 #151310, 0 6px 18px rgba(0, 0, 0, .35); color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 28px; }
+header { display: grid; gap: 6px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+.lede { margin: 0; color: var(--muted); max-width: 65ch; }
+.status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chip { font-size: 13px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--sheet); color: var(--muted); }
+.chip b { color: var(--ink); font-weight: 700; }
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); padding: clamp(16px, 3vw, 28px); display: grid; gap: 18px; min-width: 0; }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 26px; margin: 0; line-height: 1.1; text-wrap: balance; }
+.kicker { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 2px; }
+p { margin: 0; max-width: 70ch; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font: 500 14px var(--f-body); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.tab[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.tab:focus-visible, .btn:focus-visible, .style:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+/* comparação antes/depois */
+.cmp { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; border-radius: 4px; overflow: hidden; background: #111; user-select: none; touch-action: pan-y; }
+.cmp img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; max-width: none; }
+.cmp .before { clip-path: inset(0 calc(100% - var(--x, 50%)) 0 0); }
+.cmp .bar { position: absolute; top: 0; bottom: 0; left: var(--x, 50%); width: 2px; margin-left: -1px; background: #f5eedc; box-shadow: 0 0 0 1px rgba(0,0,0,.35); pointer-events: none; }
+.cmp .knob { position: absolute; top: 50%; left: var(--x, 50%); width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: #f5eedc; box-shadow: 0 1px 4px rgba(0,0,0,.5); pointer-events: none; display: grid; place-items: center; color: #2c2620; font: 700 14px var(--f-body); }
+.cmp input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+.cmp .lab { position: absolute; top: 10px; font: 700 12px var(--f-body); letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; background: rgba(28, 24, 18, .72); color: #f5eedc; pointer-events: none; }
+.cmp .lab.l { left: 10px; } .cmp .lab.r { right: 10px; }
+.hint { font-size: 13px; color: var(--muted); }
+/* estilos de chão */
+.styles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.style { text-align: left; font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 0; cursor: pointer; display: grid; overflow: hidden; min-width: 0; }
+.style img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+.style .t { padding: 8px 10px 10px; display: grid; gap: 2px; }
+.style .n { font-family: var(--f-display); font-weight: 700; font-size: 17px; line-height: 1.15; }
+.style .d { font-size: 13px; color: var(--muted); line-height: 1.35; }
+.style[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.style .saved { display: none; font-size: 12px; font-weight: 700; color: var(--mark); letter-spacing: .06em; text-transform: uppercase; }
+.style.is-saved .saved { display: block; }
+/* pranchas */
+.plates { display: grid; gap: 14px; }
+.plate { display: grid; gap: 6px; margin: 0; }
+.plate img { width: 100%; border-radius: 4px; border: 1px solid var(--line); display: block; }
+.plate figcaption { font-size: 13px; color: var(--muted); }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+details { border-top: 1px solid var(--line); padding-top: 12px; }
+summary { cursor: pointer; font-weight: 700; }
+/* escolha */
+.choose { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { font: 700 15px var(--f-body); padding: 10px 16px; border-radius: 4px; border: 1px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn[aria-pressed="true"] { outline: 2px solid var(--mark); outline-offset: 2px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.saveline { font-size: 14px; color: var(--muted); min-height: 1.5em; }
+.saveline.ok { color: var(--accent); }
+.saveline.err { color: var(--mark); }
+textarea { width: 100%; box-sizing: border-box; min-height: 96px; font: 15px/1.45 var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; resize: vertical; }
+label.t { font-weight: 700; }
+code { font-size: 13px; background: var(--bg); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--line); }
+footer { font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <p class="kicker">Last Boss · rodada de 22/11</p>
+    <h1>Árvores e Chão</h1>
+    <p class="lede">As árvores e arbustos refeitos em pinceladas e quatro texturas novas para o chão e a estrada. Arraste a linha em cada imagem para comparar com o de antes, depois escolha. Sua escolha fica salva num arquivo do projeto e eu leio de lá.</p>
+    <div class="status" id="status">
+      <span class="chip">Árvores: <b id="st-arv">sem resposta</b></span>
+      <span class="chip">Chão: <b id="st-chao">sem resposta</b></span>
+    </div>
+  </header>
+
+  <section class="sheet" aria-labelledby="h-arv">
+    <div>
+      <p class="kicker">Decisão 1</p>
+      <h2 id="h-arv">Árvores e arbustos</h2>
+    </div>
+    <p>Antes, a copa era um punhado de bolas fundidas e alisadas, com sombra em degradê: parecia massinha. Agora cada tufo é um miolo escuro coberto de pinceladas angulosas, cada uma com uma cor chapada só, como o guache das cartas. Mesmos formatos que você aprovou em 21/11 (carvalho, carvalho torto, pinheiro e álamo) e arbustos novos por ato. Nesta comparação o chão é o de antes, para julgar só as árvores.</p>
+    <div class="tabs" role="group" aria-label="Cena das árvores" id="tabs-arv"></div>
+    <div class="cmp" id="cmp-arv" style="--x:50%">
+      <img class="after" alt="Depois: árvores em pinceladas" id="arv-after">
+      <img class="before" alt="Antes: árvores de 21/11" id="arv-before">
+      <div class="bar"></div><div class="knob" aria-hidden="true">⇆</div>
+      <span class="lab l">Antes</span><span class="lab r">Pinceladas</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Arraste para comparar antes e depois" id="rng-arv">
+    </div>
+    <p class="hint">Arraste para a direita para ver mais do antes.</p>
+    <details>
+      <summary>Ver as pranchas das árvores (todas as peças, nos 3 atos)</summary>
+      <div class="plates" style="margin-top:12px">
+        <div class="pair">
+          <figure class="plate"><img src="img/prancha_antes_estilo3.jpg" alt="Prancha antes: carvalhos lisos" loading="lazy"><figcaption>Antes: carvalhos de 21/11 (copa lisa)</figcaption></figure>
+          <figure class="plate"><img src="img/prancha_carvalhos.jpg" alt="Prancha depois: carvalhos em pinceladas" loading="lazy"><figcaption>Agora: carvalhos em pinceladas (primavera, outono, amaldiçoado)</figcaption></figure>
+        </div>
+        <div class="pair">
+          <figure class="plate"><img src="img/prancha_antes_estilo2.jpg" alt="Prancha antes: pinheiros e álamos lisos" loading="lazy"><figcaption>Antes: pinheiros e álamos de 21/11</figcaption></figure>
+          <figure class="plate"><img src="img/prancha_pinheiros_alamos.jpg" alt="Prancha depois: pinheiros e álamos em pinceladas" loading="lazy"><figcaption>Agora: pinheiros e álamos em pinceladas</figcaption></figure>
+        </div>
+        <figure class="plate"><img src="img/prancha_arbustos.jpg" alt="Arbustos novos dos 3 atos" loading="lazy"><figcaption>Arbustos novos, um por ato (o da terra amaldiçoada é ralo, com galhos secos)</figcaption></figure>
+      </div>
+    </details>
+    <div class="choose" role="group" aria-label="Escolha das árvores">
+      <button class="btn primary" data-arv="novas" type="button">Ficar com as novas</button>
+      <button class="btn" data-arv="antigas" type="button">Voltar para as de antes</button>
+      <button class="btn" data-arv="ajustar" type="button">Gostei, mas ajustar</button>
+    </div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-chao">
+    <div>
+      <p class="kicker">Decisão 2</p>
+      <h2 id="h-chao">Textura do chão e da estrada</h2>
+    </div>
+    <p>O chão de antes somava manchas em várias escalas, um relevo falso e pinceladas por cima, e virava borrão. Cada estilo novo é uma ideia de pintura só, sem relevo falso, e a estrada fica cor de areia como os caminhos das cartas (antes saía vermelho-rosado). Todos já com as árvores novas. Toque num estilo para vê-lo grande.</p>
+    <div class="styles" id="styles" role="group" aria-label="Estilos de chão"></div>
+    <div class="tabs" role="group" aria-label="Cena do chão" id="tabs-chao"></div>
+    <div class="cmp" id="cmp-chao" style="--x:50%">
+      <img class="after" alt="" id="chao-after">
+      <img class="before" alt="Antes: chão de antes" id="chao-before">
+      <div class="bar"></div><div class="knob" aria-hidden="true">⇆</div>
+      <span class="lab l">Antes</span><span class="lab r" id="chao-lab">Guache chapado</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Arraste para comparar o chão de antes com o estilo escolhido" id="rng-chao">
+    </div>
+    <div class="choose">
+      <button class="btn primary" id="use-chao" type="button">Usar este chão</button>
+      <span class="hint" id="use-hint"></span>
+    </div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-nota">
+    <div>
+      <p class="kicker">Opcional</p>
+      <h2 id="h-nota">Algum ajuste?</h2>
+    </div>
+    <label class="t" for="nota">Escreva o que mudar (cor, tamanho, algum ato específico)</label>
+    <textarea id="nota" placeholder="Ex.: o pinheiro do outono está claro demais; quero o chão 2 mas com a estrada de antes."></textarea>
+    <div class="choose">
+      <button class="btn" id="save-nota" type="button">Salvar nota</button>
+    </div>
+  </section>
+
+  <p class="saveline" id="saveline" role="status" aria-live="polite">Conectando para salvar…</p>
+
+  <footer>
+    <span>No jogo: <code>--arvores=7</code> são as novas (<code>4</code> as de antes); <code>--chao=1</code> a <code>4</code> são os estilos (<code>0</code> o de antes). Hoje o padrão é árvores novas e chão 2 (relva pincelada).</span>
+    <span>FPS nas mesmas cenas: antes 100 / 81 / 97; agora 103 / 95 / 115 (uma amostra por cena).</span>
+  </footer>
+</div>
+
+<script>
+const SCENES = [["ato1_estrada", "Ato 1 · estrada"], ["ato1_perto", "Ato 1 · perto"], ["ato2", "Ato 2 · outono"], ["ato3", "Ato 3 · amaldiçoado"]];
+const STYLES = [
+  [0, "Antes", "O chão de hoje: manchas, relevo falso, estrada vermelha."],
+  [1, "Guache chapado", "Campos lisos de borda nítida e pinceladas largas que só clareiam."],
+  [2, "Relva pincelada", "Campos macios com pinceladas de grama afinando para o mesmo lado. Padrão atual."],
+  [3, "Mosaico", "Manchas de pincel em tons vizinhos, conversa com as copas novas."],
+  [4, "Liso", "Só os campos em degradê macio; o cenário aparece mais."],
+];
+const ARV_TXT = { novas: "ficar com as novas", antigas: "voltar às de antes", ajustar: "novas, com ajustes" };
+const $ = (id) => document.getElementById(id);
+const state = { sceneArv: 0, sceneChao: 0, style: 1, saved: { arvores: null, chao: null, nota: "" } };
+
+function img(dir, s) { return "img/" + dir + "_" + SCENES[s][0] + ".jpg"; }
+
+function tabs(el, key, render) {
+  SCENES.forEach(([, label], i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "tab"; b.textContent = label;
+    b.addEventListener("click", () => { state[key] = i; render(); });
+    el.appendChild(b);
+  });
+}
+function pressTabs(el, i) { [...el.children].forEach((b, k) => b.setAttribute("aria-pressed", String(k === i))); }
+
+function slider(cmp, rng) {
+  rng.addEventListener("input", () => cmp.style.setProperty("--x", rng.value + "%"));
+}
+
+function renderArv() {
+  pressTabs($("tabs-arv"), state.sceneArv);
+  $("arv-before").src = img("antes", state.sceneArv);
+  $("arv-after").src = img("chao0", state.sceneArv);
+  document.querySelectorAll("[data-arv]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.arv === state.saved.arvores)));
+}
+
+function renderStyles() {
+  const box = $("styles");
+  box.textContent = "";
+  STYLES.forEach(([n, name, desc]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "style" + (state.saved.chao === n ? " is-saved" : "");
+    b.setAttribute("aria-pressed", String(state.style === n));
+    const im = document.createElement("img");
+    im.src = img("chao" + n, state.sceneChao); im.alt = ""; im.loading = "lazy";
+    const t = document.createElement("span"); t.className = "t";
+    const nn = document.createElement("span"); nn.className = "n"; nn.textContent = (n ? n + " · " : "") + name;
+    const dd = document.createElement("span"); dd.className = "d"; dd.textContent = desc;
+    const sv = document.createElement("span"); sv.className = "saved"; sv.textContent = "Sua escolha";
+    t.append(nn, dd, sv); b.append(im, t);
+    b.addEventListener("click", () => { state.style = n; renderChao(); });
+    box.appendChild(b);
+  });
+}
+
+function renderChao() {
+  pressTabs($("tabs-chao"), state.sceneChao);
+  renderStyles();
+  const st = STYLES[state.style];
+  $("chao-before").src = img("chao0", state.sceneChao);
+  $("chao-after").src = img("chao" + state.style, state.sceneChao);
+  $("chao-after").alt = "Depois: " + st[1];
+  $("chao-lab").textContent = st[1];
+  $("use-chao").textContent = state.saved.chao === state.style ? "Este é o escolhido" : (state.style === 0 ? "Manter o chão de antes" : "Usar este chão (" + st[1] + ")");
+  $("use-hint").textContent = state.style === 0 ? "Comparando o de antes com ele mesmo." : "";
+}
+
+function renderStatus() {
+  $("st-arv").textContent = state.saved.arvores ? ARV_TXT[state.saved.arvores] : "sem resposta";
+  $("st-chao").textContent = state.saved.chao == null ? "sem resposta" : (state.saved.chao === 0 ? "o de antes" : state.saved.chao + " · " + STYLES[state.saved.chao][1]);
+}
+
+function renderAll() { renderArv(); renderChao(); renderStatus(); }
+
+tabs($("tabs-arv"), "sceneArv", renderArv);
+tabs($("tabs-chao"), "sceneChao", renderChao);
+slider($("cmp-arv"), $("rng-arv"));
+slider($("cmp-chao"), $("rng-chao"));
+try { const d = localStorage.getItem("nota-rascunho"); if (d) $("nota").value = d; } catch (e) {}
+$("nota").addEventListener("input", () => { try { localStorage.setItem("nota-rascunho", $("nota").value); } catch (e) {} });
+renderAll();
+
+// ---- gravação local: o servidor (server.py) guarda em escolha.json, ao lado desta página
+const line = $("saveline");
+function say(t, cls) { line.textContent = t; line.className = "saveline" + (cls ? " " + cls : ""); }
+let writing = false;
+
+async function save(patch, okText) {
+  if (writing) return;
+  writing = true;
+  const body = Object.assign({}, state.saved, patch, { atualizado: new Date().toISOString() });
+  try {
+    const r = await fetch("api/escolha", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    Object.assign(state.saved, patch);
+    renderAll();
+    say("Salvo: " + okText + ". Já consigo ler do outro lado.", "ok");
+  } catch (e) {
+    say("Não salvou (" + e.message + "). O servidor está rodando? Me diga no chat: " + okText + ".", "err");
+  } finally { writing = false; }
+}
+
+document.querySelectorAll("[data-arv]").forEach((b) => b.addEventListener("click", () => save({ arvores: b.dataset.arv }, "árvores, " + ARV_TXT[b.dataset.arv])));
+$("use-chao").addEventListener("click", () => save({ chao: state.style }, "chão " + (state.style === 0 ? "de antes" : state.style + " (" + STYLES[state.style][1] + ")")));
+$("save-nota").addEventListener("click", () => {
+  const v = $("nota").value.trim();
+  save({ nota: v }, v ? "nota guardada" : "nota apagada").then(() => { try { localStorage.removeItem("nota-rascunho"); } catch (e) {} });
+});
+
+fetch("api/escolha").then((r) => r.ok ? r.json() : null).then((d) => {
+  if (d && Object.keys(d).length) {
+    state.saved = { arvores: d.arvores ?? null, chao: typeof d.chao === "number" ? d.chao : null, nota: d.nota || "" };
+    if (state.saved.nota && !$("nota").value) $("nota").value = state.saved.nota;
+    renderAll();
+    say("Escolhas carregadas. Toque de novo para mudar.");
+  } else {
+    say("Pronto para salvar suas escolhas.");
+  }
+}).catch(() => say("Não achei o servidor local; as escolhas não vão salvar.", "err"));
+</script>
+
+</body>
+</html>

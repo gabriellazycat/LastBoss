@@ -80,12 +80,14 @@ func _ready() -> void:
 		MundoVivo.VAR = int(auto_args["mundo"])
 	if auto_args.has("luz"):
 		LuzLook.VAR = int(auto_args["luz"])
-	# --cenario=N (0 ou 1): regiões + margem florida + vento com rajadas; --arvores=N (0 a 3): estilo das árvores
+	# --cenario=N (0 ou 1): regiões + margem florida + vento com rajadas; --arvores=N (0 a 7): estilo das árvores; --chao=N (0 a 4): textura do chão
 	# (cenário com propósito, 21/11/2026, docs/CENARIO_PROPOSITO.md).
 	if auto_args.has("cenario"):
 		Cenario.VAR = int(auto_args["cenario"])
 	if auto_args.has("arvores"):
 		Arvores.VAR = int(auto_args["arvores"])
+	if auto_args.has("chao"):   # textura do chão e da estrada (GroundLooks.TELA, 0 = a de antes)
+		GroundLooks.TELA = int(auto_args["chao"])
 	if auto_args.has("mapfog"):
 		Minimap.FOG = auto_args["mapfog"] != "0"
 	# --herois=N (0 a 2): anel, sombra e aura dos heróis; --arena=N (0 a 2): arena do chefe (rodada visual 20/11/2026).
@@ -214,7 +216,6 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 	run_end = RunEnd.new()
 	run_end.visible = false
 	run_end.to_menu.connect(func(): _to_menu(false))
-	run_end.to_covil.connect(func(): _to_menu(false, "covil"))
 	end_layer = CanvasLayer.new()
 	end_layer.layer = 3
 	end_layer.add_child(run_end)
@@ -1696,10 +1697,9 @@ func _menu_test() -> void:
 	step.call("a tela de fim da run aparece e o painel antigo some", run_end.visible and not hud.result_layer.visible and meta.runs == runs0 + 1)
 	_ui_shot("menu_end")
 	await get_tree().create_timer(1.0).timeout
-	await _click(_button(run_end, "UI_END_COVIL"))
-	step.call("Ir ao Covil leva ao Covil", not running and menu.visible and menu.screen == "covil" and not run_end.visible)
+	await _click(_button(run_end, "UI_END_MENU"))
+	step.call("o fim da run volta ao menu principal, não ao Covil", not running and menu.visible and menu.screen == "title" and not run_end.visible)
 	# Tutorial pelo menu.
-	await _esc()
 	await _click(mm.buttons["tutorial"])
 	step.call("Tutorial começa a fase 0", running and sim != null and sim.campaign_phase == 0 and not menu.visible)
 	SaveGame.erase()

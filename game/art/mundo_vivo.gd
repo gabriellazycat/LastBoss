@@ -293,7 +293,7 @@ static func build(w: Node3D, sim: Sim) -> void:
 						bag.add("flower_" + col.to_html(), flower_mesh(col), fmat, false, q, rng.randf() * TAU, Vector3(s, s * rng.randf_range(0.9, 1.3), s), Color.WHITE)
 				"bush":
 					var s := rng.randf_range(0.8, 1.5)
-					bag.add("bush", A["bush"][0], A["bush"][1], false, p, yaw, Vector3(s, s * rng.randf_range(0.8, 1.15), s), _pick(rng, C["bush"]))
+					bag.add("bush", A["bush"][0], A["bush"][1], false, p, yaw, Vector3(s, s * rng.randf_range(0.8, 1.15), s), Color.WHITE if Arvores.bush_on() else _pick(rng, C["bush"]))
 				"rock":
 					# Pedra com filhotes: uma maior e até três pequenas ao lado.
 					var s := rng.randf_range(0.45, 1.1) * (1.9 if rng.randf() < 0.08 else 1.0)

@@ -255,6 +255,20 @@ vec3 paint_diffuse(vec3 N, vec3 L, vec3 V, float atten, vec3 lcol, vec3 pp, bool
 }
 
 // Corpo padrão do light(): o material que inclui define `varying vec3 paint_p;` com a posição usada nas pinceladas.
+// Só a paleta das cartas (sem as pinceladas do shader): para os chãos que já trazem a pincelada própria
+// (ground_tela.gdshader, road_tela.gdshader, 22/11/2026).
+vec3 pt_flat_card(vec3 lin) {
+	if (!paint_on) {
+		return lin;
+	}
+	vec3 c = pt_palette(lin);
+#ifndef PAINT_UNIT
+	if (paint_cor) {
+		c = pt_card_ground(c);
+	}
+#endif
+	return c;
+}
 #define PAINT_LIGHT DIFFUSE_LIGHT += paint_diffuse(NORMAL, LIGHT, VIEW, ATTENUATION, LIGHT_COLOR, paint_p, LIGHT_IS_DIRECTIONAL); \
 	if (!paint_on || paint_light == 0) { \
 		vec3 h = normalize(LIGHT + VIEW); \

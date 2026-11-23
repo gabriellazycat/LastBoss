@@ -2,16 +2,14 @@ class_name RunEnd
 extends Control
 ## Tela de fim da run (plano de metaprogressão, 21/11/2026, frente G): "O covil caiu na party N de 15" (ou a vitória),
 ## o recorde (novo recorde em destaque), as Almas (dano + heróis + bônus = total), os vilões liberados e os desafios
-## concluídos com a revelação das cartas (UnlockReveal). Botões: Menu e Ir ao Covil.
+## concluídos com a revelação das cartas (UnlockReveal). Botão: Menu (volta ao menu principal, não ao Covil).
 ## Os dados vêm do resumo que MetaSave.apply_run devolve; esta tela não grava nada.
 
 signal to_menu
-signal to_covil
 
 const GUARD := 0.7   # os botões só valem depois disto (um clique de jogo não pode pular a tela sem querer)
 
 var menu_b: Button
-var covil_b: Button
 var box: Control
 var reveal: UnlockReveal
 var _guard_left := 0.0
@@ -32,15 +30,14 @@ func _process(delta: float) -> void:
 		_guard_left -= delta
 		if _guard_left <= 0.0 and menu_b != null:
 			menu_b.disabled = false
-			covil_b.disabled = false
 			if not is_instance_valid(reveal):
 				focus_first()
 
 
 func focus_first() -> void:
-	if is_instance_valid(reveal) or covil_b == null or covil_b.disabled:
+	if is_instance_valid(reveal) or menu_b == null or menu_b.disabled:
 		return
-	covil_b.grab_focus()
+	menu_b.grab_focus()
 
 
 static func _clock(t: float) -> String:
@@ -169,20 +166,14 @@ func show_result(d: GameData, m: MetaSave, sim: Sim, info: Dictionary) -> void:
 	br.alignment = BoxContainer.ALIGNMENT_CENTER
 	br.add_theme_constant_override("separation", 22)
 	v.add_child(br)
+	# Só o botão do menu: o fim da run não abre mais a tela do Covil (pedido dele, 23/11/2026).
 	menu_b = Button.new()
 	menu_b.text = "UI_END_MENU"
-	menu_b.custom_minimum_size = Vector2(240, 58)
-	UiParch.paper_button(menu_b, 24)
+	menu_b.custom_minimum_size = Vector2(380, 62)
+	UiParch.ribbon_button(menu_b, "monster", 28)
 	menu_b.pressed.connect(func(): to_menu.emit())
 	br.add_child(menu_b)
-	covil_b = Button.new()
-	covil_b.text = "UI_END_COVIL"
-	covil_b.custom_minimum_size = Vector2(380, 62)
-	UiParch.ribbon_button(covil_b, "monster", 28)
-	covil_b.pressed.connect(func(): to_covil.emit())
-	br.add_child(covil_b)
 	menu_b.disabled = true
-	covil_b.disabled = true
 	_guard_left = GUARD
 	visible = true
 	if not tutorial:

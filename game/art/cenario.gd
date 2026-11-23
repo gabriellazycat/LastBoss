@@ -325,7 +325,8 @@ static func _flower(bag: MundoVivo.Bag, w: Node3D, p: Vector2, col: Color, mat: 
 
 static func _bush(bag: MundoVivo.Bag, A: Dictionary, C: Dictionary, p: Vector2, yaw: float, rng: RandomNumberGenerator) -> void:
 	var s := rng.randf_range(0.8, 1.4)
-	bag.add("bush", A["bush"][0], A["bush"][1], false, p, yaw, Vector3(s, s * rng.randf_range(0.8, 1.1), s), MundoVivo._pick(rng, C["bush"]))
+	var tint: Color = Color.WHITE if Arvores.bush_on() else MundoVivo._pick(rng, C["bush"])   # o novo já tem a cor do ato
+	bag.add("bush", A["bush"][0], A["bush"][1], false, p, yaw, Vector3(s, s * rng.randf_range(0.8, 1.1), s), tint)
 
 
 static func _tree(bag: MundoVivo.Bag, A: Dictionary, tint: Array, p: Vector2, yaw: float, rng: RandomNumberGenerator, dead: bool, style: int) -> void:

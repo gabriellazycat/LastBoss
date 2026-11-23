@@ -19,7 +19,7 @@ from urllib.parse import quote, unquote
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 8769
-ORDEM = ["Cenário com propósito", "Modelos 3D", "Inimigos novos", "Estruturas novas", "Golpes e animações", "Efeitos", "Heróis", "Mundo vivo", "Luz e cor", "Arena", "Espaçamento da UI"]
+ORDEM = ["Árvores e chão", "Cenário com propósito", "Modelos 3D", "Inimigos novos", "Estruturas novas", "Golpes e animações", "Efeitos", "Heróis", "Mundo vivo", "Luz e cor", "Arena", "Espaçamento da UI"]
 EXT_OK = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".webm", ".mp4", ".ogv"}
 LOCK = threading.Lock()
 ROOTS = []          # diretórios raiz (reais)

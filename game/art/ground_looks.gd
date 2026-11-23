@@ -203,6 +203,12 @@ const PRESETS := {
 
 static var _tex: Dictionary = {}
 
+## Textura pintada do chão e da estrada (22/11/2026, docs/ARVORES_E_CHAO.md): 0 = a de antes (ground_ror + road_paint);
+## 1..4 = estilos do ground_tela/road_tela (guache chapado, relva pincelada, mosaico de pinceladas, liso). Vale para os
+## looks com "shader" (7 a 12), com as cores de cada ato. --chao=N em game/main.gd.
+static var TELA := 2   # relva pincelada, escolhida por ele em 22/11/2026 (1 guache chapado era o padrão provisório)
+const TELA_NAMES := ["Antes", "Guache chapado", "Relva pincelada", "Mosaico de pinceladas", "Liso"]
+
 
 ## Chão do ato atual (main.gd): cada ato da run tem o seu, quando o look escolhido é um dos chãos de foto (1 a 4).
 static var act_look := -1
@@ -271,9 +277,11 @@ static func ground_material() -> ShaderMaterial:
 	var P := preset()
 	var m := ShaderMaterial.new()
 	if P.has("shader"):
-		m.shader = load(P["shader"])
+		m.shader = load(P["shader"] if TELA <= 0 else "res://game/art/ground_tela.gdshader")
 		for k in P["params"]:
 			m.set_shader_parameter(k, P["params"][k])
+		if TELA > 0:
+			m.set_shader_parameter("estilo", TELA)
 		return m
 	if P.get("proc", false):
 		m.shader = load("res://game/art/ground_paint.gdshader")
@@ -307,9 +315,14 @@ static func road_material() -> ShaderMaterial:
 	var P := preset()
 	var m := ShaderMaterial.new()
 	if P.get("proc", false):
-		m.shader = load("res://game/art/road_paint.gdshader")
+		var tela := TELA > 0 and P.has("shader")
+		m.shader = load("res://game/art/road_tela.gdshader" if tela else "res://game/art/road_paint.gdshader")
 		for k in [["c_road", "road_c"], ["c_road_dark", "road_dark"], ["c_edge", "road_edge"], ["bands", "bands"]]:
 			m.set_shader_parameter(k[0], P[k[1]])
+		if tela:
+			m.set_shader_parameter("estilo", TELA)
+			# Ocre dos caminhos das cartas na primavera e no outono; a terra amaldiçoada fica no roxo acinzentado dela.
+			m.set_shader_parameter("sand", {10: 0.8, 11: 0.55}.get(look(), 0.0))
 		return m
 	m.shader = load("res://game/art/road.gdshader")
 	m.set_shader_parameter("tex", tex(P["road"], "diff"))
@@ -408,6 +421,10 @@ static func grass_material() -> ShaderMaterial:
 static func prop_mesh(id: String) -> Mesh:
 	if look() == 0 or not id in ["tree", "tree_round", "dead_tree", "bush", "rock"]:
 		return null
+	if id == "bush" and Arvores.bush_on():
+		var bm := Arvores.bush_mesh({11: 1, 12: 2}.get(look(), 0))
+		if bm:
+			return bm
 	if Looks.g_on():
 		var gm := Looks.g_mesh(id)
 		if gm:

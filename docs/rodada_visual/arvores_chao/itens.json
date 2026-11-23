@@ -1,0 +1,67 @@
+[
+ {
+  "id": "arvores_pinceladas",
+  "frente": "Árvores e chão",
+  "titulo": "Árvores e arbustos refeitos em pinceladas (padrão)",
+  "descricao": "As copas de antes eram elipsoides fundidos e alisados (cara de massinha). As novas são um miolo escuro coberto de placas angulosas, cada uma com UMA cor chapada e UMA luz, como pinceladas de guache: borda serrilhada, sombra funda entre as placas. Mesmas silhuetas aprovadas em 21/11 (carvalho, carvalho torto, pinheiro, álamo) e os 3 atos; arbustos novos com a cor de cada ato. Cada bosque sorteia carvalho ou pinheiro. Antes = árvores de 21/11; depois = árvores novas com o chão de antes, para julgar só as árvores.",
+  "flag": "--arvores=7 (4 = as de 21/11)",
+  "antes": [
+   "docs/arvores_chao/antes/ato1_estrada.png",
+   "docs/arvores_chao/antes/ato1_perto.png",
+   "docs/arvores_chao/antes/ato2.png",
+   "docs/arvores_chao/antes/ato3.png",
+   "docs/arvores_chao/pranchas/antes_estilo2.png",
+   "docs/arvores_chao/pranchas/antes_estilo3.png"
+  ],
+  "variacoes": {
+   "Pinceladas": [
+    "docs/arvores_chao/chao0/ato1_estrada.png",
+    "docs/arvores_chao/chao0/ato1_perto.png",
+    "docs/arvores_chao/chao0/ato2.png",
+    "docs/arvores_chao/chao0/ato3.png",
+    "docs/arvores_chao/pranchas/carvalhos.png",
+    "docs/arvores_chao/pranchas/pinheiros_alamos.png",
+    "docs/arvores_chao/pranchas/arbustos.png"
+   ]
+  }
+ },
+ {
+  "id": "chao_textura",
+  "frente": "Árvores e chão",
+  "titulo": "Textura do chão e da estrada: relva pincelada escolhida",
+  "descricao": "O chão de antes somava manchas em várias escalas, relevo falso e pinceladas genéricas por cima (borrão). Os novos são planos (sem relevo falso) e cada um é uma ideia de pintura só; a estrada acompanha e fica cor de areia como os caminhos das cartas (antes puxava para o vermelho-rosado). 1 guache chapado: campos lisos de borda nítida + pinceladas largas que só clareiam. 2 relva pincelada: campos macios + pinceladas de relva afinando para o mesmo lado. 3 mosaico: manchas de pincel em tons vizinhos (conversa com as copas novas). 4 liso: só campos em degradê. Todas com as árvores novas.",
+  "flag": "--chao=2 (padrão; 0 = antes)",
+  "antes": [
+   "docs/arvores_chao/chao0/ato1_estrada.png",
+   "docs/arvores_chao/chao0/ato1_perto.png",
+   "docs/arvores_chao/chao0/ato2.png",
+   "docs/arvores_chao/chao0/ato3.png"
+  ],
+  "variacoes": {
+   "1 · Guache chapado": [
+    "docs/arvores_chao/chao1/ato1_estrada.png",
+    "docs/arvores_chao/chao1/ato1_perto.png",
+    "docs/arvores_chao/chao1/ato2.png",
+    "docs/arvores_chao/chao1/ato3.png"
+   ],
+   "2 · Relva pincelada (escolhida)": [
+    "docs/arvores_chao/chao2/ato1_estrada.png",
+    "docs/arvores_chao/chao2/ato1_perto.png",
+    "docs/arvores_chao/chao2/ato2.png",
+    "docs/arvores_chao/chao2/ato3.png"
+   ],
+   "3 · Mosaico de pinceladas": [
+    "docs/arvores_chao/chao3/ato1_estrada.png",
+    "docs/arvores_chao/chao3/ato1_perto.png",
+    "docs/arvores_chao/chao3/ato2.png",
+    "docs/arvores_chao/chao3/ato3.png"
+   ],
+   "4 · Liso": [
+    "docs/arvores_chao/chao4/ato1_estrada.png",
+    "docs/arvores_chao/chao4/ato1_perto.png",
+    "docs/arvores_chao/chao4/ato2.png",
+    "docs/arvores_chao/chao4/ato3.png"
+   ]
+  }
+ }
+]

@@ -648,4 +648,5 @@ def main():
         sheet(out, names, sh, style)
 
 
-main()
+if __name__ == "__main__":
+    main()

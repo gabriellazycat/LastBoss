@@ -4405,15 +4405,15 @@ func t_menus() -> void:
 	var end := RunEnd.new()
 	add_child(end)
 	end.show_result(data, m, r, res)
-	check(end.visible and end.menu_b != null and end.covil_b != null, "menus: a tela de fim monta com os botões")
+	check(end.visible and end.menu_b != null, "menus: a tela de fim monta com os botões")
 	check(end.find_child("NewBest", true, false) != null, "menus: novo recorde em destaque")
 	var tot := end.find_child("AlmasTotal", true, false)
 	check(tot != null and tot.find_children("*", "Label", true, false).any(func(l): return (l as Label).text == "+%d" % int(res["almas"]["total"])), "menus: a tela mostra o total de Almas")
 	var got := []
-	end.to_covil.connect(func(): got.append("covil"))
-	end.covil_b.disabled = false
-	end.covil_b.pressed.emit()
-	check(got == ["covil"], "menus: Ir ao Covil emite o sinal")
+	end.to_menu.connect(func(): got.append("menu"))
+	end.menu_b.disabled = false
+	end.menu_b.pressed.emit()
+	check(got == ["menu"], "menus: o botão Menu emite o sinal")
 	end.queue_free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 

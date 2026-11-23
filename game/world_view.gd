@@ -1104,7 +1104,7 @@ func _scatter_kind(k: String) -> void:
 			Looks.set_param(sm, "sway", 1.0)
 			mat = sm
 		mat = Looks.g_material(mesh, mat)
-		_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"], k in ["tree", "tree_round", "bush", "dead_tree"])
+		_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"], k in ["tree", "tree_round", "dead_tree"] or (k == "bush" and not Arvores.bush_on()))
 
 
 func _scatter_tail() -> void:
