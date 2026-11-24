@@ -1,6 +1,6 @@
 class_name DeskScene
 extends Node3D
-## Mesa do Lorde atrás do menu na pele Diário (estudo em docs/variacoes/cartas/mesa.html): tampo de madeira,
+## Mesa do Lorde atrás do menu: tampo de madeira,
 ## velas com luz tremendo, faca fincada num cartaz de "procura-se", caveira, tinteiro, moedas e cartas soltas.
 ## Cada tela do menu tem um papel deitado na mesa (textura de um SubViewport); clicar nele abre a tela, e o
 ## MainMenu anima o papel 2D saindo do ponto da mesa (screen_point). A tela aberta some da mesa.
@@ -98,19 +98,13 @@ func _mood(on: bool) -> void:
 
 
 func _mat(col: Color, rough := 0.8, metal := 0.0) -> Material:
-	# Mundo pintado (Settings "paint_look"): os objetos da mesa também levam o guache dos materiais.
-	if int(Settings.v.get("paint_look", 0)) > 0:
-		var pm := ShaderMaterial.new()
-		pm.shader = preload("res://game/art/paint_std.gdshader")
-		pm.set_shader_parameter("albedo", col)
-		pm.set_shader_parameter("roughness", rough)
-		pm.set_shader_parameter("metallic", metal)
-		return pm
-	var m := StandardMaterial3D.new()
-	m.albedo_color = col
-	m.roughness = rough
-	m.metallic = metal
-	return m
+	# Mundo pintado: os objetos da mesa também levam o guache dos materiais.
+	var pm := ShaderMaterial.new()
+	pm.shader = preload("res://game/art/paint_std.gdshader")
+	pm.set_shader_parameter("albedo", col)
+	pm.set_shader_parameter("roughness", rough)
+	pm.set_shader_parameter("metallic", metal)
+	return pm
 
 
 func _mesh(mesh: Mesh, mat: Material, pos: Vector3, rot := Vector3.ZERO, scl := Vector3.ONE) -> MeshInstance3D:
@@ -379,9 +373,6 @@ func _paper(id: String, at: Vector2, rot_deg: float, sz: Vector2) -> void:
 	cs.shape = bs
 	area.add_child(cs)
 	pivot.add_child(area)
-	area.input_event.connect(func(_c, e, _p, _n, _i):
-		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and current != id and not UiSkins.mapa():
-			paper_clicked.emit(id))
 	area.mouse_entered.connect(func(): hover = id)
 	area.mouse_exited.connect(func(): if hover == id: hover = "")
 	papers[id] = {"pivot": pivot, "rest": pivot.position}
@@ -427,12 +418,12 @@ func set_current(id: String) -> void:
 	for k in papers:
 		# Pele "Mapa aberto": o mapa aberto (MapMenu) toma o lugar dos papéis do menu; eles ficam só como ponto de
 		# partida das telas (screen_point), sem aparecer nem pegar o clique.
-		papers[k]["pivot"].visible = k != id and not UiSkins.mapa()
+		papers[k]["pivot"].visible = false
 
 
 func set_continue(on: bool) -> void:
 	if papers.has("continue"):
-		papers["continue"]["pivot"].visible = on and current != "continue" and not UiSkins.mapa()
+		papers["continue"]["pivot"].visible = false
 
 
 ## Ponto da tela onde está o papel `id` (de onde a tela 2D sai e para onde volta).

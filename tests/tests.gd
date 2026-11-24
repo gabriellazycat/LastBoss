@@ -903,7 +903,7 @@ func t_route() -> void:
 		"Heurístico escolhe a rota e termina (%s, %d locais, %s)" % [r.stats["result"], r.stats["locs_visited"], str(r.stats["route"])])
 
 
-## Rios (15/11/2026, docs/RIO_E_PONTES.md): sementes × atos, com as regras conferidas por fora do gerador.
+## Rios (15/11/2026): sementes × atos, com as regras conferidas por fora do gerador.
 func t_rivers() -> void:
 	var RV: Dictionary = data.rules["road"]["river"]
 	var need: float = float(RV["half_width"]) + float(RV["clearance"]) - 0.05
@@ -988,7 +988,7 @@ func t_rivers() -> void:
 	check(bad_len == 0, "com as pontes, todas as rotas seguem do mesmo comprimento (%d fora)" % bad_len)
 
 
-## Água dos rios na simulação (16/11/2026, docs/RIO_E_PONTES.md passo 3): carta, unidade, ponte, alvo e save.
+## Água dos rios na simulação (16/11/2026): carta, unidade, ponte, alvo e save.
 func t_water() -> void:
 	var s := _sim(12)
 	var T := s.terra()
@@ -3921,8 +3921,6 @@ func t_meta5() -> void:
 ## Biblioteca (frente F, 21/11/2026): teste de fumaça da tela (instancia, filtro por custo, regras do deck, compra de nível).
 func t_library_ui() -> void:
 	var path := "user://test_library.save"
-	var prev_look = Settings.v.get("look_hud", 7)
-	Settings.v["look_hud"] = 7
 	UiSkins.apply()
 	var m := LibraryDemo.seed_meta(data, path)
 	var scr := CollectionScreen.new()
@@ -3992,7 +3990,6 @@ func t_library_ui() -> void:
 	scr._close_zoom()
 	holder.queue_free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	Settings.v["look_hud"] = prev_look
 	UiSkins.apply()
 
 ## Poderes de party (frente B, 21/11/2026): dados, sorteio na queda da party, recarga, gatilho com 1,5 s entre

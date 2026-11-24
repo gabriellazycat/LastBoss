@@ -382,38 +382,9 @@ func _dashed(c: Control, col: Color, w := 3.0) -> void:
 
 ## Célula de carta com arte e nome (também usada na tela de Pacto).
 static func cell(d: CardDef, w := CELL_W) -> PanelContainer:
-	if UiSkins.diario():
-		var mc := UiKit.mini_card(d, d.cost, [], "", w, roundf(w * 1.32), true)
-		mc.mouse_filter = Control.MOUSE_FILTER_PASS
-		return mc
-	var p := UiKit.panel(Color(0.04, 0.03, 0.06), UiKit.RARITY_COLORS[d.rarity], 2)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 0)
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var art := TextureRect.new()
-	art.texture = UiDiario.hand_art(d.id)
-	art.custom_minimum_size = Vector2(w - 4, (w - 4) * 0.52)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var gem := UiKit.badge(UiKit.ELIXIR, 14, 22.0)
-	(gem.get_node("N") as Label).text = str(d.cost)
-	gem.position = Vector2(1, 1)
-	art.add_child(gem)
-	var cl := UiKit.label(12, Color(0.92, 0.9, 0.98), 3)
-	cl.text = TranslationServer.translate("CARD_" + d.id)
-	if UiSkins.covil():
-		cl.add_theme_font_size_override("font_size", UiCovil.fit_size(UiCovil.font("body"), cl.text, roundi(12 * UiCovil.TEXT_SCALE), w - 8.0, 10))
-	cl.custom_minimum_size = Vector2(w - 4, 0)
-	cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	cl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(art)
-	v.add_child(cl)
-	p.add_child(v)
-	p.mouse_filter = Control.MOUSE_FILTER_PASS
-	return p
+	var mc := UiKit.mini_card(d, d.cost, [], "", w, roundf(w * 1.32), true)
+	mc.mouse_filter = Control.MOUSE_FILTER_PASS
+	return mc
 
 
 ## Cadeado sobre a arte de uma carta bloqueada.

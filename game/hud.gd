@@ -16,9 +16,6 @@ signal speed_pressed
 signal map_pressed
 signal settings_changed(key: String)
 
-## Disposição da HUD da run (17/11/2026, docs/HUD_2026-11-17.md). 7 = a escolhida (padrão). 0 = a HUD de antes, com faixa
-## de rota e relógio; 1 a 6 = as propostas recusadas, guardadas para comparação (--hudlayout=N).
-static var LAYOUT := 7   # disposição escolhida em 17/11/2026 (docs/HUD_2026-11-17.md); --hudlayout=N mostra as outras
 
 var sim: Sim
 var selected := -1
@@ -29,8 +26,8 @@ var hero_badge: PanelContainer
 var hero_hp: ProgressBar
 var hero_hp_label: Label
 var hero_of_label: Label
-var hero_name_row: Control          # linha do título do herói (LAYOUT 7 a esconde com party)
-var party_box: BoxContainer          # uma linha por herói de pé da party (nome e vida de cada um); em fileira no LAYOUT 2
+var hero_name_row: Control          # linha do título do herói (escondida com party)
+var party_box: BoxContainer          # uma linha por herói de pé da party (nome e vida de cada um)
 var party_rows: Array = []           # [{h: SimHero, bar: ProgressBar, lab: Label}]
 var upg_row: HBoxContainer         # ícones das habilidades do herói (mouse em cima explica)
 var upg_none: Label
@@ -164,11 +161,7 @@ func _build_top() -> void:
 	hn.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	hn.text = tr("UI_HERO")
 	hero_title = hn
-	if UiSkins.covil():
-		hn.add_theme_font_override("font", UiCovil.font("title"))
-		hn.add_theme_font_size_override("font_size", 16)
-	elif UiSkins.diario():
-		UiParch.style_label(hn, "title", 21, UiParch.BLOOD)
+	UiParch.style_label(hn, "title", 21, UiParch.BLOOD)
 	hname.add_child(hn)
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -180,11 +173,10 @@ func _build_top() -> void:
 	hero_name_row = hname
 	hero_hp = UiKit.bar(UiKit.HERO_HP, 340, 22)
 	hero_hp_label = UiKit.label(15, Color.WHITE, 3)
-	if UiSkins.diario():
-		# Número claro sobre a barra escura (a tinta automática do papel o deixava ilegível).
-		UiParch.style_label(hero_hp_label, "bold", 16, UiParch.CREAM)
-		hero_hp_label.add_theme_constant_override("outline_size", 4)
-		hero_hp_label.add_theme_color_override("font_outline_color", Color(0.1, 0.03, 0.02, 0.9))
+	# Número claro sobre a barra escura (a tinta automática do papel o deixava ilegível).
+	UiParch.style_label(hero_hp_label, "bold", 16, UiParch.CREAM)
+	hero_hp_label.add_theme_constant_override("outline_size", 4)
+	hero_hp_label.add_theme_color_override("font_outline_color", Color(0.1, 0.03, 0.02, 0.9))
 	hero_hp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hero_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hero_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -192,8 +184,8 @@ func _build_top() -> void:
 	hv.add_child(hero_hp)
 	hero_of_label = UiKit.label(13, UiKit.MUTED, 3)
 	hv.add_child(hero_of_label)
-	party_box = HBoxContainer.new() if LAYOUT in [2, 4, 5, 6, 7] else VBoxContainer.new()
-	party_box.add_theme_constant_override("separation", 14 if LAYOUT in [2, 4, 5, 6, 7] else (4 if LAYOUT > 0 else 2))
+	party_box = HBoxContainer.new()
+	party_box.add_theme_constant_override("separation", 14)
 	party_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	party_box.visible = false
 	hv.add_child(party_box)
@@ -207,25 +199,16 @@ func _build_top() -> void:
 	upg_row.add_child(upg_none)
 	hv.add_child(upg_row)
 	duel.add_child(hp)
-	if LAYOUT == 0:
-		_map_doodle(hp, "m-bosque", Vector2(96, 42), Vector2(16, 8))
-	if LAYOUT > 0:
-		# Variações de 17/11/2026: a barra grande só para um herói sozinho (com party, as linhas de cada um bastam);
-		# sem a linha "Sem habilidades ainda"; o painel encolhe para o que tem.
-		hero_hp.custom_minimum_size = Vector2(300 if LAYOUT == 1 else (260 if LAYOUT == 2 else (360 if LAYOUT >= 4 else 230)), 20)
-		upg_row.custom_minimum_size = Vector2(0, 30)
-		hv.add_theme_constant_override("separation", 2)
+	# Variações de 17/11/2026: a barra grande só para um herói sozinho (com party, as linhas de cada um bastam);
+	# sem a linha "Sem habilidades ainda"; o painel encolhe para o que tem.
+	hero_hp.custom_minimum_size = Vector2(360, 20)
+	upg_row.custom_minimum_size = Vector2(0, 30)
+	hv.add_theme_constant_override("separation", 2)
 
 
 func _build_left() -> void:
 	run_panel = UiKit.panel(UiKit.BG_SOFT, UiKit.EDGE.darkened(0.2), 10)
-	if UiSkins.covil():
-		# O tempo é texto solto sobre o mundo (sombra forte), não mais uma caixa entre tantas.
-		run_panel.material = null
-		var rs := StyleBoxEmpty.new()
-		rs.set_content_margin_all(6)
-		run_panel.add_theme_stylebox_override("panel", rs)
-	run_panel.custom_minimum_size = Vector2(190 if UiSkins.covil() else (150 if UiSkins.diario() else 300), 0)
+	run_panel.custom_minimum_size = Vector2(150, 0)
 	run_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
@@ -259,8 +242,6 @@ func _build_right() -> void:
 	parts_panel.add_child(parts_box)
 	parts_panel.visible = false
 	add_child(parts_panel)
-	if LAYOUT != 7:
-		_map_doodle(parts_panel, "m-rat", Vector2(64, 32), Vector2(22, 0), true)
 	tool_row = HBoxContainer.new()
 	tool_row.add_theme_constant_override("separation", 6)
 	add_child(tool_row)
@@ -272,10 +253,8 @@ func _build_right() -> void:
 		b.custom_minimum_size = Vector2(52, 44)
 		b.add_theme_font_size_override("font_size", 18)
 		b.pressed.connect(spec[2])
-		if UiSkins.diario() and spec[0] in ["II", "M"]:
+		if spec[0] in ["II", "M"]:
 			UiDiario.icon_button(b, "pause" if spec[0] == "II" else "map")
-		elif UiSkins.covil() and spec[0] in ["II", "M"]:
-			UiCovil.icon_button(b, "pause" if spec[0] == "II" else "map")
 		tool_row.add_child(b)
 		if spec[0] == "1x":
 			speed_btn = b
@@ -290,18 +269,12 @@ func _build_bottom() -> void:
 	fan.card_pressed.connect(func(i): card_pressed.emit(i))
 	fan.card_dropped.connect(func(i, p): card_dropped.emit(i, p))
 	bottom_box.add_child(fan)
-	# LAYOUT 4 e 5: elixir em coluna (direita / esquerda); 6: bandeja curta no canto de baixo à direita (17/11/2026).
-	var vert := LAYOUT in [4, 5, 7]
-	var eb: BoxContainer = VBoxContainer.new() if vert else HBoxContainer.new()
+	# Elixir em coluna na borda direita (17/11/2026).
+	var eb: BoxContainer = VBoxContainer.new()
 	eb.alignment = BoxContainer.ALIGNMENT_CENTER
-	if UiSkins.diario():
-		eb.set_meta("paper", true)
-		eb.draw.connect(func(): UiCovil.draw_plate(eb, "paper", Vector2(18, 10)))
-		eb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	elif UiSkins.covil():
-		# Bandeja de ferro atrás do elixir: os frascos ficavam soltos sobre o mundo.
-		eb.draw.connect(func(): UiCovil.draw_plate(eb, "soft", Vector2(14, 8)))
-		eb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	eb.set_meta("paper", true)
+	eb.draw.connect(func(): UiDiario.draw_plate(eb, "paper", Vector2(18, 10)))
+	eb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	eb.add_theme_constant_override("separation", 12)
 	# A bandeja do elixir é sólida: o clique nela não pode cair no mundo atrás (rodada 09/11/2026).
 	eb.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -310,104 +283,78 @@ func _build_bottom() -> void:
 	# Sem o botão de sacrifício (11/11/2026), a barra ocupa a bandeja toda: mais gomos cabem quando o máximo passa de 20.
 	elixir_bar.custom_minimum_size = Vector2(740, 22)
 	elixir_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	if vert:
-		elixir_bar.vertical = true
-		elixir_bar.custom_minimum_size = Vector2(46, 470)
-		elixir_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		if LAYOUT == 7:
-			# A gota grande embaixo já diz quanto há; os gomos dizem o máximo. Sem o "7 / 10" repetido no alto.
-			elixir_bar.show_label = false
-			elixir_bar.custom_minimum_size = Vector2(46, 300)
-	elif LAYOUT == 6:
-		elixir_bar.custom_minimum_size = Vector2(170, 22)
+	elixir_bar.vertical = true
+	elixir_bar.custom_minimum_size = Vector2(46, 470)
+	elixir_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# A gota grande embaixo já diz quanto há; os gomos dizem o máximo. Sem o "7 / 10" repetido no alto.
+	elixir_bar.show_label = false
+	elixir_bar.custom_minimum_size = Vector2(46, 300)
 	elixir_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if LAYOUT == 7:
-		# A moldura dupla do papel ocupa ~14 px no alto: sem este respiro a primeira fileira de gotas cruzava a linha.
-		var top_pad := Control.new()
-		top_pad.custom_minimum_size = Vector2(0, 16)
-		top_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		eb.add_child(top_pad)
+	# A moldura dupla do papel ocupa ~14 px no alto: sem este respiro a primeira fileira de gotas cruzava a linha.
+	var top_pad := Control.new()
+	top_pad.custom_minimum_size = Vector2(0, 16)
+	top_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	eb.add_child(top_pad)
 	eb.add_child(elixir_bar)
-	elixir_badge = UiKit.badge(UiKit.ELIXIR, 30 if UiSkins.diario() else 26, 62 if UiSkins.diario() else 52)
+	elixir_badge = UiKit.badge(UiKit.ELIXIR, 30, 62)
 	eb.add_child(elixir_badge)
 	# Ouro da run (lojas), ao lado do elixir.
 	gold_label = UiKit.label(20, UiKit.GOLD, 4)
 	gold_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	gold_label.custom_minimum_size = Vector2(0 if LAYOUT >= 4 else 110, 0)
-	if vert:
-		gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		gold_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-		gold_label.custom_minimum_size = Vector2(70, 0)
-		gold_label.add_theme_font_size_override("font_size", 16)
+	gold_label.custom_minimum_size = Vector2(0, 0)
+	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	gold_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	gold_label.custom_minimum_size = Vector2(70, 0)
+	gold_label.add_theme_font_size_override("font_size", 16)
 	gold_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	Tips.attach(gold_label, func(): return [Tips.kw_entry("gold")])
-	if LAYOUT == 7:
-		# Ouro é moeda de loja, não de carta: vai para o canto de cima à direita, com os botões e as relíquias.
-		gold_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		gold_label.custom_minimum_size = Vector2(0, 0)
-		gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		gold_label.add_theme_font_size_override("font_size", 18)
-		if UiSkins.diario():
-			# Etiqueta de papel igual às das relíquias logo abaixo (solto sobre o mundo, o número se perdia no chão).
-			var gb := UiParch.box("ink", 0.0)
-			gb.content_margin_left = 16
-			gb.content_margin_right = 16
-			gb.content_margin_top = 7
-			gb.content_margin_bottom = 8
-			UiKit.fit_margins(gb, true)
-			gold_label.add_theme_stylebox_override("normal", gb)
-			gold_label.add_theme_color_override("font_color", UiParch.INK)
-			gold_label.add_theme_constant_override("outline_size", 0)
-			gold_label.set_meta("paper", true)
-		add_child(gold_label)
-	else:
-		eb.add_child(gold_label)
-	if LAYOUT >= 4:
-		# A bandeja sai de baixo da mão: a mão desce e o elixir vai para um canto (posição em _layout_variant).
-		eb.size_flags_horizontal = Control.SIZE_FILL
-		add_child(eb)
-	else:
-		bottom_box.add_child(eb)
+	# Ouro é moeda de loja, não de carta: vai para o canto de cima à direita, com os botões e as relíquias.
+	gold_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	gold_label.custom_minimum_size = Vector2(0, 0)
+	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	gold_label.add_theme_font_size_override("font_size", 18)
+	# Etiqueta de papel igual às das relíquias logo abaixo (solto sobre o mundo, o número se perdia no chão).
+	var gb := UiParch.box("ink", 0.0)
+	gb.content_margin_left = 16
+	gb.content_margin_right = 16
+	gb.content_margin_top = 7
+	gb.content_margin_bottom = 8
+	UiKit.fit_margins(gb, true)
+	gold_label.add_theme_stylebox_override("normal", gb)
+	gold_label.add_theme_color_override("font_color", UiParch.INK)
+	gold_label.add_theme_constant_override("outline_size", 0)
+	gold_label.set_meta("paper", true)
+	add_child(gold_label)
+	# A bandeja sai de baixo da mão: a mão desce e o elixir vai para um canto (posição em _layout_variant).
+	eb.size_flags_horizontal = Control.SIZE_FILL
+	add_child(eb)
 
 
 func _build_messages() -> void:
 	info_label = UiKit.label(13, UiKit.MUTED, 3)
 	add_child(info_label)
 	help_label = UiKit.label(13, Color(0.78, 0.76, 0.86), 3)
-	if UiSkins.covil():
-		var hs := StyleBoxFlat.new()
-		hs.bg_color = Color(0.03, 0.02, 0.04, 0.72)
-		hs.set_corner_radius_all(4)
-		hs.content_margin_left = 10
-		hs.content_margin_right = 10
-		hs.content_margin_top = 2
-		hs.content_margin_bottom = 3
-		help_label.add_theme_stylebox_override("normal", hs)
-		help_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.78))
-	elif UiSkins.diario():
-		# Peles de papel (16/11/2026): a ajuda do rodapé numa etiqueta de papel, em tinta (antes, cinza sobre o mundo).
-		var hb := UiParch.box("ink", 0.0)
-		hb.content_margin_left = 12
-		hb.content_margin_right = 12
-		hb.content_margin_top = 3
-		hb.content_margin_bottom = 4
-		help_label.add_theme_stylebox_override("normal", hb)
-		help_label.add_theme_color_override("font_color", UiParch.INK)
-		help_label.set_meta("paper", true)
-		if LAYOUT == 7:
-			# A moldura dupla do papel cortava as letras com 3–4 px de margem.
-			hb.content_margin_left = 18
-			hb.content_margin_right = 18
-			hb.content_margin_top = 8
-			hb.content_margin_bottom = 9
-		UiKit.fit_margins(hb, true)
+	# Peles de papel (16/11/2026): a ajuda do rodapé numa etiqueta de papel, em tinta (antes, cinza sobre o mundo).
+	var hb := UiParch.box("ink", 0.0)
+	hb.content_margin_left = 12
+	hb.content_margin_right = 12
+	hb.content_margin_top = 3
+	hb.content_margin_bottom = 4
+	help_label.add_theme_stylebox_override("normal", hb)
+	help_label.add_theme_color_override("font_color", UiParch.INK)
+	help_label.set_meta("paper", true)
+	# A moldura dupla do papel cortava as letras com 3–4 px de margem.
+	hb.content_margin_left = 18
+	hb.content_margin_right = 18
+	hb.content_margin_top = 8
+	hb.content_margin_bottom = 9
+	UiKit.fit_margins(hb, true)
 	add_child(help_label)
 	toast = UiKit.title(30, Color(1, 0.62, 0.45))
-	if UiSkins.diario():
-		toast.set_meta("no_ink", true)
-		toast.add_theme_color_override("font_color", Color(1.0, 0.93, 0.84))
-		toast.add_theme_constant_override("outline_size", 10)
-		toast.add_theme_color_override("font_outline_color", Color(0.25, 0.04, 0.02))
+	toast.set_meta("no_ink", true)
+	toast.add_theme_color_override("font_color", Color(1.0, 0.93, 0.84))
+	toast.add_theme_constant_override("outline_size", 10)
+	toast.add_theme_color_override("font_outline_color", Color(0.25, 0.04, 0.02))
 	toast.custom_minimum_size = Vector2(900, 0)
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast.modulate.a = 0.0
@@ -441,38 +388,35 @@ func _build_messages() -> void:
 	cv.add_child(contest_stages)
 	contest_panel.add_child(cv)
 	contest_panel.visible = false
-	if LAYOUT > 0:
-		# Selo compacto: texto e barra mais estreitos (antes 560 px de largura em duas linhas grossas).
-		contest_label.custom_minimum_size = Vector2(430, 0)
-		contest_label.add_theme_font_size_override("normal_font_size", 16)
-		contest_stages.custom_minimum_size = Vector2(430, 24)
-		cv.add_theme_constant_override("separation", 2)
-		if LAYOUT == 7:
-			# No canto, a leitura começa na borda esquerda (texto alinhado à esquerda, mais estreito).
-			contest_label.set_meta("center", false)
-			contest_label.custom_minimum_size = Vector2(380, 0)
-			# Respiro dentro do papel: sem ele o texto encostava na moldura da esquerda.
-			var cm := StyleBoxEmpty.new()
-			cm.content_margin_left = UiKit.SP_L
-			cm.content_margin_right = UiKit.SP_S + 2
-			cm.content_margin_top = UiKit.SP_XS
-			contest_label.add_theme_stylebox_override("normal", cm)
-			contest_stages.custom_minimum_size = Vector2(380, 24)
+	# Selo compacto: texto e barra mais estreitos (antes 560 px de largura em duas linhas grossas).
+	contest_label.custom_minimum_size = Vector2(430, 0)
+	contest_label.add_theme_font_size_override("normal_font_size", 16)
+	contest_stages.custom_minimum_size = Vector2(430, 24)
+	cv.add_theme_constant_override("separation", 2)
+	# No canto, a leitura começa na borda esquerda (texto alinhado à esquerda, mais estreito).
+	contest_label.set_meta("center", false)
+	contest_label.custom_minimum_size = Vector2(380, 0)
+	# Respiro dentro do papel: sem ele o texto encostava na moldura da esquerda.
+	var cm := StyleBoxEmpty.new()
+	cm.content_margin_left = UiKit.SP_L
+	cm.content_margin_right = UiKit.SP_S + 2
+	cm.content_margin_top = UiKit.SP_XS
+	contest_label.add_theme_stylebox_override("normal", cm)
+	contest_stages.custom_minimum_size = Vector2(380, 24)
 	add_child(contest_panel)
 	banner = BigBanner.new()
 	add_child(banner)
 	seals = LocSeals.new()
 	add_child(seals)
 	# Relíquias do covil ganhas na run, em fila no canto de baixo à direita.
-	relic_row = VBoxContainer.new() if UiSkins.diario() else HBoxContainer.new()
-	if LAYOUT == 7:
-		# Relíquias são passivas (o fim da hierarquia): só o ícone, em grade de até 290 px; o nome fica na caixa de dica.
-		var fl := HFlowContainer.new()
-		fl.alignment = FlowContainer.ALIGNMENT_END
-		fl.custom_minimum_size = Vector2(290, 0)
-		fl.add_theme_constant_override("h_separation", 6)
-		fl.add_theme_constant_override("v_separation", 6)
-		relic_row = fl
+	relic_row = VBoxContainer.new()
+	# Relíquias são passivas (o fim da hierarquia): só o ícone, em grade de até 290 px; o nome fica na caixa de dica.
+	var fl := HFlowContainer.new()
+	fl.alignment = FlowContainer.ALIGNMENT_END
+	fl.custom_minimum_size = Vector2(290, 0)
+	fl.add_theme_constant_override("h_separation", 6)
+	fl.add_theme_constant_override("v_separation", 6)
+	relic_row = fl
 	relic_row.add_theme_constant_override("separation", 6)
 	relic_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(relic_row)
@@ -527,24 +471,19 @@ func _build_offer() -> void:
 	offer_skip.custom_minimum_size = Vector2(240, 46)
 	offer_skip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	offer_skip.pressed.connect(func(): offer_chosen.emit(Sim.SKIP))
-	if UiSkins.diario():
-		offer_title.add_theme_font_size_override("font_size", 46)
-		v.add_child(UiDiario.tape_title(offer_title))
-		v.add_child(UiDiario.tape_wrap(offer_sub, UiDiario.MASK, 1.0))
-		var keys_tag := UiDiario.tape_wrap(sub, UiDiario.MASK, -0.8)
-		# Folga para o texto não encostar na borda da etiqueta (16/11/2026).
-		var ksb := (keys_tag.get_theme_stylebox("panel") as StyleBox).duplicate() as StyleBox
-		ksb.content_margin_top = 7
-		ksb.content_margin_bottom = 8
-		ksb.content_margin_left = 22
-		ksb.content_margin_right = 22
-		UiKit.fit_margins(ksb, true)
-		keys_tag.add_theme_stylebox_override("panel", ksb)
-		v.add_child(keys_tag)
-	else:
-		v.add_child(offer_title)
-		v.add_child(offer_sub)
-		v.add_child(sub)
+	offer_title.add_theme_font_size_override("font_size", 46)
+	v.add_child(UiDiario.tape_title(offer_title))
+	v.add_child(UiDiario.tape_wrap(offer_sub, UiDiario.MASK, 1.0))
+	var keys_tag := UiDiario.tape_wrap(sub, UiDiario.MASK, -0.8)
+	# Folga para o texto não encostar na borda da etiqueta (16/11/2026).
+	var ksb := (keys_tag.get_theme_stylebox("panel") as StyleBox).duplicate() as StyleBox
+	ksb.content_margin_top = 7
+	ksb.content_margin_bottom = 8
+	ksb.content_margin_left = 22
+	ksb.content_margin_right = 22
+	UiKit.fit_margins(ksb, true)
+	keys_tag.add_theme_stylebox_override("panel", ksb)
+	v.add_child(keys_tag)
 	v.add_child(offer_gold)
 	v.add_child(offer_scroll)
 	v.add_child(offer_skip)
@@ -585,14 +524,11 @@ func _build_pause() -> void:
 		b.pressed.connect(spec[1])
 		b.mouse_entered.connect(func(): b.grab_focus())
 		pause_menu.add_child(b)
-	if UiSkins.diario():
-		var sheet := PanelContainer.new()
-		UiDiario.dress(sheet, "paper", 34.0, {"grime": 0.45, "seed": 0.52, "shadow": 10.0, "rough": 2.6})
-		sheet.rotation_degrees = -1.0
-		sheet.add_child(pause_menu)
-		row.add_child(sheet)
-	else:
-		row.add_child(pause_menu)
+	var sheet := PanelContainer.new()
+	UiDiario.dress(sheet, "paper", 34.0, {"grime": 0.45, "seed": 0.52, "shadow": 10.0, "rough": 2.6})
+	sheet.rotation_degrees = -1.0
+	sheet.add_child(pause_menu)
+	row.add_child(sheet)
 	var info := UiKit.panel(UiKit.BG, UiKit.EDGE, 16)
 	var iv := VBoxContainer.new()
 	iv.add_theme_constant_override("separation", 10)
@@ -647,16 +583,15 @@ func _build_result() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
 	p.add_child(v)
-	if UiSkins.mapa():
-		# Mapa aberto: o covil no alto (anel vermelho na vitória), morros e bosque apoiados na moldura de baixo.
-		result_icon = TextureRect.new()
-		result_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		result_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		result_icon.custom_minimum_size = Vector2(0, 112)
-		result_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		v.add_child(result_icon)
-		_map_doodle(p, "m-mount", Vector2(150, 62), Vector2(26, 14), false, true)
-		_map_doodle(p, "m-bosque", Vector2(130, 56), Vector2(26, 12))
+	# Mapa aberto: o covil no alto (anel vermelho na vitória), morros e bosque apoiados na moldura de baixo.
+	result_icon = TextureRect.new()
+	result_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	result_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	result_icon.custom_minimum_size = Vector2(0, 112)
+	result_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(result_icon)
+	_map_doodle(p, "m-mount", Vector2(150, 62), Vector2(26, 14), false, true)
+	_map_doodle(p, "m-bosque", Vector2(130, 56), Vector2(26, 12))
 	result_title = UiKit.title(80)
 	result_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(result_title)
@@ -713,8 +648,8 @@ func _layout() -> void:
 	duel.position = Vector2(clampf((vs.x - duel.size.x) * 0.5, m + run_panel.size.x + 12.0, maxf(tool_row.position.x - duel.size.x - 12.0, m + run_panel.size.x + 12.0)), 10)
 	bottom_box.position = Vector2((vs.x - bottom_box.size.x) * 0.5, vs.y - bottom_box.size.y - 30)
 	var top := maxf(run_panel.position.y + run_panel.size.y, duel.position.y + duel.size.y)
-	help_label.position = Vector2(m, vs.y - (30 if UiSkins.diario() else 24))
-	info_label.position = Vector2(m, vs.y - (56 if UiSkins.diario() else 44))
+	help_label.position = Vector2(m, vs.y - 30)
+	info_label.position = Vector2(m, vs.y - 56)
 	# Faixa de rota em pé na borda esquerda, do painel da run até acima das legendas de rodapé.
 	strip.position = Vector2(m, run_panel.position.y + run_panel.size.y + 12)
 	strip.size = Vector2(strip.custom_minimum_size.x, maxf(info_label.position.y - 16.0 - strip.position.y, 120.0))
@@ -730,7 +665,7 @@ func _layout() -> void:
 	learn_panel.position = Vector2((vs.x - learn_panel.size.x) * 0.5, duel.position.y + duel.size.y + (contest_panel.size.y + 16.0 if contest_panel.visible else 26))
 	relic_row.size = relic_row.get_combined_minimum_size()
 	var rel_y := tool_row.position.y + tool_row.size.y + 8
-	if parts_panel.visible and UiSkins.diario():
+	if parts_panel.visible:
 		rel_y = parts_panel.position.y + parts_panel.size.y + 8
 	relic_row.position = Vector2(vs.x - relic_row.size.x - m, rel_y)
 	hint_panel.position = Vector2((vs.x - hint_panel.size.x) * 0.5, below + 6)
@@ -741,8 +676,7 @@ func _layout() -> void:
 		var b: Control = layer.get_node("Box")
 		b.position = (vs - b.size) * 0.5
 	settings.position = (vs - settings.size) * 0.5
-	if LAYOUT > 0:
-		_layout_variant(vs, m)
+	_layout_variant(vs, m)
 	_layout_powers(vs, m)
 
 
@@ -763,14 +697,14 @@ func overlap_report() -> Array:
 	var keys := named.keys()
 	for i in keys.size():
 		var a: Control = named[keys[i]]
-		if a == null or not a.is_visible_in_tree() or (a == gold_label and LAYOUT != 7):
+		if a == null or not a.is_visible_in_tree():
 			continue
 		var ra := hand_rect() if a == fan else a.get_global_rect()
 		if not get_viewport_rect().encloses(ra):
 			out.append("%s sai da tela %s" % [keys[i], ra])
 		for j in range(i + 1, keys.size()):
 			var b: Control = named[keys[j]]
-			if b == null or not b.is_visible_in_tree() or (b == gold_label and LAYOUT != 7) or (a == fan and b == elixir_tray and LAYOUT < 4):
+			if b == null or not b.is_visible_in_tree():
 				continue
 			var inter := ra.intersection(hand_rect() if b == fan else b.get_global_rect())
 			if inter.size.x > 2.0 and inter.size.y > 2.0:
@@ -778,73 +712,20 @@ func overlap_report() -> Array:
 	return out
 
 
-## Variações de 17/11/2026 (docs/HUD_2026-11-17.md): só muda onde ficam o grupo, o objetivo e os avisos.
-## A mão e o elixir seguem embaixo no centro em todas.
+## Posição do grupo, do objetivo e dos avisos (disposição de 17/11/2026, em _layout_7).
 func _layout_variant(vs: Vector2, m: float) -> void:
 	strip.visible = false
 	# Sem o relógio (pedido de 17/11/2026): o tempo da run fica só na pausa.
 	run_panel.visible = false
 	duel.size = duel.get_combined_minimum_size()
 	contest_panel.size = contest_panel.get_combined_minimum_size()
-	var left_edge := m
-	var right_edge := tool_row.position.x - 12.0
-	var top_end := m   # onde acaba o que está no alto, no meio da tela (para os avisos)
-	match LAYOUT:
-		1:
-			# Coluna do grupo na borda esquerda (onde ficava a faixa), embaixo do relógio; objetivo em selo no alto.
-			duel.position = Vector2(m, 10.0)
-			contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, 10.0)
-			if contest_panel.visible:
-				top_end = contest_panel.position.y + contest_panel.size.y
-		2:
-			# Faixa no topo: grupo em fileira e objetivo do lado, centralizados juntos.
-			var gap := 12.0
-			var w := duel.size.x + (gap + contest_panel.size.x if contest_panel.visible else 0.0)
-			var x0 := clampf((vs.x - w) * 0.5, left_edge, maxf(right_edge - w, left_edge))
-			duel.position = Vector2(x0, 10.0)
-			contest_panel.position = Vector2(duel.position.x + duel.size.x + gap, 10.0)
-			if contest_panel.visible and contest_panel.position.x + contest_panel.size.x > right_edge:
-				# Não coube do lado (janela estreita): vai para baixo do grupo.
-				contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, duel.position.y + duel.size.y + 6.0)
-			top_end = maxf(duel.position.y + duel.size.y, contest_panel.position.y + contest_panel.size.y if contest_panel.visible else 0.0)
-		3:
-			# Quadro do grupo no canto de baixo à esquerda, ao lado da mão; o alto fica só com o objetivo.
-			var floor_y := info_label.position.y - 10.0 if info_label.visible else help_label.position.y - 10.0
-			duel.position = Vector2(m, floor_y - duel.size.y)
-			contest_panel.position = Vector2((vs.x - contest_panel.size.x) * 0.5, 10.0)
-			if contest_panel.visible:
-				top_end = contest_panel.position.y + contest_panel.size.y
-		7:
-			_layout_7(vs, m)
-			top_end = duel.position.y + duel.size.y
-		4, 5, 6:
-			# Vida do grupo no alto, no centro; missão do local no canto de cima à esquerda; elixir fora de baixo da mão.
-			contest_panel.position = Vector2(m, m)
-			# No centro, mas nunca por cima da missão nem dos botões (party de 4 é larga).
-			var lo := contest_panel.position.x + contest_panel.size.x + 12.0 if contest_panel.visible else m
-			duel.position = Vector2(clampf((vs.x - duel.size.x) * 0.5, lo, maxf(right_edge - duel.size.x, lo)), 10.0)
-			top_end = duel.position.y + duel.size.y
-			elixir_tray.size = elixir_tray.get_combined_minimum_size()
-			var es := elixir_tray.size
-			if LAYOUT == 4:
-				elixir_tray.position = Vector2(vs.x - es.x - m - 6.0, vs.y - es.y - 40.0)
-			elif LAYOUT == 5:
-				elixir_tray.position = Vector2(m + 6.0, vs.y - es.y - 40.0)
-			else:
-				# À direita da mão (do monte de descarte), encostado embaixo.
-				var fr := hand_rect().end.x + 10.0
-				elixir_tray.position = Vector2(maxf(fr, vs.x - es.x - m - 6.0), vs.y - es.y - 18.0)
-			bottom_box.position.y = vs.y - bottom_box.size.y - 14.0
-			# A linha de atalhos (começo da run) vai para baixo da missão; o FPS para o canto livre de baixo.
-			help_label.position = Vector2(m, (contest_panel.position.y + contest_panel.size.y if contest_panel.visible else m) + 8.0)
-			if LAYOUT == 5:
-				info_label.position = Vector2(vs.x - info_label.size.x - m, vs.y - 24.0)
-			elixir_tray.visible = bottom_box.visible
+	_layout_7(vs, m)
+	var top_end := duel.position.y + duel.size.y   # onde acaba o que está no alto, no meio da tela (para os avisos)
 	learn_panel.position = Vector2((vs.x - learn_panel.size.x) * 0.5, top_end + 10.0)
 	hint_panel.position = Vector2((vs.x - hint_panel.size.x) * 0.5, top_end + (learn_panel.size.y + 20.0 if learn_panel.visible else 10.0))
 
 
-## Disposição final proposta em 17/11/2026 (docs/HUD_2026-11-17.md, 3ª rodada):
+## Disposição da HUD (17/11/2026):
 ## alto à esquerda = missão (só quando há); alto ao centro = vida do grupo, centrada no meio da tela sempre (não pula
 ## quando a missão aparece); alto à direita = botões, ouro, corpo do chefe e relíquias, empilhados; borda direita
 ## embaixo = coluna do elixir, que cresce só até onde a pilha da direita deixa; embaixo no centro = a mão.
@@ -900,7 +781,7 @@ func bind(s: Sim) -> void:
 	for n in [duel, run_panel, strip, bottom_box, tool_row]:
 		n.visible = true
 	# Variações de 17/11/2026: sem a faixa de rota; a rota fica só no mapa (M).
-	strip.visible = LAYOUT == 0
+	strip.visible = false
 	minimap.visible = false
 	parts_panel.visible = false
 	UiKit.clear(parts_box)
@@ -939,14 +820,13 @@ func show_pause(on: bool) -> void:
 	(pause_layer.find_child("DeckHead", true, false) as Label).text = tr("UI_RUN_DECK").format({"n": sim.cards.size()})
 	UiKit.clear(pause_deck)
 	for ci in sim.cards:
-		if UiSkins.diario():
-			var mc := UiKit.mini_card(ci.def, sim.card_cost(ci), UiKit.mod_names(ci), "", 92.0, 120.0, true, ci.level)
-			mc.mouse_filter = Control.MOUSE_FILTER_STOP
-			var mcd: CardDef = ci.def
-			var mmids := UiKit.mod_ids(ci)
-			Tips.attach(mc, func(): return Tips.card_entries(mcd, mmids, true))
-			pause_deck.add_child(mc)
-			continue
+		var mc := UiKit.mini_card(ci.def, sim.card_cost(ci), UiKit.mod_names(ci), "", 92.0, 120.0, true, ci.level)
+		mc.mouse_filter = Control.MOUSE_FILTER_STOP
+		var mcd: CardDef = ci.def
+		var mmids := UiKit.mod_ids(ci)
+		Tips.attach(mc, func(): return Tips.card_entries(mcd, mmids, true))
+		pause_deck.add_child(mc)
+		continue
 		var cell := UiKit.panel(Color(0.04, 0.03, 0.06), UiKit.RARITY_COLORS[ci.def.rarity], 3)
 		var cd: CardDef = ci.def
 		var mids := UiKit.mod_ids(ci)
@@ -1156,15 +1036,13 @@ func _refresh_top() -> void:
 	if sim.party_mode():
 		hero_of_label.text = tr("UI_PARTY_OF").format({"k": sim.cur_party + 1, "n": sim.party_count()}) + " · " + tr("UI_FALLEN_OF").format({"k": sim.group_falls, "n": sim.party_size()})
 	_refresh_party()
-	if LAYOUT > 0:
-		hero_hp.visible = not party_box.visible
+	hero_hp.visible = not party_box.visible
 	var standing := 1 + sim.followers.size()
 	hero_title.text = tr("UI_HERO_PARTY") if standing > 1 else tr("HERO_" + sim.hero.cls()).to_upper()
-	if LAYOUT == 7:
-		# Barra de chefe (17/11/2026): com party, o título "A PARTY" e a lista "(Clériga 80%...)" repetiam as barras.
-		hero_title.visible = not party_box.visible
-		hero_name_row.visible = hero_title.visible or h.curses > 0
-	if sim.group_mode() and not (LAYOUT == 7 and party_box.visible):
+	# Barra de chefe (17/11/2026): com party, o título "A PARTY" e a lista "(Clériga 80%...)" repetiam as barras.
+	hero_title.visible = not party_box.visible
+	hero_name_row.visible = hero_title.visible or h.curses > 0
+	if sim.group_mode() and not party_box.visible:
 		hero_of_label.text += " · " + tr("UI_HEROES_STANDING").format({"n": 1 + sim.followers.size()})
 		var fl: Array = []
 		for f in sim.followers:
@@ -1293,26 +1171,23 @@ func _refresh_party() -> void:
 		party_rows.clear()
 		if members.size() > 1:
 			for i in members.size():
-				# LAYOUT 2: cada herói é uma coluna (nome em cima, barra embaixo), lado a lado na faixa do topo.
-				var row: BoxContainer = VBoxContainer.new() if LAYOUT in [2, 4, 5, 6, 7] else HBoxContainer.new()
-				row.add_theme_constant_override("separation", 1 if LAYOUT in [2, 4, 5, 6, 7] else 6)
+				var row: BoxContainer = VBoxContainer.new()
+				row.add_theme_constant_override("separation", 1)
 				row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				var lead := i == 0 and LAYOUT > 0
-				var nm := UiKit.label((15 if lead else 13) if LAYOUT < 7 else 13, UiKit.TEXT if i == 0 else UiKit.MUTED, 3)
-				nm.custom_minimum_size = Vector2(0 if LAYOUT in [2, 4, 5, 6, 7] else (96 if LAYOUT == 1 else 84), 0)
+				var lead := i == 0
+				var nm := UiKit.label(13, UiKit.TEXT if i == 0 else UiKit.MUTED, 3)
+				nm.custom_minimum_size = Vector2(0, 0)
 				nm.text = ("▶ " if i == 0 else "") + tr("HERO_" + (members[i] as SimHero).cls())
 				row.add_child(nm)
-				var bw := (130.0 if LAYOUT == 2 else (150.0 if LAYOUT < 7 else (140.0 if lead else 112.0))) if LAYOUT in [2, 4, 5, 6, 7] else (220.0 if LAYOUT == 1 else (150.0 if LAYOUT == 3 else 200.0))
-				var bar := UiKit.bar(UiKit.HERO_HP, bw, (18 if lead else 14) if LAYOUT < 7 else 16)
+				var bw := 140.0 if lead else 112.0
+				var bar := UiKit.bar(UiKit.HERO_HP, bw, 16)
 				var lab := UiKit.label(13 if lead else 12, Color.WHITE, 3)
-				if LAYOUT == 7:
-					# Mesma letra e mesma altura de barra para todos (o líder se distingue pela barra mais larga e pelo ▸):
-					# nomes e barras alinham numa linha só. Número claro com contorno, como a barra do herói sozinho.
-					if UiSkins.diario():
-						UiParch.style_label(nm, "bold" if i == 0 else "body", 14, UiParch.INK if i == 0 else UiParch.INK.lightened(0.25))
-						UiParch.style_label(lab, "bold", 13, UiParch.CREAM)
-					lab.add_theme_constant_override("outline_size", 4)
-					lab.add_theme_color_override("font_outline_color", Color(0.1, 0.03, 0.02, 0.9))
+				# Mesma letra e mesma altura de barra para todos (o líder se distingue pela barra mais larga e pelo ▸):
+				# nomes e barras alinham numa linha só. Número claro com contorno, como a barra do herói sozinho.
+				UiParch.style_label(nm, "bold" if i == 0 else "body", 14, UiParch.INK if i == 0 else UiParch.INK.lightened(0.25))
+				UiParch.style_label(lab, "bold", 13, UiParch.CREAM)
+				lab.add_theme_constant_override("outline_size", 4)
+				lab.add_theme_color_override("font_outline_color", Color(0.1, 0.03, 0.02, 0.9))
 				lab.set_anchors_preset(Control.PRESET_FULL_RECT)
 				lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1335,9 +1210,8 @@ func _refresh_upgrades() -> void:
 		ic.pulse = 4.0
 		_announce(order[upg_shown])
 		upg_shown += 1
-	upg_none.visible = order.is_empty() and LAYOUT == 0
-	if LAYOUT > 0:
-		upg_row.visible = not order.is_empty()
+	upg_none.visible = false
+	upg_row.visible = not order.is_empty()
 	# Recarga de cada habilidade: a janela para jogar a carta certa (rodada 09/11/2026).
 	for id in upg_icons:
 		var ic: UpgradeIcon = upg_icons[id]
@@ -1427,10 +1301,7 @@ func _refresh_contest() -> void:
 		"g": int(g), "s": int(ceil(float(c["window"]) - float(c["t"])))})
 	# Disputa difícil (11/11/2026): alcançar os 3 marcos também dá uma relíquia.
 	var hard: bool = c.has("li") and sim.road.locations[int(c["li"])].get("hard", false)
-	if hard and LAYOUT != 7:
-		txt = tr("UI_CONTEST_HARD") + " · " + txt
-	if LAYOUT == 7:
-		txt = _mission_text(txt, int(ceil(float(c["window"]) - float(c["t"]))), hard)
+	txt = _mission_text(txt, int(ceil(float(c["window"]) - float(c["t"]))), hard)
 	contest_stages.visible = true
 	contest_stages.queue_redraw()
 	if txt != contest_text:
@@ -1438,7 +1309,7 @@ func _refresh_contest() -> void:
 		Tips.set_text(contest_label, txt)
 
 
-## Missão no canto (LAYOUT 7, 17/11/2026): o nome do local em destaque e, embaixo, o que fazer. O tempo fica só na barra
+## Missão no canto (17/11/2026): o nome do local em destaque e, embaixo, o que fazer. O tempo fica só na barra
 ## de marcos (antes aparecia no texto e na barra); a regra da disputa difícil vira uma linha menor por último.
 func _mission_text(txt: String, secs: int, hard: bool) -> String:
 	txt = txt.trim_suffix(" · %d s" % secs)
@@ -1501,34 +1372,30 @@ func _refresh_relics() -> void:
 	UiKit.clear(relic_row)
 	for id in sim.relics:
 		var rid: String = id
-		if UiSkins.diario():
-			# Etiqueta de papel com o losango dourado (antes: texto vermelho solto que passava por cima do herói).
-			var tag := PanelContainer.new()
-			var sb := UiParch.box("ink", 0.0)
-			sb.content_margin_left = 10
-			sb.content_margin_right = 12
-			sb.content_margin_top = 3
-			sb.content_margin_bottom = 4
-			UiKit.fit_margins(sb, true)
-			tag.set_meta("tag", true)
-			tag.add_theme_stylebox_override("panel", sb)
-			tag.set_meta("paper", true)
-			tag.size_flags_horizontal = Control.SIZE_SHRINK_END
-			tag.mouse_filter = Control.MOUSE_FILTER_STOP
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 6)
-			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			row.add_child(UiKit.relic_icon(rid, 28.0 if LAYOUT == 7 else 26.0))
-			if LAYOUT != 7:
-				row.add_child(UiParch.label(tr("REL_" + rid), "bold", 15, UiParch.INK))
-			else:
-				sb.content_margin_left = UiKit.SP_S
-				sb.content_margin_right = UiKit.SP_S
-				UiKit.fit_margins(sb, true)
-			tag.add_child(row)
-			Tips.attach(tag, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
-			relic_row.add_child(tag)
-			continue
+		# Etiqueta de papel com o losango dourado (antes: texto vermelho solto que passava por cima do herói).
+		var tag := PanelContainer.new()
+		var sb := UiParch.box("ink", 0.0)
+		sb.content_margin_left = 10
+		sb.content_margin_right = 12
+		sb.content_margin_top = 3
+		sb.content_margin_bottom = 4
+		UiKit.fit_margins(sb, true)
+		tag.set_meta("tag", true)
+		tag.add_theme_stylebox_override("panel", sb)
+		tag.set_meta("paper", true)
+		tag.size_flags_horizontal = Control.SIZE_SHRINK_END
+		tag.mouse_filter = Control.MOUSE_FILTER_STOP
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(UiKit.relic_icon(rid, 28.0))
+		sb.content_margin_left = UiKit.SP_S
+		sb.content_margin_right = UiKit.SP_S
+		UiKit.fit_margins(sb, true)
+		tag.add_child(row)
+		Tips.attach(tag, func(): return [Tips.entry(tr("REL_" + rid), tr("RELD_" + rid))])
+		relic_row.add_child(tag)
+		continue
 		var hb := HBoxContainer.new()
 		hb.add_theme_constant_override("separation", 4)
 		hb.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1675,13 +1542,12 @@ func _text_card(title: String, body: String, w: float, edge: Color, relic_id := 
 	pt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pv.add_child(pt)
 	var bl := Tips.label(body, 16, UiKit.TEXT, w - 30.0, true)
-	if UiSkins.diario():
-		# 13/11/2026: título em Fell SC na cor da raridade, filete dourado e texto maior (lia pequeno no centro da carta).
-		UiParch.style_label(pt, "title", 27, edge.darkened(0.25) if edge.get_luminance() > 0.35 else edge)
-		UiParch.style_label(bl, "body", 19, UiParch.INK)
-		var dv := UiParch.divider(w * 0.55)
-		dv.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		pv.add_child(dv)
+	# 13/11/2026: título em Fell SC na cor da raridade, filete dourado e texto maior (lia pequeno no centro da carta).
+	UiParch.style_label(pt, "title", 27, edge.darkened(0.25) if edge.get_luminance() > 0.35 else edge)
+	UiParch.style_label(bl, "body", 19, UiParch.INK)
+	var dv := UiParch.divider(w * 0.55)
+	dv.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	pv.add_child(dv)
 	pv.add_child(bl)
 	UiKit.ignore_mouse(pv)
 	cp.add_child(pv)
@@ -1715,8 +1581,7 @@ func _inst_level(uid: int) -> int:
 func _build_offer_options(o: Dictionary) -> void:
 	offer_title.text = _offer_heading(o)
 	offer_sub.visible = o["source"] == "location" or o.has("event")
-	if UiSkins.diario():
-		offer_sub.get_parent().visible = offer_sub.visible
+	offer_sub.get_parent().visible = offer_sub.visible
 	if o.has("event"):
 		offer_sub.text = tr("EVT_%s_BODY" % str(o["event"]))
 		offer_sub.add_theme_color_override("font_color", UiKit.TEXT)
@@ -1732,7 +1597,7 @@ func _build_offer_options(o: Dictionary) -> void:
 	offer_slots.clear()
 	var opts: Array = o["options"]
 	# Remover "qualquer carta" mostra o deck inteiro: cartas menores, em linhas. (A loja é o ShopLedger.)
-	var w := (240.0 if UiSkins.covil() else 220.0) if opts.size() <= 4 else 150.0
+	var w := 220.0 if opts.size() <= 4 else 150.0
 	var cols := mini(opts.size(), 4 if w > 200.0 else 7)
 	var vs := get_viewport_rect().size
 	# Subir de nível mostra a carta antes e depois (duas cartas por opção): no máximo 3 por linha e cartas menores.
@@ -1846,20 +1711,15 @@ func _build_offer_options(o: Dictionary) -> void:
 				offer_chosen.emit(k))
 		cp.mouse_entered.connect(func(): slot.set_meta("hover", true))
 		cp.mouse_exited.connect(func(): slot.set_meta("hover", false))
-		if UiSkins.diario():
-			head.custom_minimum_size = Vector2(0, 0)
-			head.autowrap_mode = TextServer.AUTOWRAP_OFF
-			head.add_theme_font_override("font", UiDiario.font("type"))
-			slot.add_child(UiDiario.tape_wrap(head, UiDiario.MASK, -2.0 + k * 1.3))
-			slot.add_child(pair_node if pair_node else cp)
-			var note := UiDiario.note_wrap(foot)
-			note.custom_minimum_size = Vector2(w * 0.9, 0)
-			note.visible = foot.get_parsed_text().strip_edges() != ""
-			slot.add_child(note)
-		else:
-			slot.add_child(head)
-			slot.add_child(pair_node if pair_node else cp)
-			slot.add_child(foot)
+		head.custom_minimum_size = Vector2(0, 0)
+		head.autowrap_mode = TextServer.AUTOWRAP_OFF
+		head.add_theme_font_override("font", UiDiario.font("type"))
+		slot.add_child(UiDiario.tape_wrap(head, UiDiario.MASK, -2.0 + k * 1.3))
+		slot.add_child(pair_node if pair_node else cp)
+		var note := UiDiario.note_wrap(foot)
+		note.custom_minimum_size = Vector2(w * 0.9, 0)
+		note.visible = foot.get_parsed_text().strip_edges() != ""
+		slot.add_child(note)
 		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.set_meta("card", pair_node if pair_node else cp)
 		slot.set_meta("special", lv > 1 or mids.size() > 0 or str(op["kind"]) in ["upgrade", "mod"])
@@ -2014,13 +1874,7 @@ func _show_result() -> void:
 		# Heróis derrubados é o placar da run: dourado. Zeros ficam apagados.
 		var main_: bool = tdef[0] == "UI_ST_you"
 		var zero: bool = tdef[1] == "0"
-		if main_ and UiSkins.covil():
-			tp.material = UiCovil.material("plate", UiKit.GOLD, Color(0.2, 0.15, 0.08, 0.95), Color(0.08, 0.06, 0.04, 0.95), Color(1.0, 0.8, 0.4, 0.22))
 		var val := UiKit.title(30 if tdef[1].length() < 8 else 17, UiKit.GOLD if main_ else (UiKit.MUTED if zero else UiKit.TEXT))
-		if UiSkins.covil() and tdef[1].length() >= 8:
-			# Nome (carta mais jogada): texto comum, não título; em versalete grande ele quebrava a grade.
-			val = UiKit.label(20, UiKit.TEXT, 3)
-			val.add_theme_font_override("font", UiCovil.font("bold"))
 		val.text = tdef[1]
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		val.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -2037,11 +1891,9 @@ func _show_result() -> void:
 
 
 ## Pele "Mapa aberto": um desenho do mapa apoiado na linha de baixo da moldura do painel, no canto direito (o
-## bosquinho no painel do herói, o rato no do corpo do chefe), como nas maquetes (docs/UI_PROPOSTAS.md). Pintado
+## bosquinho no painel do herói, o rato no do corpo do chefe), como nas maquetes da pele. Pintado
 ## pelo próprio painel, embaixo do texto.
 func _map_doodle(panel: Control, icon: String, sz: Vector2, from_corner: Vector2, on_top := false, left := false) -> void:
-	if not UiSkins.mapa():
-		return
 	var tex: Texture2D = CampaignArt.map_tex("res://assets/ui/map/icon_%s.svg" % icon)
 	if tex == null:
 		return
@@ -2193,10 +2045,7 @@ func _refresh_power_panel(o: Dictionary) -> void:
 	var title := UiKit.title(38)
 	title.text = tr("UI_POWER_NEW" if any_new else "UI_POWER_EVOLVED")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if UiSkins.diario():
-		v.add_child(UiDiario.tape_title(title))
-	else:
-		v.add_child(title)
+	v.add_child(UiDiario.tape_title(title))
 	var changed: Array = []
 	for op in opts:
 		var id := str(op["id"])
@@ -2235,7 +2084,7 @@ func _refresh_power_panel(o: Dictionary) -> void:
 		v.add_child(row)
 	var have: Array = o.get("powers", [])
 	if not have.is_empty():
-		v.add_child(UiParch.divider(560.0) if UiSkins.diario() else HSeparator.new())
+		v.add_child(UiParch.divider(560.0))
 		var hl := UiKit.label(17, UiKit.MUTED, 3)
 		hl.text = tr("UI_POWER_HAVE").format({"n": have.size()})
 		hl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

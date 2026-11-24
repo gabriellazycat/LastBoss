@@ -89,7 +89,6 @@ func _ready() -> void:
 		elif a.begins_with("--view="):
 			view = a.trim_prefix("--view=")
 	Settings.load_all()
-	Settings.v["look_hud"] = 7
 	Settings.v["fullscreen"] = false
 	Settings.apply(get_tree())
 	if shot != "" and DisplayServer.get_name() != "headless":
@@ -99,7 +98,7 @@ func _ready() -> void:
 		w.size = Vector2i(1920, 1080)
 		w.position = Vector2i(-6000, 0)
 	UiSkins.apply()
-	if UiSkins.diario() and not get_tree().node_added.is_connected(UiDiario.on_node_added):
+	if not get_tree().node_added.is_connected(UiDiario.on_node_added):
 		get_tree().node_added.connect(UiDiario.on_node_added)
 	theme = UiKit.make_theme()
 	data = GameData.load_dir()

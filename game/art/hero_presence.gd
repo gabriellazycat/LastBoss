@@ -1,14 +1,10 @@
 class_name HeroPresence
 extends Node3D
-## Presença dos heróis (rodada visual 20/11/2026, docs/RODADA_VISUAL_2026-11-20.md). Os modelos KayKit ficam;
-## por cima deles: sombra de contato, anel pintado na cor da classe, aura de partículas por classe e um pouco mais
-## de tamanho. --herois=0 (padrão) = nada disto; 1 = completo; 2 = discreto (só sombra e anel, sem aura).
+## Presença dos heróis (20/11/2026). Os modelos KayKit ficam; por cima deles: sombra de contato, anel pintado na cor
+## da classe, aura de partículas por classe e um pouco mais de tamanho (SCALE).
 ## world_view.gd cria um nó deste script e chama track(no_do_herói, classe) a cada quadro para cada herói visível.
 
-static var VAR := 1   # padrão aprovado em 20/11/2026 na página de revisão (0 = como era antes)
-
-const NAMES := ["Atual", "Anel, aura e sombra", "Só anel e sombra"]
-const SCALE := [1.0, 1.15, 1.08]
+const SCALE := 1.15
 
 ## Cor de cada classe (anel e aura) e o desenho da aura: [cor, forma, sobe/desce, quantidade].
 ## Formas do shader fx_particle: 2 faísca, 3 brasa, 4 estrela, 5 lasca, 6 cruz, 8 fio.
@@ -31,12 +27,12 @@ var _frame := 0
 
 
 static func scale_mult() -> float:
-	return SCALE[clampi(VAR, 0, SCALE.size() - 1)]
+	return SCALE
 
 
 ## Chamado por world_view para cada herói desenhado neste quadro.
 func track(hero_node: Node3D, cls: String, active: bool) -> void:
-	if VAR <= 0 or hero_node == null:
+	if hero_node == null:
 		return
 	var d: Dictionary = _deco.get(hero_node, {})
 	if d.is_empty() or str(d["cls"]) != cls:
@@ -90,10 +86,8 @@ func _make(cls: String) -> Dictionary:
 	ring.material_override = _ring_mat(col)
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(ring)
-	var aura: GPUParticles3D = null
-	if VAR == 1:
-		aura = _aura(col, int(info[1]), float(info[2]), int(info[3]))
-		add_child(aura)
+	var aura := _aura(col, int(info[1]), float(info[2]), int(info[3]))
+	add_child(aura)
 	return {"ring": ring, "shadow": shadow, "aura": aura, "cls": cls, "t": _frame}
 
 

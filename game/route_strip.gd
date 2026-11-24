@@ -100,16 +100,14 @@ func _behind(loc: Dictionary) -> bool:
 # ---------------------------------------------------------------- desenho
 
 func _draw() -> void:
-	if not UiCovil.draw_plate(self):
-		draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.035, 0.08, 0.72))
-		draw_rect(Rect2(Vector2.ZERO, size), UiKit.EDGE.darkened(0.2), false, 1.0)
+	UiDiario.draw_plate(self, "soft")
 	if sim == null or sim.road.legs.is_empty():
 		return
 	var road := sim.road
 	var pulse := 0.5 + 0.5 * sin(t * 6.0)
 	var hp := _hero_point()
 	# Pele Diário (13/11/2026): as cores e traços do mapa pergaminho (tinta, caminho feito em vermelho).
-	var parch := UiSkins.diario()
+	var parch := true
 	var c_out := Color(Minimap.INK, 0.9) if parch else Color(0.04, 0.02, 0.06, 0.85)
 	for e in road.legs.size():
 		var g: Dictionary = road.legs[e]
@@ -177,12 +175,10 @@ func _draw() -> void:
 	draw_circle(lp, 12.5, c_out)
 	if not is_lair:
 		# Portão de passagem: dois pilares e uma verga, em vez do círculo do covil.
-		var gc := UiKit.GOLD if UiSkins.covil() else (Color("f0cf7a") if parch else Color(0.95, 0.8, 0.5))
+		var gc := Color("f0cf7a") if parch else Color(0.95, 0.8, 0.5)
 		draw_rect(Rect2(lp + Vector2(-9, -8), Vector2(4, 16)), gc)
 		draw_rect(Rect2(lp + Vector2(5, -8), Vector2(4, 16)), gc)
 		draw_rect(Rect2(lp + Vector2(-10, -10), Vector2(20, 4)), gc)
-	elif UiSkins.covil():
-		UiCovil.draw_rarity(self, lp, 12.0, UiKit.GOLD)
 	elif parch:
 		draw_circle(lp, 11.0, Minimap.ACC)
 		draw_arc(lp, 11.5, 0, TAU, 24, Color("f0cf7a"), 2.0, true)
@@ -192,7 +188,7 @@ func _draw() -> void:
 	_text(lp.y, "%d%%" % int(_progress() * 100.0), Minimap.INK if parch else Color(0.95, 0.75, 1.0), 13)
 	# Herói.
 	draw_circle(hp, 8.0, c_out)
-	draw_circle(hp, 6.5, Minimap.HERO_COL if (UiSkins.covil() or parch) else Color(0.45, 0.72, 1.0))
+	draw_circle(hp, 6.5, Minimap.HERO_COL if parch else Color(0.45, 0.72, 1.0))
 	draw_arc(hp, 9.5, 0, TAU, 24, Color("f0cf7a") if parch else Color(1, 1, 1, 0.85), 2.0, true)
 	# Nome do local sob o mouse.
 	if hover_loc >= 0:
@@ -213,37 +209,22 @@ func _progress() -> float:
 ## Texto à direita da faixa, centrado verticalmente em y.
 func _text(y: float, s: String, col: Color, fs: int) -> void:
 	var font := get_theme_default_font()
-	if UiSkins.covil():
-		font = UiCovil.font("bold")
-		fs = roundi(fs * UiCovil.TEXT_SCALE)
 	var at := Vector2(size.x + LABEL_GAP, clampf(y, fs * 0.5, size.y - fs * 0.5) + fs * 0.35)
-	if UiSkins.diario():
-		# Etiqueta de papel com traço de tinta (o rótulo solto em azul não lia sobre o chão).
-		font = UiParch.font("bold")
-		fs += 1
-		var tw2 := font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var tag := StyleBoxFlat.new()
-		tag.bg_color = Color(Minimap.BG, 0.96)
-		tag.border_color = Color(Minimap.INK, 0.8)
-		tag.set_border_width_all(1)
-		tag.set_corner_radius_all(4)
-		tag.anti_aliasing = true
-		tag.shadow_color = Color(0, 0, 0, 0.3)
-		tag.shadow_size = 3
-		draw_style_box(tag, Rect2(at + Vector2(-7, -fs * 0.98), Vector2(tw2 + 14, fs * 1.42)))
-		draw_string(font, at, s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
-		return
-	if UiSkins.covil():
-		var tw := font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var pill := StyleBoxFlat.new()
-		pill.bg_color = Color(0.05, 0.04, 0.05, 0.78)
-		pill.border_color = Color(UiCovil.BRONZE.r, UiCovil.BRONZE.g, UiCovil.BRONZE.b, 0.45)
-		pill.set_border_width_all(1)
-		pill.set_corner_radius_all(int(fs * 0.7))
-		pill.anti_aliasing = true
-		draw_style_box(pill, Rect2(at + Vector2(-8, -fs * 0.98), Vector2(tw + 16, fs * 1.42)))
-	draw_string_outline(font, at, s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color.BLACK)
+	# Etiqueta de papel com traço de tinta (o rótulo solto em azul não lia sobre o chão).
+	font = UiParch.font("bold")
+	fs += 1
+	var tw2 := font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var tag := StyleBoxFlat.new()
+	tag.bg_color = Color(Minimap.BG, 0.96)
+	tag.border_color = Color(Minimap.INK, 0.8)
+	tag.set_border_width_all(1)
+	tag.set_corner_radius_all(4)
+	tag.anti_aliasing = true
+	tag.shadow_color = Color(0, 0, 0, 0.3)
+	tag.shadow_size = 3
+	draw_style_box(tag, Rect2(at + Vector2(-7, -fs * 0.98), Vector2(tw2 + 14, fs * 1.42)))
 	draw_string(font, at, s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+	return
 
 
 # ---------------------------------------------------------------- mouse

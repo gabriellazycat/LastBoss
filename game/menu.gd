@@ -68,8 +68,7 @@ func _ready() -> void:
 	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	veil.visible = false
 	add_child(veil)
-	if UiSkins.diario():
-		shade.visible = false
+	shade.visible = false
 	_build_title()
 	_build_villains_parch()
 	covil = CovilScreen.new()
@@ -118,96 +117,8 @@ func status_text() -> String:
 # ---------------------------------------------------------------- título
 
 func _build_title() -> void:
-	if UiSkins.mapa():
-		_build_title_map()
-		return
-	title_box = VBoxContainer.new()
-	title_box.add_theme_constant_override("separation", 6)
-	if UiSkins.diario():
-		# Folha presa com duas fitas; o título a pincel e as opções em fita crepe.
-		var sheet := PanelContainer.new()
-		UiDiario.dress(sheet, "paper", 46.0, {"grime": 0.5, "seed": 0.21, "shadow": 12.0, "rough": 3.0})
-		sheet.rotation_degrees = 0.0   # 13/11/2026: folha com moldura dourada, reta e sem fita crepe
-		sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(sheet)
-		sheet.add_child(title_box)
-		title_root = sheet
-	else:
-		add_child(title_box)
-		title_root = title_box
-	var over := UiKit.label(18, UiKit.MUTED, 3)
-	over.text = "UI_TITLE_OVER"
-	title_box.add_child(over)
-	var t := UiKit.title(124 if UiSkins.covil() else (100 if UiSkins.diario() else 104))
-	t.text = "LAST BOSS"
-	title_box.add_child(t)
-	if UiSkins.diario():
-		over.add_theme_font_override("font", UiDiario.font("type"))
-		over.add_theme_color_override("font_color", UiDiario.INK.lightened(0.25))
-		t.rotation_degrees = -2.0
-		title_box.add_child(UiDiario.ornament(470))
-	elif UiSkins.covil():
-		over.add_theme_font_override("font", UiCovil.font("caps"))
-		over.add_theme_color_override("font_color", UiKit.GOLD.darkened(0.15))
-		title_box.add_child(UiCovil.ornament(520))
-	else:
-		var rule := ColorRect.new()
-		rule.color = UiKit.GOLD.darkened(0.2)
-		rule.custom_minimum_size = Vector2(420, 2)
-		rule.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		title_box.add_child(rule)
-	var sub := UiKit.label(20, Color(0.88, 0.84, 0.96))
-	sub.text = "UI_SUBTITLE"
-	sub.autowrap_mode = TextServer.AUTOWRAP_WORD
-	sub.custom_minimum_size = Vector2(460, 0)
-	title_box.add_child(sub)
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 34)
-	title_box.add_child(gap)
-	main_buttons = VBoxContainer.new()
-	main_buttons.add_theme_constant_override("separation", 10)
-	if UiSkins.diario():
-		# Embaixo das fitas, a caveira coroada do Lorde a nanquim (a folha não fica com um vazio do lado).
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 16)
-		title_box.add_child(row)
-		row.add_child(main_buttons)
-		var doodle := VBoxContainer.new()
-		doodle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		doodle.alignment = BoxContainer.ALIGNMENT_END
-		# Retrato pintado do vilão da última run (o "eu" da folha); sem ele, a caveira a nanquim.
-		var pt := UiParch.portrait("villain_" + meta.villain) if meta else null
-		if pt != null:
-			var title_art := UiParch.framed_art(pt, Vector2(210, 200), "frame_legend")
-			title_art.size_flags_horizontal = Control.SIZE_SHRINK_END
-			doodle.add_child(title_art)
-		else:
-			var sk := TextureRect.new()
-			sk.texture = UiDiario.card_tex("lord_skull")
-			sk.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			sk.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			sk.custom_minimum_size = Vector2(170, 170)
-			doodle.add_child(sk)
-		var me := Label.new()
-		me.text = "UI_TITLE_ME"
-		me.add_theme_font_override("font", UiDiario.font("hand"))
-		me.add_theme_font_size_override("font_size", 24)
-		me.add_theme_color_override("font_color", UiDiario.BLOOD)
-		me.set_meta("no_ink", true)
-		me.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		me.rotation_degrees = -5.0
-		doodle.add_child(me)
-		row.add_child(doodle)
-	else:
-		title_box.add_child(main_buttons)
-	continue_btn = _menu_btn("UI_CONTINUE", func(): continue_run.emit())
-	covil_btn = _menu_btn("UI_MENU_COVIL", func(): _on_map_choice("covil"))
-	_menu_btn("UI_MENU_LIBRARY", func(): _on_map_choice("collection"))
-	_menu_btn("UI_COMPENDIUM", func(): _on_map_choice("compendium"))
-	_menu_btn("UI_MENU_TUTORIAL", func(): _on_map_choice("tutorial"))
-	_menu_btn("UI_SETTINGS", func(): _on_map_choice("settings"))
-	if OS.get_name() != "Web":
-		_menu_btn("UI_QUIT", func(): get_tree().quit())
+	_build_title_map()
+	return
 
 
 func _on_map_choice(id: String) -> void:
@@ -247,24 +158,6 @@ func _build_title_map() -> void:
 	mm.chosen.connect(_on_map_choice)
 	if OS.get_name() == "Web":
 		mm.buttons["quit"].visible = false
-
-
-func _menu_btn(txt: String, cb: Callable) -> Button:
-	var b := Button.new()
-	b.text = txt
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.custom_minimum_size = Vector2(380, 56)
-	b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	b.add_theme_font_size_override("font_size", 24)
-	if UiSkins.diario():
-		b.custom_minimum_size = Vector2(320, 52)
-		UiDiario.menu_button(b, 24, txt == "UI_CONTINUE")
-	elif UiSkins.covil():
-		UiCovil.menu_button(b, 26)
-	b.pressed.connect(cb)
-	b.mouse_entered.connect(func(): b.grab_focus())
-	main_buttons.add_child(b)
-	return b
 
 
 # ---------------------------------------------------------------- vilões
@@ -310,7 +203,7 @@ func locked_text(vid: String) -> String:
 
 
 func show_screen(s: String) -> void:
-	if UiSkins.diario() and s != screen and is_node_ready():
+	if s != screen and is_node_ready():
 		prev_screen = screen
 		prev_fade = 0.0
 	screen = s
@@ -328,13 +221,7 @@ func show_screen(s: String) -> void:
 		continue_btn.visible = SaveGame.exists()
 		if title_root is MapMenu:
 			(title_root as MapMenu).set_status(status_text())
-		if UiSkins.mapa():
-			(continue_btn if continue_btn.visible else covil_btn).grab_focus.call_deferred()
-		else:
-			if UiSkins.diario():
-				# A opção principal é a fita vermelha: Continuar quando há run salva; senão, o Covil.
-				UiDiario.menu_button(covil_btn, 24, not continue_btn.visible)
-			(continue_btn if continue_btn.visible else main_buttons.get_child(1)).grab_focus.call_deferred()
+		(continue_btn if continue_btn.visible else covil_btn).grab_focus.call_deferred()
 	elif s == "covil":
 		covil.refresh()
 	elif s == "decks":
@@ -384,30 +271,8 @@ func _unhandled_input(e: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
-	if UiSkins.diario():
-		_process_desk(delta)
-		return
-	fade = minf(fade + delta * 4.0, 1.0)
-	var vs := get_viewport_rect().size
-	shade.position = Vector2.ZERO
-	shade.size = Vector2(vs.x * (0.62 if screen == "title" else 1.0), vs.y)
-	shade.modulate.a = 1.0 if screen == "title" else 0.75
-	veil.visible = UiSkins.covil() and screen != "title"
-	veil.size = vs
-	var m := clampf(vs.x * 0.07, 32.0, 140.0)
-	title_box.position = Vector2(m - (1.0 - fade) * 30.0, (vs.y - title_box.size.y) * 0.5)
-	title_box.modulate.a = fade
-	deck_screen.position = Vector2((vs.x - deck_screen.size.x) * 0.5, (vs.y - deck_screen.size.y) * 0.5 + (1.0 - fade) * 24.0)
-	deck_screen.modulate.a = fade
-	covil.modulate.a = fade
-	collection.position = Vector2((vs.x - collection.size.x) * 0.5, (vs.y - collection.size.y) * 0.5 + (1.0 - fade) * 24.0)
-	collection.modulate.a = fade
-	compendium.position = Vector2((vs.x - compendium.size.x) * 0.5, (vs.y - compendium.size.y) * 0.5 + (1.0 - fade) * 24.0)
-	compendium.modulate.a = fade
-	settings.position = (vs - settings.size) * 0.5
-	footer.text = VERSION + "   ·   " + tr("UI_MENU_KEYS")
-	footer.position = Vector2(m, vs.y - 34)
-	footer.visible = screen == "title" or screen == "settings"
+	_process_desk(delta)
+	return
 
 
 # ---------------------------------------------------------------- pele Diário
@@ -435,7 +300,7 @@ func _screen_node(s: String) -> Control:
 
 
 func _final_pos(s: String, c: Control, vs: Vector2) -> Vector2:
-	if s == "title" and UiSkins.mapa():
+	if s == "title":
 		return (vs - c.size) * 0.5
 	if s == "title":
 		var m := clampf(vs.x * 0.06, 28.0, 120.0)
@@ -471,7 +336,7 @@ func _process_desk(delta: float) -> void:
 		var fit := minf(1.0, minf(vs.y * 0.94 / maxf(c.size.y, 1.0), vs.x * 0.96 / maxf(c.size.x, 1.0)))
 		c.scale = Vector2.ONE * lerpf(0.16, fit, e)
 		c.position = (from - c.size * 0.5).lerp(fin, e)
-		c.rotation = lerpf(deg_to_rad(9.0 if s.length() % 2 == 0 else -9.0), deg_to_rad((-0.35 if UiSkins.mapa() else -1.2) if s == "title" else 0.0), e)
+		c.rotation = lerpf(deg_to_rad(9.0 if s.length() % 2 == 0 else -9.0), deg_to_rad(-0.35 if s == "title" else 0.0), e)
 		c.modulate.a = clampf(e * 3.0, 0.0, 1.0)
 	settings.position = (vs - settings.size) * 0.5
 	footer.text = VERSION + "   ·   " + tr("UI_MENU_KEYS")

@@ -1,7 +1,6 @@
 class_name ShopLedger
 extends Control
-## Loja como o livro-caixa do mercador (decisão 11/11/2026: variação "1. Revisado" de
-## docs/decisoes_2026-11-11/loja_mercador.html). Regra do designer: nada repetido na tela. Cada item é uma linha
+## Loja do mercador (decisão 11/11/2026). Regra do designer: nada repetido na tela. Cada item é uma linha
 ## (nome, pontinhos, preço); as cartas aparecem como esboços colados (só desenho e custo); tipo e descrição só na
 ## anotação da margem, do item em foco; o ouro aparece uma vez. Registro do dia = histórico das compras desta visita.
 ## Escolher a carta de Subir nível ou Tirar carta ("shop_pick" do Sim) abre o passo do baralho por cima do livro,
@@ -68,10 +67,8 @@ var desc_l: RichTextLabel
 var desc_r: RichTextLabel
 var desc_sig := ""
 var pick_cards: Array = []            # antes/depois do passo do baralho: as cartas de verdade (molde), não desenho
-# Pele "Mapa aberto" (UiSkins.mapa()): a loja vira a "Feira do Mascate" (maquete aprovada "Loja B · Mapa da feira",
-# docs/ui_propostas/escolher.html, lojaB(); foto docs/ui_propostas/fotos/d6_lojaB.jpg). Mesma lógica, outra apresentação:
-# cada carta é uma barraca na estrada do mapa; serviços num painel à direita; a ficha do item em foco no alto à direita.
-var fair := false                     # decidido ao abrir a loja
+# A loja é a "Feira do Mascate" (maquete aprovada "Loja B · Mapa da feira"): cada carta é uma barraca na estrada do
+# mapa; serviços num painel à direita; a ficha do item em foco no alto à direita.
 var fair_hover := -1                  # barraca sob o mouse (índice da opção): só realça; o clique escolhe
 var fair_buy := Rect2()               # botão "Comprar" da ficha (quadro)
 var buy_hot := false
@@ -213,9 +210,7 @@ func _open(shop: Dictionary) -> void:
 				r["rect"] = Rect2(RP + Vector2(56, 128 + si * 88), Vector2(RS.x - 112, 82))
 				si += 1
 	note_rect = Rect2(RP + Vector2(56, 530 + maxf(ri - 1, 0) * 122), Vector2(RS.x - 112, 210 - maxf(ri - 1, 0) * 122))
-	fair = UiSkins.mapa()
-	if fair:
-		_fair_layout(n_cards)
+	_fair_layout(n_cards)
 	_log(tr("UI_LEDGER_OPEN"), "")
 	if hud.selected < 0:
 		hud.selected = 0
@@ -400,7 +395,7 @@ func _pick_row_at(p: Vector2) -> int:
 func _gui_input(e: InputEvent) -> void:
 	if e is InputEventMouseMotion:
 		var p := _dp(e.position)
-		if mode == "shop" and fair:
+		if mode == "shop":
 			_fair_motion(p)
 		elif mode == "shop":
 			seal_hot = p.distance_to(_seal_c()) < 78.0
@@ -432,22 +427,9 @@ func _gui_input(e: InputEvent) -> void:
 			return
 		if e.button_index != MOUSE_BUTTON_LEFT:
 			return
-		if fair:
-			_fair_click(p)
-			accept_event()
-			return
-		if p.distance_to(_seal_c()) < 78.0:
-			chosen.emit(Sim.SKIP)
-			accept_event()
-			return
-		for r in rows:
-			if not r["sold"] and (r["rect"] as Rect2).has_point(p):
-				var i := _index_of(r)
-				if i >= 0:
-					hud.selected = i
-					chosen.emit(i)
-				break
+		_fair_click(p)
 		accept_event()
+		return
 
 
 ## Teclado (setas, Enter, Esc no passo do baralho) e direcional do controle. Os números, o 0 e L1/R1/A/B
@@ -555,10 +537,10 @@ func _scroll_to_sel() -> void:
 ## a carta da lista e depois Confirmar. Vazio se a linha está fora da área visível da lista (role antes).
 func click_points(kk: int) -> Array:
 	if kk == Sim.SKIP:
-		if mode == "shop" and fair:
+		if mode == "shop":
 			return [o + _fair_leave_rect().get_center() * k]
 		return [o + (_btn_rect(0).get_center() if mode == "pick" else _seal_c()) * k]
-	if mode == "shop" and fair:
+	if mode == "shop":
 		return _fair_click_points(kk)
 	if mode == "shop":
 		var opts: Array = shop_obj["options"] if shop_obj != null else []
@@ -604,22 +586,8 @@ func _sync_note() -> void:
 	if sig == note_sig:
 		return
 	note_sig = sig
-	if fair:
-		_fair_sync_note(r)
-		return
-	var top := 16.0 + (30.0 if head != "" else 0.0)
-	var nr := Rect2(note_rect.position + Vector2(34, top), Vector2(note_rect.size.x - 60, note_rect.size.y - top - 46))
-	note.position = o + nr.position * k
-	note.size = nr.size * k
-	Tips.set_text(note, _note_body(r))
-	note.add_theme_color_override("default_color", NOTE_INK)
-	# A anotação nunca passa da caixa: a letra encolhe até caber.
-	var fs := 30.0
-	while fs > 15.0:
-		note.add_theme_font_size_override("normal_font_size", roundi(fs * k))
-		if note.get_content_height() <= note.size.y:
-			break
-		fs -= 2.0
+	_fair_sync_note(r)
+	return
 
 
 func _note_head(r: Dictionary) -> String:
@@ -746,25 +714,7 @@ func _sync_pick_children(of: Dictionary) -> void:
 			card.add_child(x)
 		add_child(card)
 		pick_cards.append(card)
-	if UiSkins.diario():
-		return
-	for after in [false, true]:
-		var l: RichTextLabel = desc_r if after else desc_l
-		var cr := _card_rect(after)
-		var dr := Rect2(cr.position + Vector2(18, 18 + ART_H + 40), Vector2(cr.size.x - 36, cr.size.y - ART_H - 18 - 40 - 14))
-		l.position = o + dr.position * k
-		l.size = dr.size * k
-		l.set_meta("center", true)
-		var nl: int = mini(lv + 1, int(sim.data.rules["card_levels"]["max"])) if after and up else lv
-		Tips.set_text(l, UiKit.card_desc(cd, nl, after and up, pr["mods"]))
-		l.add_theme_color_override("default_color", INK)
-		l.modulate = Color(0.45, 0.42, 0.4) if after and not up else Color.WHITE
-		var fs := 27.0
-		while fs > 12.0:
-			l.add_theme_font_size_override("normal_font_size", roundi(fs * k))
-			if l.get_content_height() <= l.size.y:
-				break
-			fs -= 1.5
+	return
 
 
 # ---------------------------------------------------------------- desenho: ajudantes
@@ -818,20 +768,6 @@ func _rrect(r: Rect2, col: Color, rad: float, border := 0.0, bcol := Color.TRANS
 	draw_style_box(sb, r)
 
 
-## Faixa com degradê horizontal (cores nas paradas xs, de 0 a 1).
-func _hgrad(r: Rect2, xs: Array, cols: Array) -> void:
-	for i in xs.size() - 1:
-		var x0: float = r.position.x + r.size.x * float(xs[i])
-		var x1: float = r.position.x + r.size.x * float(xs[i + 1])
-		draw_polygon(PackedVector2Array([Vector2(x0, r.position.y), Vector2(x1, r.position.y), Vector2(x1, r.end.y), Vector2(x0, r.end.y)]),
-			PackedColorArray([cols[i], cols[i + 1], cols[i + 1], cols[i]]))
-
-
-func _vgrad(r: Rect2, a: Color, b: Color) -> void:
-	draw_polygon(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]),
-		PackedColorArray([a, a, b, b]))
-
-
 func _bez(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, n := 10) -> PackedVector2Array:
 	var out := PackedVector2Array()
 	for i in range(1, n + 1):
@@ -868,27 +804,10 @@ func _stamp(c: Vector2, word: String, fs: float) -> void:
 func _draw() -> void:
 	if sim == null or (shop_obj == null and mode == "shop"):
 		return
-	if fair:
-		draw_rect(Rect2(Vector2.ZERO, size), Color(0.118, 0.094, 0.078, 0.62))
-		_S()
-		if shop_obj != null:
-			_draw_fair()
-		if mode == "pick":
-			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-			draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.024, 0.016, 0.78))
-			_S()
-			_draw_pick()
-		_draw_toast()
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		return
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.035, 0.03, 0.35))
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.118, 0.094, 0.078, 0.62))
 	_S()
-	_draw_book()
 	if shop_obj != null:
-		_draw_left()
-		_draw_right()
-	if mode == "shop":
-		_draw_keys()
+		_draw_fair()
 	if mode == "pick":
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.024, 0.016, 0.78))
@@ -896,105 +815,10 @@ func _draw() -> void:
 		_draw_pick()
 	_draw_toast()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-
-func _draw_book() -> void:
-	var book := Rect2(40, 24, 1780, 980)
-	_rrect(Rect2(book.position + Vector2(0, 24), book.size), Color(0, 0, 0, 0.45), 30)
-	_rrect(book, Color("33200f"), 24)
-	_vgrad(Rect2(book.position + Vector2(24, 4), Vector2(book.size.x - 48, 10)), Color(1, 1, 1, 0.06), Color(1, 1, 1, 0.0))
-	for pg in [[LP, LS, true], [RP, RS, false]]:
-		var pos: Vector2 = pg[0]
-		var sz: Vector2 = pg[1]
-		var r := Rect2(pos, sz)
-		# Página = o papel creme das cartas com a moldura dourada (13/11/2026; antes, caderno pautado de azul).
-		draw_style_box(UiParch.box("gold", 0.0), r)
-		# Sombra da lombada e das bordas.
-		var left: bool = pg[2]
-		var sx := r.end.x if left else pos.x
-		var dir := -1.0 if left else 1.0
-		draw_polygon(PackedVector2Array([Vector2(sx, pos.y), Vector2(sx + dir * 70, pos.y), Vector2(sx + dir * 70, r.end.y), Vector2(sx, r.end.y)]),
-			PackedColorArray([Color(0.31, 0.2, 0.08, 0.55), Color(0.31, 0.2, 0.08, 0.0), Color(0.31, 0.2, 0.08, 0.0), Color(0.31, 0.2, 0.08, 0.55)]))
-		_vgrad(Rect2(pos, Vector2(sz.x, 40)), Color(0.47, 0.31, 0.12, 0.3), Color(0.47, 0.31, 0.12, 0.0))
-		_vgrad(Rect2(pos + Vector2(0, sz.y - 40), Vector2(sz.x, 40)), Color(0.47, 0.31, 0.12, 0.0), Color(0.47, 0.31, 0.12, 0.3))
-	pass
-
-
-func _draw_left() -> void:
-	_txt(LP + Vector2(70, 66), tr("UI_LEDGER_TITLE"), f_disp, 42, INK)
-	_txt(LP + Vector2(72, 108), tr("UI_LEDGER_SUB"), f_hand, 25, BROWN)
-	# Rabisco da balança no canto.
-	_L(LP + Vector2(LS.x - 270, 24))
-	var ink := Color(INK.r, INK.g, INK.b, 0.8)
-	for seg in [[Vector2(110, 20), Vector2(110, 90)], [Vector2(70, 90), Vector2(150, 90)], [Vector2(110, 24), Vector2(60, 38)], [Vector2(110, 24), Vector2(160, 38)]]:
-		draw_line(seg[0], seg[1], ink, 3.0, true)
-	for cx in [60.0, 160.0]:
-		draw_polyline(PackedVector2Array([Vector2(cx, 38), Vector2(cx - 18, 72), Vector2(cx + 18, 72), Vector2(cx, 38)]), ink, 3.0, true)
-	draw_arc(Vector2(110, 16), 6.0, 0.0, TAU, 16, ink, 3.0, true)
-	_S()
-	var foc := _focus_row()
-	for r in rows:
-		if r["kind"] == "card":
-			_draw_card_row(r, is_same(r, foc))
-	# Registro do dia.
-	var ly := LP.y + 690.0
-	_txt(Vector2(LP.x + 70, ly + 30), tr("UI_LEDGER_LOG"), f_disp, 28, INK)
-	draw_line(Vector2(LP.x + 70, ly + 42), Vector2(LP.x + LS.x - 70, ly + 42), INK, 3.0)
-	for i in log_lines.size():
-		var e: Dictionary = log_lines[i]
-		var full: String = e["text"] + ("  —  " + e["minus"] if e["minus"] != "" else "")
-		var shown := maxi(0, int((t - float(e["t"])) * 22.0))
-		var by := ly + 82.0 + i * 43.0
-		var txt: String = e["text"]
-		var fs := _fit(full, f_hand, 27, LS.x - 150, 16)
-		var part := txt.left(mini(shown, txt.length()))
-		_txt(Vector2(LP.x + 70, by), part, f_hand, fs, LOG_INK)
-		if shown > txt.length() and e["minus"] != "":
-			_txt(Vector2(LP.x + 70 + _tw(txt + "  —  ", f_hand, fs), by), str(e["minus"]).left(shown - txt.length()), f_hand, fs, WAX)
-			_txt(Vector2(LP.x + 70 + _tw(txt, f_hand, fs), by), "  —  ", f_hand, fs, LOG_INK)
-	# Ouro (o único lugar) e tamanho do baralho.
-	var pulse := clampf(1.0 - (t - gold_pulse) / 0.6, 0.0, 1.0)
-	var gtxt := str(int(sim.gold))
-	var gw := 44.0 + _tw(gtxt, f_body, 24) + 18.0
-	var gr := Rect2(LP + Vector2(70, LS.y - 70), Vector2(gw, 46))
-	var sc := 1.0 + 0.18 * sin(pulse * PI)
-	_L(gr.get_center(), 0.0, sc)
-	var lr := Rect2(-gr.size * 0.5, gr.size)
-	if pulse > 0.0:
-		_rrect(lr, Color(RED, pulse), 23)
-	_chip(lr, BLUE.lerp(Color.WHITE, pulse))
-	_coin(lr.position + Vector2(24, 23), 10)
-	_S()
-	_txt_in(gr.get_center(), 0.0, Vector2(lr.position.x + 40, 9) * sc, gtxt, f_body, 24 * sc, BLUE.lerp(Color.WHITE, pulse))
-	var dtxt := tr("UI_LEDGER_DECK").format({"n": sim.cards.size()})
-	var dr := Rect2(gr.end.x + 16, gr.position.y, _tw(dtxt, f_body, 24) + 36, 46)
-	_chip(dr, BLUE)
-	_txt(dr.position + Vector2(18, 32), dtxt, f_body, 24, BLUE)
+	return
 
 
 static var _thumb_sb: StyleBoxTexture = null
-
-
-## Moldura dourada das cartas, para as miniaturas da loja.
-static func _thumb_frame() -> StyleBoxTexture:
-	if _thumb_sb == null:
-		_thumb_sb = StyleBoxTexture.new()
-		_thumb_sb.texture = UiParch.tex("frame_gold")
-		for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
-			_thumb_sb.set_texture_margin(side, 34.0)
-		_thumb_sb.draw_center = false
-	return _thumb_sb
-
-
-## Contorno tracejado de pílula (os chips do ouro e do baralho).
-func _chip(r: Rect2, col: Color) -> void:
-	var rad := r.size.y * 0.5
-	var a := r.position + Vector2(rad, 0)
-	var b := Vector2(r.end.x - rad, r.position.y)
-	draw_dashed_line(a, b, col, 3.0, 8.0)
-	draw_dashed_line(a + Vector2(0, r.size.y), b + Vector2(0, r.size.y), col, 3.0, 8.0)
-	draw_arc(r.position + Vector2(rad, rad), rad, PI * 0.5, PI * 1.5, 14, col, 3.0, true)
-	draw_arc(Vector2(r.end.x - rad, r.position.y + rad), rad, -PI * 0.5, PI * 0.5, 14, col, 3.0, true)
 
 
 func _shake(r: Dictionary) -> float:
@@ -1002,119 +826,6 @@ func _shake(r: Dictionary) -> float:
 	if u < 0.0 or u > 1.0:
 		return 0.0
 	return sin(u * TAU * 2.0) * 10.0 * (1.0 - u)
-
-
-func _hot_band(rr: Rect2) -> void:
-	_hgrad(rr, [0.0, 0.05, 0.95, 1.0], [Color(1, 0.84, 0.31, 0.0), Color(1, 0.84, 0.31, 0.5), Color(1, 0.84, 0.31, 0.38), Color(1, 0.84, 0.31, 0.0)])
-	# Dedo de tinta apontando a linha.
-	var c := Vector2(rr.position.x - 26, rr.get_center().y)
-	draw_colored_polygon(PackedVector2Array([c + Vector2(-22, -9), c + Vector2(4, -9), c + Vector2(4, -15), c + Vector2(20, 0),
-		c + Vector2(4, 15), c + Vector2(4, 9), c + Vector2(-22, 9)]), WAX)
-
-
-func _draw_card_row(r: Dictionary, hot: bool) -> void:
-	var rr: Rect2 = r["rect"]
-	rr.position.x += _shake(r)
-	var sold: bool = r["sold"]
-	if hot and not sold:
-		_hot_band(Rect2(rr.position + Vector2(10, 0), rr.size - Vector2(10, 0)))
-	draw_line(Vector2(rr.position.x, rr.end.y), rr.end, Color(0.24, 0.16, 0.08, 0.4), 2.0)
-	# Miniatura da carta (13/11/2026): a arte com a moldura dourada e a gema roxa de custo das cartas
-	# (antes: esboço colado com fita crepe e custo em mancha de sangue). Sem nome, sem preço.
-	var skh := minf(152.0, rr.size.y - 24.0)
-	var skw := skh * 250.0 / 152.0
-	var c := Vector2(rr.position.x + 40 + skw * 0.5, rr.get_center().y)
-	var rot := 0.0
-	var sc := 1.06 if hot and not sold else 1.0
-	_L(c, rot, sc)
-	var pr := Rect2(-skw * 0.5, -skh * 0.5, skw, skh)
-	_rrect(Rect2(pr.position + Vector2(2, 6), pr.size), Color(0, 0, 0, 0.3), 8)
-	draw_rect(pr, Color("f3e6c4"))
-	var cd: CardDef = r["cd"]
-	var tex := UiDiario.card_tex(cd.id)
-	var dim := Color(0.62, 0.6, 0.58) if sold else Color.WHITE
-	if tex:
-		_art_fit(self, tex, pr.grow(-3), dim, UiDiario.painted(cd.id))
-	_L(c, rot, sc * 0.6)
-	draw_style_box(_thumb_frame(), Rect2(pr.position / 0.6, pr.size / 0.6))
-	_L(c, rot, sc)
-	var gem := Rect2(pr.position + Vector2(-18, -20), Vector2(46, 53))
-	var rar: String = CardMold.RAR_NAMES[clampi(cd.rarity, 0, 3)]
-	draw_texture_rect(UiParch.tex("gem_%s_purple" % rar) if UiParch.tex("gem_%s_purple" % rar) else UiParch.tex("gem_common_purple"), gem, false)
-	_txt_in(c, rot, (gem.position + Vector2(0, 40)) * sc, str(cd.cost_at(int(r["lv"]))), UiDiario.font("fell"), 24, Color(1.0, 0.95, 0.88), HORIZONTAL_ALIGNMENT_CENTER, 46)
-	if sold:
-		_L(c, rot)
-		draw_rect(pr, Color(0.3, 0.27, 0.24, 0.3))
-		_S()
-		_stamp(c, tr("UI_LEDGER_STAMP_SOLD"), 30)
-	_S()
-	# Linha do livro: nome, pontinhos e preço.
-	var x0 := rr.position.x + 40 + skw + 40
-	_ledger_line(r, Rect2(x0, rr.position.y, rr.end.x - x0 - 10, rr.size.y), 38)
-
-
-## Nome (com + vermelho), pontinhos e preço circulado; riscado se vendido, vermelho se falta ouro.
-func _ledger_line(r: Dictionary, area: Rect2, fs0: float) -> void:
-	var sold: bool = r["sold"]
-	var poor: bool = not sold and sim.gold + 0.0001 < float(r["price"])
-	var ptxt := str(int(r["price"]))
-	var pw := 30.0 + _tw(ptxt, f_hand, fs0 * 1.05) + 24.0
-	var nm: String = r["name"]
-	var plus: String = r["plus"]
-	var room := area.size.x - pw - 40.0
-	var fs := _fit(nm + (" " + plus if plus != "" else ""), f_hand, fs0, room, fs0 * 0.55)
-	var base := area.get_center().y + fs * 0.32
-	var col := BLUE if not sold else Color(BLUE, 0.6)
-	_txt(Vector2(area.position.x, base), nm, f_hand, fs, col)
-	var nw := _tw(nm, f_hand, fs)
-	if plus != "":
-		_txt(Vector2(area.position.x + nw + fs * 0.25, base), plus, f_hand, fs, WAX)
-		nw += fs * 0.25 + _tw(plus, f_hand, fs)
-	if sold:
-		draw_line(Vector2(area.position.x - 4, base - fs * 0.3), Vector2(area.position.x + nw + 4, base - fs * 0.34), WAX, 4.0, true)
-	var px := area.end.x - pw
-	_dotted(Vector2(area.position.x + nw + 14, base - 2), Vector2(px - 12, base - 2), Color(BLUE, 0.5))
-	var pr := Rect2(px, area.get_center().y - fs0 * 0.62, pw, fs0 * 1.24)
-	var pc := RED if poor else BLUE
-	if sold:
-		pc = Color(BLUE, 0.45)
-	_L(pr.get_center(), deg_to_rad(-2.0))
-	var lr := Rect2(-pr.size * 0.5, pr.size)
-	if poor:
-		_rrect(lr, Color(0.75, 0.2, 0.16, 0.12), 8)
-	_rrect(lr, Color.TRANSPARENT, 8, 3.0, pc, false)
-	_coin(Vector2(lr.position.x + 22, 0), fs0 * 0.24)
-	_txt_in(pr.get_center(), deg_to_rad(-2.0), Vector2(lr.position.x + 38, fs0 * 0.34), ptxt, f_hand, fs0 * 1.05, pc)
-	_S()
-	if sold and r["kind"] != "card":
-		_stamp(Vector2(area.end.x - pw - 76, area.get_center().y), tr("UI_LEDGER_STAMP_SOLD" if r["kind"] == "relic" else "UI_LEDGER_STAMP_DONE"), 24)
-
-
-func _draw_right() -> void:
-	_txt(RP + Vector2(56, 66), tr("UI_LEDGER_SERV"), f_disp, 42, INK)
-	_txt(RP + Vector2(58, 108), tr("UI_LEDGER_SERV_SUB"), f_hand, 25, BROWN)
-	var foc := _focus_row()
-	for r in rows:
-		if r["kind"] == "card":
-			continue
-		var rr: Rect2 = r["rect"]
-		rr.position.x += _shake(r)
-		var hot: bool = is_same(r, foc) and not r["sold"]
-		var rel: bool = r["kind"] == "relic"
-		if rel:
-			draw_rect(rr, Color(1.0, 0.92, 0.67, 0.35))
-			draw_rect(rr, BROWN, false, 2.0)
-			draw_rect(rr.grow(-5), BROWN, false, 1.5)
-		if hot:
-			_hot_band(rr.grow_individual(0, -4, 0, -4))
-		var isz := 84.0 if rel else 60.0
-		var ir := Rect2(rr.position.x + (18 if rel else 4), rr.get_center().y - isz * 0.5, isz, isz)
-		_icon(str(r["kind"]), ir, r["sold"])
-		var x0 := ir.end.x + 14
-		_ledger_line(r, Rect2(x0, rr.position.y, rr.end.x - x0 - (30 if rel else 4), rr.size.y), 32 if rel else 31)
-	_draw_note(foc)
-	_draw_seal()
-	_draw_quill()
 
 
 ## Ícones a nanquim (traços no espaço 100x100 da maquete).
@@ -1165,103 +876,6 @@ func _icon(kind: String, r: Rect2, sold: bool) -> void:
 			draw_circle(Vector2(50, 50), 7, Color(0.1, 0.07, 0.16, a))
 			draw_circle(Vector2(45, 45), 2.5, Color(1, 1, 1, a))
 	_S()
-
-
-func _draw_note(foc: Dictionary) -> void:
-	if foc.is_empty():
-		return
-	var r := note_rect
-	draw_rect(Rect2(r.position + Vector2(2, 6), r.size), Color(0, 0, 0, 0.3))
-	draw_rect(r, Color("f3e9c6"))
-	var y := r.position.y + 40.0
-	while y < r.end.y - 4.0:
-		draw_line(Vector2(r.position.x + 4, y), Vector2(r.end.x, y), Color(0.24, 0.35, 0.63, 0.3), 2.0)
-		y += 42.0
-	draw_line(r.position + Vector2(2, 0), Vector2(r.position.x + 2, r.end.y), Color("c05040"), 4.0)
-	var head := _note_head(foc)
-	if head != "":
-		_txt(r.position + Vector2(34, 36), head.to_upper(), f_body, 19, Color(INK, 0.7))
-	var short := int(ceil(float(foc["price"]) - sim.gold))
-	var line := tr("UI_LEDGER_BUY_PAD" if hud.pad else "UI_LEDGER_BUY") if short <= 0 else tr("UI_LEDGER_SHORT").format({"n": short})
-	_txt(Vector2(r.position.x + 34, r.end.y - 14), line, f_body, 21, BROWN if short <= 0 else RED)
-
-
-func _draw_seal() -> void:
-	var c := _seal_c()
-	var hot := seal_hot and mode == "shop"
-	var rot := deg_to_rad(-6.0) if hot else 0.0
-	_L(c, rot, 1.05 if hot else 1.0)
-	draw_circle(Vector2(0, 5), 76, Color(0, 0, 0, 0.4))
-	draw_colored_polygon(UiDiario.blob(Vector2.ZERO, 77, 2.3, 40), Color("7a1f1a") if not hot else Color("8a2a22"))
-	var hi := Vector2(-22, -26)
-	for i in 7:
-		var u := float(i) / 7.0
-		draw_circle(hi * u, 72.0 * (1.0 - u * 0.82), Color("7a1f1a").lerp(Color("d4574a") if hot else Color("c0453a"), u))
-	draw_arc(Vector2.ZERO, 68, 0.0, TAU, 48, Color(0, 0, 0, 0.15), 6.0, true)
-	_S()
-	var words := tr("UI_SHOP_LEAVE").split(" ")
-	var l1 := " ".join(words.slice(0, maxi(1, words.size() / 2)))
-	var l2 := " ".join(words.slice(maxi(1, words.size() / 2)))
-	var fs := _fit(l1 if l1.length() > l2.length() else l2, f_disp, 25, 118, 14)
-	_txt_in(c, rot, Vector2(-70, -4), l1, f_disp, fs, Color("ffe6c0"), HORIZONTAL_ALIGNMENT_CENTER, 140)
-	_txt_in(c, rot, Vector2(-70, fs + 0.0), l2, f_disp, fs, Color("ffe6c0"), HORIZONTAL_ALIGNMENT_CENTER, 140)
-
-
-func _draw_quill() -> void:
-	var writing := false
-	for e in log_lines:
-		var u := (t - float(e["t"])) * 22.0
-		if u >= 0.0 and u < String(e["text"]).length() + String(e["minus"]).length() + 5:
-			writing = true
-	var base := RP + Vector2(RS.x - 152, RS.y - 200)
-	var wob := sin(t * 18.0) * 0.5 + 0.5 if writing else 0.3
-	var ang := deg_to_rad(lerpf(-10.0, 2.0, wob)) if writing else deg_to_rad(-4.0)
-	var dx := lerpf(-30.0, 10.0, wob) if writing else 0.0
-	# Tinteiro parado; a pena gira em torno do bico.
-	_L(base)
-	draw_colored_polygon(PackedVector2Array([Vector2(30, 170), Vector2(120, 170), Vector2(112, 226), Vector2(38, 226)]), Color("1b1228"))
-	draw_polyline(PackedVector2Array([Vector2(30, 170), Vector2(120, 170), Vector2(112, 226), Vector2(38, 226), Vector2(30, 170)]), INK, 3.0, true)
-	var el := PackedVector2Array()
-	for i in 24:
-		el.append(Vector2(75, 170) + Vector2(cos(TAU * i / 24.0) * 45, sin(TAU * i / 24.0) * 8))
-	draw_colored_polygon(el, Color("0d0912"))
-	draw_set_transform_matrix(Transform2D(0.0, o + base * k) * Transform2D(ang, Vector2(60 + dx, 150) * k) * Transform2D(0.0, Vector2(-60, -150) * k).scaled_local(Vector2(k, k)))
-	var fe := PackedVector2Array([Vector2(20, 20)])
-	fe.append_array(_bez(Vector2(20, 20), Vector2(60, 0), Vector2(120, 30), Vector2(130, 80), 8))
-	fe.append_array(_bez(Vector2(130, 80), Vector2(100, 76), Vector2(78, 86), Vector2(60, 120), 6))
-	fe.append_array(_bez(Vector2(60, 120), Vector2(50, 80), Vector2(36, 50), Vector2(20, 20), 6))
-	draw_colored_polygon(fe, Color("f3e6c4"))
-	draw_polyline(fe, INK, 3.0, true)
-	var sp := PackedVector2Array([Vector2(26, 28)])
-	sp.append_array(_bez(Vector2(26, 28), Vector2(60, 50), Vector2(80, 80), Vector2(62, 118), 8))
-	draw_polyline(sp, INK, 2.0, true)
-	draw_line(Vector2(62, 118), Vector2(48, 170), INK, 3.0, true)
-	_S()
-
-
-func _draw_keys() -> void:
-	var band := Rect2(0, H - 60, W, 60)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	draw_rect(Rect2(0, o.y + band.position.y * k, size.x, size.y - o.y - band.position.y * k), Color(0.03, 0.02, 0.015, 0.92))
-	_S()
-	var items: Array = [["LB RB" if hud.pad else "← ↑ ↓ →", "UI_LEDGER_K_MOVE"], ["A" if hud.pad else "Enter", "UI_LEDGER_K_BUY"],
-		["B" if hud.pad else "0", "UI_LEDGER_K_LEAVE"]]
-	var widths: Array = []
-	var total := 0.0
-	for it in items:
-		var w := _tw(it[0], f_body, 20) + 18 + 8 + _tw(tr(it[1]), f_med, 22)
-		widths.append(w)
-		total += w
-	total += 40.0 * (items.size() - 1)
-	var x := (W - total) * 0.5
-	for i in items.size():
-		var kw := _tw(items[i][0], f_body, 20) + 18
-		var kr := Rect2(x, band.position.y + 16, kw, 30)
-		_rrect(Rect2(kr.position + Vector2(0, 2), kr.size), Color("8a7448"), 6)
-		_rrect(kr, Color("e7d7b0"), 6)
-		_txt(kr.position + Vector2(9, 22), items[i][0], f_body, 20, INK)
-		_txt(Vector2(kr.end.x + 8, band.position.y + 38), tr(items[i][1]), f_med, 22, Color("c9b99a"))
-		x += float(widths[i]) + 40.0
 
 
 func _draw_toast() -> void:
@@ -1347,36 +961,6 @@ func _art_fit(ci: CanvasItem, tex: Texture2D, r: Rect2, col: Color, cover: bool)
 	else:
 		var f2 := minf(r.size.x / ts.x, r.size.y / ts.y)
 		ci.draw_texture_rect(tex, Rect2(r.get_center() - ts * f2 * 0.5, ts * f2), false, col)
-
-
-## Carta do baralho sem título (o nome está só na lista): custo, desenho, tipo e o texto (RichTextLabel filho).
-func _deck_card(r: Rect2, cd: CardDef, lv: int, mods: Array, burnt: bool) -> void:
-	_rrect(Rect2(r.position + Vector2(0, 10), r.size), Color(0, 0, 0, 0.35), 12)
-	_vgrad(r.grow(-2), Color("efe0ba"), Color("dcc994"))
-	_rrect(r, Color.TRANSPARENT, 10, 3.0, UiDiario.type_spec(cd)[0].darkened(0.3), false)
-	var ar := Rect2(r.position + Vector2(15, 18), Vector2(r.size.x - 30, ART_H))
-	draw_rect(ar, Color("f7efd8"))
-	draw_rect(ar, INK, false, 2.0)
-	var tex := UiDiario.card_tex(cd.id)
-	if tex:
-		_art_fit(self, tex, ar, Color(0.4, 0.38, 0.36) if burnt else Color.WHITE, UiDiario.painted(cd.id))
-	var plus := "+".repeat(maxi(0, lv - 1))
-	_txt(Vector2(r.position.x, ar.end.y + 28), UiKit.type_line(cd).to_upper() + ("  " + plus if plus != "" else ""), f_body, 16, Color("6b5a40"), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
-	if mods.size() > 0:
-		var mt := tr("MOD_" + str(mods[0]))
-		var mw := _tw(mt, f_body, 17) + 22
-		_L(Vector2(r.end.x - mw * 0.5 + 6, r.position.y + 46), deg_to_rad(6.0))
-		_rrect(Rect2(-mw * 0.5, -14, mw, 28), Color("2d5b69"), 14, 2.0, Color("99aadd"))
-		_txt_in(Vector2(r.end.x - mw * 0.5 + 6, r.position.y + 46), deg_to_rad(6.0), Vector2(-mw * 0.5, 6), mt, f_body, 17, Color("e8fbff"), HORIZONTAL_ALIGNMENT_CENTER, mw)
-	var cost := maxi(cd.cost_at(lv) - (1 if mods.has("cheap") else 0), 0)
-	var gem := Rect2(r.position + Vector2(-12, -8), Vector2(46, 46))
-	UiDiario.draw_badge(self, gem, UiDiario.BLOOD, "crystal", 1.0)
-	_txt(gem.position + Vector2(0, 32), str(maxi(cost, 0)), f_type, 24, Color(1.0, 0.95, 0.88), HORIZONTAL_ALIGNMENT_CENTER, 46)
-	if burnt:
-		draw_rect(r, Color(0.1, 0.08, 0.06, 0.55))
-		var xr := ar.grow(-14)
-		draw_line(xr.position, xr.end, Color(RED, 0.85), 8.0, true)
-		draw_line(Vector2(xr.end.x, xr.position.y), Vector2(xr.position.x, xr.end.y), Color(RED, 0.85), 8.0, true)
 
 
 func _draw_pick_list() -> void:
@@ -1708,22 +1292,6 @@ func _draw_stall(r: Dictionary, hot: bool, hover: bool) -> void:
 	if poor:
 		var mt := _t2("faltam %d", "%d short") % short
 		_txt_halo(Vector2(pl.end.x + 10, pl.position.y + 29), mt, itf, 20, FAIR_RED)
-
-
-## Faixa de preço (rf-box red): papel vermelho, contorno de tinta e filete creme; com falta de ouro, apagada.
-func _fair_tag(c: Vector2, rot: float, sz: Vector2, txt: String, fs: float, poor: bool) -> void:
-	_L(c, rot)
-	var lr := Rect2(-sz * 0.5, sz)
-	_rrect(Rect2(lr.position + Vector2(1, 3), lr.size), Color(0, 0, 0, 0.25), 7)
-	var bgc := FAIR_RED if not poor else Color("8a6e5e")
-	_rrect(lr, bgc, 7, 2.5, FAIR_INK)
-	_rrect(lr.grow(-5), Color.TRANSPARENT, 4, 1.0, Color(1.0, 0.92, 0.82, 0.6), false)
-	var cream := Color("f6ead0") if not poor else Color(0.96, 0.92, 0.82, 0.75)
-	var w := _tw(txt, f_disp, fs)
-	var x := -(w + 16) * 0.5
-	draw_circle(Vector2(x + w + 12, -1), fs * 0.2, cream)
-	_txt_in(c, rot, Vector2(x, fs * 0.36), txt, f_disp, fs, cream)
-	_S()
 
 
 func _fair_icon(kind: String) -> String:

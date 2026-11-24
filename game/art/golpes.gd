@@ -1,7 +1,6 @@
 class_name Golpes
 extends Node3D
-## Golpes dos monstros com mais peso (rodada visual 20/11/2026, docs/rodada_visual/golpes). Só com --golpes=1;
-## --golpes=0 (padrão) = o jogo de hoje: o world_view nem cria este nó.
+## Golpes dos monstros com mais peso (20/11/2026).
 ##
 ## O que muda (tudo no desenho, nada na simulação):
 ##  - o ataque do VAT toca para a frente e no tempo certo: preparo devagar, golpe rápido (ease-in forte) que chega
@@ -17,15 +16,6 @@ extends Node3D
 ## Relógio: o tempo da sim (sim.t + alpha), então pausa, velocidade e o próprio hit-stop congelam as poses.
 ## A detecção do golpe é pelo salto de atk_t (o evento DAMAGE_HERO não diz quem bateu). Variações por hash do
 ## índice da unidade: nada de randf().
-
-static var VAR := 1   # padrão aprovado em 21/11/2026 (0 = como era antes; --golpes=0)
-
-
-static func _static_init() -> void:
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--golpes="):
-			VAR = clampi(int(a.substr(9)), 0, 1)
-
 
 const IMPACT := 0.62      # t do quadro de impacto nas curvas de ataque (smash 0,4–0,65; bote 0,35–0,55)
 const WIND_END := 0.40    # t do fim do preparo (braço no alto / corpo agachado)

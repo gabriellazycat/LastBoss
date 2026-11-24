@@ -7,7 +7,7 @@ var max_value := 10.0
 var cost := 0          # custo da carta selecionada (0 = nenhuma)
 var t := 0.0
 var vertical := false  # gomos de baixo para cima, número no alto (variações da HUD de 17/11/2026)
-var show_label := true # sem o "atual / máximo" (LAYOUT 7: a gota ao lado já mostra o número)
+var show_label := true # false: sem o "atual / máximo" (a gota ao lado já mostra o número)
 
 
 func _process(delta: float) -> void:
@@ -45,18 +45,15 @@ func _draw() -> void:
 		tp = Vector2((size.x - tw) * 0.5, 20.0)
 	if not show_label:
 		pass
-	elif UiSkins.diario() and vertical:
+	elif vertical:
 		var pf := UiParch.font("bold")
 		var pw := pf.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2).x
 		draw_string(pf, Vector2((size.x - pw) * 0.5, tp.y), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2, UiParch.ELIXIR_DEEP)
-	elif UiSkins.diario():
+	else:
 		# Na bandeja de papel: número a tinta, na letra da interface (13/11/2026).
 		var pf := UiParch.font("bold")
 		var pw := pf.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2).x
 		draw_string(pf, Vector2(size.x - label_w + (label_w - pw) * 0.5 + 4.0, tp.y), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs + 2, UiParch.ELIXIR_DEEP)
-	else:
-		draw_string_outline(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0.05, 0.03, 0.08, 0.9))
-		draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.97, 0.9, 1.0))
 	for i in n:
 		var r := Rect2(i * (w + gap), 0, w, h)
 		if vertical and not show_label and n > 12:
@@ -66,27 +63,12 @@ func _draw() -> void:
 		elif vertical:
 			r = Rect2(0, size.y - (i + 1) * h - i * gap, w, h)
 		var f := clampf(value - i, 0.0, 1.0)
-		if UiSkins.diario():
-			UiDiario.draw_pip(self, r, f, UiKit.ELIXIR, t)
-			if cost > 0 and i >= int(value) - cost and i < int(value):
-				draw_arc(r.get_center() + Vector2(0, r.size.y * 0.08), r.size.y * 0.62, 0, TAU, 20, Color(0.6, 0.08, 0.05, 0.45 + 0.35 * sin(t * 6.0)), 2.0, true)
-			elif cost > 0 and int(value) < cost and i >= int(value) and i < cost:
-				draw_line(r.position + Vector2(2, 2), r.end - Vector2(2, 2), Color(0.6, 0.08, 0.05, 0.85), 2.0, true)
-			continue
-		if UiSkins.covil():
-			UiCovil.draw_pip(self, r, f, UiKit.ELIXIR, t + i * 0.4)
-			if cost > 0 and i >= int(value) - cost and i < int(value):
-				draw_rect(r.grow(-1), Color(1, 0.88, 0.6, 0.18 + 0.16 * sin(t * 6.0)))
-			elif cost > 0 and int(value) < cost and i >= int(value) and i < cost:
-				draw_rect(r.grow(1), Color(1, 0.35, 0.3, 0.75), false, 2.0)
-			continue
-		if UiSkins.on():
-			UiSkins.draw_gem(self, r, f, UiKit.ELIXIR)
-			if cost > 0 and i >= int(value) - cost and i < int(value):
-				draw_rect(r.grow(-2), Color(1, 0.9, 0.6, 0.2 + 0.2 * sin(t * 8.0)))
-			elif cost > 0 and int(value) < cost and i >= int(value) and i < cost:
-				draw_rect(r, Color(1, 0.3, 0.3, 0.6), false, 2.0)
-			continue
+		UiDiario.draw_pip(self, r, f, UiKit.ELIXIR, t)
+		if cost > 0 and i >= int(value) - cost and i < int(value):
+			draw_arc(r.get_center() + Vector2(0, r.size.y * 0.08), r.size.y * 0.62, 0, TAU, 20, Color(0.6, 0.08, 0.05, 0.45 + 0.35 * sin(t * 6.0)), 2.0, true)
+		elif cost > 0 and int(value) < cost and i >= int(value) and i < cost:
+			draw_line(r.position + Vector2(2, 2), r.end - Vector2(2, 2), Color(0.6, 0.08, 0.05, 0.85), 2.0, true)
+		continue
 		draw_rect(r, Color(0, 0, 0, 0.62))
 		if f > 0.0:
 			var col := UiKit.ELIXIR if f >= 1.0 else UiKit.ELIXIR.darkened(0.35)

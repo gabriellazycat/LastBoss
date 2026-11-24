@@ -177,10 +177,10 @@ static func label(text: String, size := 15, col := UiKit.TEXT, w := 0.0, center 
 	l.scroll_active = false
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.meta_underlined = false
-	l.add_theme_font_size_override("normal_font_size", roundi(size * UiCovil.TEXT_SCALE) if UiSkins.covil() else size)
+	l.add_theme_font_size_override("normal_font_size", size)
 	l.add_theme_color_override("default_color", col)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
-	l.add_theme_constant_override("outline_size", 2 if UiSkins.covil() else 3)
+	l.add_theme_constant_override("outline_size", 3)
 	if w > 0.0:
 		l.custom_minimum_size = Vector2(w, 0)
 	l.set_meta("center", center)
@@ -390,10 +390,9 @@ func _make_box(e: Dictionary, level: int, passive := false) -> PanelContainer:
 		head.add_child(e["icon"])
 	var t := UiKit.label(17, KW_COLOR if e["kw"] != "" else UiKit.GOLD, 3)
 	t.text = e["title"]
-	if UiSkins.diario():
-		# Dica no papel das cartas: título em Fell SC, como o nome das cartas (13/11/2026).
-		t.add_theme_font_override("font", UiParch.font("title"))
-		t.add_theme_font_size_override("font_size", 21)
+	# Dica no papel das cartas: título em Fell SC, como o nome das cartas (13/11/2026).
+	t.add_theme_font_override("font", UiParch.font("title"))
+	t.add_theme_font_size_override("font_size", 21)
 	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(t)

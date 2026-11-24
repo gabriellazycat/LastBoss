@@ -1,7 +1,7 @@
 class_name Models
 extends RefCounted
 ## Modelos low-poly montados por código a partir de primitivas, com cor por vértice (paleta única).
-## Frente = -Z, chão em y = 0. Tudo usa o mesmo material (toon.gdshader).
+## Frente = -Z, chão em y = 0. Tudo usa o mesmo material (o shader dos Looks).
 ## Cor com alfa < 1 = parte emissiva (olhos, cristais, fogo).
 
 const C_BONE := Color(0.9, 0.86, 0.74)
@@ -27,30 +27,17 @@ const C_RED_EYE := Color(1.0, 0.15, 0.1)
 
 static var _cache: Dictionary = {}
 static var _mat: ShaderMaterial
-static var _mat_look := -1
 
 
-## Numa direção de arte única (look de chão 5 ou 6) prédios, cenário e chefe usam o shader dela.
+## Prédios, cenário e chefe usam o mesmo shader das unidades (Looks).
 static func material() -> ShaderMaterial:
-	var wl := GroundLooks.world_shader_look()
-	if _mat == null or _mat_look != wl:
-		_mat_look = wl
-		if wl > 0:
-			_mat = Looks.material(wl)
-		else:
-			_mat = ShaderMaterial.new()
-			_mat.shader = load("res://game/art/toon.gdshader")
+	if _mat == null:
+		_mat = Looks.material(GroundLooks.world_shader_look())
 	return _mat
 
 
 static func glow_material(emit: float) -> ShaderMaterial:
-	var wl := GroundLooks.world_shader_look()
-	if wl > 0:
-		return Looks.material(wl, emit)
-	var m := ShaderMaterial.new()
-	m.shader = load("res://game/art/toon.gdshader")
-	m.set_shader_parameter("emission_boost", emit)
-	return m
+	return Looks.material(GroundLooks.world_shader_look(), emit)
 
 
 static func G(c: Color) -> Color:
@@ -551,15 +538,14 @@ static func has_dir_prop(id: String) -> bool:
 
 
 static func prop(id: String) -> ArrayMesh:
-	# --modelos=1: peça refeita à mão (assets/models/m2_a, ver Looks.M2) antes de tudo.
+	# Peça refeita à mão (assets/models/m2_a) antes de tudo; depois a miniatura pintada.
 	var m2 := Looks.m2_mesh(id)
 	if m2 is ArrayMesh:
 		return m2
-	if Looks.g_on():
-		var gm := Looks.g_mesh(id)
-		if gm is ArrayMesh:
-			return gm
-	# Direção com cenário próprio (look de chão com "props_dir", ex.: Blender v2): a peça de lá, se existir.
+	var gm := Looks.g_mesh(id)
+	if gm is ArrayMesh:
+		return gm
+	# Cenário próprio do preset do chão ("props_dir" = v2): a peça de lá, se existir.
 	var pd: String = GroundLooks.preset().get("props_dir", "")
 	if pd != "" and pd != "cc0":
 		var key := "pd_%s_%s" % [pd, id]

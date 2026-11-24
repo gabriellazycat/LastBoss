@@ -146,9 +146,9 @@ func render_all(data: GameData) -> void:
 		mi.mesh = mesh
 		mi.material_override = Looks.unit_material(0.15, false) if c.is_unit else Models.glow_material(0.15)
 		pivot.add_child(mi)
-		# Direções novas (looks 5 e 6, docs/ESTUDO_DE_ARTE.md): retrato em ação (meio do ataque), luz principal
-		# mais forte e quente, chão do próprio mundo sob o monstro e fundo mais claro: lê como ilustração.
-		var fresh := c.is_unit and Looks.enemies() >= 5
+		# Retrato em ação (meio do ataque), luz principal mais forte e quente, chão do próprio mundo sob o monstro e
+		# fundo mais claro: lê como ilustração.
+		var fresh := c.is_unit
 		if fresh and mi.material_override is ShaderMaterial:
 			(mi.material_override as ShaderMaterial).set_shader_parameter("pose_lunge", 0.5)
 		key.light_energy = 2.0 if fresh else 1.45
@@ -156,8 +156,8 @@ func render_all(data: GameData) -> void:
 		var aabb := mesh.get_aabb()
 		var h := maxf(aabb.size.y, maxf(aabb.size.x, aabb.size.z) * 0.8)
 		var center := aabb.get_center()
-		# Os modelos novos (looks) olham para -Z: gira para a carta mostrar a frente, em três quartos.
-		pivot.rotation.y = deg_to_rad(150 if c.is_unit and Looks.enemies() > 0 else -30)
+		# Os modelos olham para -Z: gira para a carta mostrar a frente, em três quartos.
+		pivot.rotation.y = deg_to_rad(150 if c.is_unit else -30)
 		# Monstros um pouco de baixo (heroicos) e mais perto; ícones de feitiço de cima, centrados.
 		if c.is_unit:
 			cam.position = center + Vector3(0, h * 0.12, h * 1.95 + 0.3)

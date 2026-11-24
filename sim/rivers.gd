@@ -1,6 +1,6 @@
 class_name SimRivers
 extends RefCounted
-## Rios do mapa (15/11/2026, docs/RIO_E_PONTES.md). Cada ato tem 1 ou 2 rios e no máximo `max_bridges` pontes.
+## Rios do mapa (15/11/2026). Cada ato tem 1 ou 2 rios e no máximo `max_bridges` pontes.
 ## Um rio vai de uma borda do mapa à outra (lado a lado ou na diagonal) ou volta para a mesma borda, e só corta
 ## a estrada em locais: esses locais viram Ponte (disputa). No resto ele corre pelos vãos entre os ramos.
 ##

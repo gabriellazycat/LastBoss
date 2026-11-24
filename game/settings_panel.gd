@@ -5,13 +5,7 @@ extends PanelContainer
 signal closed
 signal changed(key: String)
 
-const TABS_ALL := ["audio", "video", "game", "controls", "looks"]
-## Variações de arte em avaliação (aba Aparência, guache, modelos, mundo A/B/C): escondidas do jogador desde 16/11/2026,
-## com os padrões escolhidos fixos. Aparecem com `--variantes` na linha de comando; o `--set` continua valendo.
-static var variants := OS.get_cmdline_user_args().has("--variantes")
-var TABS: Array:
-	get:
-		return TABS_ALL if variants else TABS_ALL.filter(func(t): return t != "looks")
+const TABS := ["audio", "video", "game", "controls"]
 const CONTROLS := ["card", "place", "cursor", "map", "altar", "zoom", "pause", "speed"]
 const COL_W := {"CTL_": 230.0, "CTLK_": 320.0, "CTLP_": 160.0}
 
@@ -23,7 +17,7 @@ var back_btn: Button
 
 func _ready() -> void:
 	UiKit.panel_style(self, UiKit.BG, UiKit.GOLD.darkened(0.35), 22)
-	custom_minimum_size = Vector2(760, 0 if UiSkins.covil() else 620)
+	custom_minimum_size = Vector2(760, 620)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
@@ -41,7 +35,7 @@ func _ready() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size = Vector2(716, 380 if UiSkins.covil() else 440)
+	scroll.custom_minimum_size = Vector2(716, 440)
 	v.add_child(scroll)
 	body = VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -117,12 +111,6 @@ func _rebuild() -> void:
 			_toggle("fullscreen")
 			_toggle("vsync")
 			_choice("quality", ["UI_Q_0", "UI_Q_1", "UI_Q_2"], [0, 1, 2])
-			if variants:
-				_choice("paint_look", PaintLook.NAMES, range(PaintLook.NAMES.size()))
-				_toggle("mundo_cor")
-				_toggle("mundo_escuro")
-				_toggle("mundo_papel")
-				_choice("model_g", Looks.G_NAMES, range(Looks.G_NAMES.size()))
 			var caps: Array = []
 			for f in Settings.FPS_CAPS:
 				caps.append(tr("UI_FPS_NOLIMIT") if f == 0 else str(f))
@@ -160,22 +148,6 @@ func _rebuild() -> void:
 					l.clip_text = true
 					row.add_child(l)
 				body.add_child(row)
-		"looks":
-			# Variações de arte em avaliação (docs/VARIACOES.md). Trocar recarrega a cena (main._on_settings).
-			var note := UiKit.label(15, UiKit.MUTED, 3)
-			note.text = "UI_LOOKS_NOTE"
-			note.autowrap_mode = TextServer.AUTOWRAP_WORD
-			note.custom_minimum_size = Vector2(700, 0)
-			body.add_child(note)
-			# Nomes na mesma ordem dos valores (antes "Covil" escolhia o Diário).
-			var hv := [7, 6, 0, 1, 2, 3, 4, 5]
-			_choice("look_hud", hv.map(func(v): return UiSkins.NAMES[v]), hv)
-			_direction_choice()
-			_choice("look_ground", _look_names(GroundLooks.NAMES), range(GroundLooks.NAMES.size()))
-			_choice("look_hero", _look_names(Looks.NAMES), range(Looks.NAMES.size()))
-			_choice("look_enemies", _look_names(Looks.NAMES), range(Looks.NAMES.size()))
-	if UiSkins.covil():
-		_fit_scroll.call_deferred()
 	# Volta ao tamanho mínimo: um contêiner não encolhe sozinho depois de uma aba mais larga.
 	set_deferred("size", Vector2.ZERO)
 	if had_focus and not had_focus.is_inside_tree() and TABS.has(tab):
@@ -187,30 +159,6 @@ func _fit_scroll() -> void:
 	var scroll := body.get_parent() as ScrollContainer
 	scroll.custom_minimum_size.y = clampf(body.get_combined_minimum_size().y + 6.0, 120.0, 380.0)
 	size = Vector2.ZERO
-
-
-## Direção de arte inteira (ArtDirections): troca chão, herói e monstros de uma vez.
-func _direction_choice() -> void:
-	var row := _row("SET_look_dir")
-	var o := OptionButton.new()
-	o.custom_minimum_size = Vector2(220, 40)
-	for d in ArtDirections.LIST:
-		o.add_item(d["name"])
-	o.add_item(tr("SET_look_dir_custom"))
-	var cur := ArtDirections.current()
-	o.selected = cur if cur >= 0 else ArtDirections.LIST.size()
-	o.item_selected.connect(func(i: int):
-		if i < ArtDirections.LIST.size():
-			ArtDirections.apply(i)
-			_commit("look_ground"))
-	row.add_child(o)
-
-
-func _look_names(names: Array) -> Array:
-	var out: Array = []
-	for i in names.size():
-		out.append("%d · %s" % [i, names[i]] if i > 0 else names[i])
-	return out
 
 
 func _row(key: String) -> HBoxContainer:

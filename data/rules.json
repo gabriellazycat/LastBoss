@@ -386,7 +386,6 @@
   "_doc": "Oferta de carta já melhorada (11/11/2026): p = progresso da run (0 no começo do ato 1, 1 no fim do ato 3). Por oferta, uma sorteada: chance de nível 2+ = p*lv2_end; de nível k = p*lvk_end, k = 2..6, encadeadas (todas as cartas da oferta no mesmo nível). Conta (p = 1, fim da run): >=2 100%, >=3 50%, >=4 20%, >=5 8%, >=6 3%; no meio (p = 0,5) metade disso (>=4 10%, >=5 4%, >=6 1,5%); média sobre a run: >=4 10%, >=5 4%, >=6 1,5% por oferta, ou seja ~1 oferta de nível IV a cada 10 e uma de VI a cada ~65 (níveis 4-6 raros, como pedido). A carta do fim de ato dobra as chances (act_end_mult), cada nível limitado a act_end_lvK_cap (0,75/0,3/0,15/0,06), e dobra o peso de rara/lendária. Loja: preço = raridade + card_upgrade*(nível-1), linear até o VI. A oferta nunca fica abaixo do nível da meta daquela carta."
  },
  "deck": {
-  "size": 10,
   "max_copies": 2,
   "min_in_run": 6
  },

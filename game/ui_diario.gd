@@ -1,8 +1,8 @@
 class_name UiDiario
 extends RefCounted
-## Pele "Diário" da interface, a padrão desde 09/11/2026 (Settings "look_hud" 6; estudo em docs/variacoes/cartas/).
-## Papel sujo com borda rasgada, fita crepe, nanquim e letra datilografada. As peças saem do shader
-## game/ui/paper.gdshader (mesma textura-marcador do UiCovil). Cartas: faixa de fita no topo na cor do tipo,
+## Peças da interface em papel (base da pele "Mapa aberto", a única desde 24/11/2026; UiParch traz o kit do mapa):
+## papel com borda rasgada, fita crepe, nanquim e letra datilografada. As peças saem do shader
+## game/ui/paper.gdshader (textura-marcador de UiKit.marker). Cartas: faixa de fita no topo na cor do tipo,
 ## desenho a nanquim (assets/cards/<id>.png, feitos por tools/art/render_sketches.py), custo numa mancha de sangue
 ## e o texto numa etiqueta clara. Texto em cima de papel vira tinta escura sozinho (on_node_added).
 
@@ -88,7 +88,7 @@ static func material(kind: String, opts := {}, unique := false) -> ShaderMateria
 
 static func box(margin: float, shadow := 7.0, state := 9) -> StyleBoxTexture:
 	var sb := StyleBoxTexture.new()
-	sb.texture = UiCovil.marker(state)
+	sb.texture = UiKit.marker(state)
 	sb.set_expand_margin_all(shadow)
 	sb.set_content_margin_all(margin)
 	return sb
@@ -111,12 +111,6 @@ static func panel(bg: Color, _border: Color, margin: int, kind := "paper") -> Pa
 	var p := PanelContainer.new()
 	dress(p, kind, margin + 8, {"grime": 0.3 if bg.a < 0.9 else 0.4, "seed": randf()})
 	return p
-
-
-## Botões: fita crepe. O material entra quando o botão nasce (main conecta node_added). Cada botão sorteia
-## uma de seis sementes (pontas rasgadas diferentes).
-static func button_material(i := 0, tint := MASK) -> ShaderMaterial:
-	return material("tape", {"button": true, "seed": float(i % 6) * 0.17, "tint": tint, "shadow": 4.0})
 
 
 static func on_node_added(n: Node) -> void:
@@ -236,20 +230,6 @@ static func _gem_icon(n: int, col: Color) -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
-## Mancha de tinta (pegador de slider).
-static func _blot_icon(n: int, col: Color) -> ImageTexture:
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	var c := (n - 1) * 0.5
-	for y in n:
-		for x in n:
-			var a := atan2(y - c, x - c)
-			var r := c * (0.8 + 0.12 * sin(a * 3.0 + 1.0) + 0.06 * sin(a * 7.0))
-			var d := Vector2(x - c, y - c).length()
-			if d <= r:
-				img.set_pixel(x, y, Color(col.r, col.g, col.b, clampf(r - d, 0.0, 1.0)))
-	return ImageTexture.create_from_image(img)
-
-
 ## Caixinha desenhada a lápis, com um X de caneta quando marcada.
 static func _check_icon(on: bool) -> ImageTexture:
 	var n := 24
@@ -347,22 +327,6 @@ static func bar(col: Color, w: float, h: float) -> ProgressBar:
 	return UiParch.bar(col, w, h)
 
 
-## Hachura de lápis: traços inclinados na cor sobre um fundo da mesma cor mais claro (32 px: o shader ignora).
-static func _hatch_tex(col: Color) -> ImageTexture:
-	var key := col.to_html()
-	if not _hatch.has(key):
-		var n := 32
-		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-		for y in n:
-			for x in n:
-				var d := fmod(float(x + y * 0.55), 6.0)
-				var stroke := clampf(1.6 - absf(d - 1.6), 0.0, 1.0)
-				var base := Color(col.r, col.g, col.b, 0.38)
-				img.set_pixel(x, y, base.lerp(Color(col.r * 0.8, col.g * 0.8, col.b * 0.8, 0.95), stroke))
-		_hatch[key] = ImageTexture.create_from_image(img)
-	return _hatch[key]
-
-
 ## Selo com número: "crystal" = mancha de sangue (custo, elixir), "crest" = escudo a nanquim, "sigil" = estrela.
 static func badge(col: Color, size: int, w: float, shape: String) -> PanelContainer:
 	var g := PanelContainer.new()
@@ -449,7 +413,7 @@ static func card_tex(id: String) -> Texture2D:
 	return _tex[id]
 
 
-## Cartas com a arte pintada nova (aquarela + nanquim, docs/arte_cartas): a lista fica em data/card_art.json,
+## Cartas com a arte pintada nova (aquarela + nanquim): a lista fica em data/card_art.json,
 ## atualizada a cada vilão concluído. Essas usam assets/cards/<id>.png também na mão das outras peles, no lugar
 ## do retrato 3D (decisão do designer, 11/11/2026).
 static func painted(id: String) -> bool:
@@ -477,219 +441,14 @@ static func type_spec(d: CardDef) -> Array:
 	return TYPES.get(d.type, TYPES["monster"])
 
 
-## Mancha de custo com o número (nomes "Gem" e "Cost": a mão troca o número quando o custo muda).
-static func _cost_blot(cost: int, s: float, cheaper := false) -> PanelContainer:
-	# Custo abaixo do original (Barato, nível que barateia): a gema fica azul-água.
-	# Dois dígitos (10 a 12) encolhem a fonte para caber no selo.
-	var gem := badge(Color(0.08, 0.55, 0.6) if cheaper else BLOOD, int(s * (0.52 if cost < 10 else 0.4)), s, "crystal")
-	gem.name = "Gem"
-	(gem.get_node("N") as Label).name = "Cost"
-	(gem.get_node("Cost") as Label).text = str(cost)
-	return gem
-
-
-static func _name_label(nm: String, size: float, col: Color, room: float, lines := 2) -> Label:
-	var l := Label.new()
-	l.text = nm
-	l.set_meta("no_ink", true)
-	var f := font("type")
-	var fsz := UiCovil.fit_size(f, nm, int(size), room, int(size * 0.72))
-	var two := f.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x > room and lines > 1
-	if two:
-		var longest := ""
-		for word in nm.split(" "):
-			if word.length() > longest.length():
-				longest = word
-		fsz = UiCovil.fit_size(f, longest, int(size * 0.9), room, int(size * 0.62))
-	l.add_theme_font_override("font", f)
-	l.add_theme_font_size_override("font_size", fsz)
-	l.add_theme_color_override("font_color", col)
-	l.add_theme_constant_override("outline_size", 0)
-	l.add_theme_constant_override("line_spacing", int(-fsz * 0.22))
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD if two else TextServer.AUTOWRAP_OFF
-	l.max_lines_visible = lines
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return l
-
-
 ## Carta grande no molde único (game/card_mold.gd): moldura A com a fita dobrada do nome, arte, tipo e texto.
 static func card(d: CardDef, cost: int, mods: Array, key: String, w: float, level: int) -> PanelContainer:
 	return CardMold.build(d, cost, UiKit.mod_ids_of(mods), key, w, roundf(w * 1.4), false, level)
 
 
-## Carta grande do desenho antigo (faixa de fita no topo e etiqueta de texto). Fora de uso desde 12/11/2026.
-static func _legacy_card(d: CardDef, cost: int, mods: Array, key: String, w: float, level: int) -> PanelContainer:
-	var k := w / 168.0
-	var spec := type_spec(d)
-	var p := PanelContainer.new()
-	var band := roundf(31.0 * k)
-	var opts := {"grime": 0.9, "seed": seed_of(d.id), "band": band, "tint": Color(spec[0].r, spec[0].g, spec[0].b, 0.94), "shadow": roundf(6.0 * k), "rough": 1.6 * k}
-	p.add_theme_stylebox_override("panel", box(0.0, opts["shadow"]))
-	p.material = material("card", opts, true)
-	p.set_meta("paper", true)
-	p.custom_minimum_size = Vector2(w, roundf(240.0 * k))
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 0)
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var head := HBoxContainer.new()
-	head.custom_minimum_size = Vector2(w, band)
-	head.add_theme_constant_override("separation", int(4 * k))
-	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var pad := Control.new()
-	pad.custom_minimum_size = Vector2(9.0 * k, 0)
-	head.add_child(pad)
-	var nm := ("★ " if mods.size() > 0 else "") + UiKit.card_name(d, level)
-	var nl := _name_label(nm, 15.5 * k, spec[2], w - 52.0 * k)
-	nl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	nl.custom_minimum_size = Vector2(0, band)
-	head.add_child(nl)
-	var gem := _cost_blot(cost, 27.0 * k, cost < d.cost)
-	gem.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	head.add_child(gem)
-	var pad2 := Control.new()
-	pad2.custom_minimum_size = Vector2(5.0 * k, 0)
-	head.add_child(pad2)
-	v.add_child(head)
-	var art := TextureRect.new()
-	art.texture = card_tex(d.id)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED if painted(d.id) else TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	art.custom_minimum_size = Vector2(w, roundf(w * (0.8 if painted(d.id) else 0.62)))
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(art)
-	var tl := Label.new()
-	tl.text = UiKit.type_line(d).to_upper()
-	tl.set_meta("no_ink", true)
-	tl.add_theme_font_override("font", font("type"))
-	tl.add_theme_font_size_override("font_size", int(9.5 * k))
-	tl.add_theme_color_override("font_color", Color(spec[1].r, spec[1].g, spec[1].b, 0.85))
-	tl.add_theme_constant_override("outline_size", 0)
-	tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	tl.custom_minimum_size = Vector2(w - 20.0 * k, 0)
-	var mids := UiKit.mod_ids_of(mods)
-	var dark := CardFx.is_dark(mids, level)
-	if dark:
-		tl.add_theme_color_override("font_color", Color(0.92, 0.88, 0.8, 0.9))
-	var tcol: Color = spec[1] if not dark else Color(0.92, 0.88, 0.8)
-	tl.draw.connect(func():
-		var tw := tl.get_theme_font("font").get_string_size(tl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, tl.get_theme_font_size("font_size")).x
-		var y := tl.size.y * 0.55
-		var x0 := (tl.size.x - tw) * 0.5 - 6.0 * k
-		var x1 := (tl.size.x + tw) * 0.5 + 6.0 * k
-		var lc := Color(tcol.r, tcol.g, tcol.b, 0.4)
-		tl.draw_line(Vector2(8.0 * k, y), Vector2(x0, y), lc, 1.0, true)
-		tl.draw_line(Vector2(x1, y), Vector2(tl.size.x - 8.0 * k, y), lc, 1.0, true))
-	v.add_child(tl)
-	if mods.size() > 0:
-		var ml := Label.new()
-		var stars: Array = []
-		for mo in mods:
-			stars.append("★ " + mo)
-		ml.text = "  ".join(stars)
-		ml.set_meta("no_ink", true)
-		ml.add_theme_font_override("font", font("hand"))
-		ml.add_theme_font_size_override("font_size", int(15.0 * k))
-		ml.add_theme_color_override("font_color", Color(1.0, 0.86, 0.55) if dark else BLOOD)
-		ml.add_theme_constant_override("outline_size", 0)
-		ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		ml.autowrap_mode = TextServer.AUTOWRAP_WORD
-		ml.custom_minimum_size = Vector2(w - 20.0 * k, 0)
-		v.add_child(ml)
-	var patch := PanelContainer.new()
-	patch.add_theme_stylebox_override("panel", box(roundf(4.0 * k), 0.0))
-	(patch.get_theme_stylebox("panel") as StyleBoxTexture).content_margin_left = roundf(6.0 * k)
-	(patch.get_theme_stylebox("panel") as StyleBoxTexture).content_margin_right = roundf(6.0 * k)
-	patch.material = material("patch", {"grime": 0.0, "shadow": 0.0, "rough": 1.1 * k, "seed": seed_of(d.id + "p")})
-	patch.set_meta("paper", true)
-	patch.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	patch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mg := MarginContainer.new()
-	for side in ["left", "right"]:
-		mg.add_theme_constant_override("margin_" + side, int(8.0 * k))
-	mg.add_theme_constant_override("margin_top", int(3.0 * k))
-	mg.add_theme_constant_override("margin_bottom", int(7.0 * k))
-	mg.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	mg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var desc := UiKit.card_rich(d, int(15.0 * k), INK, w - 34.0 * k, true, level, mids)
-	desc.set_meta("no_ink", true)
-	desc.add_theme_font_override("normal_font", font("hand"))
-	desc.add_theme_font_override("bold_font", font("type"))
-	desc.add_theme_constant_override("outline_size", 0)
-	desc.add_theme_constant_override("line_separation", int(-2.0 * k))
-	desc.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var cc := CenterContainer.new()
-	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cc.add_child(desc)
-	patch.add_child(cc)
-	mg.add_child(patch)
-	v.add_child(mg)
-	if key != "":
-		# O atalho fica no pé da carta, embaixo da etiqueta (posição fixa caía em cima do desenho).
-		var kc := CenterContainer.new()
-		kc.custom_minimum_size = Vector2(w, roundf(19.0 * k))
-		kc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var kt := _key_tag(key, k)
-		kt.custom_minimum_size = kt.size
-		kc.add_child(kt)
-		v.add_child(kc)
-	p.add_child(v)
-	UiKit.ignore_mouse(p)
-	CardFx.attach(p, level, mids, w / 116.0, true)
-	return p
-
-
 ## Carta compacta (mão em leque, esteira) no molde único: fita com o nome, custo e a arte.
 static func mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float, h: float, _named: bool, level: int) -> PanelContainer:
 	return CardMold.build(d, cost, UiKit.mod_ids_of(mods), key, w, h, true, level)
-
-
-## Carta compacta do desenho antigo. Fora de uso desde 12/11/2026.
-static func _legacy_mini_card(d: CardDef, cost: int, mods: Array, key: String, w: float, h: float, named: bool, level: int) -> PanelContainer:
-	var k := w / 116.0
-	var spec := type_spec(d)
-	var p := PanelContainer.new()
-	var band := roundf((34.0 if named else 0.0) * k)
-	var opts := {"grime": 0.85, "seed": seed_of(d.id), "band": band if named else 8.0 * k, "tint": Color(spec[0].r, spec[0].g, spec[0].b, 0.94), "shadow": maxf(roundf(5.0 * k), 2.0), "rough": 1.3 * k}
-	p.add_theme_stylebox_override("panel", box(0.0, opts["shadow"]))
-	p.material = material("card", opts, true)
-	p.set_meta("paper", true)
-	p.custom_minimum_size = Vector2(w, h)
-	p.size = p.custom_minimum_size
-	var body := Control.new()
-	body.custom_minimum_size = Vector2(w, h)
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var art := TextureRect.new()
-	art.texture = card_tex(d.id)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED if painted(d.id) else TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	art.position = Vector2(3.0 * k, band + 2.0 * k)
-	art.size = Vector2(w - 6.0 * k, h - band - (14.0 if key != "" else 5.0) * k)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_child(art)
-	var gs := clampf(27.0 * k, 16.0, 30.0) if named else clampf(22.0 * k, 12.0, 18.0)
-	if named:
-		var nm := ("★ " if mods.size() > 0 else "") + UiKit.card_name(d, level)
-		var nl := _name_label(nm, 14.0 * k, spec[2], w - gs - 14.0 * k)
-		nl.position = Vector2(7.0 * k, 0)
-		nl.size = Vector2(w - gs - 12.0 * k, band)
-		body.add_child(nl)
-	var gem := _cost_blot(cost, gs, cost < d.cost)
-	gem.position = Vector2(w - gs - 3.0 * k, (band - gs) * 0.5 if named else 2.0)
-	gem.size = Vector2(gs, gs)
-	body.add_child(gem)
-	if key != "":
-		var kt := _key_tag(key, k)
-		kt.position = Vector2(w * 0.5 - 8.5 * k, h - 13.0 * k)
-		body.add_child(kt)
-	p.add_child(body)
-	UiKit.ignore_mouse(p)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	CardFx.attach(p, level, UiKit.mod_ids_of(mods), w / 116.0)
-	return p
 
 
 ## Atalho do teclado: número datilografado num círculo a nanquim.
@@ -740,22 +499,6 @@ static func set_hot(c: Control, on: bool) -> void:
 
 
 # ---------------------------------------------------------------- menu e ícones
-
-## Botão de menu: fita crepe datilografada; a primeira opção pode ser vermelha.
-static func menu_button(b: Button, size: int, red := false) -> void:
-	# Desde 13/11/2026: a opção principal é a fita vermelha das cartas; as outras, papel com traço fino.
-	if red:
-		UiParch.ribbon_button(b, "monster", size)
-	else:
-		UiParch.paper_button(b, size)
-
-
-## Traço de pincel sob um título.
-static func ornament(w: float) -> Control:
-	var c := UiParch.divider(w)
-	c.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	return c
-
 
 static func icon_button(b: Button, kind: String) -> void:
 	b.text = ""

@@ -1,9 +1,7 @@
 extends Node3D
-## Efeitos novos do mundo (rodada visual 20/11/2026, docs/RODADA_VISUAL_2026-11-20.md).
-## Padrão (--fx=3, aprovado em 20/11/2026 na página de revisão): cada efeito no estilo escolhido — pintado (como as
-## cartas) ou brilhante (entra no bloom); ver KIND_STYLE e WorldView._fx_ctx. --fx=1 tudo pintado, --fx=2 tudo
-## brilhante, --fx=0 os efeitos de antes (bolinha de 64 px).
-## world_view.gd cria um nó deste script em _build_pools() quando o estilo é > 0 e passa para cá os pedidos de efeito
+## Efeitos do mundo (20/11/2026): cada efeito num de dois estilos — pintado (como as cartas) ou brilhante (entra no
+## bloom); ver KIND_STYLE e WorldView._fx_ctx.
+## world_view.gd cria um nó deste script em _build_pools() e passa para cá os pedidos de efeito
 ## (emit_fx, ring_burst, zonas no chão, projéteis, queimadura). Tudo é desenhado nos shaders fx_particle*/fx_ground,
 ## sem textura pequena: fica nítido de perto e de longe.
 
@@ -13,24 +11,7 @@ const SH_GROUND := preload("res://game/art/fx_ground.gdshader")
 
 enum S { FLAME, SMOKE, SPARK, EMBER, STAR, CHUNK, CROSS, RING, THREAD }
 
-static var _style := -1
-
-
-## 0 = efeitos antigos; 1 = pintado; 2 = brilhante; 3 = misto aprovado (padrão). Lido uma vez da linha de comando.
-static func style() -> int:
-	if _style < 0:
-		_style = 3
-		for a in OS.get_cmdline_user_args():
-			if a.begins_with("--fx="):
-				_style = clampi(int(a.substr(5)), 0, 3)
-	return _style
-
-
-static func set_style(v: int) -> void:
-	_style = clampi(v, 0, 3)
-
-
-## Estilo de cada tipo quando nenhum evento escolheu (ctx < 0), no modo misto. 1 pintado, 2 brilhante.
+## Estilo de cada tipo quando nenhum evento escolheu (ctx < 0). 1 pintado, 2 brilhante.
 const KIND_STYLE := {"fire": 1, "smoke": 1, "spark": 1, "hit": 1, "level": 1, "collapse": 1,
 	"death": 2, "soul": 2, "magic": 2, "shield": 2, "heal": 2}
 
@@ -57,7 +38,7 @@ func setup() -> void:
 	for st in _styles():
 		painted = st == 1
 		_build_layers("@%d" % st)
-	painted = style() != 2
+	painted = true
 	_build_recipes()
 	for i in 14:
 		var n := MeshInstance3D.new()
@@ -102,13 +83,11 @@ func setup() -> void:
 # ------------------------------------------------------------------ materiais
 
 func _styles() -> Array:
-	return [1, 2] if style() == 3 else [style()]
+	return [1, 2]
 
 
-## Estilo para este pedido: o do evento, senão o do tipo (modo misto); nos outros modos, o único.
+## Estilo para este pedido: o do evento, senão o do tipo.
 func _pick(kind: String) -> int:
-	if style() != 3:
-		return style()
 	return ctx if ctx > 0 else int(KIND_STYLE.get(kind, 1))
 
 
@@ -234,9 +213,8 @@ func _build_layers(suffix: String) -> void:
 		"bubble": {"shape": S.RING, "amount": 4, "life": 0.6, "speed": [0.2, 0.6], "grav": -0.5, "size": [0.18, 0.3], "radius": 0.9, "add": false, "curve": POP, "ramp": [Color(0.25, 0.16, 0.08, 0.9), Color(0.35, 0.22, 0.1, 0.9), Color(0.35, 0.22, 0.1, 0)], "n": 8},
 		"drops": {"shape": S.EMBER, "amount": 6, "life": 0.8, "speed": [1.5, 3.0], "grav": 6.0, "size": [0.1, 0.18], "radius": 0.8, "spread": 25.0, "ramp": [Color(0.75, 0.92, 1.0), Color(0.6, 0.85, 1.0), Color(0.5, 0.8, 1.0, 0)], "n": 6},
 	}
-	if Golpes.VAR > 0:
-		# --golpes=1: poeira de pisada e de impacto dos monstros pesados (camada própria; a "dust" é do desabamento).
-		defs["gdust"] = {"shape": S.SMOKE, "amount": 8, "life": 0.8, "speed": [2.0, 4.0], "grav": -0.2, "damp": 4.0, "size": [0.7, 1.3], "radius": 0.5, "dir": Vector3(0, 0.15, 0), "spread": 80.0, "add": false, "curve": GROW, "ramp": [Color(0.74, 0.64, 0.5, 0.8), Color(0.7, 0.6, 0.48, 0.55), Color(0.7, 0.6, 0.48, 0)], "n": 10}
+	# Poeira de pisada e de impacto dos monstros pesados (camada própria; a "dust" é do desabamento).
+	defs["gdust"] = {"shape": S.SMOKE, "amount": 8, "life": 0.8, "speed": [2.0, 4.0], "grav": -0.2, "damp": 4.0, "size": [0.7, 1.3], "radius": 0.5, "dir": Vector3(0, 0.15, 0), "spread": 80.0, "add": false, "curve": GROW, "ramp": [Color(0.74, 0.64, 0.5, 0.8), Color(0.7, 0.6, 0.48, 0.55), Color(0.7, 0.6, 0.48, 0)], "n": 10}
 	for k in defs:
 		var d: Dictionary = defs[k]
 		var list: Array = []
@@ -262,12 +240,11 @@ func _build_recipes() -> void:
 		"heal": [["crosses", 1.0, 0.0], ["motes", 0.9, 0.0], ["flash", 0.5, 0.6]],
 		"collapse": [["debris", 1.0, 0.4], ["dust", 1.4, 0.2], ["flame", 1.6, 0.0], ["ember", 1.5, 0.3], ["smoke", 1.5, 1.2]],
 	}
-	if Golpes.VAR > 0:
-		recipes["passo"] = [["gdust", 1.0, 0.0]]
+	recipes["passo"] = [["gdust", 1.0, 0.0]]
 
 
 func _fire(layer: String, pos: Vector3, s: float, col: Color, st := 1) -> void:
-	var d: Dictionary = layers[layer + "@%d" % (st if style() == 3 else style())]
+	var d: Dictionary = layers[layer + "@%d" % st]
 	var list: Array = d["list"]
 	var p: GPUParticles3D = list[d["i"]]
 	d["i"] = (int(d["i"]) + 1) % list.size()
@@ -413,7 +390,7 @@ func zone_tick(kind: String, pos: Vector3, r: float, idx: int) -> void:
 ## Flecha (haste, ponta, penas) com rastro; orbe com núcleo, halo e rastro de centelhas. Os nós entram nos pools
 ## do world_view no lugar da caixa e da esfera de antes.
 func make_arrow() -> Node3D:
-	painted = style() == 1   # flecha: brilhante no modo misto (aprovado)
+	painted = false   # flecha: brilhante
 	var root := Node3D.new()
 	var wood := StandardMaterial3D.new()
 	wood.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -471,7 +448,7 @@ func make_arrow() -> Node3D:
 
 
 func make_orb() -> Node3D:
-	painted = style() != 2   # orbe: pintado no modo misto (aprovado)
+	painted = true   # orbe: pintado
 	var root := Node3D.new()
 	var core := MeshInstance3D.new()
 	var sm := SphereMesh.new()
@@ -518,7 +495,7 @@ func make_orb() -> Node3D:
 
 
 func streak_material() -> ShaderMaterial:
-	painted = style() == 1   # tiro das unidades (flecha): brilhante no modo misto
+	painted = false   # tiro das unidades (flecha): brilhante
 	var m := particle_material(S.SPARK, true, 2, 0.1)
 	m.set_shader_parameter("tint", Color(1.0, 0.95, 0.75, 0.9))
 	return m
@@ -527,7 +504,7 @@ func streak_material() -> ShaderMaterial:
 # ------------------------------------------------------------------ queimadura
 
 func _make_scorch() -> ImageTexture:
-	painted = style() != 2   # queimado no chão: pintado no modo misto (família do fogo)
+	painted = true   # queimado no chão: pintado (família do fogo)
 	var sz := 256
 	var img := Image.create(sz, sz, false, Image.FORMAT_RGBA8)
 	var nz := FastNoiseLite.new()

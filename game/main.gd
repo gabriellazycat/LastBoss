@@ -28,10 +28,6 @@ var shots: Array = []
 var life := 0.0
 
 
-## Direções de arte para --estilo (chão, herói, monstros): docs/ESTUDO_DE_ARTE.md.
-const ESTILOS := {"A": [5, 4, 3], "B": [6, 2, 2], "C": [2, 4, 3], "D": [7, 5, 5], "E": [8, 5, 5], "F": [9, 6, 6]}
-
-
 var overtime_said := false   # aviso da prorrogação da arena já mostrado
 var overtime_party_t := -1.0  # Horda sem fim: chegada da party da vez na arena (re-arma o aviso da prorrogação)
 var seen_party := -1         # party da fila já marcada como vista no meta (mapa da campanha, 16/11/2026)
@@ -47,58 +43,11 @@ func _ready() -> void:
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
 			auto_args[kv[0]] = kv[1]
-	# --hud=N: troca a pele da interface só nesta execução, sem gravar (capturas das peles, 16/11/2026).
-	if auto_args.has("hud"):
-		Settings.v["look_hud"] = int(auto_args["hud"])
-		Settings.apply(get_tree())
 	# --liberar: jogo de teste com todas as fases e vilões liberados, em saves próprios (user://liberar_*.save);
 	# o seu save e o seu meta ficam intactos. Não é modo de teste: rota e coleção funcionam como no jogo normal
 	# (10/11/2026).
 	var liberar := OS.get_cmdline_user_args().has("--liberar") or auto_args.has("liberar")
 	auto_args.erase("liberar")
-	# --estilo=D (A a F): direção de arte só nesta execução, para os atalhos de teste do visual.
-	# Não é modo de teste: a run e a coleção são as normais (o --set liga o modo de teste).
-	if auto_args.has("estilo"):
-		var looks: Array = ESTILOS.get(str(auto_args["estilo"]).to_upper(), [])
-		auto_args.erase("estilo")
-		for k in looks.size():
-			var key: String = ["look_ground", "look_hero", "look_enemies"][k]
-			if not Settings.session.has(key):
-				Settings.session[key] = Settings.v[key]
-			Settings.v[key] = looks[k]
-	# --mapstyle=N (0 a 4): variação dos rios, montanhas e árvores do mapa grande (propostas de 15/11/2026).
-	if auto_args.has("mapstyle"):
-		Minimap.FS = int(auto_args["mapstyle"])
-	# --mapvar=N (0 a 9): estilo das construções do mapa da campanha (propostas de 16/11/2026).
-	if auto_args.has("mapvar"):
-		CampaignArt.VARIANT = int(auto_args["mapvar"])
-	# --hudlayout=N (0 a 7): mostra outra disposição da HUD da run só nesta execução (17/11/2026, docs/HUD_2026-11-17.md).
-	if auto_args.has("hudlayout"):
-		Hud.LAYOUT = int(auto_args["hudlayout"])
-	# --mundo=N (0 a 3): props, flores e manchas de cor no chão; --luz=N (0 a 3): luz e cor do dia (rodada visual 20/11/2026).
-	if auto_args.has("mundo"):
-		MundoVivo.VAR = int(auto_args["mundo"])
-	if auto_args.has("luz"):
-		LuzLook.VAR = int(auto_args["luz"])
-	# --cenario=N (0 ou 1): regiões + margem florida + vento com rajadas; --arvores=N (0 a 7): estilo das árvores; --chao=N (0 a 4): textura do chão
-	# (cenário com propósito, 21/11/2026, docs/CENARIO_PROPOSITO.md).
-	if auto_args.has("cenario"):
-		Cenario.VAR = int(auto_args["cenario"])
-	if auto_args.has("arvores"):
-		Arvores.VAR = int(auto_args["arvores"])
-	if auto_args.has("chao"):   # textura do chão e da estrada (GroundLooks.TELA, 0 = a de antes)
-		GroundLooks.TELA = int(auto_args["chao"])
-	if auto_args.has("mapfog"):
-		Minimap.FOG = auto_args["mapfog"] != "0"
-	# --herois=N (0 a 2): anel, sombra e aura dos heróis; --arena=N (0 a 2): arena do chefe (rodada visual 20/11/2026).
-	# --fx=N (0 a 2) é lido direto por game/art/fx2.gd.
-	if auto_args.has("herois"):
-		HeroPresence.VAR = int(auto_args["herois"])
-	if auto_args.has("arena"):
-		ArenaLook.VAR = int(auto_args["arena"])
-	# --modelos=N (0 ou 1): modelos 3D refeitos à mão (assets/models/m2_a, Looks.M2); 0 = os de hoje.
-	if auto_args.has("modelos"):
-		Looks.M2 = int(auto_args["modelos"])
 	# Testes e capturas salvam num arquivo próprio: nunca tocam na run salva do jogador.
 	if not auto_args.is_empty():
 		SaveGame.current = "user://test_run.save"
@@ -132,14 +81,10 @@ func _ready() -> void:
 		w.position = Vector2i(-6000, 0)
 	# Pele Covil: todo botão que nascer leva o material da moldura (o tema só leva a StyleBox).
 	UiSkins.apply()
-	if UiSkins.covil() and not get_tree().node_added.is_connected(UiCovil.on_node_added):
-		get_tree().node_added.connect(UiCovil.on_node_added)
-	elif not UiSkins.covil() and get_tree().node_added.is_connected(UiCovil.on_node_added):
-		get_tree().node_added.disconnect(UiCovil.on_node_added)
-	if UiSkins.diario() and not get_tree().node_added.is_connected(UiDiario.on_node_added):
+	if not get_tree().node_added.is_connected(UiDiario.on_node_added):
 		get_tree().node_added.connect(UiDiario.on_node_added)
 	if DisplayServer.get_name() != "headless":
-		UiCovil.sync(get_viewport())
+		UiKit.sync(get_viewport())
 	data = GameData.load_dir()
 	meta = MetaSave.load_or_new(data)
 	if not auto_args.is_empty():
@@ -283,8 +228,6 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, lengt
 		_villain_layout_test()
 	if auto_args.has("gshots"):
 		_g_shots()
-	if auto_args.has("mapvars"):
-		_map_variants()
 	if auto_args.has("mapicons"):
 		_map_icons()
 	if auto_args.has("tiptest"):
@@ -472,10 +415,8 @@ func _env_snapshot() -> Dictionary:
 		"amb_c": world_env.ambient_light_color, "amb_e": world_env.ambient_light_energy, "fog_c": world_env.fog_light_color,
 		"fog_d": world_env.fog_density, "expo": world_env.tonemap_exposure, "sat": world_env.adjustment_saturation,
 		"con": world_env.adjustment_contrast}
-	# Névoa volumétrica e efeito da névoa no céu só entram no crossfade com --luz>0 (com 0 a troca de ato fica como era).
-	if LuzLook.VAR > 0:
-		d["vfog"] = world_env.volumetric_fog_density
-		d["fsky"] = world_env.fog_sky_affect
+	d["vfog"] = world_env.volumetric_fog_density
+	d["fsky"] = world_env.fog_sky_affect
 	if rim_light:
 		d["rim_c"] = rim_light.light_color
 		d["rim_e"] = rim_light.light_energy
@@ -586,172 +527,22 @@ func _cycle_speed() -> void:
 func _on_settings(key: String) -> void:
 	if key in ["quality", "all"]:
 		Settings.apply_quality(world_env, sun, get_viewport())
-	if key.begins_with("mundo_") or key == "all":
-		PaintLook.apply()
-		PaintLook.apply_env(world_env)
-	# Variação de arte: o tema, o chão e as malhas são montados na criação, então recarrega a cena.
-	# O guache troca os materiais da mesa do menu na criação: recarrega como os looks.
-	if key.begins_with("look_") or key == "paint_look":
-		get_tree().reload_current_scene.call_deferred()
 
 
-## Covil do chefe em 3D atrás do menu.
+## Mesa do Lorde em 3D atrás do menu (DeskScene), com os papéis das telas.
 func _build_menu_scene() -> void:
 	if menu_root:
 		menu_root.queue_free()
-	# Pele Diário: a mesa do Lorde com os papéis do menu (DeskScene) no lugar do covil.
-	if UiSkins.diario():
-		var dk := DeskScene.new()
-		dk.setup(cam, world_env, [sun, rim_light], menu, data)
-		menu_root = dk
-		add_child(dk)
-		menu.desk = dk
-		dk.paper_clicked.connect(func(id: String):
-			if id == "continue":
-				_continue()
-			else:
-				menu.show_screen(id))
-		return
-	menu_root = Node3D.new()
-	add_child(menu_root)
-	var k := Models.Kit.new()
-	k.add(Models.cyl(14.0, 14.5, 0.4, 32), Vector3(0, -0.2, 0), Color(0.1, 0.085, 0.12))
-	for i in 3:
-		var tm := TorusMesh.new()
-		tm.inner_radius = 3.0 + i * 3.5
-		tm.outer_radius = 3.2 + i * 3.5
-		tm.rings = 48
-		tm.ring_segments = 3
-		k.add(tm, Vector3(0, 0.02, 0), Color(0.35, 0.2, 0.45), Vector3.ZERO, Vector3(1, 0.1, 1))
-	var floor_ := MeshInstance3D.new()
-	floor_.mesh = k.done()
-	# Piso fosco: com o shader de toon o piso perto da câmera acendia num domo azul-claro na base do menu.
-	var fm := StandardMaterial3D.new()
-	fm.vertex_color_use_as_albedo = true
-	fm.roughness = 0.95
-	fm.metallic_specular = 0.1
-	fm.albedo_color = Color(0.32, 0.3, 0.36)
-	floor_.material_override = fm
-	floor_.layers = 2
-	menu_root.add_child(floor_)
-	var throne := MeshInstance3D.new()
-	throne.mesh = Models.prop("throne")
-	throne.material_override = Models.glow_material(0.1)
-	throne.position = Vector3(0, 0, -1.5)
-	menu_root.add_child(throne)
-	var boss := Models.boss_full()
-	boss.position = Vector3(0, 1.0, -1.0)
-	boss.scale = Vector3.ONE * 0.8
-	menu_root.add_child(boss)
-	for i in 6:
-		var a := TAU * i / 6.0 + 0.5
-		var pp := Vector3(cos(a), 0, sin(a)) * 9.0
-		var mi := MeshInstance3D.new()
-		mi.mesh = Models.prop("brazier" if i % 2 == 0 else "pillar")
-		mi.material_override = Models.glow_material(0.6 if i % 2 == 0 else 0.0)
-		mi.position = pp
-		menu_root.add_child(mi)
-		if i % 2 == 0:
-			var l := OmniLight3D.new()
-			l.light_color = Color(1.0, 0.55, 0.2)
-			l.light_energy = 3.0
-			l.omni_range = 12.0
-			# Sem névoa: a esfera de alcance da luz do braseiro atrás da câmera aparecia como um disco claro.
-			l.light_volumetric_fog_energy = 0.0
-			l.position = pp + Vector3(0, 2.5, 0)
-			menu_root.add_child(l)
-	var core_l := OmniLight3D.new()
-	core_l.light_color = Color(0.8, 0.3, 1.0)
-	core_l.light_energy = 4.0
-	core_l.omni_range = 10.0
-	core_l.light_volumetric_fog_energy = 0.0
-	core_l.position = Vector3(0, 3, 1)
-	menu_root.add_child(core_l)
-	_menu_atmosphere()
-
-
-## Covil do menu: paredes escuras em volta (o céu do bosque não aparece atrás do chefe), contraluz fria que
-## recorta o chefe, um facho de luz de cima na névoa e brasas subindo dos braseiros.
-func _menu_atmosphere() -> void:
-	var wall := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 24.0
-	cyl.bottom_radius = 24.0
-	cyl.height = 30.0
-	cyl.radial_segments = 48
-	cyl.cap_top = false
-	# Fundo fechado: pela fresta entre o piso e a parede aparecia o disco do "sol" do céu (a contraluz).
-	cyl.cap_bottom = true
-	wall.mesh = cyl
-	var wm := StandardMaterial3D.new()
-	wm.albedo_color = Color(0.05, 0.04, 0.07)
-	wm.roughness = 1.0
-	wm.cull_mode = BaseMaterial3D.CULL_DISABLED
-	wall.material_override = wm
-	wall.position = Vector3(0, 8, -1)
-	menu_root.add_child(wall)
-	var rim_l := OmniLight3D.new()
-	rim_l.light_color = Color(0.45, 0.6, 1.0)
-	rim_l.light_energy = 5.0
-	rim_l.omni_range = 9.0
-	rim_l.light_volumetric_fog_energy = 0.0
-	rim_l.position = Vector3(0, 4.5, -5.0)
-	menu_root.add_child(rim_l)
-	var shaft := SpotLight3D.new()
-	shaft.light_color = Color(0.75, 0.62, 1.0)
-	shaft.light_energy = 7.0
-	shaft.light_volumetric_fog_energy = 3.0
-	shaft.spot_range = 22.0
-	shaft.spot_angle = 18.0
-	shaft.position = Vector3(1.5, 16, 1.0)
-	menu_root.add_child(shaft)
-	shaft.look_at(Vector3(0, 1.5, -1.0), Vector3.FORWARD)
-	var embers := GPUParticles3D.new()
-	embers.amount = 90
-	embers.lifetime = 5.0
-	embers.preprocess = 5.0
-	embers.visibility_aabb = AABB(Vector3(-14, -2, -14), Vector3(28, 16, 28))
-	var pm := ParticleProcessMaterial.new()
-	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(9, 0.5, 7)
-	pm.direction = Vector3(0, 1, 0)
-	pm.spread = 25.0
-	pm.initial_velocity_min = 0.4
-	pm.initial_velocity_max = 1.1
-	pm.gravity = Vector3(0.15, 0.25, 0)
-	pm.scale_min = 0.5
-	pm.scale_max = 1.2
-	var fade := Gradient.new()
-	fade.set_color(0, Color(1.0, 0.6, 0.25, 0.0))
-	fade.add_point(0.2, Color(1.0, 0.6, 0.25, 1.0))
-	fade.set_color(1, Color(1.0, 0.35, 0.15, 0.0))
-	var ft := GradientTexture1D.new()
-	ft.gradient = fade
-	pm.color_ramp = ft
-	embers.process_material = pm
-	var q := QuadMesh.new()
-	q.size = Vector2(0.09, 0.09)
-	var dot := GradientTexture2D.new()
-	var dg := Gradient.new()
-	dg.set_color(0, Color(1, 1, 1, 1))
-	dg.set_color(1, Color(1, 1, 1, 0))
-	dot.gradient = dg
-	dot.fill = GradientTexture2D.FILL_RADIAL
-	dot.fill_from = Vector2(0.5, 0.5)
-	dot.fill_to = Vector2(0.5, 0.0)
-	dot.width = 32
-	dot.height = 32
-	var em := StandardMaterial3D.new()
-	em.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	em.albedo_texture = dot
-	em.vertex_color_use_as_albedo = true
-	em.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	em.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	em.albedo_color = Color(2.5, 1.6, 0.8)
-	q.material = em
-	embers.draw_pass_1 = q
-	embers.position = Vector3(0, 0.3, -1)
-	menu_root.add_child(embers)
+	var dk := DeskScene.new()
+	dk.setup(cam, world_env, [sun, rim_light], menu, data)
+	menu_root = dk
+	add_child(dk)
+	menu.desk = dk
+	dk.paper_clicked.connect(func(id: String):
+		if id == "continue":
+			_continue()
+		else:
+			menu.show_screen(id))
 
 
 var save_t := 0.0
@@ -867,7 +658,7 @@ func _process(delta: float) -> void:
 	if auto_args.has("bare"):
 		_bare_ui()
 	if DisplayServer.get_name() != "headless":
-		UiCovil.sync(get_viewport())
+		UiKit.sync(get_viewport())
 	if menu_root and not running and not (menu_root is DeskScene):
 		menu_t += delta * 0.15
 		var a := sin(menu_t * 2.0) * 0.55
@@ -1519,7 +1310,7 @@ func _ui_shot(tag: String) -> void:
 func _click(c: Control) -> void:
 	# Pele Diário: a tela do menu sobe da mesa animada; o clique espera ela parar (até 1,5 s).
 	var wait := 0.0
-	while menu.visible and UiSkins.diario() and (menu.fade < 1.0 or menu.prev_fade < 1.0) and wait < 1.5:
+	while menu.visible and (menu.fade < 1.0 or menu.prev_fade < 1.0) and wait < 1.5:
 		await get_tree().process_frame
 		wait += get_process_delta_time()
 	if c == null:
@@ -1599,7 +1390,6 @@ func _menu_test() -> void:
 			fails.append(name)
 	var mm := menu.title_root as MapMenu
 	if mm == null:
-		print("menutest: o teste usa o menu da pele Mapa aberto (--hud=7)")
 		get_tree().quit(1)
 		return
 	# Menu → Covil.
@@ -1707,7 +1497,7 @@ func _menu_test() -> void:
 	get_tree().quit(0 if fails.is_empty() else 1)
 
 
-## --gshots=1 --out=pasta/ (--hud=7): capturas da frente G com uma meta de teste: menu, covil, escolher vilão, pausa
+## --gshots=1 --out=pasta/: capturas da frente G com uma meta de teste: menu, covil, escolher vilão, pausa
 ## com poderes e fim da run. Só usa o meta de teste (user://test_meta.save); nada do jogador é tocado.
 func _g_shots() -> void:
 	meta.almas = 138
@@ -1754,7 +1544,7 @@ func _g_shots() -> void:
 	get_tree().quit(0)
 
 
-## --mapicons=1: desenha no estilo escolhido do reino (CampaignArt.VARIANT) os ícones das construções do menu, da
+## --mapicons=1: desenha no traço Nórdico (CampaignArt) os ícones das construções do menu, da
 ## loja e do fim da run e salva em assets/ui/map/ como PNG (icon_<s>.png, node_<s>.png e node_<s>_hot.png, com o
 ## anel do lugar); o jogo prefere o PNG ao SVG antigo (CampaignArt.map_tex).
 func _map_icons() -> void:
@@ -1791,25 +1581,6 @@ func _map_icons() -> void:
 				vp.get_texture().get_image().save_png(str(auto_args["out"]) + name_)
 			vp.queue_free()
 	print("mapicons ok")
-	get_tree().quit(0)
-
-
-## --mapvars=1 --out=pasta/: desenha as 10 variações do fundo da campanha e salva cada uma (mapa_var_N.png).
-func _map_variants() -> void:
-	await get_tree().create_timer(0.3).timeout
-	for n in CampaignArt.count():
-		var holder := Node.new()
-		add_child(holder)
-		var tex := CampaignArt.bake(holder, data, n)
-		for i in 4:
-			await get_tree().process_frame
-		await RenderingServer.frame_post_draw
-		if auto_args.has("out"):
-			tex.get_image().save_png(str(auto_args["out"]) + "mapa_var_%d.png" % n)
-		print("mapvar ", n, " ", CampaignArt.style_name(n))
-		holder.queue_free()
-		await get_tree().process_frame
-	print("mapvars ok")
 	get_tree().quit(0)
 
 
@@ -2225,17 +1996,6 @@ func _unhandled_input(e: InputEvent) -> void:
 				_altar_step(-1)
 			KEY_E:
 				_altar_step(1)
-			# Mundo como as cartas (docs/MUNDO_COMO_CARTAS.md): A cor, B escuros, C papel, na hora. Só com --variantes
-			# (16/11/2026): o jogador não troca o visual sem querer.
-			KEY_F6:
-				if SettingsPanel.variants:
-					hud.say(PaintLook.toggle("mundo_cor", world_env))
-			KEY_F7:
-				if SettingsPanel.variants:
-					hud.say(PaintLook.toggle("mundo_escuro", world_env))
-			KEY_F8:
-				if SettingsPanel.variants:
-					hud.say(PaintLook.toggle("mundo_papel", world_env))
 	_pad_input(e)
 
 
@@ -2413,7 +2173,7 @@ func _pad_cursor(delta: float) -> void:
 		cursor += v * 900.0 * float(Settings.v["pad_speed"]) * delta
 		cursor = cursor.clamp(Vector2.ZERO, get_viewport().get_visible_rect().size)
 
-## --bare (só capturas para maquetes de UI, docs/UI_PROPOSTAS.md): esconde a interface e deixa o mundo e as cartas
+## --bare (só capturas para maquetes de UI): esconde a interface e deixa o mundo e as cartas
 ## (mão, ofertas, loja). Quem contém uma carta fica, mas sem desenhar o próprio fundo (self_modulate transparente).
 func _bare_ui() -> void:
 	var keep := {}

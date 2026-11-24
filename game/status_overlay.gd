@@ -125,7 +125,7 @@ func _draw_hero_badges() -> void:
 			txt = "×%d" % int(e[3])
 		if txt != "":
 			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_CENTER, -1, 13).x
-			var on_paper := UiSkins.diario() or UiSkins.mapa()
+			var on_paper := true
 			draw_string_outline(font, p + Vector2(-w * 0.5, R + 16), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, UiParch.PARCH if on_paper else Color(0, 0, 0, 0.85))
 			draw_string(font, p + Vector2(-w * 0.5, R + 16), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiParch.INK if on_paper else Color(1, 1, 1))
 
@@ -133,25 +133,16 @@ func _draw_hero_badges() -> void:
 ## Selo redondo: fundo escuro, borda e anel de tempo na cor do efeito, desenho no meio. frac < 0 = sem tempo.
 ## Peles de papel (16/11/2026): selo de papel com contorno de tinta e desenho na cor do efeito puxada para a tinta.
 static func badge(ci: CanvasItem, p: Vector2, kind: String, col: Color, frac: float, r: float) -> void:
-	if UiSkins.diario() or UiSkins.mapa():
-		var ic := col.lerp(UiParch.INK, 0.45)
-		ci.draw_circle(p, r + 1.5, UiParch.INK)
-		ci.draw_circle(p, r, UiParch.PARCH)
-		if frac >= 0.0:
-			ci.draw_arc(p, r + 3.5, 0.0, TAU, 32, Color(UiParch.PARCH, 0.85), 3.5, true)
-			ci.draw_arc(p, r + 3.5, -PI * 0.5, -PI * 0.5 + TAU * frac, 32, ic, 3.0, true)
-		else:
-			ci.draw_arc(p, r + 3.5, 0.0, TAU, 32, ic, 2.0, true)
-		glyph(ci, p, kind, ic, r * 0.62)
-		return
-	ci.draw_circle(p, r + 1.5, Color(0, 0, 0, 0.7))
-	ci.draw_circle(p, r, col.darkened(0.65))
+	var ic := col.lerp(UiParch.INK, 0.45)
+	ci.draw_circle(p, r + 1.5, UiParch.INK)
+	ci.draw_circle(p, r, UiParch.PARCH)
 	if frac >= 0.0:
-		ci.draw_arc(p, r + 3.0, 0.0, TAU, 32, Color(0, 0, 0, 0.55), 3.0, true)
-		ci.draw_arc(p, r + 3.0, -PI * 0.5, -PI * 0.5 + TAU * frac, 32, col, 3.0, true)
+		ci.draw_arc(p, r + 3.5, 0.0, TAU, 32, Color(UiParch.PARCH, 0.85), 3.5, true)
+		ci.draw_arc(p, r + 3.5, -PI * 0.5, -PI * 0.5 + TAU * frac, 32, ic, 3.0, true)
 	else:
-		ci.draw_arc(p, r + 3.0, 0.0, TAU, 32, col, 2.0, true)
-	glyph(ci, p, kind, col, r * 0.62)
+		ci.draw_arc(p, r + 3.5, 0.0, TAU, 32, ic, 2.0, true)
+	glyph(ci, p, kind, ic, r * 0.62)
+	return
 
 
 static func glyph(ci: CanvasItem, p: Vector2, kind: String, col: Color, s: float) -> void:

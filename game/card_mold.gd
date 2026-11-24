@@ -278,7 +278,7 @@ static func build(d: CardDef, cost: int, mods: Array, key: String, w: float, h: 
 	# (a fonte encolhe para caber), senão a primeira letra some por baixo da vizinha.
 	var name_x := 50.0 if compact else 32.0
 	var name_w := 212.0 if compact else 236.0
-	var fsz := UiCovil.fit_size(fell, nm, 31 if compact else 23, name_w, 12)
+	var fsz := UiKit.fit_size(fell, nm, 31 if compact else 23, name_w, 12)
 	body.add_child(_label(nm, fell, fsz, spec[2], Rect2(name_x, rib_y - 1.0, name_w, rib_h), 0))
 
 	# --- tipo e raridade, e o texto (só carta grande)

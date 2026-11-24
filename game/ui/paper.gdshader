@@ -5,7 +5,7 @@ shader_type canvas_item;
 // (9x9..13x13 px). Nos botões (state_mode 1) o tamanho do marcador diz o estado: 9 normal, 10 sobre,
 // 11 pressionado, 12 desligado, 13 foco. Texto e o que o Control desenha sozinho passam sem mudança.
 
-global uniform float ui_px;              // pixels de tela por unidade de interface (UiCovil.sync)
+global uniform float ui_px;              // pixels de tela por unidade de interface (UiKit.sync)
 
 uniform int kind = 0;                    // 0 papel, 1 fita, 2 pautada, 3 caixa a lápis, 4 carta, 5 etiqueta, 6 contrato
 uniform vec4 paper_a : source_color = vec4(0.87, 0.82, 0.72, 1.0);

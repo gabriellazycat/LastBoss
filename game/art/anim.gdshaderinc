@@ -1,4 +1,4 @@
-// AnimaÃ§Ã£o procedural compartilhada pelos looks (igual Ã  do toon.gdshader).
+// Animação procedural compartilhada pelos shaders das unidades e do cenário (look5.gdshader).
 // INSTANCE_CUSTOM (MultiMesh): x = brilho de impacto, y = andar (0..1), z = fase, w = investida do ataque (0..1).
 uniform float hop_height = 0.16;
 uniform float flap = 0.0;

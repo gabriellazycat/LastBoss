@@ -5,10 +5,10 @@ extends Node3D
 ## Game feel: hit-stop, trauma de câmera, flash de tela, recuo, investida, partículas em camadas.
 
 const UP := Vector3.UP
-const FX2 := preload("res://game/art/fx2.gd")   # efeitos novos (--fx=1/2, rodada visual 20/11/2026)
+const FX2 := preload("res://game/art/fx2.gd")   # efeitos do mundo (pintados e brilhantes)
 var fx2: Node3D = null
-var presence: HeroPresence = null   # --herois=N: anel, sombra e aura dos heróis (rodada visual 20/11/2026)
-var gol: Golpes = null              # --golpes=1: golpes dos monstros com peso (game/art/golpes.gd)
+var presence: HeroPresence = null   # anel, sombra e aura dos heróis
+var gol: Golpes = null              # golpes dos monstros com peso (game/art/golpes.gd)
 const STRIDE := 20
 const LOC_COLORS := {
 	"shop": Color(0.95, 0.75, 0.35), "tavern": Color(0.9, 0.55, 0.25), "fountain": Color(0.35, 0.75, 1.0),
@@ -40,7 +40,7 @@ const ACCENT := {
 const CAM_DIST := 44.0 # também é o mínimo: o zoom só afasta (main.gd limita zoom a >= 0)
 const CAM_PER_UNIT := 0.02
 const CAM_ARENA := 6.0
-## Figuras maiores na tela (13/11/2026, docs/ARTE_UNIFICADA.md): só o desenho, o raio do jogo não muda.
+## Figuras maiores na tela (13/11/2026): só o desenho, o raio do jogo não muda.
 ## Perto das cartas, herói e monstros minúsculos pareciam de outro jogo.
 const FIG_SCALE := 1.2
 const HERO_SCALE := 1.55
@@ -554,42 +554,10 @@ func _road_bounds() -> Rect2:
 
 
 func _build_ground() -> void:
-	if GroundLooks.look() > 0:
-		_build_ground_look()
-		return
-	var b := _road_bounds()
-	var cell := 6.0
-	var nx := int(b.size.x / cell) + 1
-	var ny := int(b.size.y / cell) + 1
-	var rng := RandomNumberGenerator.new()
-	rng.seed = sim.run_seed + 11
-	var cols := PackedColorArray()
-	cols.resize((nx + 1) * (ny + 1))
-	for j in ny + 1:
-		for i in nx + 1:
-			var n := sin(i * 0.31 + j * 0.13) * 0.5 + sin(i * 0.07 - j * 0.19) * 0.5
-			var m := sin(i * 0.9 + j * 1.3) * 0.5 + 0.5
-			var base := Color(0.2, 0.3, 0.22).lerp(Color(0.28, 0.34, 0.21), n * 0.5 + 0.5)
-			cols[j * (nx + 1) + i] = base.lerp(Color(0.26, 0.22, 0.32), m * 0.35 * rng.randf())
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for j in ny:
-		for i in nx:
-			var x0 := b.position.x + i * cell
-			var z0 := b.position.y + j * cell
-			var p := [Vector3(x0, -0.03, z0), Vector3(x0 + cell, -0.03, z0), Vector3(x0, -0.03, z0 + cell), Vector3(x0 + cell, -0.03, z0 + cell)]
-			var c := [cols[j * (nx + 1) + i], cols[j * (nx + 1) + i + 1], cols[(j + 1) * (nx + 1) + i], cols[(j + 1) * (nx + 1) + i + 1]]
-			for k in [0, 1, 2, 2, 1, 3]:
-				st.set_color(c[k])
-				st.set_normal(UP)
-				st.add_vertex(p[k])
-	var g := _mi(st.commit(), Vector3.ZERO)
-	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	g.layers = GROUND_LAYER
-	add_child(g)
+	_build_ground_look()
 
 
-## Chão das variações (GroundLooks): plano com shader de texturas + grama com vento perto da estrada.
+## Chão do ato (GroundLooks): plano com o shader pintado + grama com vento perto da estrada.
 func _build_ground_look() -> void:
 	var b := _road_bounds()
 	var pm := PlaneMesh.new()
@@ -598,8 +566,7 @@ func _build_ground_look() -> void:
 	pm.subdivide_width = int(b.size.x / 12.0)
 	pm.subdivide_depth = int(b.size.y / 12.0)
 	var gmat := GroundLooks.ground_material()
-	if MundoVivo.VAR > 0:
-		gmat.set_shader_parameter("mundo", MundoVivo.ground_amount())
+	gmat.set_shader_parameter("mundo", MundoVivo.ground_amount())
 	var g := _mi(pm, Vector3(b.get_center().x, -0.03, b.get_center().y), gmat)
 	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	g.layers = GROUND_LAYER
@@ -619,7 +586,7 @@ func _build_ground_look() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sim.run_seed + 131
 	var chunks := {}
-	var tones := {}   # tom de cada tufo por pedaço (branco com --mundo=0)
+	var tones := {}   # tom de cada tufo por pedaço
 	# Teto por célula de 6 m: onde as faixas de duas estradas se sobrepõem (a rede tem ~50 ligações lado a lado),
 	# a grama não dobra. O teto é a densidade de uma estrada sozinha.
 	var per_cell := {}
@@ -647,11 +614,9 @@ func _build_ground_look() -> void:
 						continue
 					per_cell[cell] = int(per_cell.get(cell, 0)) + 1
 					var s := rng.randf_range(0.9, 1.9) * (1.0 + clampf((r - 8.0) / 18.0, 0.0, 1.0) * 0.4)
-					var tone := Color.WHITE
-					if MundoVivo.VAR > 0:
-						var tf: Array = MundoVivo.tuft(rng)   # 3 tamanhos e 3 tons
-						s *= float(tf[0])
-						tone = tf[1]
+					var tf: Array = MundoVivo.tuft(rng)   # 3 tamanhos e 3 tons
+					s *= float(tf[0])
+					var tone: Color = tf[1]
 					var ck := Vector2i(int(floor(p.x / 64.0)), int(floor(p.y / 64.0)))
 					if not chunks.has(ck):
 						chunks[ck] = []
@@ -661,8 +626,7 @@ func _build_ground_look() -> void:
 					tones[ck].append(tone)
 	var mesh := GroundLooks.grass_mesh()
 	var mat := GroundLooks.grass_material()
-	if Cenario.on():
-		mat.set_shader_parameter("gusts", 1.0)   # o mesmo vento com rajadas das flores
+	mat.set_shader_parameter("gusts", 1.0)   # o mesmo vento com rajadas das flores
 	for ck in chunks:
 		var xf: Array = chunks[ck]
 		var mm := MultiMesh.new()
@@ -681,40 +645,6 @@ func _build_ground_look() -> void:
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mmi.layers = GROUND_LAYER
 		add_child(mmi)
-
-
-func _ribbon(pts: PackedVector2Array, width: float, col: Color, edge: Color) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var n := pts.size()
-	var L := PackedVector3Array()
-	var R := PackedVector3Array()
-	var LE := PackedVector3Array()
-	var RE := PackedVector3Array()
-	for i in n:
-		var d := Vector2.ZERO
-		if i > 0:
-			d += (pts[i] - pts[i - 1]).normalized()
-		if i < n - 1:
-			d += (pts[i + 1] - pts[i]).normalized()
-		var o := d.normalized().orthogonal()
-		var p := pts[i]
-		var w := width * 0.5
-		L.append(Vector3(p.x + o.x * w, 0.0, p.y + o.y * w))
-		R.append(Vector3(p.x - o.x * w, 0.0, p.y - o.y * w))
-		LE.append(Vector3(p.x + o.x * (w + 1.0), -0.015, p.y + o.y * (w + 1.0)))
-		RE.append(Vector3(p.x - o.x * (w + 1.0), -0.015, p.y - o.y * (w + 1.0)))
-	for i in n - 1:
-		var shade := 0.9 + 0.1 * sin(i * 1.7) + 0.05 * sin(i * 0.37)
-		for q in [[L, R, Color(col.r * shade, col.g * shade, col.b * shade)], [LE, L, edge], [R, RE, edge]]:
-			var A: PackedVector3Array = q[0]
-			var B: PackedVector3Array = q[1]
-			var c: Color = q[2]
-			for v in [A[i], A[i + 1], B[i], B[i], A[i + 1], B[i + 1]]:
-				st.set_color(c)
-				st.set_normal(UP)
-				st.add_vertex(v)
-	return st.commit()
 
 
 ## Máscara da estrada do ato: distância (m) ao eixo mais próximo entre todos os trechos (R8, 0..ROAD_DMAX) e o id do
@@ -825,22 +755,9 @@ func _update_road_state() -> void:
 
 
 func _build_road() -> void:
-	var field: bool = GroundLooks.look() > 0
-	if field:
-		_build_road_field()
+	_build_road_field()   # a estrada é uma malha só, com campo
 	for li in sim.road.legs.size():
 		var leg: Dictionary = sim.road.legs[li]
-		# Sem look de chão: uma fita por trecho (com campo, a estrada já é uma malha só).
-		for b in 0 if field else leg["pts"].size():
-			# Cada trecho numa altura própria (até 1,8 cm): perto das bifurcações os irmãos se sobrepõem.
-			var lift := float(li % 4) * 0.006
-			var r := _mi(_ribbon(leg["pts"][b], 4.2, Color(0.56, 0.44, 0.31), Color(0.34, 0.29, 0.22)), Vector3(0, lift, 0), Models.glow_material(0.0))
-			r.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			r.layers = GROUND_LAYER
-			r.set_meta("leg", li)
-			r.set_meta("branch", b)
-			add_child(r)
-			road_meshes.append(r)
 		# Barreira na entrada do ramo: só os que saem de uma bifurcação podem ser fechados pela escolha.
 		if sim.road.nodes[leg["a"]]["out"].size() > 1:
 			# Perto do nó os ramos ainda se sobrepõem: a barreira vai onde este ramo já se afastou dos irmãos.
@@ -1016,43 +933,7 @@ func _scatter_sample() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sim.run_seed + 77
 	var sets := {"tree": [], "tree_round": [], "dead_tree": [], "rock": [], "grass": [], "mushroom": [], "bush": [], "flowers": [], "gravestone": [], "road_stone": [], "lantern": []}
-	# Composição: um ruído grande decide bosque (árvores juntas), mata baixa ou clareira; outro junta as pedras.
-	# Antes cada ponto sorteava o tipo sozinho, e o cenário ficava salpicado por igual.
-	var wood := FastNoiseLite.new()
-	wood.seed = sim.run_seed + 5
-	wood.frequency = 0.018
-	var stones := FastNoiseLite.new()
-	stones.seed = sim.run_seed + 9
-	stones.frequency = 0.05
-	var n := int(b.size.x * b.size.y / 26.0) if not Cenario.on() else 0   # Cenario: regiões em vez do salpicado
-	for i in n:
-		var p := Vector2(rng.randf_range(b.position.x, b.end.x), rng.randf_range(b.position.y, b.end.y))
-		if cells.has(Vector2i(int(floor(p.x / 6.0)), int(floor(p.y / 6.0)))):
-			continue
-		if _near_water(p, 2.0):
-			continue
-		var f := wood.get_noise_2dv(p)
-		var st := stones.get_noise_2dv(p)
-		var r := rng.randf()
-		var kind := "grass"
-		if f > 0.18:
-			# Bosque: denso, quase só árvores, com arbustos e cogumelos na sombra.
-			kind = "tree" if r < 0.5 else ("tree_round" if r < 0.78 else ("bush" if r < 0.92 else ("mushroom" if r < 0.97 else "dead_tree")))
-		elif f > -0.08:
-			# Mata baixa: arbustos, flores, árvores soltas.
-			if r > 0.7:
-				continue
-			kind = "bush" if r < 0.2 else ("flowers" if r < 0.34 else ("tree_round" if r < 0.42 else ("dead_tree" if r < 0.46 else "grass")))
-		else:
-			# Clareira: quase vazia, só grama e alguma lápide.
-			if r > 0.35:
-				continue
-			kind = "gravestone" if r < 0.012 else "grass"
-		if st > 0.35 and rng.randf() < 0.5:
-			kind = "rock"
-		var s := rng.randf_range(0.75, 1.45) if kind != "grass" else rng.randf_range(0.8, 1.7)
-		sets[kind].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.85, 1.2), s)), Vector3(p.x, 0, p.y)))
-	# Pedras na beira da estrada e lanternas a cada ~56 m, alternando os lados (a rede tem muitas ligações).
+	# Lanternas a cada ~56 m, alternando os lados (a rede tem muitas ligações).
 	for leg in sim.road.legs:
 		for pts in leg["pts"]:
 			var acc := 0.0
@@ -1061,13 +942,11 @@ func _scatter_sample() -> void:
 				var d: Vector2 = pts[i] - pts[i - 1]
 				acc += d.length()
 				var o := d.normalized().orthogonal()
-				if rng.randf() < 0.35 and not Cenario.on():
-					var q: Vector2 = pts[i] + o * (rng.randf_range(2.6, 3.4) * (1.0 if rng.randf() < 0.5 else -1.0))
-					sets["road_stone"].append(Transform3D(Basis(UP, rng.randf() * TAU).scaled(Vector3.ONE * rng.randf_range(0.6, 1.4)), Vector3(q.x, 0, q.y)))
+				rng.randf()   # (sorteio antigo das pedras da beira; mantido para não mudar o resto do cenário)
 				if acc > 56.0:
 					acc = 0.0
 					side = -side
-					var q2: Vector2 = pts[i] + o * (4.4 if Cenario.on() else 3.4) * side
+					var q2: Vector2 = pts[i] + o * 4.4 * side
 					var yaw := atan2(-o.x * side, -o.y * side) + PI * 0.5
 					sets["lantern"].append(Transform3D(Basis(UP, yaw), Vector3(q2.x, 0, q2.y)))
 					lanterns.append(Vector3(q2.x, 0, q2.y) + Basis(UP, yaw) * Vector3(0.5, 2.15, 0))
@@ -1090,21 +969,20 @@ func _scatter_sample() -> void:
 
 func _scatter_kind(k: String) -> void:
 	var sets := _sc_sets
-	if true:
-		var mat: Material = Models.material()
-		var mesh: Mesh = Models.prop(k)
-		var look_mesh := GroundLooks.prop_mesh(k)
-		if look_mesh:
-			mesh = look_mesh
-			mat = GroundLooks.prop_material(k in ["tree", "tree_round", "bush"])
-		elif k == "grass" and GroundLooks.look() > 0:
-			return
-		elif k in ["tree", "tree_round", "bush", "grass", "flowers"]:
-			var sm := Models.glow_material(0.0)
-			Looks.set_param(sm, "sway", 1.0)
-			mat = sm
-		mat = Looks.g_material(mesh, mat)
-		_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"], k in ["tree", "tree_round", "dead_tree"] or (k == "bush" and not Arvores.bush_on()))
+	var mat: Material = Models.material()
+	var mesh: Mesh = Models.prop(k)
+	var look_mesh := GroundLooks.prop_mesh(k)
+	if look_mesh:
+		mesh = look_mesh
+		mat = GroundLooks.prop_material(k in ["tree", "tree_round", "bush"])
+	elif k == "grass":
+		return
+	elif k in ["tree", "tree_round", "bush", "grass", "flowers"]:
+		var sm := Models.glow_material(0.0)
+		Looks.set_param(sm, "sway", 1.0)
+		mat = sm
+	mat = Looks.g_material(mesh, mat)
+	_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"], k in ["tree", "tree_round", "dead_tree"] )
 
 
 func _scatter_tail() -> void:
@@ -1114,10 +992,7 @@ func _scatter_tail() -> void:
 
 
 func _scatter_mundo() -> void:
-	if Cenario.on():
-		Cenario.build(self, sim)   # --cenario=1: regiões com tema, margem florida, nada na pista (21/11/2026)
-	else:
-		MundoVivo.build(self, sim)   # --mundo=N: flores, pedras, tocos, cercas, trigo (rodada visual 20/11/2026); 0 = nada
+	Cenario.build(self, sim)   # regiões com tema, margem florida, nada na pista
 
 
 func _scatter_lights() -> void:
@@ -1547,8 +1422,6 @@ func _build_pools() -> void:
 		l.outline_size = 18
 		l.outline_modulate = Color(0.06, 0.02, 0.08)
 		# Números e avisos no mundo na fonte dos títulos da interface (pele Covil).
-		if UiSkins.covil():
-			l.font = UiCovil.font("title_black")
 		l.visible = false
 		add_child(l)
 		number_pool.append({"n": l, "t": 0.0, "v": Vector3.ZERO})
@@ -1610,22 +1483,15 @@ func _build_pools() -> void:
 	_build_fx2()
 
 
-## Efeitos novos (--fx=1 pintado, --fx=2 brilhante): troca os desenhos dos pools de antes; a lógica continua aqui.
+## Presença dos heróis, golpes e efeitos do mundo (FX2).
 func _build_fx2() -> void:
-	presence = null
-	if HeroPresence.VAR > 0:
-		presence = HeroPresence.new()
-		add_child(presence)
+	presence = HeroPresence.new()
+	add_child(presence)
 	if gol != null:
 		gol.queue_free()
-	gol = null
-	if Golpes.VAR > 0:
-		gol = Golpes.new()
-		add_child(gol)
-		gol.setup(self)
-	fx2 = null
-	if FX2.style() == 0:
-		return
+	gol = Golpes.new()
+	add_child(gol)
+	gol.setup(self)
 	fx2 = FX2.new()
 	add_child(fx2)
 	fx2.setup()
@@ -1691,16 +1557,6 @@ func build_arena() -> void:
 		arena_root.add_child(fl)
 	var k := Models.Kit.new()
 	k.add(Models.cyl(r + 1.0, r + 1.2, 0.3, 40), Vector3(0, -0.12, 0), Color(0.18, 0.14, 0.22))
-	for ring in (4 if not ArenaLook.on() else 0):
-		var tm := TorusMesh.new()
-		tm.inner_radius = r * (ring + 1) / 4.5 - 0.15
-		tm.outer_radius = r * (ring + 1) / 4.5
-		tm.rings = 48
-		tm.ring_segments = 3
-		k.add(tm, Vector3(0, 0.04, 0), Models.G(Color(0.45, 0.2, 0.6)) if ring == 3 else Color(0.32, 0.22, 0.4), Vector3.ZERO, Vector3(1, 0.1, 1))
-	for i in (24 if not ArenaLook.on() else 0):
-		var a := TAU * i / 24.0
-		k.add(Models.box(0.12, 0.05, r * 0.95), Vector3(cos(a), 0, sin(a)) * r * 0.5 + Vector3(0, 0.03, 0), Color(0.25, 0.18, 0.32), Vector3(0, -rad_to_deg(a) + 90, 0))
 	if not Models.has_dir_prop("arena"):
 		arena_root.add_child(_mi(k.done(), c))
 	var n := 10
@@ -1714,7 +1570,7 @@ func build_arena() -> void:
 			arena_root.add_child(_light(pp + Vector3(0, 2.5, 0), ArenaLook.flame_color(), 3.0, 14.0))
 	var cl: Array = ArenaLook.center_light()
 	arena_root.add_child(_light(c + Vector3(0, 7, 0), cl[0], cl[1], 26.0))
-	ArenaLook.build(arena_root, c, r, braziers)   # --arena=N (rodada visual 20/11/2026); 0 = nada
+	ArenaLook.build(arena_root, c, r, braziers)
 	# Chefe do vilão da run (Etapa D, 11/11/2026): modelo e posições das partes de BossModels.
 	boss_offs = BossModels.part_offsets(sim.deck_id)
 	if BossModels.has_model(sim.deck_id):
@@ -2660,7 +2516,7 @@ func _end_scene() -> void:
 	scene_helper = null
 
 
-## Um momento do efeito do local (ver a lista combinada em docs/CENA_DO_LOCAL.md).
+## Um momento do efeito do local.
 func _scene_beat(b: int) -> void:
 	var ty := str(scene["type"])
 	var tier := int(scene["tier"])

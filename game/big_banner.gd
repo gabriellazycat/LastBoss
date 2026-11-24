@@ -41,15 +41,13 @@ func _ready() -> void:
 	box.add_child(sub)
 	add_child(box)
 	visible = false
-	paper = UiSkins.diario() or UiSkins.mapa()
+	paper = true
 	if paper:
 		title.add_theme_color_override("font_outline_color", UiParch.PARCH)
 		title.add_theme_constant_override("outline_size", 10)
 		sub.add_theme_color_override("font_color", UiParch.INK_SOFT)
 		sub.add_theme_color_override("font_outline_color", UiParch.PARCH)
 		sub.add_theme_constant_override("outline_size", 6)
-		if UiSkins.title_font():
-			title.add_theme_font_override("font", UiSkins.title_font())
 
 
 ## Mostra o letreiro (substitui o que estiver na tela). `dock` < 0: some no lugar em vez de voar.

@@ -1,5 +1,5 @@
 shader_type spatial;
-// Arco de corte dos golpes dos monstros (--golpes=1, game/art/golpes.gd, rodada visual 20/11/2026).
+// Arco de corte dos golpes dos monstros (game/art/golpes.gd).
 // A malha é uma faixa em arco: UV.x corre ao longo do arco (0 no começo do golpe, 1 no fim), UV.y atravessa a faixa
 // (0 por dentro, 1 na borda de fora). A ponta corre pelo arco na primeira metade da vida e deixa um rastro em
 // crescente que afina e some. Bordas duras e duas faixas de cor, no guache das cartas (sem degradê de brilho).

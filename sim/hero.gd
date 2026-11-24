@@ -256,11 +256,6 @@ func next_hero(i: int) -> void:
 	clear_act_bonus()
 
 
-func xp_needed() -> float:
-	var X: Dictionary = sim.data.rules["hero_xp"]
-	return float(X["level2"]) * pow(1.0 + float(X["growth"]), level - 1)
-
-
 func cls() -> String:
 	return str(H.get("class", "escudeiro"))
 

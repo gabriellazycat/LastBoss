@@ -24,8 +24,7 @@ func setup(d: GameData, m: MetaSave) -> void:
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 12)
-	if UiSkins.diario():
-		draw.connect(func(): UiDiario.draw_plate(self, "paper", Vector2(34, 28)))
+	draw.connect(func(): UiDiario.draw_plate(self, "paper", Vector2(34, 28)))
 	var t := UiKit.title(44)
 	t.text = "UI_COMPENDIUM"
 	add_child(t)

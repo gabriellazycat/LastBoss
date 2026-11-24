@@ -1,6 +1,6 @@
 shader_type spatial;
 // Marcas no chão dos efeitos novos (rodada visual 20/11/2026): substituem o anel genérico (ring.gdshader) quando
-// --fx=1 ou 2. Um PlaneMesh 2x2 escalado pelo raio; kind escolhe o desenho:
+// Efeitos no chão (fx2.gd). Um PlaneMesh 2x2 escalado pelo raio; kind escolhe o desenho:
 //   0 onda de choque (age 0..1 vinda do script), 1 teia, 2 óleo em chamas, 3 chão em brasa, 4 fonte/água,
 //   5 círculo de feitiço (age 0..1), 6 área genérica (borda pintada).
 // paint = 1: bordas duras e faixas (guache); 0: macio e com brilho.

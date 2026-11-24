@@ -215,10 +215,3 @@ func drain_part(frac: float) -> bool:
 		_destroy(best)
 	return true
 
-
-func sacrifice_part() -> bool:
-	for k in part_hp.size():
-		if part_hp[k] > 0.0 and part_ids[k] != "core":
-			_destroy(k)
-			return true
-	return false

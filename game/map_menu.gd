@@ -1,7 +1,6 @@
 class_name MapMenu
 extends Control
-## Menu principal da pele "Mapa aberto" (Settings "look_hud" 7; maquete aprovada "Menu A · o menu é o mapa",
-## docs/UI_PROPOSTAS.md): um mapa grande aberto sobre a mesa, cada opção é um lugar ligado por estradas tracejadas.
+## Menu principal (pele "Mapa aberto", maquete aprovada "Menu A · o menu é o mapa"): um mapa grande aberto sobre a mesa, cada opção é um lugar ligado por estradas tracejadas.
 ## Nova run = o covil (no centro, anel vermelho), Coleção = a biblioteca, Compêndio = a torre, Configurações = o
 ## moinho, Sair = o barco na costa; "Continuar run" = a estrada vermelha que chega ao covil (só com run salva).
 ## O fundo desenhado (papel, estradas, bosques, rio, mar, rosa dos ventos, faixa do título vazia) vem pronto de

@@ -7,7 +7,7 @@ extends RefCounted
 
 
 static func paper() -> bool:
-	return UiSkins.diario() or UiSkins.mapa()
+	return true
 
 
 ## A carta entra girando de longe, cresce além do tamanho e assenta; `special` (carta upada) ganha um clarão.

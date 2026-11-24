@@ -42,12 +42,11 @@ static func part(villain: String, id: String) -> ArrayMesh:
 	return Models.boss_part(id)
 
 
-## Malha (e material) de uma parte do vilão: a das miniaturas pintadas, se a versão escolhida a tiver.
+## Malha (e material) de uma parte do vilão: a da miniatura pintada, se existir.
 static func _mesh(villain: String, id: String) -> Mesh:
-	if Looks.g_on():
-		var gm := Looks.g_mesh("boss_%s_%s" % [villain, id])
-		if gm:
-			return gm
+	var gm := Looks.g_mesh("boss_%s_%s" % [villain, id])
+	if gm:
+		return gm
 	return load(_path(villain, id))
 
 

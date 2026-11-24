@@ -69,10 +69,7 @@ func _ready() -> void:
 	var title := UiKit.title(46)
 	title.text = tr("UI_UNLOCK_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if UiSkins.diario():
-		v.add_child(UiDiario.tape_title(title))
-	else:
-		v.add_child(title)
+	v.add_child(UiDiario.tape_title(title))
 	sub = UiKit.label(18, Color(0.95, 0.9, 0.8), 3)
 	sub.text = tr("UI_UNLOCK_SUB").format({"n": items.size()})
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -97,8 +94,7 @@ func _ready() -> void:
 	btn.custom_minimum_size = Vector2(300, 54)
 	btn.add_theme_font_size_override("font_size", 22)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	if UiSkins.mapa():
-		UiParch.ribbon_button(btn, "monster", 24)   # o botão principal do mapa: a faixa vermelha
+	UiParch.ribbon_button(btn, "monster", 24)   # o botão principal do mapa: a faixa vermelha
 	btn.pressed.connect(_on_btn)
 	v.add_child(btn)
 	_refresh_btn()

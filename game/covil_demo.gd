@@ -4,7 +4,7 @@ extends Control
 ## de mentira mais cheia que a de data/meta_tree.json (só na memória; a frente D troca pelos nós reais).
 ## Uso (Godot em segundo plano, janela fora da tela):
 ##   "$G" --position -6000,0 --path . res://game/covil_demo.tscn -- --shot=arquivo.png [--view=overview|zoom|detail|sealed|bought]
-##   "$G" --position -6000,0 --path . res://game/covil_demo.tscn -- --shots=docs/metaprogressao/   (as cinco capturas e sai)
+##   "$G" --position -6000,0 --path . res://game/covil_demo.tscn -- --shots=capturas/covil/   (as cinco capturas e sai)
 ## Sem argumentos abre a tela para mexer (mouse: arrastar, roda).
 
 const SAVE := "user://covil_demo.save"

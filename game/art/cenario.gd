@@ -8,11 +8,7 @@ extends RefCounted
 ##    em cima de outro trecho, e flores/pedras ficavam a 2,9 m do eixo, dentro dos 3,7 m da pista);
 ##  - a câmera fica ao sul (+z): até ~9 m abaixo da estrada só entram coisas baixas (flor, arbusto, cogumelo, lápide);
 ##  - cerca de 30% menos peças que o cenário de antes (_build_scatter + MundoVivo densa).
-## VAR = 0: o cenário de antes. --cenario=N em game/main.gd. Também liga o vento com rajadas (wind.gdshaderinc).
-
-static var VAR := 1   # padrão aprovado em 21/11/2026 na página de revisão (0 = cenário de antes)
-
-const NAMES := ["Antes", "Regiões + margem"]
+## Também liga o vento com rajadas (wind.gdshaderinc).
 
 const ROAD_HW := 3.7          # meia largura da pista (a máscara da estrada passa de 3,7 m)
 const CLEAR := 4.3            # nada a menos disso do eixo
@@ -29,10 +25,6 @@ const REGIONS := [
 	{"bosque": 0.34, "trigal": 0.20, "flores": 0.14, "clareira": 0.14, "pedreira": 0.12, "moita": 0.06},
 	{"morto": 0.34, "cemiterio": 0.15, "cogumelos": 0.12, "flores": 0.12, "clareira": 0.12, "pedreira": 0.15},
 ]
-
-
-static func on() -> bool:
-	return VAR > 0
 
 
 # ---------------------------------------------------------------- distância à estrada (todos os trechos)
@@ -116,8 +108,8 @@ static func build(w: Node3D, sim: Sim) -> void:
 	var A := {}
 	for id in ["bush", "rock", "tree", "tree_round", "dead_tree", "mushroom", "gravestone", "fence"]:
 		A[id] = MundoVivo._atlas_pair(id)
-	# Árvores por estilo ("tree#2", "tree_round#3"...); sem estilo novo, "#0" usa as antigas.
-	var styles := Arvores.styles()
+	# Árvores por estilo ("tree#5", "tree_round#6"...).
+	var styles := Arvores.STYLES
 	for st in styles:
 		for id in ["tree", "tree_round"]:
 			var am := Arvores.mesh(id, act_i, st)
@@ -131,7 +123,7 @@ static func build(w: Node3D, sim: Sim) -> void:
 		"wheat": [MundoVivo.wheat_mesh(), _wind_mat(0.7)], "hay": [MundoVivo.hay_mesh(), MundoVivo._own_mat(0.0)]}
 	var fmat := _wind_mat(1.0)
 	var fl_cols: Array = C["flowers"]
-	var tree_tint: Array = [Color.WHITE] if Arvores.VAR > 0 else C["tree"]
+	var tree_tint: Array = [Color.WHITE]
 	# Tipo de região por valor da célula: sorteio pelos pesos do ato.
 	var keys: Array = R.keys()
 	var wsum := 0.0
@@ -325,8 +317,7 @@ static func _flower(bag: MundoVivo.Bag, w: Node3D, p: Vector2, col: Color, mat: 
 
 static func _bush(bag: MundoVivo.Bag, A: Dictionary, C: Dictionary, p: Vector2, yaw: float, rng: RandomNumberGenerator) -> void:
 	var s := rng.randf_range(0.8, 1.4)
-	var tint: Color = Color.WHITE if Arvores.bush_on() else MundoVivo._pick(rng, C["bush"])   # o novo já tem a cor do ato
-	bag.add("bush", A["bush"][0], A["bush"][1], false, p, yaw, Vector3(s, s * rng.randf_range(0.8, 1.1), s), tint)
+	bag.add("bush", A["bush"][0], A["bush"][1], false, p, yaw, Vector3(s, s * rng.randf_range(0.8, 1.1), s), Color.WHITE)   # já tem a cor do ato
 
 
 static func _tree(bag: MundoVivo.Bag, A: Dictionary, tint: Array, p: Vector2, yaw: float, rng: RandomNumberGenerator, dead: bool, style: int) -> void:

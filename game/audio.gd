@@ -1,6 +1,6 @@
 class_name GameAudio
 extends Node
-## Áudio do jogo, todo CC0 (autores e links em assets/audio/LICENSES.txt; mapa em docs/AUDIO.md).
+## Áudio do jogo, todo CC0 (autores e links em assets/audio/LICENSES.txt).
 ## Efeitos com pool e recarga por som (centenas de unidades não viram ruído), jingles nos avisos grandes,
 ## música por contexto com troca suave (dois players) e som ambiente leve em loop.
 

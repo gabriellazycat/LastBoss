@@ -1,6 +1,6 @@
 class_name SimTerrain
 extends RefCounted
-## Água dos rios na simulação (16/11/2026, docs/RIO_E_PONTES.md, passo 3). Feito a partir de SimRoad.rivers: uma
+## Água dos rios na simulação (16/11/2026). Feito a partir de SimRoad.rivers: uma
 ## grade de 1 m marca terra, água e tabuleiro de ponte. As margens viram regiões (terra ligada sem passar pela
 ## água) e as pontes, passagens entre duas regiões. Nada aqui vai para o save: refaz-se da estrada.
 ##

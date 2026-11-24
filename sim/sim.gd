@@ -1821,8 +1821,6 @@ func kill_unit(i: int, cause: int) -> void:
 	if cause == K.Death.HERO or cause == K.Death.SELF:
 		if cause == K.Death.HERO:
 			stats["kills"] += 1
-		if not (f & K.F_NO_XP):
-			hero_gain_xp(units.xp[i])
 		hero.soul_absorb_on_kill()
 		if not (f & K.F_REVIVED) and c.id != "spectre":
 			dead_by_def[di] += 1
@@ -2033,11 +2031,6 @@ func on_shield_break() -> void:
 	emit(K.Ev.SHIELD_BREAK, hero.x, hero.y, 0, 0)
 
 
-## Sem XP (09/11/2026): o herói só evolui quando um herói cai (`_hero_fell`). Mantida vazia para as chamadas antigas.
-func hero_gain_xp(_v: float) -> void:
-	pass
-
-
 ## O herói da vez caiu: vem o próximo, um nível acima e com uma habilidade a mais, andando de trás.
 func _hero_fell() -> void:
 	track.on_hero_fall(self)
@@ -2111,13 +2104,6 @@ func _hero_fell() -> void:
 	HeroPowers.push_offer(self)   # aviso do poder novo: segunda tela, depois da oferta de carta
 
 
-## O herói aprende uma habilidade a cada `upgrade_every` níveis, até `upgrade_max` (poucas, para o jogador acompanhar).
-func _hero_learns() -> bool:
-	var X: Dictionary = R["hero_xp"]
-	var every := int(X.get("upgrade_every", 1))
-	return hero.level % every == 0 and hero.upgrade_order.size() < int(X.get("upgrade_max", 99))
-
-
 ## Candidatos a poder da party (ids, novos e evoluções juntos, pelo mesmo peso do sorteio; sim/hero_powers.gd).
 func _upgrade_options(n: int) -> Array:
 	return HeroPowers.options(self, n)
@@ -2185,7 +2171,6 @@ func _zones() -> void:
 				if hero.has("treasure_nose"):
 					z["t"] = 0.0
 				elif h.distance_to(Vector2(z["x"], z["y"])) <= 1.5:
-					hero_gain_xp(z["xp"])
 					hero.note("bait", 60.0)
 					z["t"] = 0.0
 			"coins":

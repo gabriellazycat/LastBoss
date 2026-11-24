@@ -2,7 +2,7 @@ class_name UiKit
 extends RefCounted
 ## Peças de interface compartilhadas (menu, HUD, pausa): paleta, tema, painéis, barras e o desenho das cartas.
 
-# Paleta: estática (e não const) porque a pele da HUD (Settings "look_hud") troca as cores. Ver UiSkins.
+# Paleta: estática (e não const) porque UiSkins.apply() põe as cores da pele no começo. Ver UiSkins.
 static var BG := Color(0.055, 0.04, 0.085, 0.92)
 static var BG_SOFT := Color(0.05, 0.035, 0.08, 0.72)
 static var EDGE := Color(0.42, 0.3, 0.6)
@@ -41,7 +41,7 @@ const GAP_BUTTON_Y := SP_XS  # idem na vertical (a caixa de linha da fonte já t
 
 ## Profundidade da moldura de um tipo de peça do kit ("gold", "ink", "button_ink"...) na pele atual.
 static func paper_depth(kind: String) -> float:
-	var t: Dictionary = DEPTH_MAPA if UiSkins.mapa() else DEPTH_KIT
+	var t: Dictionary = DEPTH_MAPA
 	return float(t.get(kind, t["ink"]))
 
 
@@ -91,25 +91,10 @@ static func clean_need(sb: StyleBox, is_button := false) -> Vector2:
 
 ## Fonte dos títulos: Cinzel na pele Covil; nas outras, a da pele ou uma serifada do sistema.
 static func title_font() -> Font:
-	if UiSkins.diario():
-		return UiDiario.font("type")
-	if _title_font == null and UiSkins.covil():
-		_title_font = UiCovil.font("title")
-	if _title_font == null:
-		_title_font = UiSkins.title_font()
-	if _title_font == null:
-		var sf := SystemFont.new()
-		sf.font_names = PackedStringArray(["Cinzel", "Trajan Pro", "Georgia", "Palatino Linotype", "Times New Roman", "serif"])
-		sf.font_weight = 700
-		var fv := FontVariation.new()
-		fv.base_font = sf
-		fv.spacing_glyph = 3
-		_title_font = fv
-	return _title_font
+	return UiDiario.font("type")
 
 
 ## Caixa chanfrada: cantos cortados em diagonal (corner_detail 1) em vez de arredondados.
-## A pele pode arredondar os cantos (UiSkins.corner()).
 static func box(bg: Color, border: Color, bw := 1, cut := 8, margin := 10) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
@@ -119,7 +104,6 @@ static func box(bg: Color, border: Color, bw := 1, cut := 8, margin := 10) -> St
 	sb.corner_detail = 1
 	sb.set_content_margin_all(margin)
 	sb.anti_aliasing = true
-	UiSkins.style_box(sb, cut)
 	return sb
 
 
@@ -127,86 +111,12 @@ static func make_theme() -> Theme:
 	UiSkins.apply()
 	_title_font = null
 	var t := Theme.new()
-	if UiSkins.diario():
-		UiDiario.fill_theme(t)
-		return t
-	if UiSkins.covil():
-		UiCovil.fill_theme(t)
-		return t
-	t.default_font_size = 18
-	if UiSkins.body_font():
-		t.default_font = UiSkins.body_font()
-	var states := {
-		"normal": [Color(0.09, 0.06, 0.14, 0.94), EDGE, 0],
-		"hover": [Color(0.17, 0.1, 0.24, 0.98), GOLD, 5],
-		"pressed": [Color(0.26, 0.13, 0.32), GOLD.lightened(0.2), 5],
-		"focus": [Color(0.17, 0.1, 0.24, 0.98), GOLD, 5],
-		"disabled": [Color(0.06, 0.05, 0.08, 0.8), Color(0.25, 0.23, 0.3), 0]}
-	if UiSkins.on():
-		states = UiSkins.button_states()
-	for st in states:
-		var sb: StyleBox = UiSkins.button_box(st, states[st][0], states[st][1]) if UiSkins.on() else null
-		if sb == null:
-			var fb := box(states[st][0], states[st][1], 1, 8, 12)
-			fb.border_width_left = 1 + states[st][2]
-			fb.content_margin_left = 16
-			fb.shadow_color = Color(0, 0, 0, 0.4)
-			fb.shadow_size = 4
-			sb = fb
-		t.set_stylebox(st, "Button", sb)
-	t.set_color("font_color", "Button", TEXT)
-	t.set_color("font_hover_color", "Button", UiSkins.hover_text())
-	t.set_color("font_focus_color", "Button", UiSkins.hover_text())
-	t.set_color("font_pressed_color", "Button", Color(1.0, 0.95, 0.8))
-	t.set_color("font_disabled_color", "Button", Color(0.45, 0.42, 0.5))
-	t.set_color("font_outline_color", "Button", Color.BLACK)
-	t.set_constant("outline_size", "Button", 3)
-	t.set_color("font_outline_color", "Label", Color.BLACK)
-	t.set_constant("outline_size", "Label", 4)
-	t.set_color("font_color", "Label", TEXT)
-	# Sliders e caixas de seleção das configurações.
-	var track := box(Color(0, 0, 0, 0.55), EDGE.darkened(0.3), 1, 3, 0)
-	track.content_margin_top = 4
-	track.content_margin_bottom = 4
-	t.set_stylebox("slider", "HSlider", track)
-	var fill := box(POWER.darkened(0.15), POWER, 0, 3, 0)
-	fill.content_margin_top = 4
-	fill.content_margin_bottom = 4
-	t.set_stylebox("grabber_area", "HSlider", fill)
-	t.set_stylebox("grabber_area_highlight", "HSlider", fill)
-	t.set_icon("grabber", "HSlider", _diamond(GOLD.darkened(0.1)))
-	t.set_icon("grabber_highlight", "HSlider", _diamond(GOLD.lightened(0.3)))
-	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
-		var sb := box(Color(0.09, 0.06, 0.14, 0.94), GOLD if st in ["hover", "focus"] else EDGE, 1, 6, 8)
-		t.set_stylebox(st, "OptionButton", sb)
-	t.set_color("font_color", "OptionButton", TEXT)
-	t.set_stylebox("panel", "PopupMenu", box(BG, EDGE, 1, 6, 6))
-	t.set_stylebox("hover", "PopupMenu", box(Color(0.2, 0.12, 0.3), GOLD, 0, 4, 4))
-	t.set_stylebox("panel", "TooltipPanel", box(BG, GOLD.darkened(0.3), 1, 4, 8))
+	UiDiario.fill_theme(t)
 	return t
 
 
-static func _diamond(col: Color) -> ImageTexture:
-	var n := 20
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	var c := (n - 1) * 0.5
-	for y in n:
-		for x in n:
-			var d := absf(x - c) + absf(y - c)
-			if d <= c:
-				img.set_pixel(x, y, col if d < c - 2.0 else Color(0.1, 0.05, 0.0))
-	return ImageTexture.create_from_image(img)
-
-
 static func panel(bg := BG, border := EDGE, margin := 10) -> PanelContainer:
-	if UiSkins.diario():
-		return UiDiario.panel(bg, border, margin)
-	if UiSkins.covil():
-		return UiCovil.panel(bg, border, margin, "soft" if bg.a < 0.9 else "plate")
-	var p := PanelContainer.new()
-	var sb: StyleBox = UiSkins.panel_box(bg, border, margin) if UiSkins.on() else null
-	p.add_theme_stylebox_override("panel", sb if sb else box(bg, border, 1, 8, margin))
-	return p
+	return UiDiario.panel(bg, border, margin)
 
 
 static func label(size := 18, col := TEXT, outline := 4) -> Label:
@@ -215,67 +125,24 @@ static func label(size := 18, col := TEXT, outline := 4) -> Label:
 	l.add_theme_color_override("font_color", col)
 	l.add_theme_color_override("font_outline_color", Color.BLACK)
 	l.add_theme_constant_override("outline_size", outline)
-	if UiSkins.diario():
-		UiDiario.label(l, size, outline)
-	elif UiSkins.covil():
-		UiCovil.label(l, size, outline)
+	UiDiario.label(l, size, outline)
 	return l
 
 
 static func title(size: int, col := GOLD) -> Label:
 	var l := label(size, col, maxi(4, size / 9))
-	if UiSkins.diario():
-		UiDiario.title(l, size, col)
-		return l
-	if UiSkins.covil():
-		UiCovil.title(l, size, col)
-		return l
-	l.add_theme_font_override("font", title_font())
-	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
-	l.add_theme_constant_override("shadow_offset_y", maxi(2, size / 20))
+	UiDiario.title(l, size, col)
 	return l
 
 
 static func bar(col: Color, w: float, h: float) -> ProgressBar:
-	if UiSkins.diario():
-		return UiDiario.bar(col, w, h)
-	if UiSkins.covil():
-		return UiCovil.bar(col, w, h)
-	var b := ProgressBar.new()
-	b.custom_minimum_size = Vector2(w, h)
-	b.show_percentage = false
-	if UiSkins.on():
-		b.add_theme_stylebox_override("fill", UiSkins.bar_fill(col, h))
-		b.add_theme_stylebox_override("background", UiSkins.bar_back(h))
-		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		return b
-	var fg := box(col, col.lightened(0.35), 0, 2, 0)
-	fg.border_width_top = 1 if h >= 8 else 0
-	var bg := box(Color(0, 0, 0, 0.62), Color(0, 0, 0, 0.9), 1, 2, 0)
-	b.add_theme_stylebox_override("fill", fg)
-	b.add_theme_stylebox_override("background", bg)
-	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return b
+	return UiDiario.bar(col, w, h)
 
 
 ## Losango com um número (nível, custo). A pele troca a forma (medalha, hexágono, orbe, losango). Na Covil,
 ## `shape` escolhe a gema: "crystal" (custo, elixir; o padrão), "crest" (herói) ou "sigil" (poder).
 static func badge(col: Color, size := 22, w := 40.0, shape := "crystal") -> PanelContainer:
-	if UiSkins.diario():
-		return UiDiario.badge(col, size, w, shape)
-	if UiSkins.covil():
-		return UiCovil.badge(col, size, w, shape)
-	var g := PanelContainer.new()
-	var sb: StyleBox = UiSkins.badge_box(col, w) if UiSkins.on() else box(col.darkened(0.45), col.lightened(0.3), 2, int(w * 0.32), 0)
-	g.add_theme_stylebox_override("panel", sb)
-	g.custom_minimum_size = Vector2(w, w)
-	var l := label(size, Color.WHITE)
-	l.name = "N"
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	g.add_child(l)
-	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return g
+	return UiDiario.badge(col, size, w, shape)
 
 
 ## Ícone da relíquia (15/11/2026): assets/ui/relics/<id>.svg (gerado por tools/art/relic_icons.py).
@@ -304,54 +171,26 @@ static func clear(n: Node) -> void:
 
 ## Fundo de um painel que não é PanelContainer criado aqui (configurações): moldura da pele ou caixa simples.
 static func panel_style(c: Control, bg: Color, border: Color, margin: int) -> void:
-	if UiSkins.diario():
-		UiDiario.dress(c, "paper", margin + 8, {"grime": 0.35, "seed": 0.6})
-		return
-	if UiSkins.covil():
-		var ic := UiCovil.iron(bg)
-		UiCovil.dress(c, "plate", UiCovil.trim_for(border), ic[0], ic[1], Color(0, 0, 0, 0), margin)
-		return
-	c.add_theme_stylebox_override("panel", box(bg, border, 1, 12, margin))
+	UiDiario.dress(c, "paper", margin + 8, {"grime": 0.35, "seed": 0.6})
+	return
 
 
 ## Cor de um título depois de criado (na Covil o degradê de metal segue a cor).
 static func title_color(l: Label, col: Color) -> void:
-	if UiSkins.diario():
-		l.add_theme_color_override("font_color", UiDiario.ink_of(col))
-		return
-	if UiSkins.covil() and l.material is ShaderMaterial:
-		l.material = UiCovil.title_material(l.get_theme_font_size("font_size"), col)
-		return
-	l.add_theme_color_override("font_color", col)
+	l.add_theme_color_override("font_color", UiDiario.ink_of(col))
+	return
 
 
 ## Estado de uma carta da mão: selecionada (borda dourada) e jogável (brilho verde).
 static func card_state(p: Control, selected: bool, playable: bool) -> void:
-	if UiSkins.diario():
-		UiDiario.card_state(p, selected, playable)
-		return
-	if UiSkins.covil():
-		UiCovil.card_state(p, selected, playable)
-		return
-	var sb: StyleBoxFlat = p.get_theme_stylebox("panel")
-	sb.set_border_width_all(4 if selected else 2)
-	sb.border_color = GOLD if selected else p.get_meta("rarity_color", EDGE)
-	sb.shadow_color = Color(1.0, 0.7, 0.3, 0.55) if selected else (Color(0.5, 1.0, 0.6, 0.25) if playable else Color(0, 0, 0, 0.5))
+	UiDiario.card_state(p, selected, playable)
+	return
 
 
 ## Painel aceso (Pacto em foco no menu).
 static func set_hot(c: Control, on: bool) -> void:
-	if UiSkins.diario():
-		UiDiario.set_hot(c, on)
-		return
-	if UiSkins.covil():
-		UiCovil.set_hot(c, on)
-		return
-	var sb: StyleBox = c.get_theme_stylebox("panel")
-	if sb is StyleBoxFlat:
-		(sb as StyleBoxFlat).border_color = GOLD if on else EDGE
-	elif sb is StyleBoxTexture:
-		(sb as StyleBoxTexture).modulate_color = Color(1.3, 1.22, 1.1) if on else Color.WHITE
+	UiDiario.set_hot(c, on)
+	return
 
 
 static func ignore_mouse(n: Node) -> void:
@@ -562,133 +401,42 @@ static func mod_ids_of(names: Array) -> Array:
 
 ## Carta compacta (mão em leque e esteira): arte, custo, atalho e, se `named`, o nome (★ = tem modificador).
 static func mini_card(d: CardDef, cost: int, mods: Array, key := "", w := 116.0, h := 146.0, named := true, level := 1) -> PanelContainer:
-	if UiSkins.diario():
-		return UiDiario.mini_card(d, cost, mods, key, w, h, named, level)
-	if UiSkins.covil():
-		return UiCovil.mini_card(d, cost, mods, key, w, h, named, level)
-	var k := w / 116.0
-	var rc: Color = RARITY_COLORS[d.rarity]
-	var p := PanelContainer.new()
-	var sb := box(UiSkins.card_bg(), rc, 2, int(7 * k), int(4 * k))
-	sb.shadow_color = Color(0, 0, 0, 0.5)
-	sb.shadow_size = 5
-	p.add_theme_stylebox_override("panel", sb)
-	p.set_meta("rarity_color", rc)
-	p.custom_minimum_size = Vector2(w, h)
-	p.size = p.custom_minimum_size
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 1)
-	var over := Control.new()
-	over.custom_minimum_size = Vector2(w - 8 * k, (h - 8 * k) * (0.62 if named else 1.0))
-	over.clip_contents = true
-	var art := TextureRect.new()
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture = UiDiario.hand_art(d.id)
-	art.set_anchors_preset(Control.PRESET_FULL_RECT)
-	over.add_child(art)
-	var gs := clampf(30.0 * k, 18.0, 30.0)
-	var gem := badge(ELIXIR, int(gs * 0.62), gs)
-	gem.name = "Gem"
-	(gem.get_node("N") as Label).name = "Cost"
-	(gem.get_node("Cost") as Label).text = str(cost)
-	gem.position = Vector2(1, 1)
-	over.add_child(gem)
-	if key != "":
-		var kl := label(int(14 * k), Color(0.92, 0.9, 0.98))
-		kl.text = key
-		kl.position = Vector2(w - 8 * k - 16 * k, 1)
-		over.add_child(kl)
-	v.add_child(over)
-	if named:
-		var nl := label(int(13 * k), rc.lightened(0.5), 3)
-		nl.text = ("★ " if mods.size() > 0 else "") + card_name(d, level)
-		nl.autowrap_mode = TextServer.AUTOWRAP_WORD
-		nl.max_lines_visible = 2
-		nl.custom_minimum_size = Vector2(w - 8 * k, 0)
-		nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		nl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		nl.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		if mods.size() > 0:
-			nl.add_theme_color_override("font_color", GOLD)
-		v.add_child(nl)
-	p.add_child(v)
-	ignore_mouse(p)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return p
+	return UiDiario.mini_card(d, cost, mods, key, w, h, named, level)
 
 
 ## Carta desenhada: arte, custo, atalho, nome, tipo, modificadores e texto. `w` define a escala.
 static func card(d: CardDef, cost: int, mods: Array, key := "", w := 168.0, level := 1) -> PanelContainer:
-	if UiSkins.diario():
-		var dc := UiDiario.card(d, cost, mods, key, w, level)
-		dc.set_meta("ui_card", true)   # --bare (capturas para maquete) mantém as cartas e esconde o resto
-		return dc
-	if UiSkins.covil():
-		return UiCovil.card(d, cost, mods, key, w, level)
-	var k := w / 168.0
-	var rc: Color = RARITY_COLORS[d.rarity]
-	var p := PanelContainer.new()
-	var sb := box(UiSkins.card_bg(), rc, 2, 8, 6)
-	sb.shadow_color = Color(0, 0, 0, 0.5)
-	sb.shadow_size = 6
-	p.add_theme_stylebox_override("panel", sb)
-	p.custom_minimum_size = Vector2(w, 246.0 * k)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 2)
-	var over := Control.new()
-	over.custom_minimum_size = Vector2(w - 12, 96.0 * k)
-	over.clip_contents = true
-	var art := TextureRect.new()
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.texture = UiDiario.hand_art(d.id)
-	art.set_anchors_preset(Control.PRESET_FULL_RECT)
-	over.add_child(art)
-	var grad := Gradient.new()
-	grad.set_color(0, Color(0, 0, 0, 0))
-	grad.set_color(1, Color(0.04, 0.03, 0.07, 0.85))
-	var gt := GradientTexture2D.new()
-	gt.gradient = grad
-	gt.fill_from = Vector2(0, 0.55)
-	gt.fill_to = Vector2(0, 1)
-	var fade := TextureRect.new()
-	fade.texture = gt
-	fade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	over.add_child(fade)
-	var gem := badge(ELIXIR, int(22 * k), 34.0 * k)
-	gem.name = "Gem"
-	(gem.get_node("N") as Label).name = "Cost"
-	(gem.get_node("Cost") as Label).text = str(cost)
-	gem.position = Vector2(2, 2)
-	over.add_child(gem)
-	if key != "":
-		var kl := label(int(14 * k), Color(0.92, 0.9, 0.98))
-		kl.text = key
-		kl.position = Vector2(w - 12 - 18 * k - 4, 2)
-		over.add_child(kl)
-	var name_ := label(int(16 * k), rc.lightened(0.5))
-	name_.text = card_name(d, level)
-	name_.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var tl := label(int(11 * k), MUTED, 3)
-	tl.text = type_line(d)
-	tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	tl.custom_minimum_size = Vector2(w - 12, 0)
-	var ml := label(int(12 * k), GOLD)
-	var stars: Array = []
-	for m in mods:
-		stars.append("★ " + m)
-	ml.text = "  ".join(stars)
-	ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ml.autowrap_mode = TextServer.AUTOWRAP_WORD
-	ml.visible = mods.size() > 0
-	var desc := card_rich(d, int(13 * k), Color(0.9, 0.9, 0.96), w - 12, true, level)
-	for n in [over, name_, tl, ml, desc]:
-		v.add_child(n)
-	p.add_child(v)
-	ignore_mouse(p)
-	p.mouse_filter = Control.MOUSE_FILTER_STOP
-	return p
+	var dc := UiDiario.card(d, cost, mods, key, w, level)
+	dc.set_meta("ui_card", true)   # --bare (capturas para maquete) mantém as cartas e esconde o resto
+	return dc
+
+
+# ---------------------------------------------------------------- utilidades (vieram da pele Covil, 24/11/2026)
+
+static var _markers := {}
+
+
+## Textura-marcador branca n×n: o shader do papel lê o tamanho dela (TEXTURE_PIXEL_SIZE) para saber o estado.
+static func marker(n: int) -> ImageTexture:
+	if not _markers.has(n):
+		var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+		img.fill(Color.WHITE)
+		_markers[n] = ImageTexture.create_from_image(img)
+	return _markers[n]
+
+
+## Pixels de tela por unidade de interface (o shader do papel converte as larguras). Chamado a cada quadro pelo main.
+static func sync(vp: Viewport) -> void:
+	var vs := vp.get_visible_rect().size
+	if vs.x <= 0.0:
+		return
+	var px := float(DisplayServer.window_get_size().x) / vs.x if DisplayServer.get_name() != "headless" else 1.0
+	RenderingServer.global_shader_parameter_set("ui_px", px)
+
+
+## Tamanho de fonte que faz `text` caber em `w` (começa em `size`, não passa de `lo`).
+static func fit_size(f: Font, text: String, size: int, w: float, lo: int) -> int:
+	var s := size
+	while s > lo and f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, s).x > w:
+		s -= 1
+	return s

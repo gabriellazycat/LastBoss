@@ -1,7 +1,7 @@
 class_name Minimap
 extends Control
 ## Mapa da rota em tela cheia (M, Select, uma bifurcação sem escolha ou o Incêndio selecionado), no estilo A
-## "pergaminho sépia clássico" escolhido na revisão de 11/11/2026 (docs/decisoes_2026-11-11/mapa.html).
+## "pergaminho sépia clássico" escolhido na revisão de 11/11/2026.
 ## Um mapa longo e vertical para a run inteira: os atos empilhados de baixo para cima, rolável com a roda do mouse,
 ## arrastando, setas/PgUp/PgDn ou o direcional e o analógico esquerdo do controle. Abre com o herói em vista.
 ## O ato atual aparece inteiro; os atos futuros ainda não existem no Sim (cada ato gera a sua estrada ao começar),
@@ -70,12 +70,7 @@ var _mouse_hover := false          # hover vindo do mouse (o controle também tr
 var fell: Font
 var fell_it: Font
 
-## Variação dos elementos internos (rios, montanhas, colinas e árvores), propostas de 15/11/2026:
-## 0 = atual (traço com papel), 1 = gravura (hachura densa), 2 = aguada (tinta + cor lavada),
-## 3 = xilogravura (silhueta em tinta cheia), 4 = arredondado (montes com curvas de nível, árvores em cachos).
-## Para comparar: --mapstyle=N na linha de comando.
-static var FS := 1   # padrão: 1 gravura (escolhida em 15/11/2026); 0 antigo, 2 aguada, 3 xilogravura, 4 arredondado; --mapstyle=N
-static var FOG := true                 # --mapfog=0 tira a névoa dos atos futuros (só para comparar as variações)
+## Rios, montanhas, colinas e árvores do mapa em gravura (hachura densa, escolhida em 15/11/2026).
 const WASH_W := Color(0.43, 0.57, 0.6, 0.6)     # água
 const WASH_G := Color(0.47, 0.53, 0.27)          # folhagem
 const WASH_M := Color(0.55, 0.38, 0.2, 0.42)     # sombra das montanhas
@@ -218,7 +213,7 @@ func _relayout() -> void:
 
 
 func _key() -> String:
-	return "%d|%d|%d|%d|%d|%.4f|%d|%dx%d" % [sim.get_instance_id(), sim.act, sim.road.rows, past.size(), sim.run_seed, k, FS, int(size.x), int(size.y)]
+	return "%d|%d|%d|%d|%d|%.4f|%d|%dx%d" % [sim.get_instance_id(), sim.act, sim.road.rows, past.size(), sim.run_seed, k, 1, int(size.x), int(size.y)]
 
 
 ## Ponto do nó n da estrada do ato a, em unidades de desenho. Um desvio fixo por nó tira a cara de grade.
@@ -269,14 +264,6 @@ func _design_of_hero() -> Vector2:
 					return _along(_curve(sim.act, road, e), clampf((sim.hero.s - acc) / maxf(l, 1.0), 0.0, 1.0))
 		acc += l
 	return _dpos(sim.act, road, road.path[-1])
-
-
-## Onde o herói está no mapa: sobre a curva da ligação que ele percorre agora.
-func hero_point() -> Vector2:
-	if lay.is_empty() or lay_key != _key():
-		_archive()
-		_relayout()
-	return _to_screen(_design_of_hero())
 
 
 ## Nó com local que pode ser escolhido como destino (à frente e alcançável), sob o ponto m do mapa (ou -1).
@@ -863,8 +850,7 @@ func _paint_terrain(ci: CanvasItem) -> void:
 			_dashed(ci, line, Color(INK, 0.45), 4.0, 11.0, 8.0, 0.0)
 	# Névoa sobre os atos que ainda não chegaram, com os "?" por cima.
 	for a in range(sim.act + 1, lay.size()):
-		if FOG:
-			_paint_fog(ci, a)
+		_paint_fog(ci, a)
 	# Cartuchos, rosas dos ventos, navios e serpentes.
 	for a in lay.size():
 		_cartouche(ci, Vector2(W * 0.5, lay[a]["cart"]), a, a > sim.act)
@@ -1194,13 +1180,8 @@ func _feat(ci: CanvasItem, f: Array) -> void:
 			var x: float = g[0]
 			var y: float = g[1]
 			var w: float = g[2]
-			if FS > 0:
-				_hill_v(ci, x, y, w, r)
-				return
-			ci.draw_polyline(_quad(Vector2(x - w, y), Vector2(x, y - w * 0.9), Vector2(x + w, y)), INK, 2.2, true)
-			for q in [[0.2, 0.55, 8.0], [0.45, 0.42, 8.0], [0.65, 0.26, 7.0]]:
-				var s := Vector2(x + w * q[0], y - w * q[1])
-				ci.draw_line(s, s + Vector2(-4, q[2]), INK, 1.4, true)
+			_hill_v(ci, x, y, w, r)
+			return
 		"lake":
 			_lake(ci, Vector2(g[0], g[1]), g[2], g[3], r)
 		"marsh":
@@ -1285,48 +1266,14 @@ func _tree0(ci: CanvasItem, kind: String, p: Vector2, s: float, r: RandomNumberG
 			_shape(ci, pts, leaf, 1.8)
 
 
-func _hatch_r(ci: CanvasItem, top: Vector2, x: float, y: float, w: float, h: float, n: int, r: RandomNumberGenerator) -> void:
-	for i in range(1, n + 1):
-		var tt := float(i) / (n + 1)
-		var s := Vector2(top.x + (x + w - top.x) * tt * 0.92, top.y + (y - top.y) * tt * 0.92)
-		ci.draw_line(s, s + Vector2(-w * 0.3 * (1.0 - tt * 0.3), h * 0.2 + r.randf() * 5.0), INK, 1.4, true)
-
-
 func _peak(ci: CanvasItem, x: float, y: float, w: float, h: float, r: RandomNumberGenerator) -> void:
-	if FS > 0:
-		_mtn(ci, x, y, w, h, false, r)
-		return
-	var top := Vector2(x + (r.randf() - 0.5) * w * 0.3, y - h)
-	var pts := PackedVector2Array([Vector2(x - w, y), Vector2(x - w * 0.4, y - h * 0.55), top, Vector2(x + w * 0.35, y - h * 0.45), Vector2(x + w, y)])
-	_fill(ci, pts, BG)
-	ci.draw_polyline(pts, INK, 2.4, true)
-	_hatch_r(ci, top, x, y, w, h, 6, r)
-	ci.draw_line(top, top + Vector2(-3, h * 0.4), INK, 1.4, true)
+	_mtn(ci, x, y, w, h, false, r)
+	return
 
 
 func _snow(ci: CanvasItem, x: float, y: float, w: float, h: float, r: RandomNumberGenerator) -> void:
-	if FS > 0:
-		_mtn(ci, x, y, w, h, true, r)
-		return
-	var top := Vector2(x + (r.randf() - 0.5) * w * 0.2, y - h)
-	var pts := PackedVector2Array([Vector2(x - w, y), top, Vector2(x + w, y)])
-	_fill(ci, pts, BG)
-	ci.draw_polyline(pts, INK, 2.4, true)
-	var sl := 0.36
-	var lx := top.x - (top.x - (x - w)) * sl
-	var rx := top.x + (x + w - top.x) * sl
-	var ly := top.y + h * sl
-	var z := PackedVector2Array([Vector2(lx, ly)])
-	for i in range(1, 5):
-		var tt := i / 4.0
-		z.append(Vector2(lx + (rx - lx) * (tt - 0.125), ly + (7.0 if i % 2 == 1 else -1.0)))
-		z.append(Vector2(lx + (rx - lx) * tt, ly + (1.0 if i % 2 == 1 else 3.0)))
-	ci.draw_polyline(z, INK, 1.6, true)
-	for i in range(1, 7):
-		var tt := sl + (1.0 - sl) * i / 7.0
-		var s := Vector2(top.x + (x + w - top.x) * tt, top.y + h * tt)
-		ci.draw_line(s, s + Vector2(-w * 0.32 * (1.0 - tt * 0.4), h * 0.16), INK, 1.4, true)
-	ci.draw_line(top, top + Vector2(-w * 0.12, h * 0.22), INK, 1.2, true)
+	_mtn(ci, x, y, w, h, true, r)
+	return
 
 
 func _volcano(ci: CanvasItem, x: float, y: float, w: float, h: float, r: RandomNumberGenerator) -> void:
@@ -1419,7 +1366,7 @@ func _marsh(ci: CanvasItem, c: Vector2, r: RandomNumberGenerator) -> void:
 
 
 ## Casas, torres e ícones de construções no traço escolhido para o reino (CampaignArt, estilo Nórdico desde
-## 16/11/2026): o mapa da run, o mapa da campanha e o menu usam o mesmo desenho. Só na gravura (FS=1).
+## 16/11/2026): o mapa da run, o mapa da campanha e o menu usam o mesmo desenho. 
 const ART_ICONS := {"tavern": "tavern", "shrine": "shrine", "gate": "gate", "lair": "lair", "shop": "shop", "start": "tent"}
 var tf_live := Transform2D.IDENTITY
 var tf_bake := Transform2D.IDENTITY
@@ -1434,25 +1381,13 @@ func _art(ci: CanvasItem) -> CampaignArt:
 
 
 func _house(ci: CanvasItem, x: float, y: float, w: float, h: float, steeple: bool, r: RandomNumberGenerator) -> void:
-	if FS == 1:
-		var a := _art(ci)
-		a.r.seed = r.randi()
-		if steeple:
-			a._church(Vector2(x, y), 0.72)
-		else:
-			a._house(Vector2(x, y), w * 1.15, h, w * 0.85, "tile", a.r.randf() < 0.5, 1)
-		return
-	_shape(ci, PackedVector2Array([Vector2(x - w / 2, y), Vector2(x - w / 2, y - h), Vector2(x + w / 2, y - h), Vector2(x + w / 2, y)]), BG, 1.8)
-	_shape(ci, PackedVector2Array([Vector2(x - w / 2 - 3, y - h), Vector2(x, y - h - w * 0.7), Vector2(x + w / 2 + 3, y - h)]), BG2, 1.8)
-	var top := y - h - w * 0.55
+	var a := _art(ci)
+	a.r.seed = r.randi()
 	if steeple:
-		_shape(ci, PackedVector2Array([Vector2(x - 3, top), Vector2(x - 3, top - 12), Vector2(x + 3, top - 12), Vector2(x + 3, top)]), BG, 1.6)
-		_shape(ci, PackedVector2Array([Vector2(x - 4, top - 12), Vector2(x, top - 22), Vector2(x + 4, top - 12)]), BG, 1.6)
-		ci.draw_line(Vector2(x, top - 22), Vector2(x, top - 27), INK, 1.6, true)
-		ci.draw_line(Vector2(x - 2.5, top - 25), Vector2(x + 2.5, top - 25), INK, 1.6, true)
-	elif r.randf() < 0.5:
-		ci.draw_polyline(PackedVector2Array([Vector2(x + w * 0.2, y - h - w * 0.3), Vector2(x + w * 0.2, y - h - w * 0.3 - 6), Vector2(x + w * 0.2 + 3, y - h - w * 0.3 - 6), Vector2(x + w * 0.2 + 3, y - h - w * 0.3 - 2)]), INK, 1.4, true)
-	ci.draw_polyline(PackedVector2Array([Vector2(x - 1.5, y), Vector2(x - 1.5, y - 5), Vector2(x + 1.5, y - 5), Vector2(x + 1.5, y)]), INK, 1.2, true)
+		a._church(Vector2(x, y), 0.72)
+	else:
+		a._house(Vector2(x, y), w * 1.15, h, w * 0.85, "tile", a.r.randf() < 0.5, 1)
+	return
 
 
 func _windmill(ci: CanvasItem, x: float, y: float, r: RandomNumberGenerator) -> void:
@@ -1500,18 +1435,10 @@ func _ruin(ci: CanvasItem, x: float, y: float) -> void:
 
 
 func _tower(ci: CanvasItem, x: float, y: float) -> void:
-	if FS == 1:
-		var a := _art(ci)
-		a.r.seed = hash(Vector2i(int(x), int(y)))
-		a._tower(Vector2(x, y), 13, 30, "", true)
-		return
-	var o := Vector2(x, y)
-	_shape(ci, _offs(o, [Vector2(-7, 0), Vector2(-6, -30), Vector2(6, -30), Vector2(7, 0)]), BG, 1.9)
-	_shape(ci, _offs(o, [Vector2(-8, -30), Vector2(-8, -36), Vector2(-5, -36), Vector2(-5, -33), Vector2(-2, -33), Vector2(-2, -36), Vector2(2, -36), Vector2(2, -33), Vector2(5, -33), Vector2(5, -36), Vector2(8, -36), Vector2(8, -30)]), BG, 1.8)
-	ci.draw_line(o + Vector2(-1.5, -20), o + Vector2(-1.5, -25), INK, 1.5, true)
-	ci.draw_line(o + Vector2(0, -36), o + Vector2(0, -46), INK, 1.5, true)
-	ci.draw_polyline(_offs(o, [Vector2(0, -46), Vector2(9, -43), Vector2(0, -40)]), INK, 1.5, true)
-	_shape(ci, _poly(_offs(o, [Vector2(-2, 0), Vector2(-2, -6)]), _quad(o + Vector2(-2, -6), o + Vector2(0, -9), o + Vector2(2, -6)), _offs(o, [Vector2(2, 0)])), INK, 1.0)
+	var a := _art(ci)
+	a.r.seed = hash(Vector2i(int(x), int(y)))
+	a._tower(Vector2(x, y), 13, 30, "", true)
+	return
 
 
 func _stones(ci: CanvasItem, c: Vector2, r: RandomNumberGenerator) -> void:
@@ -1668,7 +1595,7 @@ func _tick(ci: CanvasItem, p: Vector2) -> void:
 
 ## Ícone a tinta de cada tipo de local (o mesmo desenho do mapa.html, estilo A).
 func _icon(ci: CanvasItem, c: Vector2, ty: String, s: float, alpha: float) -> void:
-	if FS == 1 and ART_ICONS.has(ty):
+	if ART_ICONS.has(ty):
 		_art(ci).icon(ART_ICONS[ty], tf_live if ci == self else tf_bake, c, s * 0.85, hash(ty) ^ hash(Vector2i(c)))
 		if alpha < 0.99:
 			ci.draw_circle(c, 34.0 * s, Color(BG, (1.0 - alpha) * 0.85))
@@ -2085,22 +2012,8 @@ static func _puff_tex() -> GradientTexture2D:
 # ---------------------------------------------------------------- variações dos elementos internos (15/11/2026)
 
 func _tree(ci: CanvasItem, kind: String, p: Vector2, s: float, r: RandomNumberGenerator) -> void:
-	match FS:
-		1:
-			_tree0(ci, kind, p, s, r, BG, INK)
-			_tree_hatch(ci, kind, p, s)
-		2:
-			var dark := kind == "p" or kind == "f"
-			_tree0(ci, kind, p, s, r, BG.lerp(WASH_G, 0.75 if dark else 0.5), INK)
-		3:
-			_tree0(ci, kind, p, s, r, INK, BG)
-		4:
-			if kind == "x":
-				_tree0(ci, kind, p, s, r, BG, INK)
-			else:
-				_tree4(ci, kind, p, s, r)
-		_:
-			_tree0(ci, kind, p, s, r, BG, INK)
+	_tree0(ci, kind, p, s, r, BG, INK)
+	_tree_hatch(ci, kind, p, s)
 
 
 ## Gravura: sombra hachurada no lado direito da copa e no chão.
@@ -2124,40 +2037,8 @@ func _tree_hatch(ci: CanvasItem, kind: String, p: Vector2, s: float) -> void:
 		ci.draw_line(g, g + Vector2(7 * s - i * 1.5 * s, 0), INK, 1.0, true)
 
 
-## Arredondado: folhosas em cacho de bolas, coníferas em gota (cipreste), sombra pontilhada.
-func _tree4(ci: CanvasItem, kind: String, p: Vector2, s: float, r: RandomNumberGenerator) -> void:
-	var x := p.x
-	var y := p.y
-	if kind == "p" or kind == "f":
-		var h := (30.0 if kind == "f" else 22.0) * s
-		var w := 6.5 * s
-		ci.draw_line(p, p + Vector2(0, -4 * s), INK, 2.0, true)
-		var b := y - 4 * s
-		var drop := _cubic(Vector2(x, b - h), Vector2(x + w * 0.4, b - h * 0.6), Vector2(x + w * 1.4, b - h * 0.15), Vector2(x, b), 10)
-		drop.append_array(_cubic(Vector2(x, b), Vector2(x - w * 1.4, b - h * 0.15), Vector2(x - w * 0.4, b - h * 0.6), Vector2(x, b - h), 10))
-		_shape(ci, drop, BG, 1.8)
-		for i in 5:
-			ci.draw_circle(Vector2(x + w * 0.35 + r.randf() * w * 0.4, b - h * (0.15 + i * 0.13)), 0.9, INK)
-		return
-	ci.draw_line(p, p + Vector2(0, -8 * s), INK, 2.0, true)
-	var balls: Array = [[-5.5, -13.0, 6.0], [5.5, -13.5, 6.0], [0.0, -20.0, 7.0]]
-	if kind == "b":
-		balls = [[-5.0, -5.0, 5.0], [4.5, -5.5, 5.0], [0.0, -9.5, 5.5]]
-	for bb in balls:
-		var c := Vector2(x + bb[0] * s, y + bb[1] * s)
-		ci.draw_circle(c, bb[2] * s, BG)
-		ci.draw_arc(c, bb[2] * s, 0, TAU, 18, INK, 1.7, true)
-	for bb in balls:
-		var c := Vector2(x + bb[0] * s, y + bb[1] * s)
-		ci.draw_circle(c + Vector2(bb[2] * 0.45 * s, bb[2] * 0.3 * s), 0.9, INK)
-		ci.draw_circle(c + Vector2(bb[2] * 0.2 * s, bb[2] * 0.55 * s), 0.9, INK)
-
-
 ## Montanha nas variações 1 a 4 (pico com ombros, ou nevada em triângulo).
 func _mtn(ci: CanvasItem, x: float, y: float, w: float, h: float, snowy: bool, r: RandomNumberGenerator) -> void:
-	if FS == 4:
-		_mtn_round(ci, x, y, w, h, snowy, r)
-		return
 	var top := Vector2(x + (r.randf() - 0.5) * w * 0.25, y - h)
 	var base := Vector2(x + w * 0.15, y)
 	var right_edge := Vector2(x + w, y)
@@ -2177,74 +2058,27 @@ func _mtn(ci: CanvasItem, x: float, y: float, w: float, h: float, snowy: bool, r
 		var tt := 1.0 - i / 4.0
 		cap.append(cap_l.lerp(cap_r, tt) + Vector2(0, 5.0 if i % 2 == 1 else -1.0))
 	cap.append(cap_l)
-	match FS:
-		1:   # gravura
-			_fill(ci, pts, BG)
-			var n := 13
-			for i in range(1, n):
-				var tt := float(i) / n
-				if snowy and tt < 0.36:
-					continue
-				var a := top.lerp(base, tt)
-				var b := top.lerp(right_edge, tt)
-				ci.draw_line(a, a.lerp(b, 0.92), INK, 1.0, true)
-			for i in 3:
-				var tt := 0.3 + i * 0.2
-				var a := top.lerp(Vector2(x - w, y), tt)
-				ci.draw_line(a + Vector2(4, 1), a + Vector2(9, 4), INK, 1.0, true)
-			if snowy:
-				ci.draw_polyline(cap.slice(1), INK, 1.4, true)
-			ci.draw_line(top, base, INK, 1.4, true)
-			ci.draw_polyline(pts, INK, 2.6, true)
-			for i in 4:
-				var g := Vector2(x + w * 0.3 + i * 7.0, y + 2 + i)
-				ci.draw_line(g, g + Vector2(14 - i * 3, 0), INK, 1.0, true)
-		2:   # aguada
-			_fill(ci, pts, BG)
-			_fill(ci, shade, WASH_M)
-			if snowy:
-				_fill(ci, cap, Color(1, 0.98, 0.92, 0.75))
-			ci.draw_line(Vector2(x - w * 0.7, y + 1), Vector2(x + w * 1.1, y + 1), Color(WASH_G, 0.5), 5.0, true)
-			ci.draw_line(top, base, Color(INK, 0.55), 1.2, true)
-			ci.draw_polyline(pts, INK, 2.2, true)
-		3:   # xilogravura
-			_fill(ci, pts, BG)
-			_fill(ci, shade, INK)
-			if snowy:
-				_fill(ci, cap, BG)
-				ci.draw_polyline(cap.slice(1), INK, 1.6, true)
-			for i in 2:
-				var a := top.lerp(Vector2(x - w, y), 0.45 + i * 0.22)
-				ci.draw_line(a + Vector2(5, 0), a + Vector2(10 + i * 3, 3), INK, 1.8, true)
-			ci.draw_polyline(pts, INK, 3.0, true)
-
-
-## Arredondado: montes em corcova com curvas de nível e sombra pontilhada.
-func _mtn_round(ci: CanvasItem, x: float, y: float, w: float, h: float, snowy: bool, r: RandomNumberGenerator) -> void:
-	var lean := (r.randf() - 0.5) * 0.4
-	var outer := _hump(x, y, w, h, lean, 1.0)
-	_fill(ci, outer, BG)
-	for k2 in [0.68, 0.38]:
-		ci.draw_polyline(_hump(x, y, w, h, lean, k2), Color(INK, 0.55), 1.0, true)
+	# gravura
+	_fill(ci, pts, BG)
+	var n := 13
+	for i in range(1, n):
+		var tt := float(i) / n
+		if snowy and tt < 0.36:
+			continue
+		var a := top.lerp(base, tt)
+		var b := top.lerp(right_edge, tt)
+		ci.draw_line(a, a.lerp(b, 0.92), INK, 1.0, true)
+	for i in 3:
+		var tt := 0.3 + i * 0.2
+		var a := top.lerp(Vector2(x - w, y), tt)
+		ci.draw_line(a + Vector2(4, 1), a + Vector2(9, 4), INK, 1.0, true)
 	if snowy:
-		var top_cap := PackedVector2Array()
-		for q in outer:
-			if q.y < y - h * 0.62:
-				top_cap.append(q)
-		if top_cap.size() >= 3:
-			var mid := Vector2((top_cap[0].x + top_cap[-1].x) * 0.5, y - h * 0.5)
-			ci.draw_polyline(_quad(top_cap[0], mid, top_cap[-1]), INK, 1.3, true)
-	for i in 14:
-		var u := r.randf()
-		var v := r.randf()
-		ci.draw_circle(Vector2(x + w * (0.15 + u * 0.7), y - h * v * (1.0 - u) * 0.85 - 2), 0.9, INK)
-	ci.draw_polyline(outer, INK, 2.2, true)
-
-
-func _hump(x: float, y: float, w: float, h: float, lean: float, sc: float) -> PackedVector2Array:
-	var ww := w * sc
-	var hh := h * sc
-	return _cubic(Vector2(x - ww, y), Vector2(x - ww * (0.75 - lean), y - hh * 1.05), Vector2(x + ww * (0.55 + lean), y - hh * 1.2), Vector2(x + ww, y), 16)
+		ci.draw_polyline(cap.slice(1), INK, 1.4, true)
+	ci.draw_line(top, base, INK, 1.4, true)
+	ci.draw_polyline(pts, INK, 2.6, true)
+	for i in 4:
+		var g := Vector2(x + w * 0.3 + i * 7.0, y + 2 + i)
+		ci.draw_line(g, g + Vector2(14 - i * 3, 0), INK, 1.0, true)
 
 
 func _hill_v(ci: CanvasItem, x: float, y: float, w: float, r: RandomNumberGenerator) -> void:
@@ -2253,26 +2087,11 @@ func _hill_v(ci: CanvasItem, x: float, y: float, w: float, r: RandomNumberGenera
 	for i in range(5, 11):
 		sh.append(_along(arc, i / 10.0))
 	sh.append(Vector2(x + w * 0.08, y))
-	match FS:
-		1:
-			_fill(ci, arc, BG)
-			for i in 5:
-				var a := _along(arc, 0.5 + i * 0.1)
-				ci.draw_line(a + Vector2(-1, 2), a + Vector2(-5, 9 - i), INK, 1.0, true)
-			ci.draw_polyline(arc, INK, 2.2, true)
-		2:
-			_fill(ci, arc, BG.lerp(WASH_G, 0.35))
-			_fill(ci, sh, Color(WASH_M, 0.3))
-			ci.draw_polyline(arc, INK, 2.0, true)
-		3:
-			_fill(ci, arc, BG)
-			_fill(ci, sh, INK)
-			ci.draw_polyline(arc, INK, 2.6, true)
-		_:
-			ci.draw_polyline(arc, INK, 2.0, true)
-			ci.draw_polyline(_quad(Vector2(x - w * 0.55, y), Vector2(x, y - w * 0.5), Vector2(x + w * 0.55, y)), Color(INK, 0.55), 1.0, true)
-			for i in 5:
-				ci.draw_circle(Vector2(x + w * (0.2 + r.randf() * 0.5), y - w * r.randf() * 0.35 - 2), 0.8, INK)
+	_fill(ci, arc, BG)
+	for i in 5:
+		var a := _along(arc, 0.5 + i * 0.1)
+		ci.draw_line(a + Vector2(-1, 2), a + Vector2(-5, 9 - i), INK, 1.0, true)
+	ci.draw_polyline(arc, INK, 2.2, true)
 
 
 static func _offset_var(pts: PackedVector2Array, d0: float, d1: float) -> PackedVector2Array:
@@ -2700,39 +2519,11 @@ func _river_to_sea(ci: CanvasItem, g: Dictionary, r: RandomNumberGenerator) -> v
 ## Rio: a linha do meio é `w` (pontos de controle), da nascente à foz.
 func _river(ci: CanvasItem, w: Array, _r: RandomNumberGenerator) -> void:
 	var line := _smooth(w, false, 4)
-	match FS:
-		1:   # gravura: duas margens e riscos da corrente
-			ci.draw_polyline(line, SEA, 16.0, true)
-			ci.draw_polyline(_offset_var(line, -8, -8), INK, 2.2, true)
-			ci.draw_polyline(_offset_var(line, 8, 8), INK, 2.2, true)
-			for i in range(2, line.size() - 2, 3):
-				var tg := (line[i + 1] - line[i - 1]).normalized()
-				var o := Vector2(-tg.y, tg.x) * (3.0 if i % 2 == 0 else -3.0)
-				ci.draw_line(line[i] + o - tg * 4, line[i] + o + tg * 4, INK, 1.0, true)
-		2:   # aguada: mancha azul larga, margem de tinta de um lado
-			ci.draw_polyline(line, Color(WASH_W, 0.25), 28.0, true)
-			ci.draw_polyline(line, WASH_W, 13.0, true)
-			ci.draw_polyline(_offset_var(line, -6.5, -6.5), INK, 2.0, true)
-			ci.draw_polyline(_offset_var(line, 6.5, 6.5), Color(INK, 0.55), 1.2, true)
-		3:   # xilogravura: fita de tinta com o fio de papel no meio
-			ci.draw_polyline(line, INK, 13.0, true)
-			_dashed(ci, line, BG, 2.6, 16.0, 9.0, 0.0)
-		4:   # arredondado: fino na nascente, largo na foz, linhas de corrente
-			var a := _offset_var(line, -2.0, -12.0)
-			var b := _offset_var(line, 2.0, 12.0)
-			var poly := PackedVector2Array(a)
-			var rb := b.duplicate()
-			rb.reverse()
-			poly.append_array(rb)
-			_fill(ci, poly, SEA)
-			ci.draw_polyline(a, INK, 2.0, true)
-			ci.draw_polyline(b, INK, 2.0, true)
-			ci.draw_polyline(_offset_var(line, -0.5, -5.0).slice(int(line.size() * 0.3)), Color(INK, 0.5), 1.0, true)
-			ci.draw_polyline(_offset_var(line, 0.5, 5.0).slice(int(line.size() * 0.5)), Color(INK, 0.5), 1.0, true)
-		_:
-			ci.draw_polyline(line, SEA, 14.0, true)
-			ci.draw_polyline(line, INK, 2.4, true)
-			var w2: Array = []
-			for p in w:
-				w2.append(p + Vector2(9, 0))
-			ci.draw_polyline(_smooth(w2, false, 4), INK, 1.6, true)
+	# gravura: duas margens e riscos da corrente
+	ci.draw_polyline(line, SEA, 16.0, true)
+	ci.draw_polyline(_offset_var(line, -8, -8), INK, 2.2, true)
+	ci.draw_polyline(_offset_var(line, 8, 8), INK, 2.2, true)
+	for i in range(2, line.size() - 2, 3):
+		var tg := (line[i + 1] - line[i - 1]).normalized()
+		var o := Vector2(-tg.y, tg.x) * (3.0 if i % 2 == 0 else -3.0)
+		ci.draw_line(line[i] + o - tg * 4, line[i] + o + tg * 4, INK, 1.0, true)

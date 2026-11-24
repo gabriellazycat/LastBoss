@@ -1,11 +1,9 @@
 class_name UiParch
 extends RefCounted
-## Kit visual da interface desde a rodada de UI de 13/11/2026: o MESMO papel creme, a moldura dourada e as fitas
-## dobradas do molde das cartas (assets/cards/mold/ → assets/ui/kit/, feito por tools/art/ui_kit/make_ui_kit.py),
-## e as cores e letras do mapa pergaminho (minimap.gd). A pele Diário (UiDiario) usa estas peças no lugar do papel
-## sujo com fita crepe; as funções antigas dela continuam com o mesmo nome, só trocaram de roupa.
+## Kit visual da interface (pele "Mapa aberto"): papel, moldura dupla de tinta, faixas e selos redesenhados como o
+## pergaminho do mapa (assets/ui/kit_mapa, feito por tools/art/ui_kit/make_map_kit.py), com as cores e letras do
+## mapa (minimap.gd). UiDiario chama estas peças; as funções dele mantêm os nomes antigos.
 
-const KIT := "res://assets/ui/kit/"
 const PORTRAITS := "res://assets/ui/portraits/"
 
 ## Paleta: tinta e vermelho do mapa pergaminho, ouro das molduras, papel das cartas.
@@ -30,7 +28,7 @@ static var _fonts := {}
 
 ## Pasta do kit da pele atual: a "Mapa aberto" tem as mesmas peças redesenhadas como o pergaminho do mapa.
 static func kit_dir() -> String:
-	return "res://assets/ui/kit_mapa/" if UiSkins.mapa() else KIT
+	return "res://assets/ui/kit_mapa/"
 
 
 static func tex(name: String) -> Texture2D:
@@ -281,10 +279,9 @@ static func bar(col: Color, w: float, h: float) -> ProgressBar:
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0.13, 0.085, 0.06, 0.92)
 	bg.border_color = GOLD if h >= 10 else Color(GOLD, 0.8)
-	if UiSkins.mapa():
-		# Mapa aberto: trilho de papel mais escuro com contorno de tinta (sem aro dourado).
-		bg.bg_color = Color("c9b07c")
-		bg.border_color = INK
+	# Mapa aberto: trilho de papel mais escuro com contorno de tinta (sem aro dourado).
+	bg.bg_color = Color("c9b07c")
+	bg.border_color = INK
 	bg.set_border_width_all(2 if h >= 12 else 1)
 	bg.set_corner_radius_all(int(minf(h * 0.5, 7)))
 	bg.anti_aliasing = true

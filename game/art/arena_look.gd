@@ -1,41 +1,23 @@
 class_name ArenaLook
 extends RefCounted
-## Arena do chefe (rodada visual 20/11/2026, docs/RODADA_VISUAL_2026-11-20.md). --arena=0 (padrão) = a de antes.
-##   1 Pedra e brasa: círculo de runas dourado pintado, borda de lajes, chamas nos braseiros, luz central quente.
-##   2 Cripta de runas: runas frias (azul-esverdeado) que pulsam, lajes escuras, chamas azuis, luz central fria.
-## world_view.build_arena() pula os anéis roxos antigos quando VAR > 0 e chama build() no fim.
+## Arena do chefe em cripta de runas (20/11/2026): runas frias (azul-esverdeado) que pulsam, lajes escuras, chamas
+## azuis, luz central fria. world_view.build_arena() chama build() no fim.
 
-static var VAR := 2   # padrão aprovado em 20/11/2026 na página de revisão (0 = como era antes)
-
-const NAMES := ["Atual", "Pedra e brasa", "Cripta de runas"]
-
-const P := {
-	1: {"rune": Color(1.0, 0.78, 0.35), "rune2": Color(0.85, 0.35, 0.12), "stone": Color(0.42, 0.36, 0.32), "stone2": Color(0.3, 0.26, 0.24),
-		"light": Color(1.0, 0.72, 0.42), "light_e": 2.2, "flame": Color(1.0, 0.55, 0.18), "pulse": 0.25},
-	2: {"rune": Color(0.45, 0.95, 0.9), "rune2": Color(0.35, 0.4, 0.95), "stone": Color(0.26, 0.28, 0.33), "stone2": Color(0.18, 0.19, 0.24),
-		"light": Color(0.5, 0.75, 1.0), "light_e": 2.6, "flame": Color(0.35, 0.75, 1.0), "pulse": 0.6},
-}
-
-
-static func on() -> bool:
-	return VAR > 0 and P.has(VAR)
+const Q := {"rune": Color(0.45, 0.95, 0.9), "rune2": Color(0.35, 0.4, 0.95), "stone": Color(0.26, 0.28, 0.33), "stone2": Color(0.18, 0.19, 0.24),
+	"light": Color(0.5, 0.75, 1.0), "light_e": 2.6, "flame": Color(0.35, 0.75, 1.0), "pulse": 0.6}
 
 
 static func center_light() -> Array:
-	if not on():
-		return [Color(0.75, 0.35, 1.0), 3.0]
-	return [P[VAR]["light"], P[VAR]["light_e"]]
+	return [Q["light"], Q["light_e"]]
 
 
 static func flame_color() -> Color:
-	return P[VAR]["flame"] if on() else Color(1.0, 0.55, 0.2)
+	return Q["flame"]
 
 
 ## Monta as peças novas sob `root`, centradas em `c` com raio `r`. `braziers`: posições dos braseiros.
 static func build(root: Node3D, c: Vector3, r: float, braziers: Array) -> void:
-	if not on():
-		return
-	var q: Dictionary = P[VAR]
+	var q: Dictionary = Q
 	# Círculo de runas pintado no chão (um plano com shader: anéis de pincel, runas, raios, pulso lento).
 	var circ := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
