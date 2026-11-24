@@ -15,3 +15,6 @@ arte_ia/*/
 !arte_ia/final_piloto/
 !arte_ia/pranchas/
 !arte_ia/_backup_assets_cards/
+
+# saídas de captura (nunca em docs/)
+capturas/

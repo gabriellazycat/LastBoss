@@ -15,15 +15,15 @@ Todos os arquivos de dono têm a mesma assinatura e devolvem `true` se trataram 
 static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool
 ```
 
-`k` traz `c` (a `Sim.CardInst`), `d` (o `CardDef`), `lv` (nível), `smult` (dano de feitiço do Pacto), `vet` (Veterano em feitiço: dano e duração maiores) e `curse` (1 se a carta é Amaldiçoada). Só escreva código por id para o que nenhuma op cobre; cada agente de vilão é dono do seu arquivo.
+`k` traz `c` (a `Sim.CardInst`), `d` (o `CardDef`), `lv` (nível), `smult` (multiplicador de dano de feitiço do deck, `deck_rules.spell_damage_mult`), `vet` (Veterano em feitiço: dano e duração maiores) e `curse` (1 se a carta é Amaldiçoada). Só escreva código por id para o que nenhuma op cobre; cada agente de vilão é dono do seu arquivo.
 
 Campos novos da carta: `"owner": "plague" | "dragon" | "lich" | "common"` (obrigatório), `"ops"`, `"on_death"` e `"ai"` (opcionais).
 
 ## Ops
 
-`"ops": [ {"op": "...", ...}, ... ]` roda ao jogar; `"on_death": [...]` roda quando uma unidade da carta morre pelo herói ou explodindo (no ponto da morte, com o nível da unidade, sem Pacto nem Veterano). Com `"on_death_any": true` roda em qualquer morte, inclusive sacrifício e expiração (Rato Macho?, 18/11/2026).
+`"ops": [ {"op": "...", ...}, ... ]` roda ao jogar; `"on_death": [...]` roda quando uma unidade da carta morre pelo herói ou explodindo (no ponto da morte, com o nível da unidade, sem multiplicador de feitiço nem Veterano). Com `"on_death_any": true` roda em qualquer morte, inclusive sacrifício e expiração (Rato Macho?, 18/11/2026).
 
-**Parâmetro numérico**: número literal (`2.5`) ou o nome de uma chave do `fx` da carta (`"damage"`), que vale `fxv(chave, nível)`, isto é, já cresce com `lvl` e troca pelo `n3`. Prefira chaves do `fx`: a planilha e o nível continuam funcionando.
+**Parâmetro numérico**: número literal (`2.5`) ou o nome de uma chave do `fx` da carta (`"damage"`), que vale `fxv(chave, nível)`, isto é, já cresce com `lvl` e troca pelo `n3`. Prefira chaves do `fx`: assim o nível continua funcionando.
 
 Em feitiço, dano é multiplicado por `smult × vet` e duração por `vet`; a maldição do Amaldiçoado vai para cada herói atingido.
 

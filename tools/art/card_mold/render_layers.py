@@ -3,7 +3,7 @@
 Uso: python tools/art/card_mold/render_layers.py [pasta_tmp] [--only=texto]
      --only=explosive_edge,explosive_mask refaz só as camadas cujo nome contém um dos textos (as outras ficam como estão).
 Saída: assets/cards/mold/*.png (600x840 a carta grande, 600x760 a da mão; 2x do desenho 300x420 / 300x380).
-Depende de docs/decisoes_2026-11-11/cartas_v4.html (funções de pintura, filtros e moldura) e de overlays.js (upgrades).
+Depende de cartas_v4.html (nesta pasta: funções de pintura, filtros e moldura) e de overlays.js (upgrades).
 Depois de rodar, abra o projeto no Godot (ou `godot --headless --import`) para importar as imagens.
 """
 import json
@@ -20,7 +20,7 @@ _POS = [a for a in sys.argv[1:] if not a.startswith("--")]
 ONLY = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--only=")), "")
 TMP = Path(_POS[0]) if _POS else ROOT / ".godot" / "mold_tmp"
 CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe"
-SRC = ROOT / "docs" / "decisoes_2026-11-11" / "cartas_v4.html"
+SRC = Path(__file__).parent / "cartas_v4.html"
 FONT = (ROOT / "assets" / "fonts" / "IMFellEnglishSC-Regular.ttf").as_posix()
 
 RARS = ["common", "uncommon", "rare", "legendary"]
