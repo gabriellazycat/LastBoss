@@ -10,7 +10,7 @@ extends SceneTree
 var src := ""
 var out := "res://assets/models/"
 ## --m2: grava só a variante "_a" de <src>/n em assets/models/m2_a/ e todos os atlas de <src>/tex/*/ em
-## assets/models/g_tex/m2/ (modelos de --modelos=1, ver Looks.M2).
+## assets/models/g_tex/m2/ (modelos refeitos à mão, ver Looks.m2_mesh).
 var m2 := false
 
 

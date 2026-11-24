@@ -7,11 +7,10 @@ var data: GameData
 
 func _ready() -> void:
 	Settings.load_all()
-	Settings.v["look_hud"] = 6
 	UiSkins.apply()
 	data = GameData.load_dir()
 	Tips.data = data
-	UiCovil.sync(get_viewport())
+	UiKit.sync(get_viewport())
 	var bg := ColorRect.new()
 	bg.color = Color(0.16, 0.13, 0.1)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)

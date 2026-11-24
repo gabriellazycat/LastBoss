@@ -10,11 +10,10 @@ var data: GameData
 func _ready() -> void:
 	Settings.load_all()
 	TranslationServer.set_locale("pt")
-	Settings.v["look_hud"] = 6
 	UiSkins.apply()
 	data = GameData.load_dir()
 	Tips.data = data
-	UiCovil.sync(get_viewport())
+	UiKit.sync(get_viewport())
 	var args := {}
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--") and a.contains("="):

@@ -1,5 +1,4 @@
-"""Kit da pele "Mapa aberto" (13/11/2026, docs/UI_PROPOSTAS.md, direção 6): as mesmas peças e tamanhos do kit do
-Diário (assets/ui/kit/), redesenhadas como o pergaminho do mapa da rota: papel areia com manchas e borda queimada,
+"""Kit da pele "Mapa aberto" (13/11/2026): as peças de 9-slice da interface, redesenhadas como o pergaminho do mapa da rota: papel areia com manchas e borda queimada,
 contorno irregular, moldura de linha dupla de tinta tremida à mão, faixas com as pontas em V. Nada reto.
 
 Uso: python -I tools/art/ui_kit/make_map_kit.py   (depois: godot --headless --path . --import)
@@ -8,14 +7,12 @@ fitas 34/14/18): tudo que importa fica dentro das margens, o miolo é papel liso
 """
 import math
 import random
-import shutil
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[3]
-OLD = ROOT / "assets" / "ui" / "kit"
 OUT = ROOT / "assets" / "ui" / "kit_mapa"
 OUT.mkdir(parents=True, exist_ok=True)
 SS = 3  # supersampling: desenha em 3x e reduz (linhas lisas)
@@ -207,7 +204,5 @@ for i, (t, c) in enumerate(RIB.items()):
     ribbon(f"ribbon_{t}", c, 40 + i)
     ribbon(f"ribbon_{t}_dim", c, 40 + i, dim=True)
 
-# Gemas de custo: as mesmas das cartas.
-for g in ["gem_common_purple", "gem_uncommon_purple", "gem_rare_purple", "gem_legendary_purple", "gem_common_teal"]:
-    shutil.copy(OLD / f"{g}.png", OUT / f"{g}.png")
+# Gemas de custo (gem_*.png): as mesmas das cartas, já estão em kit_mapa (o kit antigo de onde vieram saiu em 24/11/2026).
 print("kit do mapa em", OUT)

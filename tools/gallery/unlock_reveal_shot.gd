@@ -8,11 +8,10 @@ var data: GameData
 
 func _ready() -> void:
 	Settings.load_all()
-	Settings.v["look_hud"] = 7   # a pele padrão (Mapa aberto)
 	UiSkins.apply()
 	data = GameData.load_dir()
 	Tips.data = data
-	UiCovil.sync(get_viewport())
+	UiKit.sync(get_viewport())
 	var bg := ColorRect.new()
 	bg.color = Color(0.2, 0.17, 0.13)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)

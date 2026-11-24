@@ -1,4 +1,4 @@
-"""Exporta as estruturas novas (structures_m2.py) no formato dos g_n_a (V4, pincel seco), para --modelos=1.
+"""Exporta as estruturas novas (structures_m2.py) no formato dos g_n_a (V4, pincel seco), para assets/models/m2_a.
 (build_m2.py, na mesma pasta, é o wrapper das peças de cenário de outro agente; este é só das estruturas.)
 "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup -P tools/art/blender_m2/build_structures_m2.py -- <saída> [ids] [--preview]
 Saída: <saída>/n/<id>.lbm, <saída>/tex/dry_n/<id>.png e, com --preview, <saída>/prev/<id>.png (EEVEE, câmera a ~50°).

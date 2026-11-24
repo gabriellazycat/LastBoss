@@ -27,5 +27,6 @@ Godot pelo Git Bash:
 G="/c/Users/gabri/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64_console.exe"
 "$G" --headless --path . --import
 "$G" --headless --path . res://tests/tests.tscn            # última linha: "falhas: N"
+"$G" --headless --path . --script res://tools/check_scripts.gd   # todos os scripts compilam?
 "$G" --position -6000,0 --path . -- --menutest
 ```

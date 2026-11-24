@@ -7,7 +7,7 @@ Mesmo tamanho, origem e frente (-Y no Blender) das peças antigas (g_n_a), expor
 Saída: <saída>/n/<id>.lbm e <saída>/tex/m2/<id>.png. Depois:
   godot --headless --path . -s res://tools/art/import_g.gd -- --src=<saída> --m2
   godot --headless --path . --import
-No jogo: --modelos=1 (Looks.M2)."""
+No jogo: Looks.m2_mesh (assets/models/m2_a)."""
 import os, sys, math, random, traceback
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "blender_v2"))

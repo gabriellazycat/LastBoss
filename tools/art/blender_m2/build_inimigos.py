@@ -1,5 +1,5 @@
 """Exporta os inimigos novos (creatures_m2.py) no formato da V4 (g_n_a: atlas de pincel seco, paleta da carta) para
---modelos=1 (assets/models/m2_a/<id>.res + assets/models/g_tex/m2/<id>.png). Rodada visual 20/11/2026.
+o jogo (assets/models/m2_a/<id>.res + assets/models/g_tex/m2/<id>.png). Rodada visual 20/11/2026.
 (build_m2.py e build_structures_m2.py, na mesma pasta, são de outros agentes: cenário e estruturas.)
 "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup -P tools/art/blender_m2/build_inimigos.py -- <saída> [ids] [--preview=<pasta>] [--noexport]
 Saída: <saída>/n/<id>.lbm e <saída>/tex/dry_n/<id>.png; depois

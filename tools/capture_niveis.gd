@@ -1,9 +1,9 @@
 extends SceneTree
 ## Captura de conferência dos níveis I a VI da carta (frente C). Uso (janela fora da tela):
-## Godot --position -6000,0 --path . --script tools/capture_niveis.gd -- --out=docs/metaprogressao/niveis_I_a_VI.png
+## Godot --position -6000,0 --path . --script tools/capture_niveis.gd -- --out=capturas/niveis_I_a_VI.png
 
 func _initialize() -> void:
-	var out := "res://docs/metaprogressao/niveis_I_a_VI.png"
+	var out := "res://capturas/niveis_I_a_VI.png"
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out = a.substr(6)

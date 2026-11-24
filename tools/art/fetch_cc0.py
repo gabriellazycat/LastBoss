@@ -1,4 +1,4 @@
-"""Baixa os modelos CC0 da direção de arte "Aventura CC0" (docs/ESTUDO_DE_ARTE.md).
+"""Baixa os modelos CC0 da direção de arte "Aventura CC0" (hoje só os heróis KayKit são usados).
 
 Fontes oficiais:
 - KayKit (Kay Lousberg), repositórios oficiais em github.com/KayKit-Game-Assets, LICENSE.txt = CC0 1.0.

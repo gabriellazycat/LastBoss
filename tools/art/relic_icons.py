@@ -1,6 +1,6 @@
 # Ícones das relíquias (15/11/2026): um SVG minimalista por relíquia, no traço dos ícones do mapa
 # (tinta #3a2a1c sobre papel #e3cf9f, acento vermelho), com cor própria para elixir, ouro e gelo.
-# Gera assets/ui/relics/<id>.svg (o jogo e a página docs/reliquias/ usam os mesmos arquivos).
+# Gera assets/ui/relics/<id>.svg.
 # Uso: python tools/art/relic_icons.py
 import json, os, sys
 

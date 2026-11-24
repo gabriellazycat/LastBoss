@@ -12,7 +12,7 @@ Atos: 0 primavera, 1 outono, 2 terra amaldiçoada.
 
 "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup -P tools/art/blender_arvores/build_pinceladas.py -- <saída> --estilo=N [--sheet=<prefixo>]
 Depois: bash tools/art/blender_arvores/fazer.sh N <saída>  (vira assets/models/arv<N>/<id>_a<ato>.res + .png).
-No jogo: game/art/arvores.gd (--arvores=N)."""
+No jogo: game/art/arvores.gd (Arvores.STYLES)."""
 import os, sys, math, random, traceback
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

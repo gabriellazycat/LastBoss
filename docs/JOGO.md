@@ -46,13 +46,13 @@ Depois de cada local roda a **cena do local**: câmera lenta a 30 %, os selos do
 | Local | Disputa | Recompensa |
 |---|---|---|
 | Taverna | derrubar as casas na janela de tempo | modificador para uma carta |
-| Fonte | interromper o herói enquanto ele bebe | remover cartas do baralho |
+| Fonte | interromper o herói enquanto ele bebe (um guarda o protege) | remover cartas do baralho |
 | Ritual | matar N criaturas na janela | elixir ×2 durante o ritual e melhoria de carta |
-| Santuário | impedir o herói de vencer | carta rara ou melhor |
+| Santuário | não deixar o herói ficar no santuário pelo tempo de vencer | carta rara ou melhor |
 | Ponte (só nasce do rio) | meta de dano com o herói parado na ponte | cartas (comum, incomum, rara) |
 | Loja do mercador | — | comprar cartas, melhorias, modificadores, remoção e 1 relíquia, com ouro (`rules.shop`) |
 | Evento | texto com opções (`data/events.json`, ações em `sim/effects.gd`) | variável |
-| Herói ajudante | uma vez por ato, numa bifurcação | relíquia |
+| Herói ajudante (1 por ato, numa bifurcação) | matar o herói parado no local dentro da janela; se falhar, o herói da vez ganha um bônus até o fim do ato | 1 relíquia entre 3 |
 
 - **Ouro:** ganho por dano (`rules.gold.damage_per_gold` 40) e por disputa. É gasto na loja.
 - **Contratos** (`data/contracts.json`): metas curtas com prazo, por vilão; a recompensa é uma carta.
@@ -162,7 +162,7 @@ Cada sistema tem um visual só. As variantes que não foram escolhidas saíram d
 | `bots/` | Bots que jogam a sim (`PlayerBot`, `HumanBot`, `BotRun`). |
 | `headless/` | Lotes e diagnóstico sem tela: `batch`, `fuzz`, `hashes`, `replay`, `trace`. |
 | `tests/` | `tests.tscn`: a suíte inteira, ou `-- --only=t_a,t_b`. |
-| `tools/` | Editor de balanço (`balance_editor`, porta 8767), editor de desafios (`desafios_editor`, porta 8768), scripts de captura `capture_*.sh`, pipelines de arte em `tools/art/` (Blender `-b`, ícones, moldura), `gerar_unlocks.py`, `rodada.py` / `run_batch.py` (lotes de bot). |
+| `tools/` | Editor de balanço (`balance_editor`, porta 8767), editor de desafios (`desafios_editor`, porta 8768), `gerar_unlocks.py`, `run_batch.py` (lotes de bot em paralelo, via `headless/batch`), `final_check.gd` (runs de 15 parties com e sem meta), capturas (`capture_ref.sh` = cenas de referência para comparar antes/depois; `capture_menus.sh`, `capture_biblioteca.sh`, `capture_niveis.gd`), `river/` (teste rápido dos rios), `gallery/` (vitrines das cartas), pipelines de arte em `tools/art/` (Blender `-b`: `blender_v2`, `blender_g`, `blender_m2`, `blender_arvores`; ícones de relíquias, poderes e meta; molde das cartas; kit da UI). |
 | `arte_ia/` | Pipeline da arte das cartas por IA: `_tools`, os finais e as pranchas. Não é carregado pelo jogo. |
 
 ## 8. Como rodar
@@ -174,6 +174,7 @@ G="/c/Users/gabri/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngin
 "$G" --headless --path . --import                       # antes de tudo, depois de class_name novo
 "$G" --headless --path . res://tests/tests.tscn          # suíte inteira; última linha "falhas: N"
 "$G" --headless --path . res://tests/tests.tscn -- --only=t_run15,t_powers
+"$G" --headless --path . --script res://tools/check_scripts.gd   # todos os scripts compilam?
 "$G" --position -6000,0 --path . -- --menutest           # jogo com janela, em segundo plano
 ```
 

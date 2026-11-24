@@ -9,7 +9,6 @@ SCREENS=(
 "settings_video|5|--tab=video"
 "settings_game|5|--tab=game"
 "settings_controls|5|--tab=controls"
-"settings_looks|5|--tab=looks"
 "run_start|6|--start=horde --seed=7"
 "run_mid|7|--autoplay=heuristic --seed=7 --skip=560 --speed=1"
 "offer|6|--start=horde --seed=7 --offerat=3"

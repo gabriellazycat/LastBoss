@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Converte a saída do build_arvores.py (estilo N) para assets/models/arv<N>/<id>_a<ato>.res + .png.
+# Converte a saída do build_pinceladas.py (estilo N: 5 carvalho, 6 pinheiro + álamo) para assets/models/arv<N>/<id>_a<ato>.res + .png.
 # Uso: bash tools/art/blender_arvores/fazer.sh <estilo> <pasta de saída do build>
 GODOT="${GODOT:-/c/Users/gabri/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64_console.exe}"
 cd "$(dirname "$0")/../../.."

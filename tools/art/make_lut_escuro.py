@@ -1,5 +1,5 @@
 """Gera assets/textures/paint/lut_escuro.png: LUT 3D (33^3, fatias de azul lado a lado) para o B · escuros
-(docs/MUNDO_COMO_CARTAS.md). Estica só o valor (L do Lab) como a simulação de 15/11, sombra puxada para lilás,
+(PaintLook.apply_env). Estica só o valor (L do Lab) como a simulação de 15/11, sombra puxada para lilás,
 croma intacto. Uso: py -I tools/art/make_lut_escuro.py"""
 import numpy as np
 from PIL import Image

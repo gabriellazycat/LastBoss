@@ -18,3 +18,5 @@ arte_ia/*/
 
 # saídas de captura (nunca em docs/)
 capturas/
+# saídas de ferramentas de balanço (o editor recria pedidos_cartas.json quando precisa)
+balance_reports/
