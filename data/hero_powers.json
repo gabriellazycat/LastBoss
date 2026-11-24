@@ -380,9 +380,9 @@
    "trigger": "on_hit_taken",
    "cond": "low_hp",
    "cooldown": [
-    20,
-    17,
-    14
+    60,
+    45,
+    30
    ],
    "weight": 1.0,
    "counters": [

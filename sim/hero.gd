@@ -659,7 +659,7 @@ func _cast_ward(dt: float) -> void:
 			best = a
 	if best == null:
 		return
-	best.ward += best.hp * float(W["pct"])
+	best.add_ward(best.hp * float(W["pct"]))
 	ward_cd = float(W["cooldown"])
 
 
@@ -1024,6 +1024,14 @@ func take_damage(amount: float, sx: float, sy: float, src_tags: int, kind: int) 
 	if amount >= 100.0: note("burst", amount)
 	if near_count >= int(sim.data.upgrades["dash"]["p"]["surround"]): note("surround", amount)
 	return amount
+
+
+## Soma barreira sem passar do teto (ward_cap_frac da vida máxima): antes ela empilhava sem fim e nunca caía.
+func add_ward(v: float) -> void:
+	if v <= 0.0:
+		return
+	var cap: float = max_hp() * float(sim.data.rules.get("ward_cap_frac", 0.5))
+	ward = maxf(ward, minf(ward + v, cap))
 
 
 func heal(v: float) -> void:

@@ -1239,46 +1239,46 @@ UNLOCK_plague_carrion,Tenha 40 monstros seus em campo ao mesmo tempo em 3 runs d
 UNLOCK_primal_beast,Jogue 600 cartas de Bando no total,Play 600 Pack cards in total
 UNLOCK_rat_tide,"Use a mesma carta de monstro 40 vezes numa mesma run, em 3 runs diferentes","Play the same monster card 40 times in a single run, in 3 different runs"
 UNLOCK_rat_trap,Aplique 5 acúmulos de Peste no herói ao mesmo tempo em 2 runs diferentes,"Stack 5 Plague on the hero at once, in 2 different runs"
-UNLOCK_relic_act_hoard,Termine uma run com 300 de ouro,Finish a run with 300 gold
-UNLOCK_relic_aether_heart,Tenha 20 de Elixir máximo em 3 runs diferentes,"Reach 20 maximum Elixir, in 3 different runs"
-UNLOCK_relic_arcane_ink,Jogue 300 feitiços no total,Play 300 spells in total
-UNLOCK_relic_bad_blood,Derrote a party 9,Defeat party 9
-UNLOCK_relic_chain_ring,Jogue 6 cartas em 8 segundos,Play 6 cards within 8 seconds
-UNLOCK_relic_cracked_hourglass,Derrote a party 3,Defeat party 3
-UNLOCK_relic_deep_cauldron,Tenha 14 de Elixir máximo,Reach 14 maximum Elixir
-UNLOCK_relic_deep_cistern,Tenha 15 de Elixir máximo,Reach 15 maximum Elixir
-UNLOCK_relic_eternal_fountain,Tenha 18 de Elixir máximo em 2 runs diferentes,"Reach 18 maximum Elixir, in 2 different runs"
-UNLOCK_relic_fine_sand,Gaste 600 de Elixir numa mesma run,Spend 600 Elixir in a single run
-UNLOCK_relic_forge_hammer,Jogue 20 estruturas no total,Play 20 structures in total
-UNLOCK_relic_frost_shard,Jogue 6 cartas Temporárias numa mesma run,Play 6 Temporary cards in a single run
-UNLOCK_relic_giant_scale,Use a mesma carta de monstro 25 vezes numa mesma run,Play the same monster card 25 times in a single run
-UNLOCK_relic_grave_call,Faça 150 dos seus monstros morrerem numa mesma run,Have 150 of your monsters die in a single run
-UNLOCK_relic_greedy_seal,Derrote 80 heróis no total,Defeat 80 heroes in total
-UNLOCK_relic_hand_pocket,Derrote a party 7,Defeat party 7
-UNLOCK_relic_hanged_hand,Jogue 12 cartas em 12 segundos,Play 12 cards within 12 seconds
-UNLOCK_relic_heart_of_well,Tenha 17 de Elixir máximo,Reach 17 maximum Elixir
-UNLOCK_relic_heavy_grimoire,Jogue 50 feitiços numa mesma run,Play 50 spells in a single run
-UNLOCK_relic_jailer_chains,Derrote 12 heróis no total,Defeat 12 heroes in total
-UNLOCK_relic_living_library,Jogue 200 cartas no total,Play 200 cards in total
-UNLOCK_relic_living_vault,Gaste 500 de ouro numa mesma run,Spend 500 gold in a single run
-UNLOCK_relic_lucky_coin,Termine uma run com 600 de ouro,Finish a run with 600 gold
-UNLOCK_relic_merchant_purse,Ganhe 800 de ouro numa mesma run,Earn 800 gold in a single run
-UNLOCK_relic_opening_gambit,Derrote a party 4,Defeat party 4
-UNLOCK_relic_pack_howl,Tenha 8 bichos de Bando em campo ao mesmo tempo,Have 8 Pack creatures on the field at once
-UNLOCK_relic_phylactery,Derrote a party 12,Defeat party 12
-UNLOCK_relic_profane_earth,Derrote a party 8,Defeat party 8
-UNLOCK_relic_raider_pack,Jogue 7 cartas em 10 segundos,Play 7 cards within 10 seconds
-UNLOCK_relic_rift_key,Jogue 10 cartas em 15 segundos,Play 10 cards within 15 seconds
-UNLOCK_relic_rushing_tide,Gaste 400 de Elixir numa mesma run,Spend 400 Elixir in a single run
-UNLOCK_relic_shortcut_stone,Derrote a party 6,Defeat party 6
-UNLOCK_relic_stamp_ink,Derrote 30 heróis no total,Defeat 30 heroes in total
-UNLOCK_relic_still_aether,Tenha 16 de Elixir máximo,Reach 16 maximum Elixir
-UNLOCK_relic_tally_stick,Jogue 120 cartas numa mesma run,Play 120 cards in a single run
-UNLOCK_relic_tar_pit,Cause 800 de dano ao herói em menos de 4 segundos,Deal 800 damage to the hero in under 4 seconds
-UNLOCK_relic_tinker_file,Jogue 60 feitiços no total,Play 60 spells in total
-UNLOCK_relic_twin_litter,Tenha 30 monstros seus em campo ao mesmo tempo,Have 30 monsters on the field at once
-UNLOCK_relic_victory_mark,Derrote 60 heróis no total,Defeat 60 heroes in total
-UNLOCK_relic_watchful_eye,Jogue 150 cartas no total,Play 150 cards in total
+UNLOCK_relic_act_hoard,Termine uma run com 500 de ouro,Finish a run with 500 gold
+UNLOCK_relic_aether_heart,Tenha 20 de Elixir máximo em 4 runs diferentes,"Reach 20 maximum Elixir, in 4 different runs"
+UNLOCK_relic_arcane_ink,Jogue 600 feitiços no total,Play 600 spells in total
+UNLOCK_relic_bad_blood,Derrote a party 11,Defeat party 11
+UNLOCK_relic_chain_ring,Jogue 8 cartas em 8 segundos,Play 8 cards within 8 seconds
+UNLOCK_relic_cracked_hourglass,Derrote a party 5,Defeat party 5
+UNLOCK_relic_deep_cauldron,Tenha 15 de Elixir máximo,Reach 15 maximum Elixir
+UNLOCK_relic_deep_cistern,Tenha 16 de Elixir máximo,Reach 16 maximum Elixir
+UNLOCK_relic_eternal_fountain,Tenha 19 de Elixir máximo em 2 runs diferentes,"Reach 19 maximum Elixir, in 2 different runs"
+UNLOCK_relic_fine_sand,Gaste 1000 de Elixir numa mesma run,Spend 1000 Elixir in a single run
+UNLOCK_relic_forge_hammer,Jogue 50 estruturas no total,Play 50 structures in total
+UNLOCK_relic_frost_shard,Jogue 10 cartas Temporárias numa mesma run,Play 10 Temporary cards in a single run
+UNLOCK_relic_giant_scale,Use a mesma carta de monstro 40 vezes numa mesma run,Play the same monster card 40 times in a single run
+UNLOCK_relic_grave_call,Faça 250 dos seus monstros morrerem numa mesma run,Have 250 of your monsters die in a single run
+UNLOCK_relic_greedy_seal,Derrote 200 heróis no total,Defeat 200 heroes in total
+UNLOCK_relic_hand_pocket,Derrote a party 9,Defeat party 9
+UNLOCK_relic_hanged_hand,Jogue 15 cartas em 12 segundos,Play 15 cards within 12 seconds
+UNLOCK_relic_heart_of_well,Tenha 18 de Elixir máximo,Reach 18 maximum Elixir
+UNLOCK_relic_heavy_grimoire,Jogue 80 feitiços numa mesma run,Play 80 spells in a single run
+UNLOCK_relic_jailer_chains,Derrote 30 heróis no total,Defeat 30 heroes in total
+UNLOCK_relic_living_library,Jogue 600 cartas no total,Play 600 cards in total
+UNLOCK_relic_living_vault,Gaste 900 de ouro numa mesma run,Spend 900 gold in a single run
+UNLOCK_relic_lucky_coin,Termine uma run com 900 de ouro,Finish a run with 900 gold
+UNLOCK_relic_merchant_purse,Ganhe 1500 de ouro numa mesma run,Earn 1500 gold in a single run
+UNLOCK_relic_opening_gambit,Derrote a party 6,Defeat party 6
+UNLOCK_relic_pack_howl,Tenha 12 bichos de Bando em campo ao mesmo tempo,Have 12 Pack creatures on the field at once
+UNLOCK_relic_phylactery,Derrote a party 14,Defeat party 14
+UNLOCK_relic_profane_earth,Derrote a party 10,Defeat party 10
+UNLOCK_relic_raider_pack,Jogue 9 cartas em 10 segundos,Play 9 cards within 10 seconds
+UNLOCK_relic_rift_key,Jogue 13 cartas em 15 segundos,Play 13 cards within 15 seconds
+UNLOCK_relic_rushing_tide,Gaste 700 de Elixir numa mesma run,Spend 700 Elixir in a single run
+UNLOCK_relic_shortcut_stone,Derrote a party 8,Defeat party 8
+UNLOCK_relic_stamp_ink,Derrote 75 heróis no total,Defeat 75 heroes in total
+UNLOCK_relic_still_aether,Tenha 17 de Elixir máximo,Reach 17 maximum Elixir
+UNLOCK_relic_tally_stick,Jogue 180 cartas numa mesma run,Play 180 cards in a single run
+UNLOCK_relic_tar_pit,Cause 1400 de dano ao herói em menos de 4 segundos,Deal 1400 damage to the hero in under 4 seconds
+UNLOCK_relic_tinker_file,Jogue 150 feitiços no total,Play 150 spells in total
+UNLOCK_relic_twin_litter,Tenha 45 monstros seus em campo ao mesmo tempo,Have 45 monsters on the field at once
+UNLOCK_relic_victory_mark,Derrote 150 heróis no total,Defeat 150 heroes in total
+UNLOCK_relic_watchful_eye,Jogue 400 cartas no total,Play 400 cards in total
 UNLOCK_ruin_titan,Derrote a party 10,Defeat party 10
 UNLOCK_sewer_flood,Derrote a party 8 com este vilão,Defeat party 8 with this villain
 UNLOCK_shadow_mark,Jogue 1000 cartas no total,Play 1000 cards in total

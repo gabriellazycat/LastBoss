@@ -88,7 +88,7 @@ Motor em `sim/hero_powers.gd`; dados em `data/hero_powers.json` (21 poderes). Te
 | Quebra-Armadilhas | `structure_breaker` | próxima estrutura | 16 / 13 / 10 | kill_hp 400 / 700 / 2000; hp_frac 0,5 / 0,6 / 0,7 | 1 |
 | Escudo Anti-Magia | `spell_ward` | próximo feitiço | 20 / 16 / 12 | window 1 / 1,2 / 1,5; heal_frac 0,03 / 0,06 / 0,12 | 1 |
 | Purificação | `purify` | reação ao dano (maldição) | 18 / 14 / 10 | heal_frac 0 / 0,05 / 0,1 | 1 |
-| Segundo Fôlego | `second_wind` | reação ao dano (vida baixa) | 20 / 17 / 14 | below 0,3 / 0,35 / 0,4; heal_frac 0,3 / 0,4 / 0,55 | 1 |
+| Segundo Fôlego | `second_wind` | reação ao dano (vida baixa) | 60 / 45 / 30 (23/11/2026) | below 0,3 / 0,35 / 0,4; heal_frac 0,3 / 0,4 / 0,55 | 1 |
 | Vontade de Ferro | `iron_will` | reação ao dano (controle) | 18 / 15 / 12 | immune_s 3 / 5 / 8 | 1 |
 | Escudo Ignífugo | `fire_ward` | reação ao dano (fogo) | 16 / 14 / 12 | dur 4 / 6 / 8; taken_mult 0,4 / 0,25 / 0,1 | 1 |
 | Muralha de Escudos | `arrow_wall` | reação ao dano (projétil) | 18 / 15 / 12 | ward_frac 0,18 / 0,28 / 0,4 | 1 |

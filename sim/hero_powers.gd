@@ -400,7 +400,7 @@ static func _fire_contact(sim, pi: int, d: Dictionary, l: Dictionary, ctx: Dicti
 			_aoe(sim, h.x, h.y, float(l["radius"]), float(l["dmg_mult"]) * D, 1.0, float(l["struct_mult"]))
 		"war_cry":
 			for m in party:
-				m.ward += m.max_hp() * float(l["ward_frac"])
+				m.add_ward(m.max_hp() * float(l["ward_frac"]))
 			var st := _st(sim)
 			st["buff"] = float(l["dmg_bonus"])
 			st["buff_until"] = sim.t + float(l["dur"])
@@ -543,7 +543,7 @@ static func _fire_reaction(sim, pi: int, d: Dictionary, l: Dictionary, react: Di
 			if float(react["projectile"]) <= 0.0:
 				return false
 			for m in party:
-				m.ward += m.max_hp() * float(l["ward_frac"])
+				m.add_ward(m.max_hp() * float(l["ward_frac"]))
 		"burst":
 			if float(react["burst"]) <= 0.0:
 				return false

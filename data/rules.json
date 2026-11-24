@@ -86,8 +86,8 @@
   "leash": 8.0,
   "max_backtrack": 8.0,
   "route_locations": [
-   8,
-   10
+   10,
+   12
   ],
   "shrines": [
    1,
@@ -332,6 +332,7 @@
   "soaked": 6.0
  },
  "fire_vs_soaked": 2.0,
+ "ward_cap_frac": 0.5,
  "goals": {
   "heuristic_win": [
    0.5,
@@ -472,7 +473,7 @@
     "target_length": 500.0,
     "route_locations": [
      10,
-     11
+     12
     ]
    },
    "rarity": [
@@ -492,8 +493,8 @@
    "road": {
     "target_length": 800.0,
     "route_locations": [
-     14,
-     15
+     10,
+     12
     ]
    },
    "rarity": [
@@ -513,8 +514,8 @@
    "road": {
     "target_length": 1100.0,
     "route_locations": [
-     17,
-     18
+     10,
+     12
     ]
    },
    "rarity": [

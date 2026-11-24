@@ -25,6 +25,12 @@ func _ready() -> void:
 	var result := {"done": [{"id": "ogre", "v": 67.0, "g": 60.0}, {"id": "cave_troll", "v": 1.0, "g": 1.0},
 		{"id": "corrupt_piper", "v": 214.0, "g": 200.0}],
 		"near": [{"id": "rat_tide", "v": 11.0, "g": 15.0}, {"id": "alpha_beast", "v": 22.0, "g": 30.0}]}
+	if args.has("many"):   # muitas cartas e relíquias de uma vez: a lista tem de caber (quebra em linhas e rola)
+		var n := int(args["many"]) if str(args["many"]) != "" else 18
+		var ids: Array = ["ogre", "cave_troll", "corrupt_piper", "rat_tide"]
+		for rid in data.relic_ids:
+			ids.append("r:" + rid)
+		result["done"] = ids.slice(0, n).map(func(i): return {"id": i, "v": 3.0, "g": 3.0})
 	if args.has("none"):
 		result["done"] = []
 		var l := UiKit.label(20, UiKit.TEXT, 3)

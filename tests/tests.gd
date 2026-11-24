@@ -670,9 +670,9 @@ func t_unlock_challenges() -> void:
 	for rid in data.relics:
 		if T.challenge("r:" + str(rid)).size() > 0:
 			rch += 1
-	stats["parties_beaten"] = 3
+	stats["parties_beaten"] = 5
 	var rr: Dictionary = T.check(stats, ctx, ["r:cracked_hourglass", "r:opening_gambit"])
-	check(rch >= 30 and rr["done"].size() == 1 and rr["done"][0]["id"] == "r:cracked_hourglass", "desafios de relíquia: %d com desafio; party 3 cumpre, party 4 não" % rch)
+	check(rch >= 30 and rr["done"].size() == 1 and rr["done"][0]["id"] == "r:cracked_hourglass", "desafios de relíquia: %d com desafio; party 5 cumpre, party 6 não" % rch)
 	stats["parties_beaten"] = 8
 	# "no total": carta comum soma o acumulado de todos os vilões (Ogro: 600 monstros)
 	T.t["plays"]["monster"] = 40
@@ -4004,9 +4004,9 @@ func t_powers() -> void:
 		var d: Dictionary = data.hero_powers[id]
 		var keys0: Array = d["lv"][0].keys()
 		ok_data = ok_data and d["lv"].size() == 3 and d["cooldown"].size() == 3 and d["lv"][2].keys() == keys0
-		ok_data = ok_data and float(d["cooldown"][0]) >= float(d["cooldown"][2]) and float(d["cooldown"][2]) >= 4.0 and float(d["cooldown"][0]) <= 20.0
+		ok_data = ok_data and float(d["cooldown"][0]) >= float(d["cooldown"][2]) and float(d["cooldown"][2]) >= 4.0 and float(d["cooldown"][0]) <= 60.0
 		ok_data = ok_data and TranslationServer.translate("POWER_" + str(id)) != "" and d.has("counters") and d.has("weight")
-	check(ok_data, "poderes: %d com 3 niveis, recargas 4-20 s e mesmas chaves por nivel" % ids.size())
+	check(ok_data, "poderes: %d com 3 niveis, recargas 4-60 s e mesmas chaves por nivel" % ids.size())
 	# Sorteio: cada queda de party dá exatamente 1 poder novo ou 1 evolucao; a oferta-aviso vem depois da de carta.
 	var s := _sim(7, "ruin")
 	check(s.powers.is_empty(), "a run comeca sem poderes")

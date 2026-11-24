@@ -52,7 +52,7 @@
    "owner": "common",
    "challenge": {
     "kind": "party",
-    "party": 3
+    "party": 5
    }
   },
   {
@@ -65,7 +65,7 @@
    "owner": "common",
    "challenge": {
     "kind": "heroes",
-    "n": 12,
+    "n": 30,
     "total": true
    }
   },
@@ -80,7 +80,7 @@
    "challenge": {
     "kind": "plays",
     "fam": "any",
-    "n": 150,
+    "n": 400,
     "total": true
    }
   },
@@ -97,7 +97,7 @@
    "challenge": {
     "kind": "peak",
     "fam": "pack",
-    "n": 8
+    "n": 12
    }
   },
   {
@@ -111,7 +111,7 @@
    "owner": "dragon",
    "challenge": {
     "kind": "gold_earned",
-    "n": 800
+    "n": 1500
    }
   },
   {
@@ -135,7 +135,7 @@
    "owner": "common",
    "challenge": {
     "kind": "party",
-    "party": 6
+    "party": 8
    }
   },
   {
@@ -148,7 +148,7 @@
    "owner": "common",
    "challenge": {
     "kind": "party",
-    "party": 8
+    "party": 10
    }
   },
   {
@@ -162,7 +162,7 @@
    "unique": true,
    "challenge": {
     "kind": "party",
-    "party": 9
+    "party": 11
    }
   },
   {
@@ -177,7 +177,7 @@
    "challenge": {
     "kind": "plays",
     "fam": "spell",
-    "n": 50
+    "n": 80
    }
   },
   {
@@ -216,7 +216,7 @@
    "weight": 1,
    "challenge": {
     "kind": "elixir_max",
-    "n": 14
+    "n": 15
    }
   },
   {
@@ -231,7 +231,7 @@
    "weight": 1,
    "challenge": {
     "kind": "elixir_spent",
-    "n": 400
+    "n": 700
    }
   },
   {
@@ -247,7 +247,7 @@
    "weight": 2.5,
    "challenge": {
     "kind": "heroes",
-    "n": 60,
+    "n": 150,
     "total": true
    }
   },
@@ -263,7 +263,7 @@
    "weight": 1,
    "challenge": {
     "kind": "elixir_max",
-    "n": 17
+    "n": 18
    }
   },
   {
@@ -278,7 +278,7 @@
    "weight": 1,
    "challenge": {
     "kind": "elixir_max",
-    "n": 18,
+    "n": 19,
     "runs": 2
    }
   },
@@ -295,7 +295,7 @@
    "weight": 2.5,
    "challenge": {
     "kind": "gold_spent",
-    "n": 500
+    "n": 900
    }
   },
   {
@@ -308,7 +308,7 @@
    "owner": "common",
    "challenge": {
     "kind": "party",
-    "party": 7
+    "party": 9
    }
   },
   {
@@ -322,7 +322,7 @@
    "unique": true,
    "challenge": {
     "kind": "party",
-    "party": 4
+    "party": 6
    }
   },
   {
@@ -335,7 +335,7 @@
    "owner": "dragon",
    "challenge": {
     "kind": "gold_end",
-    "n": 300
+    "n": 500
    }
   },
   {
@@ -349,7 +349,7 @@
    "challenge": {
     "kind": "peak",
     "fam": "monster",
-    "n": 30
+    "n": 45
    }
   },
   {
@@ -363,7 +363,7 @@
    "unique": true,
    "challenge": {
     "kind": "party",
-    "party": 12
+    "party": 14
    }
   },
   {
@@ -376,7 +376,7 @@
    "owner": "common",
    "challenge": {
     "kind": "heroes",
-    "n": 80,
+    "n": 200,
     "total": true
    }
   },
@@ -391,7 +391,7 @@
    "challenge": {
     "kind": "died",
     "fam": "monster",
-    "n": 150
+    "n": 250
    }
   },
   {
@@ -404,7 +404,7 @@
    "owner": "common",
    "challenge": {
     "kind": "gold_end",
-    "n": 600
+    "n": 900
    }
   },
   {
@@ -428,7 +428,7 @@
    "challenge": {
     "kind": "plays",
     "fam": "structure",
-    "n": 20,
+    "n": 50,
     "total": true
    }
   },
@@ -443,7 +443,7 @@
    "challenge": {
     "kind": "plays",
     "fam": "spell",
-    "n": 60,
+    "n": 150,
     "total": true
    }
   },
@@ -467,7 +467,7 @@
    "owner": "common",
    "challenge": {
     "kind": "burst",
-    "n": 800,
+    "n": 1400,
     "s": 4.0
    }
   },
@@ -481,7 +481,7 @@
    "owner": "common",
    "challenge": {
     "kind": "heroes",
-    "n": 30,
+    "n": 75,
     "total": true
    }
   },
@@ -496,7 +496,7 @@
    "weight": 1,
    "challenge": {
     "kind": "elixir_max",
-    "n": 15
+    "n": 16
    }
   },
   {
@@ -511,7 +511,7 @@
    "weight": 1,
    "challenge": {
     "kind": "elixir_max",
-    "n": 16
+    "n": 17
    }
   },
   {
@@ -527,7 +527,7 @@
    "challenge": {
     "kind": "elixir_max",
     "n": 20,
-    "runs": 3
+    "runs": 4
    }
   },
   {
@@ -542,7 +542,7 @@
    "challenge": {
     "kind": "plays",
     "fam": "any",
-    "n": 200,
+    "n": 600,
     "total": true
    }
   },
@@ -557,7 +557,7 @@
    "new": "2026-11-15",
    "challenge": {
     "kind": "elixir_spent",
-    "n": 600
+    "n": 1000
    }
   },
   {
@@ -584,7 +584,7 @@
    "challenge": {
     "kind": "plays_window",
     "fam": "any",
-    "n": 7,
+    "n": 9,
     "s": 10.0
    }
   },
@@ -602,7 +602,7 @@
    "challenge": {
     "kind": "plays_window",
     "fam": "any",
-    "n": 12,
+    "n": 15,
     "s": 12.0
    }
   },
@@ -618,7 +618,7 @@
    "challenge": {
     "kind": "plays",
     "fam": "spell",
-    "n": 300,
+    "n": 600,
     "total": true
    }
   },
@@ -644,7 +644,7 @@
    "new": "2026-11-15",
    "challenge": {
     "kind": "plays_same",
-    "n": 25
+    "n": 40
    }
   },
   {
@@ -660,7 +660,7 @@
    "challenge": {
     "kind": "plays",
     "fam": "any",
-    "n": 120
+    "n": 180
    }
   },
   {
@@ -675,7 +675,7 @@
    "challenge": {
     "kind": "plays_window",
     "fam": "any",
-    "n": 6,
+    "n": 8,
     "s": 8.0
    }
   },
@@ -704,7 +704,7 @@
    "challenge": {
     "kind": "plays",
     "fam": "lair",
-    "n": 6
+    "n": 10
    }
   },
   {
@@ -720,7 +720,7 @@
    "challenge": {
     "kind": "plays_window",
     "fam": "any",
-    "n": 10,
+    "n": 13,
     "s": 15.0
    }
   }

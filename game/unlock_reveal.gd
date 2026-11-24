@@ -13,6 +13,8 @@ var slots: Array = []        # [{stage, back, front, note, flipped, busy}]
 var btn: Button
 var sub: Label
 var card_w := 176.0
+var _scroll: ScrollContainer
+var _scroll_max := 400.0
 
 
 ## null se nada foi liberado.
@@ -49,7 +51,8 @@ static func near_text(result: Dictionary) -> String:
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	card_w = 176.0 if items.size() <= 4 else (148.0 if items.size() <= 6 else 118.0)
+	var vp := get_viewport_rect().size
+	card_w = 176.0 if items.size() <= 4 else (148.0 if items.size() <= 6 else (118.0 if items.size() <= 10 else 100.0))
 	var dim := ColorRect.new()
 	dim.color = Color(0.03, 0.02, 0.02, 0.78)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -74,12 +77,22 @@ func _ready() -> void:
 	sub.text = tr("UI_UNLOCK_SUB").format({"n": items.size()})
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(sub)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 20)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.add_child(row)
+	# Muitas cartas: quebram em linhas e a lista rola, para o botão nunca sair da tela.
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 20)
+	row.add_theme_constant_override("v_separation", 16)
+	row.alignment = FlowContainer.ALIGNMENT_CENTER
+	row.custom_minimum_size = Vector2(maxf(vp.x - 120.0, 300.0), 0)
 	for i in items.size():
 		row.add_child(_slot(i))
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(row.custom_minimum_size.x, 0)
+	scroll.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	v.add_child(scroll)
+	scroll.add_child(row)
+	_scroll = scroll
+	_scroll_max = maxf(vp.y - 250.0, 200.0)
 	btn = Button.new()
 	btn.custom_minimum_size = Vector2(300, 54)
 	btn.add_theme_font_size_override("font_size", 22)
@@ -96,6 +109,11 @@ func _process(_d: float) -> void:
 	# O HUD não ancora os filhos: segue o tamanho da janela.
 	position = Vector2.ZERO
 	size = get_viewport_rect().size
+	if _scroll != null:
+		var vp_h := size.y
+		_scroll_max = maxf(vp_h - 250.0, 200.0)
+		var h := minf(_scroll.get_child(0).get_combined_minimum_size().y, _scroll_max)
+		_scroll.custom_minimum_size.y = h
 
 
 func _slot(i: int) -> Control:
