@@ -1,11 +1,15 @@
 class_name CollectionScreen
 extends VBoxContainer
-## Biblioteca (plano de metaprogressão, 21/11/2026): o álbum de cartas por vilão. Abas por vilão + Comuns, cartas grandes
-## em páginas com nível (I a VI) e "N/3 no deck"; bloqueadas tracejadas com o desafio e o progresso; filtro por custo
-## de elixir; à direita a lista fina do deck (19/19) com a curva de elixir; clicar numa carta abre o zoom (atual ×
-## próximo nível com os números recalculados, "Subir · preço" e "+ no deck").
-## O nome da classe e o contrato com o menu continuam os da antiga Coleção: setup(d, m), open(), refresh(), closed,
-## grid, tab, shown, _open_reader(i) e a estática cell().
+## Biblioteca (plano de metaprogressão, 21/11/2026; refeita no estilo Hearthstone em 25/11/2026), em duas telas:
+##  1. "pick": retratos grandes dos vilões (trancados aparecem trancados) com a contagem do deck (19/19) e das cartas
+##     liberadas; clicar num vilão liberado entra na tela 2.
+##  2. "deck": a coleção do vilão. Grade de 5 colunas com rolagem contínua (roda do mouse e arrasto, sem páginas),
+##     filtros de custo e de tipo (monstro/estrutura/feitiço/temporário/comuns) no topo; à direita o deck em barrinhas
+##     (custo + nome + quantidade; clicar na barrinha tira a carta) e a curva de elixir; clicar na carta da grade
+##     põe no deck; botão direito, Y do controle ou a tecla I abrem o zoom (atual × próximo nível, "Subir · preço").
+## Cartas bloqueadas continuam na grade (tracejadas, com o desafio). Deck incompleto não grava.
+## O contrato com o menu continua o da antiga Coleção: setup(d, m), open(), refresh(), closed, grid, tab, shown,
+## set_tab(id) (agora entra direto na tela 2 do vilão), _open_reader(i) e a estática cell().
 ## As compras e o deck passam por `api` (o MetaSave): buy_card_level(id) -> bool, set_deck(vid, ids) -> bool,
 ## deck_ok(vid, ids) -> bool. Enquanto a frente D não os tem, library_demo.gd põe um objeto com esses nomes em `api`.
 
@@ -18,35 +22,50 @@ const CELL := Vector2(200, 253)           # a carta do álbum (compacta: arte ch
 const FOOT := 44.0
 const CELL_W := 132.0                    # largura padrão da cell() estática (menu e tela de Pacto)
 const COLS := 5
-const PER_PAGE := 10
+const VISIBLE_ROWS := 2                   # fileiras visíveis por vez na rolagem (10 cartas)
+const PER_PAGE := 200                     # sem páginas: teto de cartas na grade (a constante fica por compatibilidade com os testes)
 const MAX_COPIES := 3
 const DECK_SIZE := 19
 const MAX_LEVEL := 6
 const ROMAN := ["", "I", "II", "III", "IV", "V", "VI"]
+const GRID_MARGIN := 6.0
+const WHEEL_STEP := 150.0
 ## Faixas de custo do filtro e da curva de elixir (custo no nível atual da carta).
 const BUCKETS := [[0, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 9], [10, 99]]
 const BUCKET_NAMES := ["0-1", "2", "3", "4", "5", "6", "7-9", "10+"]
+## Filtro de tipo: "all" = do vilão + comuns; "common" = só as comuns; os outros agrupam por CardDef.type.
+const TYPE_FILTERS := ["all", "monster", "structure", "spell", "lair", "common"]
+const TYPE_KEYS := ["UI_LIB_ALL", "TYPE_monster", "TYPE_structure", "TYPE_spell", "TYPE_lair", "UI_TAB_V_common"]
+const TYPE_W := [100, 140, 160, 140, 170, 140]
+const PICK_W := 440.0
+const PICK_H := 690.0
 
 var data: GameData
 var meta: MetaSave
 var api: Object                   # quem compra nível e grava deck (padrão: o próprio meta)
-var tabs: Array = []              # vilões (data.villain_ids) e "common"
-var tab := "plague"
-var deck_vid := "plague"          # o deck em edição: o do último vilão aberto (a aba Comuns edita o mesmo)
+var tabs: Array = []              # vilões (data.villain_ids) e "common" (mantido por compatibilidade)
+var tab := "plague"               # vilão da tela 2
+var deck_vid := "plague"          # o deck em edição (igual a `tab`)
 var work: Array = []              # deck em edição (ids); só vai para o save quando está válido
-var page := 0
+var stage := "pick"               # "pick" (escolher o vilão) ou "deck" (a coleção)
+var type_filter := "all"          # um de TYPE_FILTERS
 var cost_filter := -1             # índice em BUCKETS; -1 = todos
-var shown: Array = []             # cartas da aba depois do filtro, na ordem do álbum (todas as páginas)
+var shown: Array = []             # cartas da grade depois dos filtros, na ordem da grade
 var zoom_id := ""
 var grid: GridContainer
-var tab_row: Container
+var grid_sc: ScrollContainer
 var board: Control
 var almas_l: Label
 var head_l: Label
+var sub_l: Label
 var count_l: Label
-var page_l: Label
-var prev_b: Button
-var next_b: Button
+var empty_l: Label
+var back_b: Button
+var vil_b: Button
+var pick_layer: Control
+var pick_row: Control
+var deck_layer: Control
+var type_row: Container
 var filter_row: Container
 var deck_box: Control
 var deck_head: Label
@@ -55,7 +74,14 @@ var deck_warn: Label
 var deck_list: VBoxContainer
 var curve: Control
 var zoom_layer: Control
-var note_l: Label
+var _cnt_labels := {}             # id -> Label "n/3" da célula
+var _cell_cards := {}             # id -> carta da célula (escurece com 3 cópias)
+var _grid_top := true             # a próxima reconstrução da grade volta ao topo
+var _scroll_target := 0.0
+var _last_set := 0
+var _drag_pending := false
+var _drag_active := false
+var _drag_from := Vector2.ZERO
 static var _gray: Shader
 
 
@@ -65,7 +91,7 @@ func setup(d: GameData, m: MetaSave) -> void:
 	api = m
 	tabs = d.villain_ids.duplicate()
 	tabs.append("common")
-	tab = str(tabs[0])
+	tab = str(d.villain_ids[0])
 	deck_vid = tab
 	work = _saved_deck(deck_vid)
 
@@ -82,87 +108,21 @@ func _ready() -> void:
 	sheet.size = PAPER_SIZE
 	sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(sheet)
-	var t := UiParch.label("UI_LIB_TITLE", "title", 54, UiParch.INK)
-	t.position = PAPER + Vector2(48, 26)
-	t.size = Vector2(420, 64)
-	board.add_child(t)
-	var st := UiParch.label("UI_LIB_SUB", "italic", 21, UiParch.INK_SOFT)
-	st.position = PAPER + Vector2(50, 88)
-	st.size = Vector2(520, 28)
-	board.add_child(st)
-	almas_l = UiParch.label("", "bold", 30, UiParch.ELIXIR_DEEP)
-	almas_l.position = PAPER + Vector2(560, 40)
-	almas_l.size = Vector2(540, 40)
+	almas_l = UiParch.label("", "bold", 30, UiParch.SOUL)
+	almas_l.position = PAPER + Vector2(900, 34)
+	almas_l.size = Vector2(694, 40)
 	almas_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	board.add_child(almas_l)
-	# Abas: um botão por vilão e a aba Comuns (o texto é a chave da aba; a contagem vai num rótulo por cima).
-	tab_row = Container.new()
-	tab_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(tab_row)
-	for k in tabs.size():
-		tab_row.add_child(_tab_button(str(tabs[k]), k))
-	# Filtro por custo.
-	var fl := UiParch.label("UI_LIB_COST", "italic", 22, UiParch.INK_SOFT)
-	fl.position = PAPER + Vector2(50, 196)
-	fl.size = Vector2(120, 34)
-	board.add_child(fl)
-	filter_row = Container.new()
-	filter_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(filter_row)
-	for k in BUCKETS.size() + 1:
-		filter_row.add_child(_filter_button(k - 1))
-	head_l = UiParch.label("", "title", 34, UiParch.INK)
-	head_l.position = PAPER + Vector2(780, 192)
-	head_l.size = Vector2(340, 44)
-	head_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	board.add_child(head_l)
-	count_l = UiParch.label("", "italic", 20, UiParch.INK_SOFT)
-	count_l.position = PAPER + Vector2(780, 232)
-	count_l.size = Vector2(340, 26)
-	count_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	board.add_child(count_l)
-	# O álbum: 5 colunas x 2 linhas por página.
-	grid = GridContainer.new()
-	grid.columns = COLS
-	grid.add_theme_constant_override("h_separation", 22)
-	grid.add_theme_constant_override("v_separation", 14)
-	grid.position = PAPER + Vector2(46, 262)
-	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(grid)
-	prev_b = Button.new()
-	prev_b.text = "UI_LIB_PREV"
-	UiParch.paper_button(prev_b, 22)
-	prev_b.position = PAPER + Vector2(46, 880)
-	prev_b.size = Vector2(150, 48)
-	prev_b.pressed.connect(func(): _go_page(page - 1))
-	board.add_child(prev_b)
-	next_b = Button.new()
-	next_b.text = "UI_LIB_NEXT"
-	UiParch.paper_button(next_b, 22)
-	next_b.position = PAPER + Vector2(46 + 1088 - 150, 880)
-	next_b.size = Vector2(150, 48)
-	next_b.pressed.connect(func(): _go_page(page + 1))
-	board.add_child(next_b)
-	page_l = UiParch.label("", "italic", 24, UiParch.INK_SOFT)
-	page_l.position = PAPER + Vector2(46 + 150, 886)
-	page_l.size = Vector2(1088 - 300, 36)
-	page_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	board.add_child(page_l)
-	_build_deck_panel()
-	var back := Button.new()
-	back.text = "UI_BACK"
-	UiParch.paper_button(back, 26)
-	back.custom_minimum_size = Vector2(180, 56)
-	back.size = back.custom_minimum_size
-	back.position = PAPER + Vector2(1640 - 236, 960 - 94)
-	back.pressed.connect(_close)
-	board.add_child(back)
-	note_l = UiParch.label("", "italic", 20, UiParch.BLOOD)
-	note_l.position = PAPER + Vector2(1150, 872)
-	note_l.size = Vector2(230, 56)
-	note_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	board.add_child(note_l)
+	_build_pick_layer()
+	_build_deck_layer()
+	back_b = Button.new()
+	back_b.text = "UI_BACK"
+	UiParch.paper_button(back_b, 26)
+	back_b.custom_minimum_size = Vector2(200, 56)
+	back_b.size = back_b.custom_minimum_size
+	back_b.position = PAPER + Vector2(46, 880)
+	back_b.pressed.connect(_close)
+	board.add_child(back_b)
 	zoom_layer = Control.new()
 	zoom_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	zoom_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -173,10 +133,13 @@ func _ready() -> void:
 
 func open() -> void:
 	_close_zoom()
-	page = 0
+	stage = "pick"
+	type_filter = "all"
 	cost_filter = -1
+	_grid_top = true
 	work = _saved_deck(deck_vid)
 	refresh()
+	_focus_first()
 
 
 func _close() -> void:
@@ -261,7 +224,7 @@ func deck_remove(id: String) -> bool:
 func _deck_changed() -> void:
 	if work.size() == DECK_SIZE and api.deck_ok(deck_vid, work):
 		api.set_deck(deck_vid, work.duplicate())
-	refresh()
+	_refresh_light()
 
 
 func buy_level(id: String) -> bool:
@@ -272,60 +235,216 @@ func buy_level(id: String) -> bool:
 
 func set_cost_filter(k: int) -> void:
 	cost_filter = k if k != cost_filter else -1
-	page = 0
+	_grid_top = true
 	refresh()
 
 
+func set_type_filter(t: String) -> void:
+	type_filter = t if t != type_filter else "all"
+	_grid_top = true
+	refresh()
+
+
+## Entra na coleção do vilão (tela 2). "common" não troca de vilão: só liga o filtro de comuns.
 func set_tab(id: String) -> void:
-	tab = id
-	page = 0
-	if id != "common":
+	if id == "common":
+		type_filter = "common"
+	else:
+		type_filter = "all"
+		cost_filter = -1
+		tab = id
 		if id != deck_vid:
 			deck_vid = id
 			work = _saved_deck(id)
+	stage = "deck"
+	_grid_top = true
 	refresh()
+	_focus_first()
 
 
-func _go_page(p: int) -> void:
-	page = clampi(p, 0, maxi(0, _pages() - 1))
+## Volta à escolha do vilão (tela 1).
+func to_pick() -> void:
+	_close_zoom()
+	stage = "pick"
 	refresh()
+	_focus_first()
 
 
-func _pages() -> int:
-	return maxi(1, ceili(float(shown.size()) / PER_PAGE))
+static func type_group(d: CardDef) -> String:
+	match d.type:
+		"spell", "structure", "lair":
+			return d.type
+		"monster", "swarm":
+			return "monster"
+	return d.type
 
 
 func _filtered() -> Array:
 	var out: Array = []
 	for d in data.pool:
-		if d.owner != tab:
-			continue
+		if type_filter == "common":
+			if d.owner != "common":
+				continue
+		else:
+			if not data.in_pool(d, tab):
+				continue
+			if type_filter != "all" and type_group(d) != type_filter:
+				continue
 		if cost_filter >= 0 and bucket_of(_cost(d)) != cost_filter:
 			continue
 		out.append(d)
+	# Como na coleção do Hearthstone: por custo; no mesmo custo as do vilão antes das comuns.
+	out.sort_custom(func(a: CardDef, b: CardDef):
+		var ca := _cost(a)
+		var cb := _cost(b)
+		if ca != cb:
+			return ca < cb
+		var oa := 1 if a.owner == "common" else 0
+		var ob := 1 if b.owner == "common" else 0
+		if oa != ob:
+			return oa < ob
+		return a.idx < b.idx)
 	return out
+
+
+## Por que a carta não entra no deck agora ("" = entra).
+func _why_not(d: CardDef) -> String:
+	if not _can_edit():
+		return tr("UI_LIB_VILLAIN_LOCKED")
+	if not _eligible(d):
+		return tr("UI_LIB_OTHER_VILLAIN")
+	if deck_count(d.id) >= MAX_COPIES:
+		return tr("UI_LIB_MAX_COPIES").format({"m": MAX_COPIES})
+	if work.size() >= DECK_SIZE:
+		return tr("UI_LIB_DECK_FULL")
+	return ""
 
 
 # ---------------------------------------------------------------- peças
 
-func _tab_button(id: String, k: int) -> Button:
+func _villain_tex(vid: String) -> Texture2D:
+	var t := UiParch.portrait("villain_" + vid)
+	if t == null:
+		t = MainMenu.villain_tex(data, vid)
+	return t
+
+
+func _card_box(hot: bool) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.35, 0.22, 0.1, 0.16 if hot else 0.07)
+	s.border_color = UiParch.BLOOD if hot else Color(UiParch.INK, 0.55)
+	s.set_border_width_all(4 if hot else 2)
+	s.set_corner_radius_all(8)
+	return s
+
+
+func _build_pick_layer() -> void:
+	pick_layer = Control.new()
+	pick_layer.size = BOARD
+	pick_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board.add_child(pick_layer)
+	var t := UiParch.label("UI_LIB_TITLE", "title", 54, UiParch.INK)
+	t.position = PAPER + Vector2(48, 26)
+	t.size = Vector2(620, 64)
+	pick_layer.add_child(t)
+	var st := UiParch.label("UI_LIB_PICK_SUB", "italic", 24, UiParch.INK_SOFT)
+	st.position = PAPER + Vector2(50, 90)
+	st.size = Vector2(900, 32)
+	pick_layer.add_child(st)
+	pick_row = Control.new()
+	pick_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pick_layer.add_child(pick_row)
+
+
+func _build_deck_layer() -> void:
+	deck_layer = Control.new()
+	deck_layer.size = BOARD
+	deck_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board.add_child(deck_layer)
+	vil_b = Button.new()
+	vil_b.text = "UI_LIB_VILLAINS"
+	UiParch.paper_button(vil_b, 24)
+	vil_b.position = PAPER + Vector2(46, 26)
+	vil_b.size = Vector2(190, 56)
+	vil_b.pressed.connect(to_pick)
+	deck_layer.add_child(vil_b)
+	head_l = UiParch.label("", "title", 50, UiParch.INK)
+	head_l.position = PAPER + Vector2(262, 14)
+	head_l.size = Vector2(640, 60)
+	deck_layer.add_child(head_l)
+	sub_l = UiParch.label("", "italic", 22, UiParch.INK_SOFT)
+	sub_l.position = PAPER + Vector2(264, 70)
+	sub_l.size = Vector2(640, 28)
+	deck_layer.add_child(sub_l)
+	# Filtro de tipo e de custo.
+	var tl := UiParch.label("UI_LIB_TYPE", "italic", 22, UiParch.INK_SOFT)
+	tl.position = PAPER + Vector2(48, 112)
+	tl.size = Vector2(100, 34)
+	deck_layer.add_child(tl)
+	type_row = HBoxContainer.new()
+	type_row.add_theme_constant_override("separation", 8)
+	type_row.position = PAPER + Vector2(150, 108)
+	deck_layer.add_child(type_row)
+	for k in TYPE_FILTERS.size():
+		type_row.add_child(_type_button(k))
+	var fl := UiParch.label("UI_LIB_COST", "italic", 22, UiParch.INK_SOFT)
+	fl.position = PAPER + Vector2(48, 164)
+	fl.size = Vector2(100, 34)
+	deck_layer.add_child(fl)
+	filter_row = HBoxContainer.new()
+	filter_row.add_theme_constant_override("separation", 6)
+	filter_row.position = PAPER + Vector2(150, 160)
+	deck_layer.add_child(filter_row)
+	for k in BUCKETS.size() + 1:
+		filter_row.add_child(_filter_button(k - 1))
+	count_l = UiParch.label("", "italic", 22, UiParch.INK_SOFT)
+	count_l.position = PAPER + Vector2(800, 166)
+	count_l.size = Vector2(330, 30)
+	count_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	deck_layer.add_child(count_l)
+	# A grade: rolagem contínua (roda e arrasto), duas fileiras à vista.
+	grid_sc = ScrollContainer.new()
+	grid_sc.position = PAPER + Vector2(40, 214)
+	grid_sc.size = Vector2(1110, GRID_MARGIN * 2 + VISIBLE_ROWS * (CELL.y + FOOT) + (VISIBLE_ROWS - 1) * 14)
+	grid_sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	grid_sc.follow_focus = true
+	deck_layer.add_child(grid_sc)
+	var mg := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		mg.add_theme_constant_override("margin_" + side, int(GRID_MARGIN))
+	grid_sc.add_child(mg)
+	grid = GridContainer.new()
+	grid.columns = COLS
+	grid.add_theme_constant_override("h_separation", 18)
+	grid.add_theme_constant_override("v_separation", 14)
+	mg.add_child(grid)
+	empty_l = UiParch.label("UI_LIB_EMPTY", "italic", 28, UiParch.INK_SOFT)
+	empty_l.position = PAPER + Vector2(40, 400)
+	empty_l.size = Vector2(1110, 40)
+	empty_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	empty_l.visible = false
+	deck_layer.add_child(empty_l)
+	var hint := UiParch.label("UI_LIB_HINT", "italic", 21, UiParch.INK_SOFT)
+	hint.position = PAPER + Vector2(270, 896)
+	hint.size = Vector2(860, 30)
+	deck_layer.add_child(hint)
+	_build_deck_panel()
+
+
+func _type_button(k: int) -> Button:
 	var b := Button.new()
-	b.text = "UI_TAB_V_" + id
+	b.text = TYPE_KEYS[k]
 	b.toggle_mode = true
-	UiParch.paper_button(b, 26)
-	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
-		b.add_theme_stylebox_override(st, UiParch.button_box(st, Vector4(20, 8, 20, 30)))
-	b.add_theme_stylebox_override("hover_pressed", UiParch.button_box("pressed", Vector4(20, 8, 20, 30)))
-	b.size = Vector2(212, 72)
-	b.position = PAPER + Vector2(46 + k * 222, 118)
-	b.set_meta("tab_id", id)
-	b.pressed.connect(func(): set_tab(id))
-	var cl := UiParch.label("", "italic", 17, UiParch.INK_SOFT)
-	cl.name = "Count"
-	cl.position = Vector2(0, 44)
-	cl.size = Vector2(212, 20)
-	cl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	b.add_child(cl)
+	UiParch.paper_button(b, 20)
+	b.custom_minimum_size = Vector2(TYPE_W[k], 40)
+	b.set_meta("type", TYPE_FILTERS[k])
+	b.pressed.connect(func():
+		if k == 0:
+			type_filter = "all"
+			_grid_top = true
+			refresh()
+		else:
+			set_type_filter(TYPE_FILTERS[k]))
 	return b
 
 
@@ -334,13 +453,12 @@ func _filter_button(k: int) -> Button:
 	b.text = "UI_LIB_ALL" if k < 0 else BUCKET_NAMES[k]
 	b.toggle_mode = true
 	UiParch.paper_button(b, 20)
-	b.size = Vector2(86 if k < 0 else 62, 38)
-	b.position = PAPER + Vector2(172 + (0 if k < 0 else 96 + k * 68), 194)
+	b.custom_minimum_size = Vector2(86 if k < 0 else 62, 38)
 	b.set_meta("bucket", k)
 	b.pressed.connect(func():
 		if k < 0:
 			cost_filter = -1
-			page = 0
+			_grid_top = true
 			refresh()
 		else:
 			set_cost_filter(k))
@@ -403,52 +521,224 @@ static func _lock() -> Control:
 	return k
 
 
-
 # ---------------------------------------------------------------- atualização
 
 func refresh() -> void:
 	if data == null or grid == null:
 		return
 	almas_l.text = tr("UI_LIB_ALMAS").format({"n": meta.almas})
-	for b in tab_row.get_children():
-		var id: String = b.get_meta("tab_id")
-		(b as Button).button_pressed = id == tab
-		var n := 0
-		var m := 0
-		for d in data.pool:
-			if d.owner == id:
-				m += 1
-				if meta.is_unlocked(d.id):
-					n += 1
-		((b as Button).get_node("Count") as Label).text = tr("UI_LIB_COUNT").format({"a": n, "b": m})
-	for b in filter_row.get_children():
-		(b as Button).button_pressed = int(b.get_meta("bucket")) == cost_filter
 	shown = _filtered()
-	page = clampi(page, 0, _pages() - 1)
+	var in_deck := stage == "deck"
+	pick_layer.visible = not in_deck
+	deck_layer.visible = in_deck
+	back_b.text = "UI_COL_CLOSE" if in_deck else "UI_BACK"
+	if in_deck or grid.get_child_count() == 0:
+		_rebuild_grid()
+	if in_deck:
+		for b in type_row.get_children():
+			(b as Button).button_pressed = str(b.get_meta("type")) == type_filter
+		for b in filter_row.get_children():
+			(b as Button).button_pressed = int(b.get_meta("bucket")) == cost_filter
+		_refresh_head()
+		_refresh_deck()
+	else:
+		_build_pick()
+	if zoom_id != "":
+		_build_zoom()
+
+
+func _refresh_head() -> void:
 	head_l.text = _tab_name(tab)
-	count_l.text = tr("UI_LIB_SHOWN").format({"n": shown.size()})
-	page_l.text = tr("UI_LIB_PAGE").format({"p": page + 1, "t": _pages()})
-	prev_b.disabled = page <= 0
-	next_b.disabled = page >= _pages() - 1
-	var had_focus := -1
-	for k in grid.get_child_count():
-		if grid.get_child(k).has_focus():
-			had_focus = k
-	UiKit.clear(grid)
-	for i in range(page * PER_PAGE, mini(shown.size(), (page + 1) * PER_PAGE)):
-		grid.add_child(_album_cell(shown[i], i))
-	if had_focus >= 0 and had_focus < grid.get_child_count() and zoom_id == "":
-		var gb := grid.get_child(had_focus) as Control
-		(func():
-			if is_instance_valid(gb) and gb.is_inside_tree():
-				gb.grab_focus()).call_deferred()
+	var n := 0
+	var m := 0
+	for d in data.pool:
+		if d.owner == tab:
+			m += 1
+			if meta.is_unlocked(d.id):
+				n += 1
+	sub_l.text = tr("UI_LIB_UNLOCKED").format({"a": n, "b": m})
+	count_l.text = tr("UI_LIB_SHOWN2").format({"n": shown.size()})
+
+
+## Só o que muda ao pôr/tirar carta do deck: contagens das células, o painel do deck e a curva (a grade não é refeita,
+## o foco e a rolagem ficam onde estão).
+func _refresh_light() -> void:
+	if grid == null:
+		return
+	for id in _cnt_labels:
+		_paint_count(str(id))
 	_refresh_deck()
 	if zoom_id != "":
 		_build_zoom()
 
 
-## Carta do álbum: compacta (arte grande + fita do nome) com a placa romana do nível por cima, e embaixo os
-## pontinhos de nível e "N/3 no deck". Bloqueada: moldura tracejada, arte apagada, o desafio e o progresso.
+func _paint_count(id: String) -> void:
+	var n := deck_count(id)
+	var l := _cnt_labels.get(id) as Label
+	if l != null and is_instance_valid(l):
+		l.text = "%d/%d" % [n, MAX_COPIES]
+		l.add_theme_color_override("font_color", UiParch.ELIXIR_DEEP if n > 0 else UiParch.INK_SOFT)
+	var c := _cell_cards.get(id) as Control
+	if c != null and is_instance_valid(c):
+		c.modulate = Color(1, 1, 1, 0.5) if n >= MAX_COPIES else Color.WHITE
+
+
+func _rebuild_grid() -> void:
+	var keep := 0 if _grid_top else grid_sc.scroll_vertical
+	var had_focus := -1
+	if not _grid_top:
+		for k in grid.get_child_count():
+			if grid.get_child(k).has_focus():
+				had_focus = k
+	_grid_top = false
+	UiKit.clear(grid)
+	_cnt_labels.clear()
+	_cell_cards.clear()
+	for i in shown.size():
+		grid.add_child(_album_cell(shown[i], i))
+	if empty_l:
+		empty_l.visible = shown.is_empty()
+	if had_focus >= 0 and had_focus < grid.get_child_count() and zoom_id == "":
+		var gb := grid.get_child(had_focus) as Control
+		(func():
+			if is_instance_valid(gb) and gb.is_inside_tree():
+				gb.grab_focus()).call_deferred()
+	_restore_scroll(keep)
+
+
+func _restore_scroll(v: int) -> void:
+	_scroll_target = float(v)
+	if v == 0:
+		grid_sc.scroll_vertical = 0
+		_last_set = 0
+		return
+	if not is_inside_tree():
+		return
+	await get_tree().process_frame
+	if is_instance_valid(grid_sc):
+		grid_sc.scroll_vertical = v
+		_scroll_target = float(grid_sc.scroll_vertical)
+		_last_set = grid_sc.scroll_vertical
+
+
+## Primeiro foco ao entrar numa tela: a primeira carta da grade ou o vilão em foco.
+func _focus_first() -> void:
+	(func():
+		if not is_inside_tree() or not is_visible_in_tree():
+			return
+		if stage == "deck":
+			if grid.get_child_count() > 0:
+				(grid.get_child(0) as Control).grab_focus()
+			return
+		var first: Control = null
+		for b in pick_row.get_children():
+			if b is Button and not (b as Button).disabled and first == null:
+				first = b
+			if b is Button and str(b.get_meta("villain_id")) == tab and not (b as Button).disabled:
+				first = b
+		if first != null:
+			first.grab_focus()).call_deferred()
+
+
+# ---------------------------------------------------------------- tela 1: escolher o vilão
+
+func _build_pick() -> void:
+	var had := -1
+	for k in pick_row.get_child_count():
+		if pick_row.get_child(k).has_focus():
+			had = k
+	UiKit.clear(pick_row)
+	var n := data.villain_ids.size()
+	var total := n * PICK_W + (n - 1) * 50.0
+	var x0 := PAPER.x + (PAPER_SIZE.x - total) * 0.5
+	for k in n:
+		pick_row.add_child(_pick_card(str(data.villain_ids[k]), Vector2(x0 + k * (PICK_W + 50.0), PAPER.y + 150.0)))
+	if had >= 0 and had < pick_row.get_child_count() and stage == "pick":
+		var fb := pick_row.get_child(had) as Control
+		(func():
+			if is_instance_valid(fb) and fb.is_inside_tree():
+				fb.grab_focus()).call_deferred()
+
+
+func _pick_card(vid: String, at: Vector2) -> Button:
+	var open := meta.villains.has(vid)
+	var b := Button.new()
+	b.flat = true
+	b.set_meta("no_frame", true)
+	b.set_meta("villain_id", vid)
+	b.position = at
+	b.custom_minimum_size = Vector2(PICK_W, PICK_H)
+	b.size = b.custom_minimum_size
+	for st in ["normal", "disabled"]:
+		b.add_theme_stylebox_override(st, _card_box(false))
+	for st in ["hover", "pressed", "hover_pressed", "focus"]:
+		b.add_theme_stylebox_override(st, _card_box(open))
+	var art := UiParch.framed_art(_villain_tex(vid), Vector2(PICK_W - 40, 440), "frame_gold")
+	art.position = Vector2(20, 20)
+	art.size = Vector2(PICK_W - 40, 440)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if not open:
+		art.modulate = Color(0.42, 0.4, 0.42)
+	b.add_child(art)
+	if not open:
+		var k := CollectionScreen._lock()
+		k.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		k.size = Vector2((PICK_W - 40) / 2.6, 440 / 2.6)
+		k.scale = Vector2.ONE * 2.6
+		k.position = Vector2(20, 20)
+		b.add_child(k)
+	var nm := UiParch.label(_tab_name(vid), "title", 44, UiParch.INK)
+	nm.position = Vector2(0, 474)
+	nm.size = Vector2(PICK_W, 56)
+	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.add_child(nm)
+	var got := 0
+	var all := 0
+	for d in data.pool:
+		if d.owner == vid:
+			all += 1
+			if meta.is_unlocked(d.id):
+				got += 1
+	if open:
+		var dn: int = work.size() if vid == deck_vid else _saved_deck(vid).size()
+		var l1 := UiParch.label(tr("UI_LIB_DECK_N").format({"a": dn, "b": DECK_SIZE}), "bold", 34, UiParch.GOOD if dn == DECK_SIZE else UiParch.BLOOD)
+		l1.position = Vector2(0, 540)
+		l1.size = Vector2(PICK_W, 44)
+		l1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_child(l1)
+		var l2 := UiParch.label(tr("UI_LIB_UNLOCKED").format({"a": got, "b": all}), "italic", 26, UiParch.INK_SOFT)
+		l2.position = Vector2(0, 590)
+		l2.size = Vector2(PICK_W, 34)
+		l2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_child(l2)
+		var l3 := UiParch.label("UI_LIB_ENTER", "italic", 22, UiParch.BLOOD)
+		l3.position = Vector2(0, 638)
+		l3.size = Vector2(PICK_W, 30)
+		l3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_child(l3)
+		b.pressed.connect(func(): set_tab(vid))
+	else:
+		var party := int(meta.villain_unlock_at().get(data.villain_id(vid), 0))
+		var l1 := UiParch.label(tr("UI_MENU_LOCKED").format({"n": party}), "bold", 28, UiParch.INK_SOFT)
+		l1.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l1.position = Vector2(30, 540)
+		l1.size = Vector2(PICK_W - 60, 80)
+		l1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_child(l1)
+		var l2 := UiParch.label(tr("UI_LIB_UNLOCKED").format({"a": got, "b": all}), "italic", 26, UiParch.INK_SOFT)
+		l2.position = Vector2(0, 630)
+		l2.size = Vector2(PICK_W, 34)
+		l2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_child(l2)
+	b.mouse_entered.connect(func(): b.grab_focus())
+	return b
+
+
+# ---------------------------------------------------------------- tela 2: a grade
+
+## Carta do álbum: compacta (arte grande + fita do nome) com a placa romana do nível por cima, e embaixo a lupa, os
+## pontinhos de nível e "n/3" (cópias no deck). Clicar põe no deck. Bloqueada: moldura tracejada, arte apagada, o
+## desafio e o progresso (clicar abre o zoom).
 func _album_cell(d: CardDef, i: int) -> Button:
 	var open := meta.is_unlocked(d.id)
 	var lv := _lv(d.id)
@@ -472,6 +762,7 @@ func _album_cell(d: CardDef, i: int) -> Button:
 		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		c.position = Vector2.ZERO
 		b.add_child(c)
+		_cell_cards[d.id] = c
 		var rb := roman_badge(lv, 34.0)   # a carta compacta não leva placa do molde
 		rb.position = Vector2(CELL.x - 42, 8)
 		b.add_child(rb)
@@ -481,21 +772,133 @@ func _album_cell(d: CardDef, i: int) -> Button:
 		foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		foot.draw.connect(func():
 			for p in range(1, MAX_LEVEL + 1):
-				var ctr := Vector2(10.0 + (p - 1) * 17.0, foot.size.y * 0.5)
+				var ctr := Vector2(46.0 + (p - 1) * 14.0, foot.size.y * 0.5)
 				var col := Color("c08a2e") if p <= lv else Color(UiParch.INK, 0.25)
-				foot.draw_colored_polygon(PackedVector2Array([ctr + Vector2(0, -6), ctr + Vector2(6, 0), ctr + Vector2(0, 6), ctr + Vector2(-6, 0)]), col))
-		var n := deck_count(d.id)
-		var nl := UiParch.label(tr("UI_LIB_IN_DECK").format({"n": n, "m": MAX_COPIES}), "bold", 19, UiParch.ELIXIR_DEEP if n > 0 else UiParch.INK_SOFT)
-		nl.position = Vector2(112, 2)
-		nl.size = Vector2(CELL.x - 112, 26)
+				foot.draw_colored_polygon(PackedVector2Array([ctr + Vector2(0, -5.5), ctr + Vector2(5.5, 0), ctr + Vector2(0, 5.5), ctr + Vector2(-5.5, 0)]), col))
+		var nl := UiParch.label("", "bold", 22, UiParch.INK_SOFT)
+		nl.position = Vector2(136, 1)
+		nl.size = Vector2(CELL.x - 138, 28)
 		nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		foot.add_child(nl)
 		b.add_child(foot)
+		_cnt_labels[d.id] = nl
+		_paint_count(d.id)
+		var zb := Button.new()
+		zb.flat = true
+		zb.set_meta("no_frame", true)
+		zb.focus_mode = Control.FOCUS_NONE
+		for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
+			zb.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+		zb.position = Vector2(0, CELL.y + 4)
+		zb.size = Vector2(36, 32)
+		zb.tooltip_text = ""
+		zb.draw.connect(func():
+			var hot := zb.is_hovered()
+			var col := UiParch.BLOOD if hot else UiParch.INK_SOFT
+			zb.draw_arc(Vector2(15, 14), 8.0, 0, TAU, 20, col, 2.5, true)
+			zb.draw_line(Vector2(21, 20), Vector2(28, 27), col, 3.0, true))
+		zb.mouse_entered.connect(func(): zb.queue_redraw())
+		zb.mouse_exited.connect(func(): zb.queue_redraw())
+		zb.pressed.connect(func(): _open_zoom(d.id))
+		b.add_child(zb)
+		b.pressed.connect(func(): _cell_add(d))
 	else:
 		b.add_child(_locked_cell(d))
-	b.pressed.connect(func(): _open_reader(shown.find(d)))
-	b.mouse_entered.connect(func(): b.grab_focus())
+		b.pressed.connect(func(): _open_zoom(d.id))
+	b.gui_input.connect(func(e: InputEvent):
+		if _is_info_event(e):
+			b.accept_event()
+			_open_zoom(d.id))
+	b.mouse_entered.connect(func():
+		if _cell_in_view(b):
+			b.grab_focus())
 	return b
+
+
+func _cell_add(d: CardDef) -> void:
+	if deck_add(d.id):
+		return
+	var why := _why_not(d)
+	deck_warn.text = why
+	deck_warn.add_theme_color_override("font_color", UiParch.BLOOD)
+
+
+## Botão direito, Y do controle ou a tecla I: detalhes da carta (zoom com os níveis).
+static func _is_info_event(e: InputEvent) -> bool:
+	if e is InputEventMouseButton:
+		return e.pressed and e.button_index == MOUSE_BUTTON_RIGHT
+	if e is InputEventKey:
+		return e.pressed and not e.echo and e.keycode == KEY_I
+	if e is InputEventJoypadButton:
+		return e.pressed and e.button_index == JOY_BUTTON_Y
+	return false
+
+
+## A célula está inteira dentro da janela de rolagem? (só então o mouse passando por cima lhe dá o foco, para o
+## follow_focus não brigar com a rolagem suave).
+func _cell_in_view(b: Control) -> bool:
+	var top := b.position.y + GRID_MARGIN
+	var sv := float(grid_sc.scroll_vertical)
+	return top >= sv - 2.0 and top + b.size.y <= sv + grid_sc.size.y + 2.0
+
+
+# ---------------------------------------------------------------- rolagem suave (roda e arrasto)
+
+func _scroll_max() -> float:
+	var sb := grid_sc.get_v_scroll_bar()
+	return maxf(0.0, sb.max_value - sb.page)
+
+
+func _over_grid(pos: Vector2) -> bool:
+	var inv := grid_sc.get_global_transform_with_canvas().affine_inverse()
+	return Rect2(Vector2.ZERO, grid_sc.size).has_point(inv * pos)
+
+
+func _input(e: InputEvent) -> void:
+	if stage != "deck" or zoom_id != "" or grid_sc == null or not is_visible_in_tree():
+		return
+	if e is InputEventMouseButton:
+		var mb := e as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			if _over_grid(mb.position):
+				var dir := -1.0 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0
+				_scroll_target = clampf(_scroll_target + dir * WHEEL_STEP * maxf(mb.factor, 1.0), 0.0, _scroll_max())
+				get_viewport().set_input_as_handled()
+		elif mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				_drag_pending = _over_grid(mb.position)
+				_drag_active = false
+				_drag_from = mb.position
+			else:
+				if _drag_active:
+					get_viewport().set_input_as_handled()   # o soltar do arrasto não conta como clique na carta
+				_drag_pending = false
+				_drag_active = false
+	elif e is InputEventMouseMotion and _drag_pending:
+		var mm := e as InputEventMouseMotion
+		if not _drag_active and (mm.position - _drag_from).length() > 10.0:
+			_drag_active = true
+		if _drag_active:
+			var sc := grid_sc.get_global_transform_with_canvas().get_scale().y
+			_scroll_target = clampf(_scroll_target - mm.relative.y / maxf(sc, 0.01), 0.0, _scroll_max())
+			grid_sc.scroll_vertical = int(_scroll_target)
+			_last_set = grid_sc.scroll_vertical
+			get_viewport().set_input_as_handled()
+
+
+func _process(delta: float) -> void:
+	if stage != "deck" or grid_sc == null or not is_visible_in_tree():
+		return
+	var cur := grid_sc.scroll_vertical
+	if cur != _last_set:
+		_scroll_target = float(cur)   # mudou por fora (foco do teclado/controle): acompanha
+	var diff := _scroll_target - float(cur)
+	if absf(diff) >= 1.0:
+		var step := diff * (1.0 - exp(-delta * 16.0))
+		if absf(step) < 1.0:
+			step = signf(diff)
+		grid_sc.scroll_vertical = cur + int(step)
+	_last_set = grid_sc.scroll_vertical
 
 
 func _locked_cell(d: CardDef) -> Control:
@@ -562,20 +965,21 @@ func _locked_cell(d: CardDef) -> Control:
 	return wrap
 
 
+
 # ---------------------------------------------------------------- deck e curva de elixir
 
 func _build_deck_panel() -> void:
-	deck_box = Control.new()
-	deck_box.position = PAPER + Vector2(1160, 36)
-	deck_box.size = Vector2(440, 800)
-	deck_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(deck_box)
 	var div := Control.new()
-	div.position = PAPER + Vector2(1140, 30)
-	div.size = Vector2(4, 820)
+	div.position = PAPER + Vector2(1160, 30)
+	div.size = Vector2(4, 880)
 	div.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	div.draw.connect(func(): div.draw_dashed_line(Vector2(2, 0), Vector2(2, div.size.y), Color(UiParch.INK, 0.45), 2.0, 8.0))
-	board.add_child(div)
+	deck_layer.add_child(div)
+	deck_box = Control.new()
+	deck_box.position = PAPER + Vector2(1180, 84)
+	deck_box.size = Vector2(440, 800)
+	deck_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	deck_layer.add_child(deck_box)
 	deck_head = UiParch.label("", "title", 34, UiParch.INK)
 	deck_head.position = Vector2(0, 0)
 	deck_head.size = Vector2(330, 44)
@@ -587,25 +991,26 @@ func _build_deck_panel() -> void:
 	deck_count_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	deck_box.add_child(deck_count_l)
 	deck_warn = UiParch.label("", "italic", 20, UiParch.INK_SOFT)
-	deck_warn.position = Vector2(0, 46)
-	deck_warn.size = Vector2(440, 28)
+	deck_warn.position = Vector2(0, 44)
+	deck_warn.size = Vector2(440, 26)
+	deck_warn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	deck_box.add_child(deck_warn)
 	var sc := ScrollContainer.new()
-	sc.position = Vector2(0, 80)
-	sc.size = Vector2(440, 528)
+	sc.position = Vector2(0, 76)
+	sc.size = Vector2(440, 566)
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	sc.follow_focus = true
 	deck_box.add_child(sc)
 	deck_list = VBoxContainer.new()
 	deck_list.add_theme_constant_override("separation", 1)
-	deck_list.custom_minimum_size = Vector2(430, 0)
+	deck_list.custom_minimum_size = Vector2(426, 0)
 	sc.add_child(deck_list)
 	var ct := UiParch.label("UI_LIB_CURVE", "italic", 22, UiParch.INK_SOFT)
-	ct.position = Vector2(0, 622)
+	ct.position = Vector2(0, 650)
 	ct.size = Vector2(440, 28)
 	deck_box.add_child(ct)
 	curve = Control.new()
-	curve.position = Vector2(0, 652)
+	curve.position = Vector2(0, 680)
 	curve.size = Vector2(440, 150)
 	curve.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	curve.draw.connect(_draw_curve)
@@ -645,8 +1050,9 @@ func _draw_curve() -> void:
 		curve.draw_string(UiParch.font("body"), Vector2(k * w, curve.size.y - 5), BUCKET_NAMES[k], HORIZONTAL_ALIGNMENT_CENTER, w, 19, UiParch.BLOOD if hot else UiParch.INK_SOFT)
 
 
+
 func _refresh_deck() -> void:
-	deck_head.text = _tab_name(deck_vid) if deck_vid != "common" else ""
+	deck_head.text = _tab_name(deck_vid)
 	var n := work.size()
 	deck_count_l.text = "%d/%d" % [n, DECK_SIZE]
 	var ok := n == DECK_SIZE
@@ -660,6 +1066,10 @@ func _refresh_deck() -> void:
 	else:
 		deck_warn.text = tr("UI_LIB_DECK_RULES").format({"m": MAX_COPIES})
 		deck_warn.add_theme_color_override("font_color", UiParch.INK_SOFT)
+	var had_focus := -1
+	for k in deck_list.get_child_count():
+		if deck_list.get_child(k).has_focus():
+			had_focus = k
 	UiKit.clear(deck_list)
 	var cnt := {}
 	for id in work:
@@ -673,13 +1083,45 @@ func _refresh_deck() -> void:
 		return String(TranslationServer.translate("CARD_" + str(a))) < String(TranslationServer.translate("CARD_" + str(b))))
 	for id in ids:
 		deck_list.add_child(_deck_row(data.card(id), int(cnt[id])))
+	if had_focus >= 0 and deck_list.get_child_count() > 0:
+		var fb := deck_list.get_child(mini(had_focus, deck_list.get_child_count() - 1)) as Control
+		(func():
+			if is_instance_valid(fb) and fb.is_inside_tree() and fb.focus_mode != Control.FOCUS_NONE:
+				fb.grab_focus()).call_deferred()
 	curve.queue_redraw()
 
 
-func _deck_row(d: CardDef, n: int) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	row.custom_minimum_size = Vector2(430, 28)
+func _row_box(bg: Color, border := Color(0, 0, 0, 0), bw := 0) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.set_border_width_all(bw)
+	s.set_corner_radius_all(4)
+	if bw > 0 and bg.a == 0.0:
+		s.draw_center = false
+	return s
+
+
+## Barrinha do deck: gota de custo + nome + ×n + nível. Clicar (ou Enter/A) tira uma cópia; botão direito, Y ou I abrem o zoom.
+func _deck_row(d: CardDef, n: int) -> Button:
+	var row := Button.new()
+	row.flat = true
+	row.set_meta("no_frame", true)
+	row.set_meta("card_id", d.id)
+	row.custom_minimum_size = Vector2(426, 28)
+	row.disabled = not _can_edit()
+	row.add_theme_stylebox_override("normal", _row_box(Color(0.35, 0.22, 0.1, 0.10)))
+	row.add_theme_stylebox_override("disabled", _row_box(Color(0.35, 0.22, 0.1, 0.10)))
+	for st in ["hover", "pressed", "hover_pressed"]:
+		row.add_theme_stylebox_override(st, _row_box(Color(UiParch.BLOOD, 0.20)))
+	row.add_theme_stylebox_override("focus", _row_box(Color(0, 0, 0, 0), UiParch.BLOOD, 3))
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 6)
+	hb.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hb.offset_left = 2
+	hb.offset_right = -8
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(hb)
 	var gem := Control.new()
 	gem.custom_minimum_size = Vector2(28, 28)
 	gem.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -687,45 +1129,25 @@ func _deck_row(d: CardDef, n: int) -> Control:
 	gem.draw.connect(func():
 		UiParch.draw_drop(gem, Rect2(Vector2(2, 1), Vector2(24, 24)), 1.0)
 		gem.draw_string(UiParch.font("bold"), Vector2(0, 19), str(cost), HORIZONTAL_ALIGNMENT_CENTER, 28, 16 if cost < 10 else 13, Color.WHITE))
-	row.add_child(gem)
-	var nb := Button.new()
-	nb.flat = true
-	nb.set_meta("no_frame", true)
-	nb.text = UiKit.card_name(d)
-	nb.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	nb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	nb.clip_text = true
-	nb.add_theme_font_override("font", UiParch.font("body"))
-	nb.add_theme_font_size_override("font_size", 21)
-	for k in ["font_color", "font_focus_color", "font_pressed_color"]:
-		nb.add_theme_color_override(k, UiParch.INK)
-	nb.add_theme_color_override("font_hover_color", UiParch.BLOOD)
-	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
-		nb.add_theme_stylebox_override(st, StyleBoxEmpty.new())
-	nb.pressed.connect(func(): _open_zoom(d.id))
-	row.add_child(nb)
+	hb.add_child(gem)
+	var nl := UiParch.label(UiKit.card_name(d), "body", 21, UiParch.INK)
+	nl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	nl.clip_text = true
+	nl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	hb.add_child(nl)
 	var xl := UiParch.label("×%d" % n if n > 1 else "", "bold", 20, UiParch.ELIXIR_DEEP)
-	xl.custom_minimum_size = Vector2(34, 0)
-	row.add_child(xl)
-	var rb := roman_badge(_lv(d.id), 24.0)
+	xl.custom_minimum_size = Vector2(30, 0)
+	xl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hb.add_child(xl)
+	var rb := roman_badge(_lv(d.id), 22.0)
 	rb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(rb)
-	var mb := Button.new()
-	mb.text = "-"
-	mb.flat = true
-	mb.set_meta("no_frame", true)
-	mb.disabled = not _can_edit()
-	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
-		mb.add_theme_stylebox_override(st, StyleBoxEmpty.new())
-	mb.add_theme_font_override("font", UiParch.font("bold"))
-	mb.add_theme_font_size_override("font_size", 30)
-	for k in ["font_color", "font_focus_color", "font_pressed_color"]:
-		mb.add_theme_color_override(k, UiParch.INK_SOFT)
-	mb.add_theme_color_override("font_hover_color", UiParch.BLOOD)
-	mb.add_theme_color_override("font_disabled_color", Color(UiParch.INK, 0.25))
-	mb.custom_minimum_size = Vector2(30, 26)
-	mb.pressed.connect(func(): deck_remove(d.id))
-	row.add_child(mb)
+	hb.add_child(rb)
+	row.pressed.connect(func(): deck_remove(d.id))
+	row.gui_input.connect(func(e: InputEvent):
+		if _is_info_event(e):
+			row.accept_event()
+			_open_zoom(d.id))
 	return row
 
 
@@ -1049,11 +1471,13 @@ func _zoom_card(parent: Control, d: CardDef, level: int, at: Vector2, w: float, 
 		box.add_child(rb)
 
 
+
 func _unhandled_input(e: InputEvent) -> void:
 	if visible and e.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		if zoom_id != "":
 			_close_zoom()
+		elif stage == "deck":
+			to_pick()
 		else:
 			_close()
-

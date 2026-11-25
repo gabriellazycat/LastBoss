@@ -7,7 +7,7 @@
   "arqueira": {
    "model": "rogue_hooded",
    "hp_mult": 0.72,
-   "damage_mult": 0.8,
+   "damage_mult": 1.2,
    "attack_range": 7.0,
    "attack_interval": 0.85,
    "cleave_arc": 0.0,

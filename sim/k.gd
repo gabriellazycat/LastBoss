@@ -62,4 +62,5 @@ enum Ev { DAMAGE_HERO, DAMAGE_UNIT, DEATH, SPAWN, EXPLOSION, SHOT, HERO_LEVEL, P
 	SPELL, SHRINE, PART_DESTROYED, TELEPORT, ARENA, HEAL, CURSE, FEAR, SPIN, LOCATION, HERO_FALL,
 	CONTEST, ACT_END, ACT_START, RELIC, ABILITY, ABILITY_TELL,
 	HERO_SHOT, LEECH, UNIT_SHIELD_BREAK, GIVE,
-	POWER_GAINED, POWER_TRIGGER, POWER_READY }   # poderes de party (sim/hero_powers.gd): [x, y, indice em Sim.party_powers(), nivel].   # LEECH: [x, y, vida roubada, i]; UNIT_SHIELD_BREAK: [x, y, 0, i]. HERO_SHOT: [x, y do herói, x do alvo, (y do alvo*100 << 2) | tipo (0 flecha, 1 orbe)]
+	POWER_GAINED, POWER_TRIGGER, POWER_READY,
+	EXPLOSIVE_BOOM }   # EXPLOSIVE_BOOM: [x, y, raio em m, 0] (morte de unidade Explosiva; o EXPLOSION de sempre sai junto).   # poderes de party (sim/hero_powers.gd): [x, y, indice em Sim.party_powers(), nivel].   # LEECH: [x, y, vida roubada, i]; UNIT_SHIELD_BREAK: [x, y, 0, i]. HERO_SHOT: [x, y do herói, x do alvo, (y do alvo*100 << 2) | tipo (0 flecha, 1 orbe)]

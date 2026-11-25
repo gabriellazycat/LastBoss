@@ -312,8 +312,8 @@
   },
   {
    "id": "blood_tax",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [],
    "archetype": "",
    "rarity": "rare",
@@ -734,8 +734,8 @@
   },
   {
    "id": "dragon_exchange",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [],
    "archetype": "",
    "rarity": "uncommon",

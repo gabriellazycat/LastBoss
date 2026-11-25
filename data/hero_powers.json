@@ -129,8 +129,8 @@
    "trigger": "first_enemy",
    "cooldown": [
     18,
-    16,
-    14
+    18,
+    18
    ],
    "weight": 1.0,
    "counters": [
@@ -145,12 +145,12 @@
     },
     {
      "ward_frac": 0.18,
-     "dmg_bonus": 0.3,
+     "dmg_bonus": 0.2,
      "dur": 6.0
     },
     {
      "ward_frac": 0.26,
-     "dmg_bonus": 0.4,
+     "dmg_bonus": 0.2,
      "dur": 7.0
     }
    ]
@@ -577,9 +577,9 @@
    "id": "field_medic",
    "trigger": "interval",
    "cooldown": [
-    10,
-    9,
-    8
+    20,
+    18,
+    16
    ],
    "weight": 0.7,
    "counters": [

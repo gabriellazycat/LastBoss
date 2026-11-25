@@ -400,7 +400,7 @@ static func _fire_contact(sim, pi: int, d: Dictionary, l: Dictionary, ctx: Dicti
 			_aoe(sim, h.x, h.y, float(l["radius"]), float(l["dmg_mult"]) * D, 1.0, float(l["struct_mult"]))
 		"war_cry":
 			for m in party:
-				m.add_ward(m.max_hp() * float(l["ward_frac"]))
+				m.fill_ward(m.max_hp() * float(l["ward_frac"]))   # não soma: completa até o valor do nível
 			var st := _st(sim)
 			st["buff"] = float(l["dmg_bonus"])
 			st["buff_until"] = sim.t + float(l["dur"])
@@ -566,6 +566,13 @@ static func _fire_interval(sim, pi: int, party: Array) -> void:
 			if m.hp < m.max_hp():
 				hurt = true
 		if not hurt:
+			return
+		# Só cura em combate: algum herói da party atacou ou foi atacado nos últimos ~3 s.
+		var fighting := false
+		for m in party:
+			if m.attacking or sim.t - m.last_hit_t < 3.0:
+				fighting = true
+		if not fighting:
 			return
 		for m in party:
 			m.heal(m.max_hp() * float(l["heal_frac"]))

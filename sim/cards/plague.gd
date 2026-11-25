@@ -7,7 +7,8 @@ extends RefCounted
 ##
 ## Estado (sim.cstate["plague"], só tipos simples; criado quando a primeira carta da Praga é jogada):
 ##   peste     {pidx do herói (texto): [acúmulos, segundo da última mordida]}
-##   cfg       [máximo de acúmulos, dano a mais por acúmulo, segundos até sumir]   (lidos da Ratazana, em fx)
+##   cfg       [máximo de acúmulos, dano a mais por acúmulo, segundos sem golpe até começar a cair, acúmulos perdidos por segundo]
+##             (lidos da Ratazana, em fx)
 ##   bite_*    Mordida Infectada: até quando, onde, raio, acúmulos a mais
 ##   bubo_*    Praga Bubônica: até quando e dano por acúmulo no fim
 ##   hunt_*    Instinto de Caça: até quando, velocidade e roubo de vida das Feras
@@ -26,7 +27,8 @@ static func _st(sim: Sim) -> Dictionary:
 	if not sim.cstate.has("plague"):
 		var cf: Dictionary = sim.data.card("rat_brute").fx
 		sim.cstate["plague"] = {"peste": {}, "seen": {},
-			"cfg": [float(cf.get("peste_max", 15.0)), float(cf.get("peste_taken", 0.03)), float(cf.get("peste_secs", 8.0))]}
+			"cfg": [float(cf.get("peste_max", 30.0)), float(cf.get("peste_taken", 0.035)), float(cf.get("peste_secs", 8.0)),
+				float(cf.get("peste_decay", 1.0))]}
 	return sim.cstate["plague"]
 
 
@@ -141,10 +143,14 @@ static func on_tick(sim: Sim) -> void:
 	var st: Dictionary = sim.cstate["plague"]
 	var pe: Dictionary = st["peste"]
 	if not pe.is_empty():
+		# Sem golpe por `secs` s, a Peste não zera de uma vez: perde `decay` acúmulo por segundo até acabar.
 		var secs: float = st["cfg"][2]
+		var loss: float = float(st["cfg"][3]) * sim.dt
 		for key in pe.keys():
 			if sim.t - float(pe[key][1]) >= secs:
-				pe.erase(key)
+				pe[key][0] = float(pe[key][0]) - loss
+				if float(pe[key][0]) <= 0.001:
+					pe.erase(key)
 	if st.has("bubo_t") and sim.t >= float(st["bubo_t"]):
 		st.erase("bubo_t")
 		_bubo_end(sim, float(st["bubo_dmg"]))

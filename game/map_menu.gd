@@ -25,6 +25,8 @@ var captions := {}         # id -> Label da legenda (a Horda sem fim troca a del
 var buttons_box: Control   # os botões, na ordem do menu de hoje (continuar, nova run, coleção, ...)
 var continue_btn: Button
 var portrait: Control
+var badges := {}           # id -> selo com número, até o lugar ser visitado
+var balloons := {}         # id -> balão de fala sobre o lugar
 
 
 func build(villain_portrait: Texture2D) -> void:
@@ -51,6 +53,8 @@ func build(villain_portrait: Texture2D) -> void:
 	continue_btn = _node_button("continue", "m-tent", "UI_CONTINUE", 76.0, Vector2(846, 826), false)
 	for p in PLACES:
 		_node_button(p[0], p[1], p[2], p[4], p[5], p[0] == "covil")
+		if p[0] in ["covil", "collection"]:
+			_add_marks(p[0], p[4], p[5])
 		if p[3] != "":
 			var h := UiParch.label(p[3], "italic", 21, UiParch.INK_SOFT)
 			# contorno da cor do papel: a estrada vermelha passa por baixo sem riscar o texto
@@ -66,6 +70,65 @@ func build(villain_portrait: Texture2D) -> void:
 		add_child(portrait)
 		var me := UiParch.label("UI_TITLE_ME", "italic", 21, UiParch.BLOOD)
 		_place(me, Vector2(60, 762), Vector2(220, 0), true)
+
+
+## Selo (círculo vermelho com número, no canto do lugar) e balão (papel, acima do lugar).
+func _add_marks(id: String, sz: float, at: Vector2) -> void:
+	var top := Vector2(M, M) + at - Vector2(0, sz * 0.5)
+	var badge := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = UiParch.BLOOD
+	sb.border_color = UiParch.PARCH
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(20)
+	sb.content_margin_left = 9
+	sb.content_margin_right = 9
+	sb.content_margin_top = 1
+	sb.content_margin_bottom = 3
+	badge.add_theme_stylebox_override("panel", sb)
+	badge.custom_minimum_size = Vector2(40, 40)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bl := UiParch.label("0", "bold", 24, UiParch.CREAM)
+	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.add_child(bl)
+	badge.visible = false
+	badge.position = top + Vector2(sz * 0.5 - 22, -4)
+	add_child(badge)
+	badges[id] = badge
+	var bal := PanelContainer.new()
+	bal.add_theme_stylebox_override("panel", UiParch.box("ink", 10))
+	bal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var t := UiParch.label("", "body", 20, UiParch.INK)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	t.custom_minimum_size = Vector2(250, 0)
+	bal.add_child(t)
+	bal.visible = false
+	bal.set_meta("center", top.x)
+	bal.set_meta("bottom", top.y - 6.0)
+	add_child(bal)
+	balloons[id] = bal
+
+
+## Número do selo do lugar (0 esconde).
+func set_badge(id: String, n: int) -> void:
+	var b: PanelContainer = badges.get(id)
+	if b == null:
+		return
+	b.visible = n > 0
+	(b.get_child(0) as Label).text = str(n)
+
+
+## Texto do balão do lugar ("" esconde). Centrado, com a base logo acima do desenho.
+func set_balloon(id: String, text: String) -> void:
+	var b: PanelContainer = balloons.get(id)
+	if b == null:
+		return
+	b.visible = text != ""
+	(b.get_child(0) as Label).text = text
+	b.reset_size()
+	b.position = Vector2(float(b.get_meta("center")) - b.size.x * 0.5, float(b.get_meta("bottom")) - b.size.y)
 
 
 func _place(l: Control, at: Vector2, w: Vector2, center: bool) -> void:

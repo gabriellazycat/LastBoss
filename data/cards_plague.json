@@ -19,9 +19,10 @@
    "range": 1.0,
    "fx": {
     "peste": 1,
-    "peste_max": 15,
+    "peste_max": 30,
     "peste_taken": 0.035,
-    "peste_secs": 8.0
+    "peste_secs": 8.0,
+    "peste_decay": 1.0
    },
    "lvl": [
     "hp",
@@ -323,8 +324,8 @@
   },
   {
    "id": "hunt_instinct",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [],
    "archetype": "",
    "rarity": "uncommon",
@@ -395,8 +396,8 @@
   },
   {
    "id": "bubonic_plague",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [],
    "archetype": "",
    "rarity": "rare",
@@ -841,8 +842,8 @@
   },
   {
    "id": "black_pestilence",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [],
    "archetype": "",
    "rarity": "legendary",

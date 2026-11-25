@@ -298,6 +298,11 @@ func update(dt: float) -> void:
 	_validate_target()
 	_move(dt)
 	if is_helper:
+		# Sair tem prioridade: disputa do ajudante acabada (ou a sair) = larga o alvo e não briga mais.
+		if sim.contest.size() == 0 or str(sim.contest.get("type", "")) != "helper":
+			target_kind = TGT_NONE
+			attacking = false
+			return
 		# Herói Ajudante (15/11/2026): anda e briga ao lado do herói da vez. O ponto de espera (hold) acompanha o
 		# herói e a coleira fica em Sim._follow; sem a lógica de estrada (progresso, impaciência) do herói da vez.
 		_attack(dt)
@@ -791,11 +796,13 @@ func _choose_target() -> void:
 	var best_kind := TGT_NONE
 	var best_score := -INF
 	var arena := sim.phase == K.Phase.ARENA
-	var unit_r := 3.0 if arena else engage
+	# Herói à distância nunca olha menos que o próprio alcance: senão anda sem atirar com o alvo ao alcance.
+	var shot_r: float = float(H["attack_range"]) + radius * 0.5 if bool(H.get("ranged", false)) else 0.0
+	var unit_r := maxf(3.0, shot_r) if arena else engage
 	if is_helper:
-		unit_r = minf(unit_r, HELPER_ENGAGE)   # vai atrás do que chega perto do grupo, sem se afastar do herói
+		unit_r = minf(unit_r, maxf(HELPER_ENGAGE, shot_r))   # vai atrás do que chega perto do grupo, sem se afastar do herói
 	if push_t > 0.0 and not arena:
-		unit_r = minf(unit_r, 2.5)   # impaciência: só o que está colado nele
+		unit_r = minf(unit_r, maxf(2.5, shot_r))   # impaciência: só o que está colado nele (ou ao alcance do tiro)
 	# Prorrogação longa (10/11/2026): depois de 2 min dela, o herói vai no chefe e só briga com o que está
 	# colado nele. Com o elixir da prorrogação o covil enchia a arena e ele nunca chegava ao chefe.
 	var charge := arena and sim.overtime() > 2.0
@@ -1029,6 +1036,12 @@ func add_ward(v: float) -> void:
 	ward = maxf(ward, minf(ward + v, cap))
 
 
+## Barreira que não soma: completa até `target` (nunca passa dele nem do teto geral). Grito de Guerra.
+func fill_ward(target: float) -> void:
+	var cap: float = max_hp() * float(sim.data.rules.get("ward_cap_frac", 0.5))
+	ward = maxf(ward, minf(target, cap))
+
+
 func heal(v: float) -> void:
 	if v <= 0.0:
 		return
@@ -1049,9 +1062,17 @@ func add_curse(n: int) -> void:
 		sim.emit(K.Ev.CURSE, x, y, curses, 0)
 
 
+## O herói está dentro de alguma zona de teia (sim.zones, kind "web")?
+func _in_web() -> bool:
+	for z in sim.zones:
+		if str(z["kind"]) == "web" and Vector2(x - float(z["x"]), y - float(z["y"])).length() <= float(z["r"]) + radius:
+			return true
+	return false
+
+
 func knockback(from_x: float, from_y: float, dist: float) -> void:
-	if has("steady_boots"):
-		return
+	if has("steady_boots") or _in_web():
+		return   # Teia: quem está dentro da zona da teia não é empurrado
 	var v := Vector2(x - from_x, y - from_y)
 	if v.length() < 0.01:
 		v = Vector2(-face_x, -face_y)

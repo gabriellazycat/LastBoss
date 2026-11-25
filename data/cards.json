@@ -785,8 +785,8 @@
   },
   {
    "id": "pack_call",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [
     "pack"
    ],
@@ -815,9 +815,6 @@
    "family": "pack",
    "owner": "plague",
    "ai": {
-    "keys": [
-     "echo_worthy"
-    ],
     "value": [
      {
       "if": {
@@ -1091,8 +1088,8 @@
   },
   {
    "id": "toll",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [],
    "archetype": "",
    "rarity": "uncommon",
@@ -1282,8 +1279,8 @@
   },
   {
    "id": "soul_harvest",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [],
    "archetype": "",
    "rarity": "rare",
@@ -1309,9 +1306,6 @@
    "family": "death",
    "owner": "lich",
    "ai": {
-    "keys": [
-     "echo_worthy"
-    ],
     "value": [
      {
       "if": {

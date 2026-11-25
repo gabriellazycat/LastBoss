@@ -45,19 +45,42 @@ static func slam(l: Control, delay := 0.0) -> void:
 	tw.tween_property(l, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-## Faíscas que explodem de um ponto (coordenadas do `parent`) e somem.
+## Faíscas que explodem de um ponto (coordenadas do `parent`) e somem. Os Burst são reaproveitados (pool): nada de um
+## Control novo por chamada.
+static var _pool: Array = []
+const POOL_MAX := 12
+
+
 static func burst(parent: Control, at: Vector2, col: Color, n := 18, power := 1.0) -> void:
-	var b := Burst.new()
+	var b: Burst = null
+	for i in range(_pool.size() - 1, -1, -1):
+		var c = _pool[i]
+		if not is_instance_valid(c) or (c as Node).is_queued_for_deletion():
+			_pool.remove_at(i)   # o pai foi liberado junto
+		elif not c.active and b == null:
+			b = c
+	if b == null:
+		b = Burst.new()
+		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if _pool.size() < POOL_MAX:
+			_pool.append(b)
+		else:
+			b.pooled = false
 	b.ink = paper()
 	b.col = col.lerp(UiParch.INK, 0.35) if b.ink else col
 	b.power = power
 	b.position = at
-	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.t = 0.0
+	b.parts.clear()
 	for i in n:
 		var a := randf() * TAU
 		var sp := randf_range(160.0, 420.0) * power
 		b.parts.append([Vector2.ZERO, Vector2(cos(a), sin(a)) * sp, randf_range(2.0, 5.0) * power])
-	parent.add_child(b)
+	if b.get_parent() != parent:
+		if b.get_parent() != null:
+			b.get_parent().remove_child(b)
+		parent.add_child(b)
+	b.start()
 
 
 class Burst extends Control:
@@ -66,12 +89,25 @@ class Burst extends Control:
 	var power := 1.0
 	var t := 0.0
 	var ink := false
+	var active := false
+	var pooled := true
 	const LIFE := 0.7
+
+	func start() -> void:
+		active = true
+		visible = true
+		set_process(true)
+		queue_redraw()
 
 	func _process(delta: float) -> void:
 		t += delta
 		if t >= LIFE:
-			queue_free()
+			active = false
+			if pooled:
+				visible = false
+				set_process(false)
+			else:
+				queue_free()
 			return
 		for p in parts:
 			p[0] += p[1] * delta

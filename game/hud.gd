@@ -1571,6 +1571,13 @@ func _offer_heading(o: Dictionary) -> String:
 	return tr({"level": "UI_OFFER_FALL", "shrine": "UI_OFFER_SHRINE"}[o["source"]])
 
 
+func _inst(uid: int) -> Sim.CardInst:
+	for ci in sim.cards:
+		if ci.uid == uid:
+			return ci
+	return null
+
+
 func _inst_level(uid: int) -> int:
 	for ci in sim.cards:
 		if ci.uid == uid:
@@ -1636,18 +1643,25 @@ func _build_offer_options(o: Dictionary) -> void:
 			"mod":
 				cd = sim.data.card(str(op["card"]))
 				lv = _inst_level(int(op["uid"]))
-				mids = [str(op["mod"])]
+				var mci := _inst(int(op["uid"]))
+				mids = (UiKit.mod_ids(mci) if mci else []) + [str(op["mod"])]
 				head.text = tr("UI_OPT_MOD_HEAD").format({"mod": tr("MOD_" + str(op["mod"]))})
-				# Barato já mostra o custo novo na carta (gema azul-água).
-				var mc := cd.cost_at(lv) - (1 if str(op["mod"]) == "cheap" else 0)
-				cp = UiKit.card(cd, maxi(mc, 0), [tr("MOD_" + str(op["mod"]))], key, w, lv)
+				# Barato já mostra o custo novo na carta (gema azul-água); os modificadores já na carta continuam.
+				var mc := (sim.card_cost(mci) if mci else cd.cost_at(lv)) - (1 if str(op["mod"]) == "cheap" else 0)
+				var mnames: Array = (UiKit.mod_names(mci) if mci else []) + [tr("MOD_" + str(op["mod"]))]
+				cp = UiKit.card(cd, maxi(mc, 0), mnames, key, w, lv)
 				Tips.set_text(foot, "[[%s]]: %s" % [op["mod"], tr("MODDESC_" + str(op["mod"]))])
 			"upgrade":
 				cd = sim.data.card(str(op["card"]))
 				lv = int(op["level"]) + 1
 				head.text = tr("UI_OPT_UP_HEAD").format({"a": lv - 1, "b": lv})
 				head.add_theme_color_override("font_color", UiKit.GOOD)
-				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
+				var uci := _inst(int(op["uid"]))
+				mids = UiKit.mod_ids(uci) if uci else []
+				var ucost := cd.cost_at(lv)
+				if uci:
+					ucost = maxi(sim.card_cost(uci) + cd.cost_at(lv) - cd.cost_at(uci.level), 0)
+				cp = UiKit.card(cd, ucost, UiKit.mod_names(uci) if uci else [], key, w, lv)
 				# Só o "depois" em tamanho cheio; o que mudou vem em linhas embaixo (Opção A, 12/11/2026).
 				var ch := UiKit.level_changes(cd, lv - 1, lv).replace(" · ", "\n")
 				if lv >= CardDef.N3_LEVEL and cd.n3.size() > 0:
@@ -1660,7 +1674,9 @@ func _build_offer_options(o: Dictionary) -> void:
 				lv = int(op.get("level", 1))
 				head.text = tr("UI_OPT_REMOVE_HEAD")
 				head.add_theme_color_override("font_color", UiKit.BAD)
-				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
+				var rci := _inst(int(op.get("uid", -1)))
+				mids = UiKit.mod_ids(rci) if rci else []
+				cp = UiKit.card(cd, sim.card_cost(rci) if rci else cd.cost_at(lv), UiKit.mod_names(rci) if rci else [], key, w, lv)
 				cp.modulate = Color(1.0, 0.6, 0.6)
 				# Sempre à vista (também nas cartas pequenas do deck inteiro), com o texto da carta.
 				Tips.set_text(foot, tr("UI_OPT_REMOVE").format({"card": UiKit.card_name(cd, lv)}) + "
@@ -1699,7 +1715,9 @@ func _build_offer_options(o: Dictionary) -> void:
 				cd = sim.data.card(str(op["card"]))
 				lv = int(op.get("level", 1))
 				head.text = tr("UI_OPT_" + str(op["kind"]).to_upper() + "_HEAD")
-				cp = UiKit.card(cd, cd.cost_at(lv), [], key, w, lv)
+				var tci := _inst(int(op.get("uid", -1)))
+				mids = UiKit.mod_ids(tci) if tci else []
+				cp = UiKit.card(cd, sim.card_cost(tci) if tci else cd.cost_at(lv), UiKit.mod_names(tci) if tci else [], key, w, lv)
 		if cd:
 			var tl := lv
 			var tm := mids
@@ -2027,6 +2045,35 @@ func _build_power_panel() -> void:
 	add_child(power_layer)
 
 
+## Descrição da evolução: cada número que muda aparece como "antes → depois" (o que não muda fica como está).
+func _power_evo_desc(id: String, prev: int, lv: int) -> String:
+	var pd: Dictionary = sim.data.hero_powers.get(id, {})
+	if pd.is_empty():
+		return ""
+	var a := HeroPowers.params(pd, prev)
+	var b := HeroPowers.params(pd, lv)
+	var m := {}
+	for k in b:
+		var nv = b[k]
+		var ov = a.get(k, nv)
+		if (nv is float or nv is int) and (ov is float or ov is int) and not is_equal_approx(float(nv), float(ov)):
+			m[k] = "%s → %s" % [_num(ov), _num(nv)]
+		elif typeof(nv) == typeof(ov) and nv != ov and not (nv is Array or nv is Dictionary):
+			m[k] = "%s → %s" % [str(ov), str(nv)]
+		else:
+			m[k] = nv
+	var s := tr("POWER_" + id + "_d").format(m)
+	# A unidade vale para os dois lados: "12 → 18%" vira "12% → 18%".
+	var re := RegEx.new()
+	re.compile("(\\d+(?:\\.\\d+)?) → (\\d+(?:\\.\\d+)?)(%|x\\b| m\\b| s\\b)")
+	return re.sub(s, "$1$3 → $2$3", true)
+
+
+static func _num(v) -> String:
+	var f := float(v)
+	return str(int(round(f))) if is_equal_approx(f, round(f)) else str(snappedf(f, 0.01))
+
+
 ## Painel de revelação do poder (oferta-aviso "power"): novo ou evolução, efeito, recarga e os poderes que a party já tem.
 func _refresh_power_panel(o: Dictionary) -> void:
 	var sig := TranslationServer.get_locale() + str(o)
@@ -2073,12 +2120,17 @@ func _refresh_power_panel(o: Dictionary) -> void:
 		var lvl := UiKit.label(17, UiKit.GOLD, 3)
 		lvl.text = tr("UI_POWER_LEVEL_UP").format({"a": ROMAN[clampi(prev, 0, 3)], "b": ROMAN[clampi(lv, 1, 3)]}) if prev > 0 and not bool(op.get("new", false)) else tr("UI_POWER_LEVEL").format({"n": ROMAN[clampi(lv, 1, 3)]})
 		col.add_child(lvl)
-		col.add_child(Tips.label(str(d["desc"]), 18, UiKit.TEXT, 470.0, false))
+		var evo := prev > 0 and not bool(op.get("new", false))
+		col.add_child(Tips.label(_power_evo_desc(id, prev, lv) if evo else str(d["desc"]), 18, UiKit.TEXT, 470.0, false))
 		var cd := UiKit.label(17, UiKit.MUTED, 3)
+		var cd_now := int(op.get("cooldown", d["cooldown"]))
+		var cd_old := int(HeroPowers.describe(sim, id, prev).get("cooldown", cd_now)) if evo else cd_now
 		if str(d["trigger"]) == "interval":
-			cd.text = tr("UI_POWER_EVERY").format({"s": int(op.get("cooldown", d["cooldown"]))})
+			cd.text = tr("UI_POWER_EVERY").format({"s": cd_now if cd_old == cd_now else "%d → %d" % [cd_old, cd_now]})
 		else:
-			cd.text = "%s: %d s" % [tr("UI_POWER_COOLDOWN"), int(op.get("cooldown", d["cooldown"]))]
+			cd.text = "%s: %s s" % [tr("UI_POWER_COOLDOWN"), str(cd_now) if cd_old == cd_now else "%d s → %d" % [cd_old, cd_now]]
+		# Evolução: só o que mudou aparece; recarga igual some.
+		cd.visible = not evo or cd_old != cd_now
 		col.add_child(cd)
 		row.add_child(col)
 		v.add_child(row)

@@ -108,10 +108,86 @@ func party_total() -> int:
 
 
 ## Parte do menu: "Recorde: party N de 15 · X Almas" (o recorde geral, o melhor entre os vilões).
-func status_text() -> String:
+func status_text(almas := -1) -> String:
+	var a := meta.almas if almas < 0 else almas
 	if meta.best_party > 0:
-		return tr("UI_MENU_STATUS").format({"b": meta.best_party, "m": party_total(), "a": meta.almas})
-	return tr("UI_MENU_STATUS_NONE").format({"a": meta.almas})
+		return tr("UI_MENU_STATUS").format({"b": meta.best_party, "m": party_total(), "a": a})
+	return tr("UI_MENU_STATUS_NONE").format({"a": a})
+
+
+# ---------------------------------------------------------------- selos e balões do mapa
+
+var _count_tw: Tween
+var _count_auto := false
+
+
+## Balão do Covil: "X Almas — dá para comprar N melhorias" (só com novidade na árvore e algo comprável).
+func covil_balloon(almas: int) -> String:
+	var n := meta.buyable_count()
+	if not meta.covil_new or n <= 0:
+		return ""
+	return tr("UI_MAP_LAIR_BUY_ONE" if n == 1 else "UI_MAP_LAIR_BUY").format({"a": almas, "n": n})
+
+
+## Selos e balões do título. Ao voltar de uma run (saldo diferente do que o menu já mostrou) as Almas contam
+## animadas até o saldo; ao fim, se dá para comprar algo, abre a árvore do Covil.
+func refresh_marks() -> void:
+	var mm := title_root as MapMenu
+	if mm == null:
+		return
+	_stop_count()
+	var n_new := meta.new_cards_count()
+	mm.set_badge("collection", n_new)
+	mm.set_balloon("collection", tr("UI_MAP_LIB_NEW_ONE" if n_new == 1 else "UI_MAP_LIB_NEW").format({"n": n_new}) if n_new > 0 else "")
+	mm.set_badge("covil", meta.buyable_count() if meta.covil_new else 0)
+	var from := meta.almas_shown if meta.almas_shown >= 0 else meta.almas
+	if from == meta.almas:
+		mm.set_balloon("covil", covil_balloon(meta.almas))
+		return
+	_count_auto = true
+	mm.set_status(status_text(from))
+	mm.set_balloon("covil", covil_balloon(from))
+	_count_tw = create_tween()
+	_count_tw.tween_interval(0.5)
+	_count_tw.tween_method(_count_step, float(from), float(meta.almas), clampf(absf(meta.almas - from) * 0.02, 0.6, 2.0)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_count_tw.tween_callback(_count_done)
+
+
+func _count_step(v: float) -> void:
+	var mm := title_root as MapMenu
+	if mm == null or screen != "title":
+		return
+	var a := int(round(v))
+	mm.set_status(status_text(a))
+	mm.set_balloon("covil", covil_balloon(a))
+
+
+func _count_done() -> void:
+	_finish_count()
+	if screen == "title" and meta.covil_new and meta.buyable_count() > 0:
+		get_tree().create_timer(0.6).timeout.connect(func():
+			if screen == "title" and meta.covil_new:
+				show_screen("covil"))
+
+
+## Fecha a contagem (também ao sair do título no meio dela): o saldo mostrado passa a ser o atual.
+func _finish_count() -> void:
+	if _count_tw != null:
+		_count_tw.kill()
+		_count_tw = null
+	if not _count_auto:
+		return
+	_count_auto = false
+	meta.almas_shown = meta.almas
+	meta.save()
+	var mm := title_root as MapMenu
+	if mm != null:
+		mm.set_status(status_text())
+		mm.set_balloon("covil", covil_balloon(meta.almas))
+
+
+func _stop_count() -> void:
+	_finish_count()
 
 
 # ---------------------------------------------------------------- título
@@ -126,9 +202,8 @@ func _on_map_choice(id: String) -> void:
 		"continue":
 			continue_run.emit()
 		"covil":
-			# Direto à escolha do vilão/deck; "Voltar" e Esc levam ao título.
-			decks_back = "title"
-			show_screen("decks")
+			# A árvore de melhorias: "Começar run" leva à escolha do vilão, que volta para cá.
+			show_screen("covil")
 		"collection":
 			lib_return = "title"
 			show_screen("collection")
@@ -211,6 +286,8 @@ func show_screen(s: String) -> void:
 	if is_instance_valid(desk):
 		desk.set_current(_desk_id(s))
 		desk.set_continue(SaveGame.exists())
+	if s != "title":
+		_stop_count()
 	title_root.visible = s == "title" or (prev_screen == "title" and prev_fade < 1.0)
 	deck_screen.visible = s == "decks"
 	covil.visible = s == "covil"
@@ -221,13 +298,16 @@ func show_screen(s: String) -> void:
 		continue_btn.visible = SaveGame.exists()
 		if title_root is MapMenu:
 			(title_root as MapMenu).set_status(status_text())
+			refresh_marks()
 		(continue_btn if continue_btn.visible else covil_btn).grab_focus.call_deferred()
 	elif s == "covil":
+		meta.mark_covil_seen()
 		covil.refresh()
 	elif s == "decks":
 		_fill_villains_parch()
 		_focus_first_deck.call_deferred()
 	elif s == "collection":
+		meta.mark_library_seen()
 		collection.open()
 	elif s == "compendium":
 		compendium.open()
@@ -450,10 +530,11 @@ func _build_villains_parch() -> void:
 		col.add_child(st)
 		b.focus_entered.connect(_focus_villain.bind(id))
 		b.mouse_entered.connect(func(): b.grab_focus())
+		# Clicar (ou confirmar no foco) só seleciona o vilão; a run começa no botão Começar.
 		b.pressed.connect(func():
 			if meta.villains.has(id):
 				pending_villain = id
-				_start_villain())
+				_focus_villain(id))
 		list.add_child(b)
 		v_tabs[id] = b
 	# Detalhe do vilão em foco.

@@ -39,6 +39,7 @@ var tags := PackedInt32Array()
 var flags := PackedInt32Array()
 var uid := PackedInt32Array()
 var lvl := PackedByteArray()   # nível da carta que gerou a unidade (1 a 3)
+var tgt: Array = []            # herói alvo (SimHero) em grupo; null = ainda não escolheu (escolhe o mais perto na 1ª passada)
 
 var free := PackedInt32Array()
 var free_n := 0
@@ -86,6 +87,7 @@ func setup(s: Sim, capacity: int) -> void:
 	spd.resize(cap); rng.resize(cap); rad.resize(cap); xp.resize(cap); cost_share.resize(cap)
 	timer.resize(cap); timer2.resize(cap); curse_t.resize(cap); buff.resize(cap); rage.resize(cap); fear_t.resize(cap); slot.resize(cap); sh.resize(cap)
 	free.resize(cap)
+	tgt.resize(cap)
 	for i in cap:
 		free[i] = cap - 1 - i
 	free_n = cap
@@ -126,6 +128,7 @@ func spawn(d: CardDef, x: float, y: float, xp_val: float, share: float, uflags: 
 	rad[i] = d.radius
 	xp[i] = xp_val
 	cost_share[i] = share
+	tgt[i] = null
 	timer[i] = 0.0
 	timer2[i] = float(d.fx.get("spawn_interval", 0.0))
 	curse_t[i] = 0.0
@@ -184,6 +187,7 @@ func update(dt: float) -> void:
 	# Herói Ajudante (11/11/2026): alvo como o herói; a distância até ele conta × pull (< 1 = preferido).
 	var helper: SimHero = sim.helper if sim.helper != null and sim.helper.hp > 0.0 else null
 	var pull2 := pow(float(sim.data.rules["locations"].get("helper", {}).get("pull", 1.0)), 2) if helper else 1.0
+	var engage := float(sim.hero.AI.get("engage_radius", 10.0))   # raio em que o herói da vez briga: o alvo do monstro só muda além dele
 	n_pack = 0; n_struct = 0; n_cultists = 0; n_kings = 0; n_beast = 0; n_own = 0
 	for i in hi:
 		if alive[i] == 0:
@@ -191,16 +195,18 @@ func update(dt: float) -> void:
 		ox[i] = px[i]
 		oy[i] = py[i]
 		if sim.followers.size() > 0 or helper:
-			# Fase de grupo: cada monstro vai no herói mais perto (o Herói Ajudante entra na conta).
+			# Fase de grupo: o alvo inicial é o herói mais perto de onde a unidade nasceu (o Herói Ajudante entra na
+			# conta). Ela só troca se o alvo cair, sair do grupo ou se afastar mais que engage_radius; estrutura
+			# (regra própria) continua indo no mais perto a cada passo.
 			hero = sim.hero
-			var bd := Vector2(sim.hero.x - px[i], sim.hero.y - py[i]).length_squared()
-			for f in sim.followers:
-				var fd := Vector2(f.x - px[i], f.y - py[i]).length_squared()
-				if fd < bd:
-					bd = fd
-					hero = f
-			if helper and Vector2(helper.x - px[i], helper.y - py[i]).length_squared() * pull2 < bd:
-				hero = helper
+			if arch[i] == K.Arch.STRUCTURE:
+				hero = _nearest_hero(px[i], py[i], helper, pull2)
+			else:
+				var cur: SimHero = tgt[i]
+				if cur == null or cur.hp <= 0.0 or not _in_play(cur, helper) 						or Vector2(cur.x - px[i], cur.y - py[i]).length() > engage:
+					cur = _nearest_hero(px[i], py[i], helper, pull2)
+					tgt[i] = cur
+				hero = cur
 			hx = hero.x
 			hy = hero.y
 			hr = hero.radius
@@ -327,6 +333,25 @@ func update(dt: float) -> void:
 					py[i] -= dy / d * push
 
 	sim.hit_hero = null
+
+
+## Herói (líder, seguidores e, em disputa, o Ajudante com o puxão `pull2`) mais perto de (x, y).
+func _nearest_hero(x: float, y: float, helper: SimHero, pull2: float) -> SimHero:
+	var best: SimHero = sim.hero
+	var bd := Vector2(sim.hero.x - x, sim.hero.y - y).length_squared()
+	for f in sim.followers:
+		var fd := Vector2(f.x - x, f.y - y).length_squared()
+		if fd < bd:
+			bd = fd
+			best = f
+	if helper and Vector2(helper.x - x, helper.y - y).length_squared() * pull2 < bd:
+		best = helper
+	return best
+
+
+## O herói ainda está em campo (líder, seguidor de pé ou o Ajudante da disputa)?
+func _in_play(h: SimHero, helper: SimHero) -> bool:
+	return h == sim.hero or h == helper or sim.followers.has(h)
 
 
 ## Ataque à casa mais perto da Taverna em disputa. Devolve false se não há casa ao alcance da vontade.

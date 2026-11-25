@@ -16,11 +16,12 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 			sim.zones.append({"kind": "web", "x": x, "y": y, "r": fx["radius"], "t": d.fxv("duration", lv) * vet, "applied": false,
 				"root": d.fxv("root", lv), "curse": curse})
 		"weakness_curse":
-			# O herói causa menos dano às suas unidades por um tempo (hero_out_mult).
+			# O herói causa menos dano às suas unidades por um tempo (hero_out_mult). A maldição do Amaldiçoado vai no
+			# herói mais perto do ponto; o enfraquecimento vale para a party toda (hero_out_mult não sabe quem bate).
 			var st := _st(sim)
 			st["weak_until"] = maxf(float(st["weak_until"]), sim.t + d.fxv("duration", lv) * vet)
 			st["weak"] = d.fxv("weak", lv)
-			sim.hero.add_curse(curse)
+			sim.hero_nearest(Vector2(x, y)).add_curse(curse)
 		"dark_sacrifice":
 			# Sacrifica o monstro seu (do ponto) que mais devolve; ganha metade do custo dele em elixir.
 			var U := sim.units
@@ -42,7 +43,7 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 				var refund := minf(d.fxv("refund_cap", lv), U.cost_share[pick] * float(fx["refund_frac"]))
 				sim.kill_unit(pick, K.Death.SACRIFICE)
 				sim.elixir = minf(sim.elixir_max, sim.elixir + refund)
-				sim.hero.add_curse(curse)
+				sim.hero_nearest(Vector2(x, y)).add_curse(curse)
 		_:
 			return false
 	return true

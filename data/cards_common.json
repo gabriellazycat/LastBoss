@@ -452,8 +452,8 @@
   },
   {
    "id": "dark_messenger",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [
     "shadow"
    ],
@@ -492,8 +492,8 @@
   },
   {
    "id": "war_cry",
-   "category": "field",
-   "type": "spell",
+   "category": "lair",
+   "type": "lair",
    "tags": [],
    "archetype": "",
    "rarity": "uncommon",

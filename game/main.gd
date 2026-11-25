@@ -21,6 +21,8 @@ var map_after_t := 0.0
 var map_after_open := false       # o mapa aberto agora é o do fim do local (replanejar a rota fecha ele)
 var route_sel := 0                 # ramo destacado pelo controle na bifurcação
 var status_ov: StatusOverlay
+var act_end_seen := false
+var target_mark: MeshInstance3D   # anel dourado no herói que a carta em mira vai atingir
 var was_blocking := false           # oferta/bifurcação/mapa abertos no quadro anterior (solta a carta selecionada)
 var auto_bot: PlayerBot
 var auto_args := {}
@@ -293,7 +295,7 @@ func _space_scan(tag: String) -> void:
 func _env() -> void:
 	cam = Camera3D.new()
 	cam.fov = 40
-	cam.far = 500
+	cam.far = 900
 	add_child(cam)
 	cam.position = Vector3(0, 20, 14)
 	PaintLook.apply()
@@ -992,6 +994,11 @@ func _process(delta: float) -> void:
 				acc = 0.0
 				break
 	_mark_heroes_seen()
+	# Fim de ato: a velocidade volta a 1 (nos testes automáticos ela é a do argumento).
+	if sim.act_pending and not act_end_seen and auto_args.is_empty():
+		speed = 1.0
+		hud.speed = speed
+	act_end_seen = sim.act_pending
 	# Chegar ao ato 2 pela primeira vez abre o setor "Troca de ato" do Covil.
 	if sim.act >= 1 and not sim.phase_cfg.get("tutorial", false) and meta.see_act2():
 		meta.save()
@@ -1403,6 +1410,25 @@ func _menu_test() -> void:
 	await get_tree().create_timer(0.4).timeout
 	await _esc()
 	step.call("Esc da Biblioteca volta ao Covil", menu.screen == "covil")
+	# Comprar e reembolsar na árvore gravam em disco (e a meta aplicada à run vem de MetaApply.run_mods).
+	var almas_keep := meta.almas
+	var upg_keep: Dictionary = meta.upgrades.duplicate()
+	meta.upgrades = {}
+	meta.almas = 100000
+	var buy_id := ""
+	for nid in data.meta_nodes:
+		if str(data.meta_nodes[nid].get("parent", "")) == "" and menu.covil.view.can_buy(nid):
+			buy_id = nid
+			break
+	step.call("há um nó raiz comprável na árvore", buy_id != "" and meta.buyable_count() > 0)
+	if buy_id != "":
+		menu.covil.view.buy_node(buy_id)
+		step.call("comprar grava o nível no save", MetaSave.load_or_new(data, meta.file).node_level(buy_id) == 1)
+		menu.covil.view.refund_node(buy_id)
+		step.call("reembolsar grava o nível no save", MetaSave.load_or_new(data, meta.file).node_level(buy_id) == 0 and meta.almas == 100000)
+	meta.upgrades = upg_keep
+	meta.almas = almas_keep
+	meta.save()
 	# Covil → Começar run → Escolher vilão: deck 19/19, vilão trancado "derrote a party N".
 	await _click(_button(menu.covil, tr("UI_COVIL_START")))
 	step.call("Começar run abre a escolha de vilão", menu.screen == "decks")
@@ -1413,6 +1439,9 @@ func _menu_test() -> void:
 	step.call("vilão trancado: Começar desligado e texto da party", menu.v_pick.disabled and menu.v_pick.text == tr("UI_MENU_LOCKED").format({"n": 3}))
 	menu._focus_villain("plague")
 	step.call("vilão liberado: Começar ligado", not menu.v_pick.disabled)
+	# Clicar no vilão só seleciona; a run começa no botão Começar.
+	await _click(menu.v_tabs["plague"])
+	step.call("clicar no vilão só seleciona (a run não começa)", menu.screen == "decks" and not running and menu.pending_villain == "plague" and menu.v_focus == "plague")
 	# Editar deck abre a Biblioteca naquele vilão; Esc volta à escolha.
 	await _click(_button(menu, "UI_MENU_EDIT_DECK"))
 	step.call("Editar deck abre a Biblioteca no vilão", menu.screen == "collection" and menu.collection.tab == "plague" and menu.collection.deck_vid == "plague")
@@ -1488,7 +1517,11 @@ func _menu_test() -> void:
 	_ui_shot("menu_end")
 	await get_tree().create_timer(1.0).timeout
 	await _click(_button(run_end, "UI_END_MENU"))
-	step.call("o fim da run volta ao menu principal, não ao Covil", not running and menu.visible and menu.screen == "title" and not run_end.visible)
+	step.call("o fim da run volta ao menu principal, não ao Covil", not running and menu.visible and menu.screen in ["title", "covil"] and not run_end.visible)
+	# Com Almas para gastar, a contagem termina abrindo a árvore do Covil: espera e volta ao mapa.
+	await get_tree().create_timer(4.0).timeout
+	if menu.screen == "covil":
+		await _esc()
 	# Tutorial pelo menu.
 	await _click(mm.buttons["tutorial"])
 	step.call("Tutorial começa a fase 0", running and sim != null and sim.campaign_phase == 0 and not menu.visible)
@@ -1800,12 +1833,44 @@ func _update_placement() -> void:
 	if ci == null or sim.phase == K.Phase.OVER or not sim.offers.is_empty():
 		world.show_placement(false, Vector3.ZERO, true, 1.0)
 		status_ov.set_preview(null, Vector3.ZERO)
+		_mark_target(null, Vector3.ZERO)
 		return
 	var p := _ground_point(_pointer())
 	status_ov.set_preview(ci if _on_ground(_pointer()) else null, p)
 	var d := ci.def
 	var r: float = d.fx.get("radius", 1.0)
-	world.show_placement(d.category == "field" or d.id == "gold_bait", p, _on_ground(_pointer()) and sim.valid_target(ci, p.x, p.z), r)
+	world.show_placement(d.category == "field" or d.category == "lair" or d.id == "gold_bait", p, _on_ground(_pointer()) and sim.valid_target(ci, p.x, p.z), r)
+	_mark_target(ci if _on_ground(_pointer()) else null, p)
+
+
+## Mira de alvo único (feitiço de status/maldição/dano em "hero"/"nearest") e de monstro: o herói que vai receber.
+func _single_target(d: CardDef) -> bool:
+	if d.category != "field":
+		return false
+	if not d.is_spell:
+		return d.type == "monster" or d.type == "swarm"
+	for o in d.ops:
+		var t := str(o.get("target", "hero" if str(o.get("op", "")) in ["status", "curse"] else "area"))
+		if t == "hero" or t == "nearest":
+			return true
+	return false
+
+
+func _mark_target(ci: Sim.CardInst, p: Vector3) -> void:
+	if ci == null or not _single_target(ci.def):
+		if target_mark:
+			target_mark.visible = false
+		return
+	var h: SimHero = sim.hero
+	if sim.has_method("hero_nearest"):
+		var hn = sim.hero_nearest(Vector2(p.x, p.z))
+		if hn != null:
+			h = hn
+	if target_mark == null:
+		target_mark = world._circle(1.3, Color(1.0, 0.85, 0.2, 1.0), 0.09, 1.4)
+		world.add_child(target_mark)
+	target_mark.visible = true
+	target_mark.position = Vector3(h.x, 0.08 + world.surface_y(h.x, h.y), h.y)
 
 
 # ---------------------------------------------------------------- comandos
@@ -1820,8 +1885,8 @@ func _select(i: int) -> void:
 	# O Incêndio mira um local da rota: o mapa grande abre junto (a Isca de Ouro vai no mundo, perto do herói).
 	if (hud.selected >= 0 and ci.def.id == "burn_village") != hud.minimap.visible and not sim.route_wait:
 		_toggle_map()
-	# Cartas sem alvo (covil, finalização) saem na hora.
-	if hud.selected >= 0 and (ci.def.category == "lair" or ci.def.category == "finisher"):
+	# Finalização sai na hora; Temporário (covil) segue o fluxo dos feitiços: mira e solta em qualquer ponto do chão.
+	if hud.selected >= 0 and ci.def.category == "finisher":
 		_play_at(Vector2(sim.hero.x, sim.hero.y))
 
 
@@ -2152,7 +2217,7 @@ func _pad_input(e: InputEvent) -> void:
 	if e.is_action_pressed("pad_confirm"):
 		if hud.selected >= 0:
 			var ci := sim.hand_card(hud.selected)
-			if ci and (ci.def.category == "lair" or ci.def.category == "finisher"):
+			if ci and ci.def.category == "finisher":
 				_play_at(Vector2(sim.hero.x, sim.hero.y))
 			else:
 				_click_world(cursor)

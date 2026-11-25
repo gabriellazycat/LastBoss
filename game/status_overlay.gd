@@ -218,6 +218,7 @@ func ground_ring(c: Vector3, r: float, col: Color, width := 2.0, seg := 36) -> v
 	draw_polyline(pts, col, width, true)
 
 
+## Aura do Rei dos Ratos: disco leve no chão com borda marcada, exatamente do tamanho do raio (6 m), pulsando devagar.
 func _draw_auras() -> void:
 	var U := sim.units
 	for i in U.hi:
@@ -225,10 +226,29 @@ func _draw_auras() -> void:
 			continue
 		var d: CardDef = sim.data.cards[U.def[i]]
 		if d.fx.has("aura_radius"):
-			var pulse := 0.25 + 0.1 * sin(sim.t * 3.0)
-			ground_ring(_unit_pos(i, 0.06), float(d.fx["aura_radius"]), Color(C_BUFF, pulse), 2.5, 48)
+			var pulse := 0.5 + 0.5 * sin(sim.t * 3.0)
+			var c := _unit_pos(i, 0.06)
+			var r := float(d.fx["aura_radius"])
+			var seg := 56
+			var pts := PackedVector2Array()
+			for k in seg:
+				var a := TAU * k / seg
+				var q := c + Vector3(cos(a) * r, 0.0, sin(a) * r)
+				if cam.is_position_behind(q):
+					pts.clear()
+					break
+				pts.append(cam.unproject_position(q))
+			if pts.size() < 3:
+				continue
+			draw_colored_polygon(pts, Color(C_BUFF, 0.05 + 0.04 * pulse))
+			var ring := pts.duplicate()
+			ring.append(pts[0])
+			draw_polyline(ring, Color(C_BUFF, 0.35 + 0.2 * pulse), 4.0, true)
+			draw_polyline(ring, Color(1.0, 0.9, 0.6, 0.45 + 0.2 * pulse), 1.5, true)
 
 
+## Unidade com a aura (+dano): brilho quente em volta do corpo (também nos voadores, que ficam a 1,6 m do chão) e a
+## marca de "buff" em cima.
 func _draw_unit_marks() -> void:
 	var U := sim.units
 	var n := 0
@@ -240,13 +260,22 @@ func _draw_unit_marks() -> void:
 		if not buffed and not devoured:
 			continue
 		var d: CardDef = sim.data.cards[U.def[i]]
-		var top := _unit_pos(i, 0.9 + d.radius * 1.6)
+		var lift := 1.6 if d.fly else 0.0   # voadores (morcegos) ficam acima do chão (world_view: gy + 1.6)
+		var top := _unit_pos(i, lift + 0.9 + d.radius * 1.6)
 		if cam.is_position_behind(top):
 			continue
 		var p := cam.unproject_position(top)
 		if devoured:
 			badge(self, p + Vector2(0, -8), "devour", C_DEVOUR, -1.0, 9.0)
 		elif buffed:
+			var body := _unit_pos(i, lift + 0.45 + d.radius * 0.6)
+			var bp := cam.unproject_position(body)
+			var side := cam.unproject_position(body + cam.global_transform.basis.x * maxf(d.radius, 0.45) * 1.3)
+			var gr := clampf(bp.distance_to(side), 7.0, 60.0)
+			var pu := 0.5 + 0.5 * sin(sim.t * 5.0 + i)
+			draw_circle(bp, gr * 1.35, Color(C_BUFF, 0.10 + 0.05 * pu))
+			draw_circle(bp, gr * 0.95, Color(C_BUFF, 0.16 + 0.08 * pu))
+			draw_circle(bp, gr * 0.55, Color(1.0, 0.85, 0.5, 0.14 + 0.08 * pu))
 			glyph(self, p, "buff", Color(0, 0, 0, 0.75), 11.0)
 			glyph(self, p + Vector2(0, -1), "buff", C_BUFF, 9.5)
 		n += 1

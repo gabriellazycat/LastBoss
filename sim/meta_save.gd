@@ -42,6 +42,12 @@ var relics_unlocked: Array = []    # reliquias liberadas (as livres entram na cr
 var best_party := 0                # mais parties derrubadas numa run
 var best_by_villain: Dictionary = {}   # vilao -> mais parties derrubadas com ele
 var act2_reached := false          # o jogador ja chegou ao ato 2 (abre o setor "Troca de ato" do Covil)
+## Selos do mapa do menu (campos novos; save antigo cai nos padroes): saldo de Almas que a contagem do menu ja mostrou
+## (-1 = nunca: nao anima), "ha novidade no Covil" (Almas ganhas desde a ultima visita a arvore) e as cartas que a
+## Biblioteca ja mostrou (as de fora desta lista sao as "cartas novas").
+var almas_shown := -1
+var covil_new := false
+var lib_seen: Array = []
 
 ## Compatibilidade com a interface dos Pactos (até o menu de vilões substituir as telas antigas).
 var pact: String:
@@ -111,7 +117,7 @@ func save(path := "") -> bool:
 		"best_party": best_party, "best_by_villain": best_by_villain, "act2_reached": act2_reached,
 		"unlocked": unlocked, "villain": villain, "villains": villains, "runs": runs, "heroes_seen": heroes_seen,
 		"wins_by_villain": wins_by_villain, "heroes_total": heroes_total, "progress": progress,
-		"totals": totals, "runs_done": runs_done})
+		"totals": totals, "runs_done": runs_done, "almas_shown": almas_shown, "covil_new": covil_new, "lib_seen": lib_seen})
 	return true
 
 
@@ -254,6 +260,8 @@ func apply_run(sim: Sim, path := "") -> Dictionary:
 	var dmg := float(sim.stats.get("almas_dmg", 0.0))
 	var gain := almas_for(dmg, heroes)
 	add_almas(int(gain["total"]))
+	if int(gain["total"]) > 0:
+		covil_new = true
 	var party := int(sim.stats.get("parties_beaten", sim.parties_beaten()))
 	var vid := sim.deck_id
 	var new_best := reach_party(party)
@@ -340,6 +348,40 @@ func buy(id: String) -> bool:
 	almas -= node_cost(id)
 	upgrades[id] = node_level(id) + 1
 	return true
+
+
+## Nos da arvore que da para comprar agora (pai comprado, Almas bastam, setor aberto): o N do balao do Covil.
+func buyable_count() -> int:
+	var locked := {}
+	for sec in data.meta_tree.get("sectors", []):
+		if str(sec.get("locked_until", "")) == "act2_reached" and not act2_reached:
+			locked[str(sec["id"])] = true
+	var n := 0
+	for id in data.meta_nodes:
+		if not locked.has(str(data.meta_nodes[id].get("sector", ""))) and can_buy(id):
+			n += 1
+	return n
+
+
+## Cartas liberadas que a Biblioteca ainda nao mostrou (o selo "N cartas novas").
+func new_cards_count() -> int:
+	var n := 0
+	for id in unlocked:
+		if not lib_seen.has(id):
+			n += 1
+	return n
+
+
+func mark_library_seen() -> void:
+	if new_cards_count() > 0:
+		lib_seen = unlocked.duplicate()
+		save()
+
+
+func mark_covil_seen() -> void:
+	if covil_new:
+		covil_new = false
+		save()
 
 
 ## Reembolsa o ultimo nivel de um no (so se nenhum filho depende dele). Devolve as Almas devolvidas.

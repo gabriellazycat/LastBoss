@@ -115,13 +115,13 @@ func show_result(d: GameData, m: MetaSave, sim: Sim, info: Dictionary) -> void:
 		left.custom_minimum_size = Vector2(390, 0)
 		cols.add_child(left)
 		var al: Dictionary = info.get("almas", {})
-		left.add_child(UiParch.label(tr("UI_END_ALMAS"), "title", 28, UiParch.ELIXIR_DEEP))
+		left.add_child(UiParch.label(tr("UI_END_ALMAS"), "title", 28, UiParch.SOUL))
 		left.add_child(_row("%s (%d)" % [tr("UI_END_ALMAS_DMG"), int(round(float(info.get("dmg_raw", 0.0))))], "+%d" % int(al.get("dmg", 0)), 19))
 		left.add_child(_row("%s (%d)" % [tr("UI_END_ALMAS_HEROES"), int(info.get("heroes", 0))], "+%d" % int(al.get("heroes", 0)), 19))
 		if int(al.get("bonus", 0)) > 0:
 			left.add_child(_row(tr("UI_END_ALMAS_BONUS"), "+%d" % int(al["bonus"]), 19))
 		left.add_child(UiParch.divider(380))
-		var tot := _row(tr("UI_END_ALMAS_TOTAL"), "+%d" % int(al.get("total", 0)), 28, UiParch.INK, UiParch.ELIXIR_DEEP)
+		var tot := _row(tr("UI_END_ALMAS_TOTAL"), "+%d" % int(al.get("total", 0)), 28, UiParch.INK, UiParch.SOUL)
 		tot.name = "AlmasTotal"
 		left.add_child(tot)
 		left.add_child(UiParch.label(tr("UI_END_BALANCE").format({"n": int(info.get("balance", m.almas))}), "italic", 19, UiParch.INK_SOFT))

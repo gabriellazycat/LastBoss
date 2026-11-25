@@ -19,10 +19,9 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 		"gold_bait":
 			sim.zones.append({"kind": "bait", "x": x, "y": y, "r": 1.0, "t": 40.0, "xp": 0.0})
 		"oil_splash":
-			# Sozinho: encharca o herói. Em grupo (10/11/2026): só o herói mais perto do ponto (a até 3 m; nenhum
-			# perto = o da vez). Encharcar o grupo todo e incendiar com a Tocha dava 96% de vitória na fase 4.
-			var near_w: Array = sim.heroes_near(x, y, float(fx.get("radius", 3.0))) if sim.multi_heroes() else []
-			var wet: Array = [near_w[0]] if near_w.size() > 0 else [sim.hero]
+			# Sozinho: encharca o herói. Em grupo (10/11/2026): só o herói mais perto do ponto, sem raio (antes: a até
+			# 3 m, senão o líder). Encharcar o grupo todo e incendiar com a Tocha dava 96% de vitória na fase 4.
+			var wet: Array = [sim.hero_nearest(Vector2(x, y))]
 			for hh in wet:
 				hh.soaked_t = maxf(hh.soaked_t, d.fxv("soaked", lv) * vet)
 				hh.add_curse(curse)
@@ -122,8 +121,7 @@ static func _st(sim: Sim) -> Dictionary:
 static func _spark(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> void:
 	var d := k.d
 	var dmg := d.fxv("damage", k.lv) * k.smult * k.vet
-	var near := sim.heroes_near(x, y, 3.0) if sim.multi_heroes() else []
-	var first: SimHero = near[0] if near.size() > 0 else sim.hero
+	var first: SimHero = sim.hero_nearest(Vector2(x, y))   # o herói mais perto do ponto, sem raio
 	var wet := first.soaked_t > 0.0
 	var targets: Array = [first]
 	if wet:

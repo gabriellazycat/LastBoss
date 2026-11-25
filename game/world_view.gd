@@ -62,6 +62,8 @@ var cine_enabled := true
 var cine_t := -1.0                # tempo real desde a queda; < 0 sem cena
 var cine_from := Vector3.ZERO
 var corpse: Node3D
+var corpse_spare: Node3D
+var corpse_tw: Tween
 var fall_party := -1               # party em campo na última queda vista (queda longa só quando a party inteira cai)
 var short_falls: Array = []        # membros que caem com a party de pé: {"n": Node3D, "t": s}
 var ally_nodes: Array = []         # vultos dos aliados dos poderes (rato / cão de guerra), um por sim.power_state["allies"]
@@ -224,22 +226,21 @@ func _light(pos: Vector3, col: Color, energy: float, rng_m: float) -> OmniLight3
 func build_empty() -> void:
 	for c in get_children():
 		c.queue_free()
+	old_acts.clear()
 	sim = null
 
 
 ## Cenário do ato montado (filhos 0..static_count-1: chão, estrada, rios, cenário, locais, covil); o resto são unidades, herói, pools.
 var static_nodes: Array = []
 var ground_nodes: Array = []
-var old_act_root: Node3D = null
-var ground_nodes_old: Array = []
-var fade_old: Node3D = null
-var fade_old_ground: Array = []
-var fade_t := 1.0
-const ACT_FADE_S := 2.5
+## Cenários dos atos anteriores (C17, 25/11/2026): ficam no mapa para sempre, sem fade, estáticos (sem luz, partícula nem animação)
+## e com visibility_range para não pesar. Cada um é um nó "OldAct".
+var old_acts: Array = []
+const OLD_RANGE := 300.0   # m: além disso o cenário velho (pedaços pequenos) não é desenhado
 
 
-## `append` (C17, 19/11/2026): troca de ato contínua. O cenário do ato anterior fica no lugar e some aos poucos;
-## o ato novo é montado em cima, a câmera não é teleportada.
+## `append` (C17, 19/11/2026): troca de ato contínua. O cenário do ato anterior fica no lugar (estático) e o ato novo é
+## montado ao lado; a câmera não é teleportada e unidades, herói e pools não são recriados.
 func build(s: Sim, camera: Camera3D, append := false) -> void:
 	# Run nova ou ato novo: nenhuma cena de queda pela metade (o mundo volta à velocidade normal).
 	cine_t = -1.0
@@ -252,49 +253,55 @@ func build(s: Sim, camera: Camera3D, append := false) -> void:
 	if keep_pre != null and is_instance_valid(keep_pre):
 		keep_pre.queue_free()
 	_pre_reset()
-	if append and sim != null and not static_nodes.is_empty():
+	var cont := append and s == sim and sim != null and not static_nodes.is_empty()
+	if cont:
 		_retire_old_act()
 	else:
-		append = false
 		build_empty()
 	sim = s
 	cam = camera
 	road_field = null
 	road_piece_of.clear()
 	road_state_last = PackedByteArray()
-	for a in [road_meshes, barricades, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, hshot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
-		a.clear()
-	mm_by_def.clear()
-	surf_fields.clear()
-	house_nodes.clear()
-	# Círculos dos heróis: os nós foram liberados com o resto (build_empty); sem limpar, _update_rings usava nós
-	# mortos a cada quadro depois da troca de ato ("previously freed instance").
-	ring_nodes.clear()
-	ring_rad.clear()
-	fx.clear()
-	follower_nodes.clear()
-	ally_nodes.clear()
-	short_falls.clear()
+	if cont:
+		for a in [road_meshes, barricades, loc_nodes, lanterns, lantern_lights]:
+			a.clear()
+		surf_fields.clear()
+		house_nodes.clear()
+	else:
+		for a in [road_meshes, barricades, loc_nodes, lanterns, lantern_lights, zone_pool, number_pool, burst_pool, shot_pool, hshot_pool, orb_pool, decal_pool, part_nodes, part_flash, falling, altar_nodes, pillar_nodes]:
+			a.clear()
+		mm_by_def.clear()
+		surf_fields.clear()
+		house_nodes.clear()
+		# Círculos dos heróis: os nós foram liberados com o resto (build_empty); sem limpar, _update_rings usava nós
+		# mortos a cada quadro depois da troca de ato ("previously freed instance").
+		ring_nodes.clear()
+		ring_rad.clear()
+		fx.clear()
+		follower_nodes.clear()
+		ally_nodes.clear()
+		short_falls.clear()
+		helper_node = null
+		helper_of = null
+		arena_root = null
+		flash.resize(sim.units.cap)
+		flash.fill(0.0)
+		kx.resize(sim.units.cap)
+		kx.fill(0.0)
+		ky.resize(sim.units.cap)
+		ky.fill(0.0)
+		soft_tex = GradientTexture2D.new()
+		var gr := Gradient.new()
+		gr.offsets = PackedFloat32Array([0.0, 1.0])
+		gr.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
+		soft_tex.gradient = gr
+		soft_tex.fill = GradientTexture2D.FILL_RADIAL
+		soft_tex.fill_from = Vector2(0.5, 0.5)
+		soft_tex.fill_to = Vector2(0.5, 0.0)
+		soft_tex.width = 64
+		soft_tex.height = 64
 	fall_party = sim.cur_party
-	helper_node = null
-	helper_of = null
-	arena_root = null
-	flash.resize(sim.units.cap)
-	flash.fill(0.0)
-	kx.resize(sim.units.cap)
-	kx.fill(0.0)
-	ky.resize(sim.units.cap)
-	ky.fill(0.0)
-	soft_tex = GradientTexture2D.new()
-	var gr := Gradient.new()
-	gr.offsets = PackedFloat32Array([0.0, 1.0])
-	gr.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
-	soft_tex.gradient = gr
-	soft_tex.fill = GradientTexture2D.FILL_RADIAL
-	soft_tex.fill_from = Vector2(0.5, 0.5)
-	soft_tex.fill_to = Vector2(0.5, 0.0)
-	soft_tex.width = 64
-	soft_tex.height = 64
 	var before := get_children()
 	_build_ground()
 	ground_nodes = get_children().filter(func(c): return not before.has(c))
@@ -304,63 +311,70 @@ func build(s: Sim, camera: Camera3D, append := false) -> void:
 	_build_locations()
 	_build_lair()
 	static_nodes = get_children().filter(func(c): return not before.has(c))
-	if append:
-		for c in static_nodes:
-			_fade_tree(c, 1.0)   # o cenário novo entra em fade (_update_act_fade)
-	else:
-		fade_old = null
-	_build_units()
-	_build_hero()
-	_build_pools()
-	_build_bars()
-	cam_pos = keep_cam if append else Vector3(sim.hero.x, 0, sim.hero.y)
+	_ensure_lair_visible()
+	if not cont:
+		_build_units()
+		_build_hero()
+		_build_pools()
+		_build_bars()
+	cam_pos = keep_cam if cont else Vector3(sim.hero.x, 0, sim.hero.y)
 
 
-## Tira o cenário do ato anterior da cena viva: vai para um nó à parte, um pouco abaixo, e some com um fade.
-func _retire_old_act(static_only := false) -> void:
+## O covil (castelo) fica inteiro e visível desde o começo do último ato, sem limite de distância.
+func _ensure_lair_visible() -> void:
+	if lair_node != null and is_instance_valid(lair_node):
+		lair_node.visible = true
+		if lair_node is GeometryInstance3D:
+			(lair_node as GeometryInstance3D).transparency = 0.0
+			(lair_node as GeometryInstance3D).visibility_range_end = 0.0
+
+
+## Tira o cenário do ato anterior da cena viva: vai para um nó à parte (OldAct), um pouco abaixo, e fica ali parado
+## para sempre. Unidades, herói e pools continuam onde estão.
+func _retire_old_act(_static_only := true) -> void:
 	var old := Node3D.new()
 	old.name = "OldAct"
 	old.position = Vector3(0, -0.02, 0)
-	ground_nodes_old = ground_nodes.duplicate()
+	var skip: Array = ground_nodes.duplicate()
+	skip.append_array(road_meshes)
 	var keep: Array = static_nodes.filter(func(c): return is_instance_valid(c) and c.get_parent() == self)
-	if old_act_root != null and is_instance_valid(old_act_root):
-		keep.append(old_act_root)
-	if not static_only:
-		for c in get_children():
-			if not keep.has(c) and c != pre_root:
-				c.queue_free()
+	for o in old_acts:
+		if is_instance_valid(o):
+			(o as Node3D).position.y -= 0.02   # o mais novo fica por cima: sem brigar com o anterior no chão
 	add_child(old)
 	for c in keep:
-		if c == old_act_root:
-			c.queue_free()
-		else:
-			c.reparent(old, true)
-	old_act_root = old
-	fade_old = old
-	fade_old_ground = keep.filter(func(c): return ground_nodes_old.has(c))
-	fade_t = 0.0
+		c.reparent(old, true)
+	# Casas da Taverna criadas durante o ato: as de pé ficam no cenário velho, as outras saem.
+	for key in house_nodes:
+		var hn: Node3D = house_nodes[key]
+		if not is_instance_valid(hn):
+			continue
+		if hn.visible and hn.get_parent() == self:
+			hn.reparent(old, true)
+		elif hn.get_parent() == self:
+			hn.queue_free()
+	_freeze_act(old, skip)
+	old_acts.append(old)
 
 
-## Quadro a quadro (chamado do _process): o cenário antigo some e o novo entra, os dois por cima do chão antigo, que
-## fica sólido por baixo até o fim (sem faixas retas) e então sai.
-func _update_act_fade(delta: float) -> void:
-	if fade_old == null:
-		return
-	fade_t = minf(fade_t + delta / ACT_FADE_S, 1.0)
-	var v := fade_t * fade_t * (3.0 - 2.0 * fade_t)
-	if is_instance_valid(fade_old):
-		for c in fade_old.get_children():
-			if not fade_old_ground.has(c):
-				_fade_tree(c, v)
-	if fade_new:
-		for c in static_nodes:
-			if is_instance_valid(c):
-				_fade_tree(c, 1.0 - v)
-	if fade_t >= 1.0:
-		if is_instance_valid(fade_old):
-			fade_old.queue_free()
-		fade_old = null
-		old_act_root = null
+## Deixa o cenário velho estático: sem luz, partícula nem animação, e os pedaços pequenos com visibility_range.
+func _freeze_act(root: Node3D, skip: Array) -> void:
+	root.process_mode = Node.PROCESS_MODE_DISABLED
+	for n in root.find_children("*", "", true, false):
+		if n is Light3D:
+			(n as Light3D).visible = false
+		elif n is GPUParticles3D:
+			(n as GPUParticles3D).emitting = false
+		elif n is CPUParticles3D:
+			(n as CPUParticles3D).emitting = false
+		elif n is AnimationPlayer:
+			(n as AnimationPlayer).stop()
+		elif n is GeometryInstance3D and not skip.has(n):
+			var g := n as GeometryInstance3D
+			var bb := g.get_aabb().size
+			if maxf(bb.x, bb.z) < 100.0:
+				g.visibility_range_end = OLD_RANGE
+				g.visibility_range_end_margin = 20.0
 
 
 # ---------------------------------------------------------------- mapa contínuo (21/11/2026)
@@ -384,7 +398,6 @@ var other_road: SimRoad = null
 var pre_act := -1
 var pre_alpha := 1.0
 var pre_lights: Array = []    # [luz, energia]
-var fade_new := true          # false: o cenário novo já está inteiro (veio da pré-montagem)
 var pre_log: bool = OS.get_cmdline_user_args().has("--prelog")
 
 
@@ -416,7 +429,6 @@ func _pre_reset() -> void:
 	pre_act = -1
 	pre_lights.clear()
 	pre_alpha = 1.0
-	fade_new = true
 
 
 ## Distância do herói ao portão de fim do ato.
@@ -518,8 +530,9 @@ func commit_next() -> void:
 	while pre_stage < PRE_STAGES.size():
 		_pre_run_stage()
 	_pre_apply_alpha(0.0)
-	_retire_old_act(true)
+	_retire_old_act()
 	_act_state_put(pre_state)
+	_ensure_lair_visible()
 	for c in static_nodes:
 		if is_instance_valid(c) and c.get_parent() == pre_root:
 			c.reparent(self, false)
@@ -529,7 +542,6 @@ func commit_next() -> void:
 	pre_stage = -1
 	pre_road = null
 	pre_lights.clear()
-	fade_new = false
 	pre_alpha = 1.0
 
 
@@ -1648,7 +1660,6 @@ func show_placement(on: bool, pos: Vector3, valid: bool, radius: float) -> void:
 # ---------------------------------------------------------------- desenho
 
 func draw(alpha: float, delta: float) -> void:
-	_update_act_fade(delta)
 	_pre_tick()
 	if sim == null:
 		return
@@ -2188,8 +2199,11 @@ func _tick_pools(delta: float, alpha: float) -> void:
 		if e["t"] > 0.0:
 			e["t"] -= delta
 			var n: MeshInstance3D = e["n"]
-			var k: float = 1.0 - float(e["t"]) / 0.4
+			var dur_b: float = float(e.get("T", 0.4))
+			var k: float = 1.0 - float(e["t"]) / dur_b
 			var r: float = float(e["r"]) * (0.3 + 1.0 * (1.0 - pow(1.0 - k, 3)))
+			if e.get("exact", false):
+				r = float(e["r"]) * (0.92 + 0.08 * (1.0 - pow(1.0 - minf(k * 4.0, 1.0), 3)))   # o anel é o raio, sem crescer além
 			n.scale = Vector3(r, 0.3, r)
 			var m: StandardMaterial3D = n.material_override
 			m.albedo_color.a = 0.9 * (1.0 - k)
@@ -2311,48 +2325,35 @@ func _power_fx(p: Vector3, idx: int) -> void:
 	add_trauma(0.15)
 
 
-## Aliados dos poderes (ratos e cães de guerra; sim.power_state["allies"]): vultos pequenos, sem modelo novo.
+## Aliados dos poderes (ratos e cães de guerra; sim.power_state["allies"]): os mesmos modelos 3D dos monstros rato e
+## lobo (wolf_pack), no tamanho normal de unidade, com um tom da cor da classe do herói.
 func _draw_allies(_alpha: float, delta: float) -> void:
 	var al: Array = sim.power_state.get("allies", [])
 	while ally_nodes.size() > al.size():
 		var dead: Node3D = ally_nodes.pop_back()
 		if is_instance_valid(dead):
 			dead.queue_free()
+	var cl := sim.hero.cls()
+	var hc: Color = HeroPresence.CLS[cl][0] if HeroPresence.CLS.has(cl) else Color(0.85, 0.72, 0.35)
+	var tint := Color.WHITE.lerp(hc, 0.45)
 	while ally_nodes.size() < al.size():
-		var root := Node3D.new()
 		var is_hound: bool = str(al[ally_nodes.size()].get("id", "")) == "war_hound"
-		var m := StandardMaterial3D.new()
-		m.albedo_color = Color(0.32, 0.24, 0.17) if is_hound else Color(0.28, 0.25, 0.27)
-		m.roughness = 1.0
-		var sc := 1.0 if is_hound else 0.55
-		var body := MeshInstance3D.new()
-		var sm := SphereMesh.new()
-		sm.radius = 0.35
-		sm.height = 0.7
-		body.mesh = sm
-		body.material_override = m
-		body.scale = Vector3(0.8, 0.7, 1.5) * sc
-		body.position.y = 0.35 * sc
-		root.add_child(body)
-		var head := MeshInstance3D.new()
-		var hm := SphereMesh.new()
-		hm.radius = 0.2
-		hm.height = 0.4
-		head.mesh = hm
-		head.material_override = m
-		head.scale = Vector3(1, 0.9, 1.2) * sc
-		head.position = Vector3(0, 0.45 * sc, -0.55 * sc)
-		root.add_child(head)
-		var tail := MeshInstance3D.new()
-		var tm := CylinderMesh.new()
-		tm.top_radius = 0.02
-		tm.bottom_radius = 0.05
-		tm.height = 0.5 * sc
-		tail.mesh = tm
-		tail.material_override = m
-		tail.rotation.x = PI * 0.5
-		tail.position = Vector3(0, 0.3 * sc, 0.65 * sc)
-		root.add_child(tail)
+		var uid := "wolf_pack" if is_hound else "rat"
+		var root := Node3D.new()
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.use_custom_data = true
+		mm.mesh = Looks.unit_mesh(uid)
+		mm.instance_count = 1
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.material_override = Looks.unit_material(0.0, true, uid)
+		mmi.custom_aabb = AABB(Vector3(-4, -2, -4), Vector3(8, 8, 8))
+		root.add_child(mmi)
+		root.set_meta("mm", mm)
+		root.set_meta("scl", Looks.scale_of(uid) * FIG_SCALE)
+		root.set_meta("hop", 0.5 if is_hound else 1.0)
 		add_child(root)
 		ally_nodes.append(root)
 	for i in al.size():
@@ -2365,8 +2366,20 @@ func _draw_allies(_alpha: float, delta: float) -> void:
 			n.position = target
 		else:
 			n.position = n.position.lerp(target, clampf(delta * 12.0, 0.0, 1.0))
-		if Vector2(d.x, d.z).length() > 0.05:
+		var dh := Vector2(d.x, d.z).length()
+		if dh > 0.05:
 			n.rotation.y = lerp_angle(n.rotation.y, atan2(-d.x, -d.z), clampf(delta * 10.0, 0.0, 1.0))
+		var sc: float = n.get_meta("scl")
+		var hop: float = n.get_meta("hop")
+		var moving := clampf(dh / 0.4, 0.0, 1.0)
+		var buf := PackedFloat32Array()
+		buf.resize(STRIDE)
+		buf[0] = sc; buf[3] = 0.0
+		buf[5] = sc; buf[7] = 0.0
+		buf[10] = sc; buf[11] = 0.0
+		buf[12] = tint.r; buf[13] = tint.g; buf[14] = tint.b; buf[15] = 1.0
+		buf[16] = 0.0; buf[17] = hop * maxf(moving, 0.25); buf[18] = float(i) * 1.7; buf[19] = 0.0
+		(n.get_meta("mm") as MultiMesh).buffer = buf
 
 
 func cine_active() -> bool:
@@ -2376,10 +2389,18 @@ func cine_active() -> bool:
 ## Começa a cena da queda: um corpo do herói fica no lugar e tomba; o mundo desacelera.
 func fall_cinematic(p: Vector3) -> void:
 	_end_scene()   # a queda manda: a cena do local que estiver rodando acaba aqui
-	if corpse and is_instance_valid(corpse):
-		corpse.queue_free()
-	corpse = hero_root.duplicate() as Node3D
-	add_child(corpse)
+	if corpse_tw != null and corpse_tw.is_valid():
+		corpse_tw.kill()
+	corpse_tw = null
+	# Um corpo só, reaproveitado a cada queda (copia a pose atual do herói em vez de duplicar a árvore de novo).
+	if corpse_spare == null or not is_instance_valid(corpse_spare) or corpse_spare.is_queued_for_deletion():
+		corpse_spare = hero_root.duplicate() as Node3D
+		add_child(corpse_spare)
+	else:
+		_copy_pose(hero_root, corpse_spare)
+	corpse = corpse_spare
+	corpse.visible = true
+	corpse.scale = hero_root.scale
 	corpse.position = Vector3(p.x, 0.0, p.z)
 	corpse.rotation = hero_root.rotation
 	cine_from = Vector3(p.x, 0.0, p.z)
@@ -2408,10 +2429,20 @@ func _cine(delta: float) -> void:
 		if corpse and is_instance_valid(corpse):
 			var c := corpse
 			corpse = null
-			var tw := c.create_tween()
-			tw.tween_interval(1.5)
-			tw.tween_property(c, "scale", Vector3.ONE * 0.01, 0.6)
-			tw.tween_callback(c.queue_free)
+			corpse_tw = c.create_tween()
+			corpse_tw.tween_interval(1.5)
+			corpse_tw.tween_property(c, "scale", Vector3.ONE * 0.01, 0.6)
+			corpse_tw.tween_callback(c.hide)   # fica guardado para a próxima queda
+
+
+## Copia a pose (posição, rotação, escala, visibilidade) de uma árvore de Node3D para outra de mesma forma.
+func _copy_pose(src: Node, dst: Node) -> void:
+	if src is Node3D and dst is Node3D:
+		(dst as Node3D).transform = (src as Node3D).transform
+		(dst as Node3D).visible = (src as Node3D).visible
+	var n := mini(src.get_child_count(), dst.get_child_count())
+	for i in n:
+		_copy_pose(src.get_child(i), dst.get_child(i))
 
 
 ## Começa a cena do local li. code: o do Ev.CONTEST no fim da disputa (1 completa, 10+n parcial, -1 falha);
@@ -2498,6 +2529,7 @@ func _end_scene() -> void:
 		return
 	var ty := str(scene["type"])
 	var li := int(scene["li"])
+	var sc_tier := int(scene.get("tier", -1))
 	scene = {}
 	look_hold = false
 	if cine_t < 0.0:
@@ -2506,7 +2538,12 @@ func _end_scene() -> void:
 		var pre := "%d:" % li
 		for key in house_nodes:
 			if str(key).begins_with(pre):
-				house_nodes[key].visible = false
+				var hn: Node3D = house_nodes[key]
+				if sc_tier == 0 and _house_standing(str(key)):
+					hn.set_meta("stand", true)   # taverna perdida: as casas que ainda estão de pé continuam no mapa
+					hn.visible = true
+				else:
+					hn.visible = false
 	if scene_helper and is_instance_valid(scene_helper):
 		var c := scene_helper
 		var tw := c.create_tween()
@@ -2751,7 +2788,32 @@ func ring_burst(pos: Vector3, r: float, col: Color) -> void:
 	m.emission = Color(col.r, col.g, col.b)
 	n.visible = true
 	e["t"] = 0.4
+	e["T"] = 0.4
+	e["exact"] = false
 	e["r"] = r
+
+
+## Explosivo: anel no chão EXATAMENTE do tamanho do raio (borda externa = raio) e um clarão. Usa o pool dos anéis.
+func explosive_boom(pos: Vector3, r: float) -> void:
+	if burst_pool.is_empty():
+		return
+	var e: Dictionary = burst_pool[burst_i]
+	burst_i = (burst_i + 1) % burst_pool.size()
+	var n: MeshInstance3D = e["n"]
+	n.position = Vector3(pos.x, 0.08 + surface_y(pos.x, pos.z), pos.z)
+	var m: StandardMaterial3D = n.material_override
+	var col := Color(1, 0.5, 0.12)
+	m.albedo_color = col
+	m.emission = Color(col.r, col.g, col.b)
+	n.scale = Vector3(r, 0.3, r)
+	n.visible = true
+	e["t"] = 0.7
+	e["T"] = 0.7
+	e["exact"] = true
+	e["r"] = r
+	light_flash(pos, Color(1, 0.7, 0.3))
+	emit_fx("spark", pos + Vector3(0, 0.6, 0), clampf(r / 2.5, 0.6, 3.0))
+	emit_fx("fire", pos + Vector3(0, 0.6, 0), clampf(r / 3.0, 0.6, 2.5))
 
 
 func shot(a: Vector3, b: Vector3) -> void:
@@ -2799,13 +2861,26 @@ func orb(from: Vector3) -> void:
 	e["n"].visible = true
 
 
+## A casa "li:k" da Taverna ainda tem vida?
+func _house_standing(key: String) -> bool:
+	var parts := key.split(":")
+	if parts.size() != 2:
+		return false
+	var li := int(parts[0])
+	var k := int(parts[1])
+	if li < 0 or li >= sim.road.locations.size():
+		return false
+	var hs: Array = sim.road.locations[li].get("houses", [])
+	return k >= 0 and k < hs.size() and float(hs[k]["hp"]) > 0.0
+
+
 ## Casas da Taverna em disputa: aparecem na chegada do herói, afundam e somem quando quebram.
 func _draw_houses() -> void:
 	if sim.contest.is_empty() or sim.contest["type"] != "tavern":
 		# Na cena do fim da taverna as casas dela ficam (afundam ou ficam de pé) até a cena acabar.
 		var keep := "%d:" % int(scene["li"]) if scene.get("type", "") == "tavern" else "-"
 		for k in house_nodes:
-			if not str(k).begins_with(keep):
+			if not str(k).begins_with(keep) and not house_nodes[k].has_meta("stand"):
 				house_nodes[k].visible = false
 		return
 	var li := int(sim.contest["li"])
@@ -2883,9 +2958,14 @@ func _fx_ctx(k: int, ev: Array) -> int:
 
 func handle_events(evs: Array) -> void:
 	var U := sim.units
+	# Evento do Explosivo (x, y, raio): o nome ainda pode não existir no K.Ev (outro agente o cria); sem ele, fica inerte.
+	var boom_ev: int = int(K.Ev.get("EXPLOSIVE_BOOM", -1))
 	for ev in evs:
 		var k: int = ev[0]
 		var p := Vector3(ev[1], 0, ev[2])
+		if boom_ev >= 0 and k == boom_ev:
+			explosive_boom(p, float(ev[3]))
+			continue
 		if fx2 != null:
 			fx2.ctx = _fx_ctx(k, ev)
 		match k:

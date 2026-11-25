@@ -4,7 +4,7 @@
   "danger_hz": 5,
   "target_hz": 5,
   "max_units": 400,
-  "despawn_distance": 50.0,
+  "despawn_distance": 150.0,
   "max_run_seconds": 3000
  },
  "elixir": {
@@ -469,10 +469,10 @@
   {
    "ground_look": 2,
    "road": {
-    "target_length": 500.0,
+    "target_length": 340.0,
     "route_locations": [
-     10,
-     12
+     7,
+     8
     ]
    },
    "rarity": [
@@ -490,10 +490,10 @@
   {
    "ground_look": 3,
    "road": {
-    "target_length": 800.0,
+    "target_length": 544.0,
     "route_locations": [
-     10,
-     12
+     7,
+     8
     ]
    },
    "rarity": [
@@ -511,10 +511,10 @@
   {
    "ground_look": 4,
    "road": {
-    "target_length": 1100.0,
+    "target_length": 748.0,
     "route_locations": [
-     10,
-     12
+     7,
+     8
     ]
    },
    "rarity": [

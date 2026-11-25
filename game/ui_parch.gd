@@ -18,6 +18,8 @@ const CREAM := Color(1.0, 0.965, 0.89)
 const NIGHT := Color(0.09, 0.065, 0.05, 0.86)
 const ELIXIR := Color("7a4fd0")
 const ELIXIR_DEEP := Color("3c1f78")
+## Almas (a moeda da meta): azul-alma, para nao se confundir com o roxo do elixir.
+const SOUL := Color("2b6a86")
 const HP := Color("b3281c")
 const HP_DEEP := Color("5a0f0a")
 const GOOD := Color("2f6b2a")
@@ -132,6 +134,23 @@ static func ribbon_box(kind := "monster", dim := false, pad := Vector4(46, 12, 4
 	return sb
 
 
+static var _ring_mat: ShaderMaterial
+
+
+## Pinta só a silhueta (alfa) da textura em amarelo: o contorno do foco das faixas.
+static func _ring_material() -> ShaderMaterial:
+	if _ring_mat == null:
+		var sh := Shader.new()
+		sh.code = "shader_type canvas_item;
+uniform vec4 col : source_color = vec4(0.94, 0.81, 0.48, 1.0);
+void fragment() { COLOR = vec4(col.rgb, texture(TEXTURE, UV).a); }
+"
+		_ring_mat = ShaderMaterial.new()
+		_ring_mat.shader = sh
+		_ring_mat.set_shader_parameter("col", GOLD_LIGHT)
+	return _ring_mat
+
+
 ## Aplica a fita como botão: normal, mouse (mais claro), apertado/desligado (fita escura). Texto creme em Fell SC.
 static func ribbon_button(b: Button, kind := "monster", size := 24) -> void:
 	b.set_meta("no_frame", true)
@@ -143,16 +162,27 @@ static func ribbon_button(b: Button, kind := "monster", size := 24) -> void:
 	b.add_theme_stylebox_override("pressed", ribbon_box(kind, true))
 	b.add_theme_stylebox_override("hover_pressed", ribbon_box(kind, true))
 	b.add_theme_stylebox_override("disabled", ribbon_box(kind, true))
-	var fb := StyleBoxFlat.new()
-	fb.draw_center = false
-	fb.border_color = GOLD_LIGHT
-	fb.set_border_width_all(2)
-	fb.set_corner_radius_all(4)
-	fb.expand_margin_left = -18
-	fb.expand_margin_right = -18
-	fb.expand_margin_top = -2
-	fb.expand_margin_bottom = -4
-	b.add_theme_stylebox_override("focus", fb)
+	# Foco: contorno amarelo com a forma da faixa (a silhueta da fita, um pouco maior, atrás do botão).
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var ring := NinePatchRect.new()
+	ring.name = "FocusRing"
+	ring.texture = tex("ribbon_%s" % kind)
+	ring.patch_margin_left = 34
+	ring.patch_margin_right = 34
+	ring.patch_margin_top = 14
+	ring.patch_margin_bottom = 18
+	ring.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ring.offset_left = -5
+	ring.offset_right = 5
+	ring.offset_top = -5
+	ring.offset_bottom = 5
+	ring.show_behind_parent = true
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.material = _ring_material()
+	ring.visible = b.has_focus()
+	b.add_child(ring)
+	b.focus_entered.connect(func(): ring.visible = true)
+	b.focus_exited.connect(func(): ring.visible = false)
 	b.add_theme_font_override("font", font("title"))
 	b.add_theme_font_size_override("font_size", size)
 	var txt := Color("1c140c") if kind == "structure" else CREAM

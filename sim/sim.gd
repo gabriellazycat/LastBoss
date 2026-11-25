@@ -1568,7 +1568,8 @@ func _follow(f: SimHero) -> void:
 	var goal := Vector2(hero.x + cos(a) * 3.6, hero.y + sin(a) * 3.6)
 	var p := Vector2(f.x, f.y)
 	var d := p.distance_to(goal)
-	var free_r := 7.0 if f.target_kind == SimHero.TGT_UNIT else 2.5
+	# Alvo ao alcance de tiro: a coleira não puxa a seguidora para fora do alcance de ataque.
+	var free_r := maxf(7.0, float(f.H["attack_range"]) + 1.0) if f.target_kind == SimHero.TGT_UNIT else 2.5
 	# Preso (teia, piche, prisão, petrificado) não anda; na teia anda devagar (10/11/2026).
 	var stuck := f.root_t > 0.0 or f.petrify_t > 0.0
 	if d > free_r and (not stuck or d > 25.0):
@@ -1603,6 +1604,22 @@ func heroes_near(x: float, y: float, r: float) -> Array:
 			out.append(hh)
 	out.sort_custom(func(a, b): return Vector2(a.x - x, a.y - y).length_squared() < Vector2(b.x - x, b.y - y).length_squared())
 	return out
+
+
+## Herói da party (líder e seguidores de pé; o Herói Ajudante não) mais perto do ponto p, sem raio: é o alvo de
+## todo feitiço e efeito de "herói" (CardFxLib.targets, Raio Sombrio, Faísca...). A interface usa o mesmo nome para
+## destacar o alvo antes de soltar a carta.
+func hero_nearest(p: Vector2) -> SimHero:
+	var best: SimHero = hero
+	var bd := Vector2(hero.x - p.x, hero.y - p.y).length_squared()
+	for f: SimHero in followers:
+		if f.hp <= 0.0:
+			continue
+		var fd := Vector2(f.x - p.x, f.y - p.y).length_squared()
+		if fd < bd:
+			bd = fd
+			best = f
+	return best
 
 
 ## Feitiço de área no grupo: dano inteiro no herói mais perto, metade nos outros.
@@ -1830,10 +1847,16 @@ func kill_unit(i: int, cause: int) -> void:
 		_villain_on_death(c, x, y, f)
 	if cause == K.Death.HERO or cause == K.Death.SELF:
 		if f & K.F_EXPLOSIVE:
+			# Explosivo: acerta TODO herói no raio (líder, seguidores e o Ajudante), cada um com a fração da vida do monstro.
 			var M: Dictionary = data.modifiers["explosive"]["p"]
-			if Vector2(hero.x - x, hero.y - y).length() <= float(M["radius"]) + hero.radius:
-				damage_hero(float(units.max_hp[i]) * float(M["hp_frac"]), x, y, 0, 0, str(card_of_uid.get(units.uid[i], c.id)))
+			var boom := float(units.max_hp[i]) * float(M["hp_frac"])
+			var src_id := str(card_of_uid.get(units.uid[i], c.id))
+			for hh: SimHero in heroes_near(x, y, float(M["radius"])):
+				hit_hero = hh if hh != hero else null
+				damage_hero(boom, x, y, 0, 0, src_id)
+			hit_hero = null
 			emit(K.Ev.EXPLOSION, x, y, M["radius"], 0)
+			emit(K.Ev.EXPLOSIVE_BOOM, x, y, M["radius"], 0)
 	if cause == K.Death.HERO:
 		var split: Array = c.fx.get("split", [])
 		var g := int(units.gen[i])
@@ -1862,7 +1885,7 @@ func kill_unit(i: int, cause: int) -> void:
 				_totem_revive(i, x, y)
 	# Gatilho "ao morrer" declarado em dados (data/cards.json "on_death"; docs/CARD_FX.md).
 	if not c.on_death.is_empty() and (c.on_death_any or cause == K.Death.HERO or cause == K.Death.SELF):
-		CardFxLib.run(self, CardFxLib.unit_ctx(c, int(units.lvl[i]), units.uid[i]), c.on_death, x, y)
+		CardFxLib.run(self, CardFxLib.unit_ctx(c, int(units.lvl[i]), units.uid[i], f), c.on_death, x, y)
 	emit(K.Ev.DEATH, x, y, di, i)
 	units.release(i)
 

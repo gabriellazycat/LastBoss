@@ -173,6 +173,9 @@ func on_play(sim: Sim, c: Sim.CardInst) -> void:
 		fams.append("beast")
 	if d.is_structure or d.arch == K.Arch.STRUCTURE:
 		fams.append("structure")
+	# "spell" conta só feitiços de verdade (type spell). As cartas que viraram Temporário (Chamado do Bando, Grito de
+	# Guerra, Colheita de Almas, Instinto de Caça, Praga Bubônica, Pestilência Negra, Pedágio, Mensageiro Sombrio,
+	# Imposto de Sangue, Câmbio do Dragão) contam na família "lair", junto com as outras do covil.
 	if d.is_spell:
 		fams.append("spell")
 		t["spells"][d.id] = true

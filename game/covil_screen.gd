@@ -91,7 +91,7 @@ func _build_side() -> Control:
 	var cap := UiParch.label(tr("UI_COVIL_ALMAS"), "title", 22, UiParch.INK_SOFT)
 	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(cap)
-	almas_l = UiParch.label("0", "heavy", 64, UiParch.ELIXIR_DEEP)
+	almas_l = UiParch.label("0", "heavy", 64, UiParch.SOUL)
 	almas_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(almas_l)
 	v.add_child(UiParch.divider(SIDE_W - 60))
@@ -202,7 +202,7 @@ func _build_detail(stage: Control) -> void:
 	_d_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_d_desc.custom_minimum_size = Vector2(DETAIL_W - 50, 0)
 	v.add_child(_d_desc)
-	_d_fx = UiParch.label("", "bold", 17, UiParch.ELIXIR_DEEP)
+	_d_fx = UiParch.label("", "bold", 17, UiParch.SOUL)
 	_d_fx.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_d_fx.custom_minimum_size = Vector2(DETAIL_W - 50, 0)
 	v.add_child(_d_fx)

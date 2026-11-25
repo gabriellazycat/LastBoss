@@ -15,9 +15,11 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 	var U := sim.units
 	match d.id:
 		"shadow_bolt":
-			var dir := Vector2(sim.hero.x - x, sim.hero.y - y)
+			# A linha sai do ponto solto até o herói mais perto dele (não mais o líder).
+			var bh := sim.hero_nearest(Vector2(x, y))
+			var dir := Vector2(bh.x - x, bh.y - y)
 			if dir.length() < 0.1:
-				dir = Vector2(sim.hero.face_x, sim.hero.face_y)
+				dir = Vector2(bh.face_x, bh.face_y)
 			dir = dir.normalized()
 			# Fase de grupo (10/11/2026): o raio atravessa a linha e pega todo herói nela (cheio no primeiro,
 			# metade nos outros, como os feitiços de área).
@@ -71,7 +73,7 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 					sim.damage_hero(boom * (1.0 if i == 0 else float(sim.R.get("corpse_blast_splash", 0.15))), bx_, by_, d.tags, SimHero.DMG_AREA | SimHero.DMG_SPELL, d.id)
 				sim.hit_hero = null
 				sim.emit(K.Ev.EXPLOSION, bx_, by_, float(fx["radius"]), 0)
-				sim.hero.add_curse(curse)
+				sim.hero_nearest(Vector2(bx_, by_)).add_curse(curse)
 			else:
 				# Nenhum monstro seu perto: levanta esqueletos no ponto (sempre há o que fazer com a carta).
 				CardFxLib.summon(sim, k, "skeleton", int(fx.get("raise", 3)), 0.8, x, y)
@@ -117,7 +119,7 @@ static func apply(sim: Sim, k: CardFxLib.Ctx, x: float, y: float) -> bool:
 				st["rit"] = int(fx["charges"])
 				st["rit_b"] = d.fxv("bonus", lv)
 				st["rit_d"] = int(fx["discount"])
-				sim.hero.add_curse(curse)
+				sim.hero_nearest(Vector2(x, y)).add_curse(curse)
 		"open_grave":
 			if recent_deaths(sim, float(fx["window"])) >= int(fx["deaths"]):
 				CardFxLib.summon(sim, k, "skeleton", int(round(d.fxv("raise", lv))), 0.8, x, y)

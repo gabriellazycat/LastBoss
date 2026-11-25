@@ -47,18 +47,19 @@
   "alpha_beast": {
    "kind": "peak",
    "fam": "rat",
-   "n": 30
+   "n": 40,
+   "runs": 2
   },
   "arcane_apocalypse": {
    "kind": "plays_window",
    "fam": "spell",
-   "n": 7,
-   "s": 20.0
+   "n": 9,
+   "s": 15.0
   },
   "arcane_spark": {
    "kind": "plays",
    "fam": "shadow_spell",
-   "n": 120,
+   "n": 250,
    "total": true
   },
   "ash_phoenix": {
@@ -69,14 +70,14 @@
   "bat_cloud": {
    "kind": "peak",
    "fam": "pack",
-   "n": 12,
-   "runs": 2
+   "n": 15,
+   "runs": 3
   },
   "bat_nest": {
    "kind": "peak",
    "fam": "structure",
-   "n": 3,
-   "runs": 3
+   "n": 5,
+   "runs": 4
   },
   "black_pestilence": {
    "kind": "plays",
@@ -87,12 +88,12 @@
   "blood_tax": {
    "kind": "plays",
    "fam": "spell",
-   "n": 100,
+   "n": 150,
    "total": true
   },
   "boiling_oil": {
    "kind": "soaked_time",
-   "s": 75.0,
+   "s": 200.0,
    "total": true
   },
   "bone_colossus": {
@@ -103,17 +104,17 @@
   },
   "bone_dragon": {
    "kind": "heroes",
-   "n": 35,
+   "n": 100,
    "total": true
   },
   "bone_totem": {
    "kind": "party",
-   "party": 8,
+   "party": 11,
    "mine": true
   },
   "burn_village": {
    "kind": "burn_time",
-   "s": 150.0,
+   "s": 400.0,
    "total": true
   },
   "corrupt_piper": {
@@ -125,22 +126,24 @@
   "devour": {
    "kind": "party_max",
    "fam": "spell",
-   "party": 5,
+   "party": 8,
    "n": 10
   },
   "dragon_exchange": {
    "kind": "soak_ignite",
-   "s": 1.0
+   "s": 1.0,
+   "runs": 3
   },
   "elder_dragon": {
    "kind": "peak",
    "fam": "fire_monster",
-   "n": 5
+   "n": 8,
+   "runs": 2
   },
   "eruption": {
    "kind": "party_without",
    "fam": "structure",
-   "party": 5
+   "party": 8
   },
   "eternal_army": {
    "kind": "peak",
@@ -150,7 +153,8 @@
   },
   "fallen_healer": {
    "kind": "loss_max",
-   "n": 5
+   "n": 3,
+   "runs": 3
   },
   "flooded_pit": {
    "kind": "plays",
@@ -160,7 +164,7 @@
   },
   "furnace": {
    "kind": "party",
-   "party": 8,
+   "party": 11,
    "mine": true
   },
   "ghost": {
@@ -171,12 +175,12 @@
   },
   "gold_bait": {
    "kind": "coins",
-   "n": 25,
+   "n": 75,
    "total": true
   },
   "gold_rain": {
    "kind": "gold_spent",
-   "n": 3000,
+   "n": 8000,
    "total": true
   },
   "hoard_dragon": {
@@ -192,18 +196,18 @@
   "hunt_instinct": {
    "kind": "plays",
    "fam": "spell",
-   "n": 40,
+   "n": 100,
    "total": true
   },
   "life_drain": {
    "kind": "curses",
-   "n": 5,
-   "runs": 2
+   "n": 8,
+   "runs": 3
   },
   "magma_golem": {
    "kind": "peak",
    "fam": "monster",
-   "n": 10,
+   "n": 15,
    "runs": 4
   },
   "male_rat": {
@@ -215,18 +219,18 @@
   "meteor_storm": {
    "kind": "plays",
    "fam": "fire_spell",
-   "n": 80,
+   "n": 200,
    "total": true
   },
   "mimic": {
    "kind": "plays",
    "fam": "structure",
-   "n": 60,
+   "n": 150,
    "total": true
   },
   "molten_gold": {
    "kind": "elixir_spent",
-   "n": 2000,
+   "n": 5000,
    "total": true
   },
   "mother_nest": {
@@ -244,7 +248,7 @@
   "pack_den": {
    "kind": "plays",
    "fam": "structure",
-   "n": 40,
+   "n": 120,
    "total": true
   },
   "plague_carrion": {
@@ -266,8 +270,8 @@
   },
   "rat_trap": {
    "kind": "peste",
-   "n": 5,
-   "runs": 2
+   "n": 8,
+   "runs": 3
   },
   "ruin_titan": {
    "kind": "party",
@@ -275,7 +279,7 @@
   },
   "sewer_flood": {
    "kind": "party",
-   "party": 8,
+   "party": 11,
    "mine": true
   },
   "shadow_mark": {
@@ -287,14 +291,16 @@
   "slime": {
    "kind": "peak_multi",
    "reqs": {
-    "beast": 2,
-    "rat": 8
-   }
+    "beast": 3,
+    "rat": 10
+   },
+   "runs": 2
   },
   "soul_collector": {
    "kind": "burst",
    "n": 2000,
-   "s": 4.0
+   "s": 4.0,
+   "runs": 2
   },
   "soul_feast": {
    "kind": "plays",
@@ -305,33 +311,35 @@
   "soul_harvest": {
    "kind": "party_without",
    "fam": "structure",
-   "party": 5,
+   "party": 8,
    "runs": 2
   },
   "soul_storm": {
    "kind": "spells_distinct",
-   "n": 6
+   "n": 7,
+   "runs": 3
   },
   "spark": {
    "kind": "soak_ignite",
-   "s": 8.0,
-   "runs": 2
+   "s": 5.0,
+   "runs": 3
   },
   "spike_trap": {
    "kind": "plays_window",
    "fam": "any",
-   "n": 5,
-   "s": 5.0
+   "n": 7,
+   "s": 6.0,
+   "runs": 2
   },
   "spitting_viper": {
    "kind": "plays",
    "fam": "beast",
-   "n": 150,
+   "n": 300,
    "total": true
   },
   "tar_net": {
    "kind": "gold_spent",
-   "n": 2000,
+   "n": 5000,
    "total": true
   }
  }

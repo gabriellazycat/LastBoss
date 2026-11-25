@@ -3,7 +3,7 @@ extends Control
 ## Cena autônoma da Biblioteca (frente F, 21/11/2026): MetaSave temporário (user://library_demo.save), Almas e cartas
 ## liberadas de teste. Não toca no save do jogador.
 ## Captura em segundo plano (1920x1080):
-##   "$G" --position -6000,0 --path . res://game/library_demo.tscn -- --shot=<arquivo.png> [--view=album|common|locked|zoom|zoomvi]
+##   "$G" --position -6000,0 --path . res://game/library_demo.tscn -- --shot=<arquivo.png> [--view=pick|album|common|locked|zoom|zoomvi|filter]
 ## Sem --shot abre a tela para olhar e mexer.
 
 const SAVE := "user://library_demo.save"
@@ -131,6 +131,10 @@ func _capture_card(owner_: String, need_n3: bool) -> String:
 
 func _capture() -> void:
 	match view:
+		"pick":
+			pass   # a tela 1 (escolher o vilão) já é a que abre
+		"album":
+			screen.set_tab("plague")
 		"common":
 			screen.set_tab("common")
 		"locked":

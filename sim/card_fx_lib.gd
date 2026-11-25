@@ -15,6 +15,7 @@ class Ctx:
 	var smult := 1.0   # Pacto: spell_damage_mult
 	var vet := 1.0     # multiplicador de efeito de feitiço (fixo em 1.0 desde que o Veterano saiu dos feitiços)
 	var curse := 0     # Amaldiçoado em feitiço: 1 maldição nos heróis atingidos
+	var inherit := 0   # flags de unidade que o que a carta gera herda (F_EXPLOSIVE do modificador, ou da unidade que morreu)
 
 
 static func ctx(sim: Sim, c: Sim.CardInst) -> Ctx:
@@ -24,11 +25,13 @@ static func ctx(sim: Sim, c: Sim.CardInst) -> Ctx:
 	k.lv = c.level
 	k.smult = float(sim.deck_rules.get("spell_damage_mult", 1.0))
 	k.curse = 1 if c.def.is_spell and c.has_mod(K.M_CURSED) else 0
+	k.inherit = K.F_EXPLOSIVE if c.has_mod(K.M_EXPLOSIVE) else 0
 	return k
 
 
 ## Contexto de uma unidade que morreu (gatilho "on_death"): nível da unidade, sem Pacto nem modificador de feitiço.
-static func unit_ctx(d: CardDef, lv: int, uid: int) -> Ctx:
+## `uflags` = flags da unidade: o que ela gera ao morrer herda o Explosivo dela.
+static func unit_ctx(d: CardDef, lv: int, uid: int, uflags := 0) -> Ctx:
 	var k := Ctx.new()
 	var c := Sim.CardInst.new()
 	c.def = d
@@ -37,6 +40,7 @@ static func unit_ctx(d: CardDef, lv: int, uid: int) -> Ctx:
 	k.c = c
 	k.d = d
 	k.lv = lv
+	k.inherit = uflags & K.F_EXPLOSIVE
 	return k
 
 
@@ -99,13 +103,14 @@ static func summon(sim: Sim, k: Ctx, unit_id: String, n: int, ring: float, x: fl
 		return
 	for i in n:
 		var a := i * TAU / maxf(1.0, float(n))
-		sim.units.spawn(u, x + cos(a) * ring, y + sin(a) * ring, 0.0, 0.0, 0, k.c.uid, sim._forge())
+		sim.units.spawn(u, x + cos(a) * ring, y + sin(a) * ring, 0.0, 0.0, k.inherit, k.c.uid, sim._forge())
 
 
 # ================================================================ alvos
 
-## Heróis atingidos: "hero" (o da vez), "group" (todos de pé), "area" (no raio, do mais perto ao mais longe) ou
-## "nearest" (o mais perto no raio; ninguém perto = o da vez, como a Poça de Óleo).
+## Heróis atingidos: "hero" (o herói da party mais perto do ponto, sem raio: Sim.hero_nearest), "group" (todos de pé),
+## "area" (no raio, do mais perto ao mais longe) ou "nearest" (o mais perto no raio; ninguém perto = o herói mais perto
+## do ponto, como a Poça de Óleo). Nunca mais o líder automaticamente.
 static func targets(sim: Sim, target: String, x: float, y: float, r: float) -> Array:
 	match target:
 		"group":
@@ -114,8 +119,8 @@ static func targets(sim: Sim, target: String, x: float, y: float, r: float) -> A
 			return sim.heroes_near(x, y, r)
 		"nearest":
 			var near: Array = sim.heroes_near(x, y, r) if sim.multi_heroes() else []
-			return [near[0]] if near.size() > 0 else [sim.hero]
-	return [sim.hero]
+			return [near[0]] if near.size() > 0 else [sim.hero_nearest(Vector2(x, y))]
+	return [sim.hero_nearest(Vector2(x, y))]   # "hero"
 
 
 # ================================================================ execução
