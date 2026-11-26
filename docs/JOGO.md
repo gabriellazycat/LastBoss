@@ -154,14 +154,18 @@ Cada sistema tem um visual só. As variantes que não foram escolhidas saíram d
   - Arte gerada por IA em guache leve, um pincel só (skill `cartas-ia`). Os arquivos ficam em `assets/cards/` e o mapa id → arte em `data/card_art.json`.
   - Moldura em `game/card_mold.gd`.
   - O efeito de melhoria da carta fica em `game/card_fx.gd`.
-- **Mundo em guache chapado:** materiais pintados em `game/art/paint_look.gd`. Os escuros vão para a paleta das cartas por uma LUT (`assets/textures/paint/lut_escuro.png`).
-  - **Chão:** looks por ato (`game/art/ground_looks.gd`), relva pincelada (`ground_tela.gdshader`).
-  - **Cenário:** regiões por ato, vento e bosques (`game/art/cenario.gd`, `mundo_vivo.gd`). Árvores em pinceladas, modelos `arv5` e `arv6` (`game/art/arvores.gd`).
-  - **Luz e arena:** luz de fim de tarde (`luz_look.gd`), arena em cripta (`arena_look.gd`).
+- **Mundo em diorama ("maquete de dia", branch `diorama-a`, 26/11/2026):** a estrada parece uma miniatura sobre a mesa (`game/art/diorama.gd`).
+  - **Câmera:** lente de 30° a 55° para baixo, com a distância corrigida para mostrar a mesma área (`Diorama.cam_offset`), e tilt-shift por profundidade de campo na qualidade alta (`Diorama.focus`).
+  - **Luz:** sol suave com sombra macia, luz quente rebatida na sombra (`DIO` em `paint.gdshaderinc`: os shaders do mundo definem `DIO`; a mesa do menu e as cartas não), AgX, SSAO e SSIL, sem névoa, fundo em degradê radial (`dio_backdrop.gdshader`). Vale nos 3 atos; o ato 1 é o afinado.
+  - **Chão:** looks por ato (`game/art/ground_looks.gd`); no ato 1, relva manchada sem pincelada (`ground_tela.gdshader`, estilo 5) e caminho de areia (`road_tela`, estilo 4).
+  - **Cenário:** regiões por ato, vento e bosques (`game/art/cenario.gd`, `mundo_vivo.gd`). No ato 1 as árvores, arbustos, pedras, tocos, troncos e feno são do diorama (`assets/models/dio`); nos atos 2 e 3 ficam as pinceladas `arv5`/`arv6`.
+  - **Taverna e casas da disputa:** enxaimel com telhado em fiadas e janelas acesas (`tools/art/blender_dio/buildings.py`); a frente da taverna vira para a estrada e a câmera.
+  - **Arena:** cripta (`arena_look.gd`).
   - **Efeitos:** golpes em `golpes.gd`, efeitos em `fx2.gd`.
 - **Modelos:**
   - Monstros e estruturas em miniaturas de pincel seco (`assets/models/g_n_a` e as texturas `g_tex/dry_n`), mais os modelos feitos à mão de 21/11 (`m2_a`, `v2`). O código fica em `game/art/looks.gd` e `models.gd`.
-  - Heróis com modelos KayKit (`assets/models/cc0`).
+  - **Diorama** (`assets/models/dio`, passa na frente de todos): rato, Ratazana, Horda de Ratos e Matilha de Lobos (Quaternius CC0, animação gravada em textura) e as peças de cenário. Gerados por `tools/art/import_dio.gd` com a lista `tools/art/dio_a.json`; créditos em `assets/models/dio/CREDITOS.md`.
+  - Heróis com modelos KayKit (`assets/models/cc0`), sem o tom azulado do guache (`Diorama.HERO_TINT`).
   - **Regra dos modelos novos:** usar as cores da arte da carta e fazer olhos sem pupila.
 - **Áudio** (`game/audio.gd`; tudo CC0, com licenças em `assets/audio/LICENSES.txt`):
   - Música por contexto (menu, estrada, arena), trocada com crossfade.

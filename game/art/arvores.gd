@@ -14,6 +14,8 @@ static var _mesh: Dictionary = {}
 
 ## Arbusto em pinceladas do ato (0 primavera, 1 outono, 2 terra amaldiçoada).
 static func bush_mesh(act: int) -> Mesh:
+	if act == 0 and Diorama.mesh("bush"):
+		return Diorama.mesh("bush")
 	var key := "bush/%d" % act
 	if _mesh.has(key):
 		return _mesh[key]
@@ -32,6 +34,8 @@ static func mesh(id: String, act: int, style := -1) -> Mesh:
 	var st: int = style if style >= 0 else int(STYLES[0])
 	if not id in ["tree", "tree_round"]:
 		return null
+	if act == 0 and Diorama.mesh("%s_s%d" % [id, st]):
+		return Diorama.mesh("%s_s%d" % [id, st])
 	var key := "%d/%s/%d" % [st, id, act]
 	if _mesh.has(key):
 		return _mesh[key]

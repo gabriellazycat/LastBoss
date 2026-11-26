@@ -85,6 +85,7 @@ void road_field(vec3 world, out float d, out float edge_a, out float dimv, out f
 }
 
 varying vec3 paint_p;
+#define DIO
 #include "res://game/art/paint.gdshaderinc"
 
 vec3 dabs(vec2 q, float ang0, float jit, vec2 sz) {
@@ -178,16 +179,5 @@ void fragment() {
 }
 
 void light() {
-	float ndl = dot(NORMAL, LIGHT);
-	if (bands > 0.0) {
-		float k = ndl * ATTENUATION;
-		float band = smoothstep(0.0, 0.03, k) * 0.62 + smoothstep(0.55, 0.58, k) * 0.38;
-		if (!LIGHT_IS_DIRECTIONAL) {
-			band = smoothstep(0.0, 0.35, k);
-		}
-		DIFFUSE_LIGHT += mix(shadow_tint * 0.55, vec3(1.0), band) * LIGHT_COLOR / PI * (LIGHT_IS_DIRECTIONAL ? 1.0 : ATTENUATION);
-	} else {
-		float l = smoothstep(-0.6, 1.0, ndl) * ATTENUATION;
-		DIFFUSE_LIGHT += mix(cool * 0.75 * (LIGHT_IS_DIRECTIONAL ? 1.0 : 0.0), warm, l) * LIGHT_COLOR / PI;
-	}
+	DIFFUSE_LIGHT += dio_diffuse(NORMAL, LIGHT, ATTENUATION, LIGHT_COLOR, LIGHT_IS_DIRECTIONAL);
 }

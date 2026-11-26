@@ -538,6 +538,9 @@ static func has_dir_prop(id: String) -> bool:
 
 
 static func prop(id: String) -> ArrayMesh:
+	var dm := Diorama.mesh(id)
+	if dm is ArrayMesh:
+		return dm
 	# Peça refeita à mão (assets/models/m2_a) antes de tudo; depois a miniatura pintada.
 	var m2 := Looks.m2_mesh(id)
 	if m2 is ArrayMesh:

@@ -180,13 +180,17 @@ static func set_param(m: ShaderMaterial, k: String, val: Variant) -> void:
 # ---------------------------------------------------------------- atalhos usados pelo jogo
 
 static func scale_of(id: String) -> float:
-	if m2_unit_id(id) != "":
+	if m2_unit_id(id) != "" or Diorama.unit_id(id) != "":
 		return 1.0
 	return float(VARIANTS[id]["scale"]) if VARIANTS.has(id) and enemies() > 0 else 1.0
 
 
 static func unit_mesh(id: String) -> Mesh:
 	_last_card = id
+	var dio := Diorama.unit_id(id)
+	if dio != "":
+		_last_unit = "dio:" + dio
+		return Diorama.mesh(dio)
 	var m2 := m2_unit_id(id)
 	if m2 != "":
 		_last_unit = "m2:" + m2
@@ -202,6 +206,9 @@ static func unit_mesh(id: String) -> Mesh:
 
 static func unit_material(emit: float, multimesh: bool, id := "") -> ShaderMaterial:
 	var card := id if id != "" else _last_card
+	var dio := Diorama.unit_id(card) if id != "" else (_last_unit.trim_prefix("dio:") if _last_unit.begins_with("dio:") else "")
+	if dio != "":
+		return material(7, emit, multimesh, Diorama.mesh(dio))
 	var m2 := m2_unit_id(card) if id != "" else (_last_unit.trim_prefix("m2:") if _last_unit.begins_with("m2:") else "")
 	if m2 != "":
 		# Modelo refeito: shader do look 7 (lê VAT e atlas), sem a tinta do VARIANTS.
@@ -252,7 +259,7 @@ static func hero_material(emit: float) -> ShaderMaterial:
 			m.set_shader_parameter("use_tex", true)
 			m.set_shader_parameter("albedo_tex", t)
 	# Mundo pintado: aço azulado do cavaleiro das cartas (o modelo KayKit é quase branco e some no guache claro).
-	m.set_shader_parameter("tint", Color(0.66, 0.72, 0.86))
+	m.set_shader_parameter("tint", Diorama.HERO_TINT)
 	return m
 
 

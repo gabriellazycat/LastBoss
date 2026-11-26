@@ -4,10 +4,11 @@ shader_type spatial;
 // de fresnel puxado para a cor do céu, nada de faixas de toon. A forma vem da silhueta e da cor, não do traço.
 // Animação: se a malha tem VAT (use_vat), a posição e a normal de cada vértice vêm da textura (andar + ataque),
 // por instância; senão, a animação procedural dos outros looks (anim.gdshaderinc).
-render_mode diffuse_lambert_wrap, specular_schlick_ggx;
+render_mode diffuse_lambert_wrap, specular_disabled;
 #include "res://game/art/anim.gdshaderinc"
 // Unidades: a cor dos fundos das cartas (paint_cor) não vale aqui; a cor fica no personagem, como nas cartas.
 #define PAINT_UNIT
+#define DIO
 #include "res://game/art/paint.gdshaderinc"
 
 uniform float emission_boost = 0.0;
@@ -94,12 +95,12 @@ void fragment() {
 	// Contorno de tinta (só no tratamento "flat"): borda escura onde a superfície vira de lado.
 	ALBEDO = mix(ALBEDO, vec3(0.05, 0.04, 0.07), ink * smoothstep(0.55, 0.85, 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0)));
 	PAINT_PAPER
-	ROUGHNESS = 0.72;
-	SPECULAR = 0.3;
+	ROUGHNESS = 1.0;
+	SPECULAR = 0.0;
 	// Contorno de céu: fresnel suave, mais forte no alto do modelo (luz que vem de cima).
 	float fr = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
 	float up = clamp((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y * 0.5 + 0.5, 0.0, 1.0);
-	EMISSION = base * (emission_boost + glow * glow_strength) + rim_color * fr * up * rim_strength * (paint_on ? 0.08 : 0.25)
+	EMISSION = base * (emission_boost + glow * glow_strength) + rim_color * fr * up * rim_strength * 0.06
 		+ vec3(1.0, 0.9, 0.85) * f * 1.2;
 }
 

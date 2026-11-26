@@ -121,6 +121,10 @@ static func build(w: Node3D, sim: Sim) -> void:
 		A["bush"] = [A["bush"][0], bush_mat]
 	var own := {"stump": [MundoVivo.stump_mesh(), MundoVivo._own_mat(0.0)], "log": [MundoVivo.log_mesh(), MundoVivo._own_mat(0.0)],
 		"wheat": [MundoVivo.wheat_mesh(), _wind_mat(0.7)], "hay": [MundoVivo.hay_mesh(), MundoVivo._own_mat(0.0)]}
+	if act_i == 0:
+		for k in ["stump", "log", "hay"]:
+			if Diorama.mesh(k):
+				own[k] = [Diorama.mesh(k), GroundLooks.prop_material(false)]
 	var fmat := _wind_mat(1.0)
 	var fl_cols: Array = C["flowers"]
 	var tree_tint: Array = [Color.WHITE]

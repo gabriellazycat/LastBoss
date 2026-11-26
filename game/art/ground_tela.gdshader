@@ -24,6 +24,7 @@ uniform float mundo = 0.0;
 
 varying vec3 wp;
 varying vec3 paint_p;
+#define DIO
 #include "res://game/art/paint.gdshaderinc"
 
 float hash(vec2 p) {
@@ -177,6 +178,14 @@ void fragment() {
 	}
 	col = mix(col, dcol, dirt * 0.6);   // relva gasta, nunca a cor cheia da estrada
 	col = mix(col, mix(col, rcol * 0.72, 0.55), rock);   // cascalho: pedra misturada à relva, não uma placa clara
+	if (estilo == 5) {
+		// Diorama (como o chão do Holy Sheep): manchado em três escalas presas ao mundo e manchas de sol quentes,
+		// macio, sem pincelada.
+		float mn = vnoise(p * 0.8) * 0.55 + vnoise(p * 2.7 + 13.0) * 0.3 + vnoise(p * 7.0) * 0.15;
+		col *= 1.0 + (mn - 0.5) * 0.34;
+		float sunp = smoothstep(0.5, 0.85, vnoise(p * 0.07 + 5.0));
+		col = mix(col, col * vec3(1.08, 1.04, 0.86), sunp * 0.6);
+	}
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	ALBEDO = pt_flat_card(col);
 	PAINT_PAPER

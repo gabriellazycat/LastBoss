@@ -10,6 +10,7 @@ uniform float translucency = 0.35;
 varying float hgt;
 varying vec3 tint;
 varying vec3 paint_p;
+#define DIO
 #include "res://game/art/paint.gdshaderinc"
 
 void vertex() {
