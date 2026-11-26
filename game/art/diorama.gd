@@ -1,20 +1,21 @@
 class_name Diorama
 extends RefCounted
-## Versão C do diorama (branch diorama-c, 26/11/2026): "feltro e lanternas ao anoitecer". O mundo é uma colcha de
-## retalhos de feltro costurados, com bichos e casas de lã: hora azul, céu fundo, e as luzes quentes (lanternas,
-## janelas, a luz do herói) fazem o aconchego. Fibra e brilho de veludo nas bordas (dio_fuzz, dio_fiber).
+## Mundo em feltro nas cores das cartas (escolhido em 26/11/2026): uma colcha de retalhos de feltro costurados ao
+## anoitecer, com o chão, a taverna, as casas, o rato e o escudeiro nas cores da arte das cartas e o resto do cenário
+## sem manchas. Hora azul, céu fundo, e as luzes quentes (lanternas, janelas, a luz do herói) fazem o aconchego;
+## fibra e brilho de veludo nas bordas (dio_fuzz, dio_fiber). A câmera é a do jogo (FOV 40) com tilt-shift.
 ## Vale para todos os atos (o ato 1 é o afinado); chamado pelo main depois do look de cada ato.
 
-const FOV := 30.0                 # lente longa: a perspectiva achata como numa foto de miniatura
+const FOV := 40.0                 # a lente do jogo, com tilt-shift
 const PITCH := 54.0
 ## Luzes pontuais (lanternas, locais, herói): mais fortes e largas à noite.
 const LIGHT_K := 3.4
 const LIGHT_R := 1.35               # graus para baixo
 ## A câmera do jogo foi pensada com FOV 40: a distância cresce para mostrar a mesma área no chão.
-const DIST_K := 1.36              # tan(20°) / tan(15°)
+const DIST_K := 1.0               # FOV 40: a mesma distância do jogo
 const SKY_SHADER := preload("res://game/art/dio_backdrop.gdshader")
 
-# Sol, ambiente e céu por ato (o 1 é a maquete de meio da manhã; 2 e 3 só puxam a cor do ato).
+# Sol, ambiente e céu por ato (o 1 é a hora azul afinada; 2 e 3 só puxam a cor do ato).
 const ACTS := [
 	{"sun_rot": Vector3(-38, 150, 0), "sun_col": Color(0.62, 0.7, 1.0), "sun_e": 0.7,
 		"amb": Color(0.46, 0.5, 0.82), "amb_e": 0.6, "top": Color(0.08, 0.09, 0.22), "hor": Color(0.32, 0.3, 0.52),
@@ -36,7 +37,7 @@ static func setup_camera(cam: Camera3D) -> void:
 	_attrs = CameraAttributesPractical.new()
 	_attrs.dof_blur_far_enabled = true
 	_attrs.dof_blur_near_enabled = true
-	_attrs.dof_blur_amount = 0.08
+	_attrs.dof_blur_amount = 0.06
 	cam.attributes = _attrs
 
 
@@ -54,10 +55,12 @@ static func focus(cam: Camera3D, d: float) -> void:
 	var on := int(Settings.v.get("quality", 2)) >= 2
 	_attrs.dof_blur_far_enabled = on
 	_attrs.dof_blur_near_enabled = on
-	_attrs.dof_blur_far_distance = d * 1.1
-	_attrs.dof_blur_far_transition = d * 0.25
-	_attrs.dof_blur_near_distance = d * 0.92
-	_attrs.dof_blur_near_transition = d * 0.1
+	# Com FOV 40 o chão na tela vai de ~0,79 d (pé) a ~1,36 d (topo). A faixa nítida vai de 0,82 d a 1,25 d (~75% da
+	# tela): só as bordas desfocam.
+	_attrs.dof_blur_far_distance = d * 1.25
+	_attrs.dof_blur_far_transition = d * 0.2
+	_attrs.dof_blur_near_distance = d * 0.82
+	_attrs.dof_blur_near_transition = d * 0.08
 
 
 static func apply_env(env: Environment, sun: DirectionalLight3D, rim: DirectionalLight3D, act: int) -> void:
@@ -129,7 +132,7 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.95, lengt
 
 # ---------------------------------------------------------------- modelos
 
-## Modelos do diorama (tools/art/import_dio.gd + tools/art/dio_a.json): cor nos vértices, sem atlas. Passam na frente
+## Modelos do diorama (tools/art/import_dio.gd + tools/art/dio.json): cor nos vértices, sem atlas. Passam na frente
 ## das peças de sempre em Models.prop, GroundLooks.prop_mesh, Arvores (ato 1) e Looks.unit_mesh.
 const DIR := "res://assets/models/dio/"
 ## Tinta do herói: o escudeiro de feltro já vem colorido.
@@ -139,6 +142,8 @@ const HERO_SCENE := "res://assets/models/dio/hero_escudeiro.scn"
 static var _cache: Dictionary = {}
 
 
+## Taverna, casas, rato (rat, rat_horde, rat_brute) e escudeiro de feltro nas cores das cartas
+## (tools/art/blender_dio), lanterna e cerca de feltro. Os outros ids não têm modelo aqui e usam o de sempre.
 static func mesh(id: String) -> Mesh:
 	if id == "":
 		return null

@@ -265,7 +265,7 @@ vec3 paint_diffuse(vec3 N, vec3 L, vec3 V, float atten, vec3 lcol, vec3 pp, bool
 	return lcol * k * (fill + (1.0 - fill) * lit) / PI;
 }
 
-// Diorama (branch diorama-a, 26/11/2026): os shaders do mundo definem DIO antes de incluir este arquivo e trocam o
+// Diorama (26/11/2026): os shaders do mundo definem DIO antes de incluir este arquivo e trocam o
 // guache pela luz de maquete (a do Holy Sheep, shaders/crayon.gdshaderinc): Lambert envolvido com borda macia, a
 // sombra do mapa como vem, e luz quente rebatida no lado oposto ao sol. A mesa do menu e as cartas não definem DIO.
 uniform float dio_wrap = 0.35;

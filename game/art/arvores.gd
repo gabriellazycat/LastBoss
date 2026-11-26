@@ -14,8 +14,6 @@ static var _mesh: Dictionary = {}
 
 ## Arbusto em pinceladas do ato (0 primavera, 1 outono, 2 terra amaldiçoada).
 static func bush_mesh(act: int) -> Mesh:
-	if act == 0 and Diorama.mesh("bush"):
-		return Diorama.mesh("bush")
 	var key := "bush/%d" % act
 	if _mesh.has(key):
 		return _mesh[key]
@@ -23,7 +21,7 @@ static func bush_mesh(act: int) -> Mesh:
 	var m: Mesh = load(base + ".res") if ResourceLoader.exists(base + ".res") else null
 	if m:
 		if not m.has_meta("gtex") and ResourceLoader.exists(base + ".png"):
-			m.set_meta("gtex", load(base + ".png"))
+			m.set_meta("gtex", Looks.atlas_tex(base + ".png"))
 		m.set_meta("gink", 0.0)
 	_mesh[key] = m
 	return m
@@ -34,8 +32,6 @@ static func mesh(id: String, act: int, style := -1) -> Mesh:
 	var st: int = style if style >= 0 else int(STYLES[0])
 	if not id in ["tree", "tree_round"]:
 		return null
-	if act == 0 and Diorama.mesh("%s_s%d" % [id, st]):
-		return Diorama.mesh("%s_s%d" % [id, st])
 	var key := "%d/%s/%d" % [st, id, act]
 	if _mesh.has(key):
 		return _mesh[key]
@@ -43,7 +39,7 @@ static func mesh(id: String, act: int, style := -1) -> Mesh:
 	var m: Mesh = load(base + ".res") if ResourceLoader.exists(base + ".res") else null
 	if m:
 		if not m.has_meta("gtex") and ResourceLoader.exists(base + ".png"):
-			m.set_meta("gtex", load(base + ".png"))
+			m.set_meta("gtex", Looks.atlas_tex(base + ".png"))
 		m.set_meta("gink", 0.0)
 	_mesh[key] = m
 	return m

@@ -579,7 +579,7 @@ func _build_ground_look() -> void:
 	pm.subdivide_width = int(b.size.x / 12.0)
 	pm.subdivide_depth = int(b.size.y / 12.0)
 	var gmat := GroundLooks.ground_material()
-	gmat.set_shader_parameter("mundo", MundoVivo.ground_amount())
+	gmat.set_shader_parameter("mundo", 0.0)   # 26/11/2026: sem os borrões de cor do chão (manchas)
 	var g := _mi(pm, Vector3(b.get_center().x, -0.03, b.get_center().y), gmat)
 	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	g.layers = GROUND_LAYER

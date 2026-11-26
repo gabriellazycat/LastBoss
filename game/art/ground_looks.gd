@@ -2,16 +2,16 @@ class_name GroundLooks
 extends RefCounted
 ## Chão, estrada, grama, luz, céu e névoa de cada ato. Três presets: 10 primavera (ato 1), 11 outono (ato 2) e
 ## 12 crepúsculo na terra amaldiçoada (ato 3); look() escolhe pelo "ground_look" do ato (rules.acts). O chão e a
-## estrada são pintados no shader (ground_tela/road_tela, estilo 2 = relva pincelada, 22/11/2026), com as cores do preset.
+## estrada são feitos no shader (ground_tela/road_tela, estilo 7 = retalhos de feltro, 26/11/2026), com as cores do preset.
 
 const PRESETS := {
 	# Ato 1: primavera de dia. Cenário de Models.prop() vem de assets/models/v2 quando existe.
 	10: {
 		"wshader": 5, "props_dir": "v2", "props_sfx": "",
-		# Diorama C (26/11/2026): colcha de retalhos de feltro verde costurados e estrada de feltro bege; sem tufos.
-		"params": {"c_grass": Color(0.3, 0.48, 0.28), "c_grass2": Color(0.44, 0.58, 0.3), "c_dirt": Color(0.5, 0.66, 0.34),
+		# Colcha de feltro nas cores do fundo das cartas (sálvia, oliva e ocre), 26/11/2026.
+		"params": {"c_grass": Color(0.44, 0.55, 0.36), "c_grass2": Color(0.62, 0.64, 0.42), "c_dirt": Color(0.7, 0.62, 0.44),
 			"c_rock": Color(0.55, 0.55, 0.5), "c_fleck": Color(1.0, 0.88, 0.55), "dirt_amount": 0.0, "rock_amount": 0.0, "bump": 0.0},
-		"road_c": Color(0.95, 0.8, 0.6), "road_dark": Color(0.88, 0.72, 0.52), "road_edge": Color(0.62, 0.5, 0.38), "bands": 0.0,
+		"road_c": Color(0.88, 0.77, 0.6), "road_dark": Color(0.8, 0.68, 0.52), "road_edge": Color(0.58, 0.5, 0.4), "bands": 0.0,
 		"grass_base": Color(0.2, 0.3, 0.08), "grass_tip": Color(0.55, 0.66, 0.24), "grass": 0.0,
 		"trees": [Color(1.0, 1.0, 1.0), Color(0.92, 1.04, 0.95), Color(1.06, 1.0, 0.88)],
 		"sun_rot": Vector3(-46, -38, 0), "sun_col": Color(1.0, 0.9, 0.76), "sun_e": 1.8,
@@ -61,10 +61,6 @@ const PRESETS := {
 }
 
 static var _tex: Dictionary = {}
-
-## Estilo do ground_tela/road_tela: 2 = relva pincelada (escolhida em 22/11/2026).
-const TELA := 2
-
 
 ## "ground_look" do ato atual (rules.acts[].ground_look: 2, 3 ou 4), posto pelo main.gd.
 static var act_look := -1
@@ -228,10 +224,6 @@ static func grass_material() -> ShaderMaterial:
 static func prop_mesh(id: String) -> Mesh:
 	if not id in ["tree", "tree_round", "dead_tree", "bush", "rock"]:
 		return null
-	if look() == 10:
-		var dm := Diorama.mesh({"tree": "tree_s5", "tree_round": "tree_round_s5"}.get(id, id))
-		if dm:
-			return dm
 	if id == "bush":
 		var bm := Arvores.bush_mesh({11: 1, 12: 2}.get(look(), 0))
 		if bm:

@@ -95,7 +95,7 @@ static func m2_mesh(id: String) -> Mesh:
 	if m:
 		var tp := "res://assets/models/g_tex/m2/%s.png" % id
 		if not m.has_meta("gtex") and ResourceLoader.exists(tp):
-			m.set_meta("gtex", load(tp))
+			m.set_meta("gtex", atlas_tex(tp))
 		m.set_meta("gink", 0.0)
 	_mesh[key] = m
 	return m
@@ -121,10 +121,23 @@ static func g_mesh(id: String) -> Mesh:
 	if m:
 		var tp := "res://assets/models/g_tex/dry_n/%s.png" % id
 		if m.has_meta("gtex") == false and ResourceLoader.exists(tp):
-			m.set_meta("gtex", load(tp))
+			m.set_meta("gtex", atlas_tex(tp))
 		m.set_meta("gink", 0.0)
 	_mesh[key] = m
 	return m
+
+
+## Atlas pintado com mipmaps (versões D e E, 26/11/2026): o look5 lê o atlas num mipmap borrado (atlas_lod) para
+## tirar as manchas de pincel da textura. Os .png vêm importados sem mipmap, então eles são gerados aqui.
+static func atlas_tex(path: String) -> Texture2D:
+	var t: Texture2D = load(path)
+	var img := t.get_image() if t else null
+	if img == null:
+		return t
+	if img.is_compressed():
+		img.decompress()
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
 
 
 ## Material de uma malha com atlas (a base, se não tiver: parâmetros como o vento ficam).

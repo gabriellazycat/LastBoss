@@ -22,7 +22,10 @@ void fragment() {
 		discard;
 	}
 	float aa = fwidth(d) * 1.5;
-	float rim = smoothstep(1.0 - edge - aa, 1.0 - edge, d) * (1.0 - smoothstep(1.0 - aa, 1.0, d));
+	// Feltro (26/11/2026): borda em costura tracejada (os pontos acompanham a volta), sem brilho no bloom.
+	float ang = atan(q.y, q.x);
+	float stitch = step(0.45, fract(ang / 6.2831853 * 48.0));
+	float rim = smoothstep(1.0 - edge - aa, 1.0 - edge, d) * (1.0 - smoothstep(1.0 - aa, 1.0, d)) * stitch;
 	float inner = fill * mix(0.45, 1.0, smoothstep(0.0, 1.0, d));
 	if (pulse > 0.0) {
 		float w = fract(TIME * 0.7);
@@ -36,6 +39,6 @@ void fragment() {
 		inner += (spokes + rings) * 0.45;
 	}
 	vec4 c = tint * col;
-	ALBEDO = c.rgb * mix(1.0, glow, rim);
+	ALBEDO = c.rgb * mix(1.0, min(glow, 1.15), rim);   // feltro: material fosco, quase sem bloom
 	ALPHA = clamp(rim * 0.9 + inner, 0.0, 1.0) * c.a;
 }

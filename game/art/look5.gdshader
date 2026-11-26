@@ -27,6 +27,7 @@ uniform float pose_lunge = 0.0;    // fora da MultiMesh: quanto do ataque (0..1)
 uniform vec3 rim_color : source_color = vec3(0.75, 0.82, 1.0);
 uniform float rim_strength = 0.35;
 uniform vec3 tint : source_color = vec3(1.0);
+uniform float atlas_lod = 3.5;   // mipmap do atlas, sem as pinceladas (mais alto = cor mais lisa)
 uniform bool atlas = false;       // a textura é um atlas pintado: sem pinceladas do shader por cima
 uniform float ink = 0.0;          // contorno de tinta (0..1)
 
@@ -80,11 +81,18 @@ void vertex() {
 void fragment() {
 	vec3 base = pow(clamp(COLOR.rgb, vec3(0.0), vec3(1.0)), vec3(2.2)) * tint;
 	if (use_tex && UV.x >= 0.0) {
-		base *= texture(albedo_tex, UV).rgb;
+		// Versões D e E (26/11/2026): o atlas pintado traz as manchas de pincel na própria textura; lido num mipmap
+		// borrado (atlas_lod), fica só a cor média de cada parte do modelo.
+		base *= atlas ? textureLod(albedo_tex, UV, atlas_lod).rgb : texture(albedo_tex, UV).rgb;
 	}
 	// Atlas pintado (rodada de 15/11, tools/art/blender_g): a pincelada já está na textura, a do shader sai.
 	if (!atlas) {
 		base = paint_albedo(base, paint_p, paint_n, -1, 0.35);
+	}
+	// G (26/11/2026): os modelos de hoje (atlas pintado) chegam perto da paleta das cartas, como os modelos novos.
+	if (atlas) {
+		// G: só meia paleta (no anoitecer, a paleta inteira deixava as copas azul-marinho, quase pretas).
+		base = mix(base, pt_palette(base), 0.5);
 	}
 	// A · cor dos fundos das cartas só no cenário (modelos parados, sem VAT); as unidades animadas mantêm a cor.
 	if (paint_on && paint_cor && !use_vat) {

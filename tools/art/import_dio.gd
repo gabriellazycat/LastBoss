@@ -1,7 +1,7 @@
 extends SceneTree
-## Importador do diorama (26/11/2026, branches diorama-*): o mesmo do tools/art/import_cc0.gd (glTF -> malha com cor
-## nos vértices; monstros com a animação gravada em textura, VAT), com a lista e a saída num JSON por versão.
-## godot --headless --path . -s res://tools/art/import_dio.gd -- --list=res://tools/art/dio_a.json [--only=id,id]
+## Importador do diorama (26/11/2026): o mesmo do tools/art/import_cc0.gd (glTF -> malha com cor
+## nos vértices; monstros com a animação gravada em textura, VAT), com a lista e a saída num JSON (tools/art/dio.json).
+## godot --headless --path . -s res://tools/art/import_dio.gd -- --list=res://tools/art/dio.json [--only=id,id]
 ## JSON: {"src": pasta dos .glb, "out": "res://assets/models/dio/",
 ##        "units": {id: [arquivo, anim andar, anim ataque, altura (m), [r,g,b]]},
 ##        "props": {id: [arquivo, altura (m)]}, "heroes": {id: arquivo}}

@@ -1,5 +1,7 @@
 class_name UiParch
 extends RefCounted
+## Feltro (26/11/2026): painéis e botões do kit refeitos em feltro (tools/art/ui_kit/make_felt_kit.py), com as
+## mesmas margens; barras, versos das pilhas e marcas no chão no mesmo material. As peças das cartas não mudam.
 ## Kit visual da interface (pele "Mapa aberto"): papel, moldura dupla de tinta, faixas e selos redesenhados como o
 ## pergaminho do mapa (assets/ui/kit_mapa, feito por tools/art/ui_kit/make_map_kit.py), com as cores e letras do
 ## mapa (minimap.gd). UiDiario chama estas peças; as funções dele mantêm os nomes antigos.
@@ -310,8 +312,9 @@ static func bar(col: Color, w: float, h: float) -> ProgressBar:
 	bg.bg_color = Color(0.13, 0.085, 0.06, 0.92)
 	bg.border_color = GOLD if h >= 10 else Color(GOLD, 0.8)
 	# Mapa aberto: trilho de papel mais escuro com contorno de tinta (sem aro dourado).
-	bg.bg_color = Color("c9b07c")
-	bg.border_color = INK
+	# Trilho de feltro bege com a borda clara de linha; enchimento de feltro na cor.
+	bg.bg_color = Color("cdb894")
+	bg.border_color = Color("f1e6d0")
 	bg.set_border_width_all(2 if h >= 12 else 1)
 	bg.set_corner_radius_all(int(minf(h * 0.5, 7)))
 	bg.anti_aliasing = true

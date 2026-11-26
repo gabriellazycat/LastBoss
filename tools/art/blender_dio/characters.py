@@ -1,12 +1,11 @@
-"""Herói, rato e lobo do diorama (26/11/2026, branches diorama-b e diorama-c): bonecos em partes rígidas, cada
-parte um objeto com a origem na junta (quadril, ombro, pescoço, eixo da roda). A animação não sai daqui: o
-tools/art/import_dio.gd anima as partes pelo nome ("@quad", "@pulltoy", "@biped") e grava a VAT ou a cena do herói.
-  b  brinquedo de madeira: formas de torno lisas, tinta de brinquedo; o rato é um carrinho de puxar com rodas;
-  c  feltro: bolhas fofas e irregulares, cores de lã, pontos de bordado nos olhos.
+"""Rato e escudeiro do diorama, em feltro nas cores das cartas (escolhido em 26/11/2026): bonecos em partes rígidas,
+cada parte um objeto com a origem na junta (quadril, ombro, pescoço). Bolhas fofas e irregulares de feltro, com as
+cores e as formas da arte das cartas (rat_brute, rat_horde, hero_escudeiro). A animação não sai daqui: o
+tools/art/import_dio.gd anima as partes pelo nome ("@quad", "@biped") e grava a VAT ou a cena do herói.
 Olhos: um ponto de cor só, sem pupila nem brilho (regra dos modelos); o herói não tem olhos (elmo fechado).
-"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup -P tools/art/blender_dio/characters.py -- <saída> <b|c>
-Grava <saída>/rat.glb, wolf.glb e knight.glb, de frente para -Y do Blender (+Z no glTF).
-Cor: os bichos levam cor linear (o import_dio converte); o herói vai como cena e leva a cor já em sRGB."""
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup -P tools/art/blender_dio/characters.py -- <saída>
+Grava <saída>/rat.glb e knight.glb, de frente para -Y do Blender (+Z no glTF).
+Cor: o rato leva cor linear (o import_dio converte); o herói vai como cena e leva a cor já em sRGB."""
 import math
 import os
 import sys
@@ -17,8 +16,6 @@ from mathutils import Matrix, Vector, noise
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 OUT = argv[0] if argv else "."
-STYLE = argv[1] if len(argv) > 1 else "b"
-FELT = STYLE == "c"
 
 
 def srgb(h):
@@ -30,16 +27,12 @@ def lin(h):
     return tuple(x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in srgb(h))
 
 
-P = {
-    "b": {"rat": "#9aa3ad", "rat2": "#c9ced4", "pink": "#f08a9a", "eye": "#2a2430", "wheel": "#e2b04a", "axle": "#8a5a34",
-          "wolf": "#6f7f99", "wolf2": "#e8dcc4", "wolf3": "#4e5b70", "nose": "#2a2430",
-          "tunic": "#d8423a", "steel": "#b9c3cf", "steel2": "#8e9aab", "skin": "#f1c7a0", "wood": "#a8714a",
-          "gold": "#f2c14e", "shield": "#3f74c4", "boot": "#5b3f2c"},
-    "c": {"rat": "#a59e9a", "rat2": "#d8cfc8", "pink": "#e8a2a6", "eye": "#2d2628", "wheel": "#c9a46a", "axle": "#8a6a52",
-          "wolf": "#8a8f9a", "wolf2": "#eee4d4", "wolf3": "#6b707c", "nose": "#2d2628",
-          "tunic": "#b8574a", "steel": "#c9c6c0", "steel2": "#a19d97", "skin": "#efcfb3", "wood": "#9c7458",
-          "gold": "#e2bd6a", "shield": "#5a7fa8", "boot": "#6a4c3a"},
-}[STYLE]
+# Cores amostradas da arte das cartas (rat_brute, rat_horde, hero_escudeiro), em sRGB.
+P = {"rat": "#7e93a5", "rat2": "#b2bec4", "rat3": "#5d6874", "pink": "#eaa9ab", "pink2": "#d68e93",
+     "eye": "#2b2a33", "tooth": "#f1e6cf",
+     "steel": "#a6afb9", "steel2": "#7f8a98", "steel3": "#6f7a88", "tabard": "#5689b8", "tabard2": "#3c6690",
+     "leather": "#7a5a42", "boot": "#5f4a3c", "visor": "#2a2e38", "blade": "#dfe4e8", "shield": "#7f97ad",
+     "shield2": "#5c7590", "gold": "#d8b46a"}
 
 GROUPS = {}   # nome da parte -> lista de objetos (juntados no fim)
 PIVOT = {}    # nome da parte -> pivô (mundo)
@@ -63,7 +56,7 @@ def _mesh_obj(bm, part, col):
     ca = me.color_attributes["Col"]
     for li, loop in enumerate(me.loops):
         v = me.vertices[loop.vertex_index].co
-        k = 1.0 + (noise.noise(v * 4.0) * 0.08 if FELT else 0.0)
+        k = 1.0 + noise.noise(v * 4.0) * 0.08   # fibra: leve variação de cor da lã
         ca.data[li].color = (c[0] * k, c[1] * k, c[2] * k, 1.0)
     for p in me.polygons:
         p.use_smooth = True
@@ -72,7 +65,7 @@ def _mesh_obj(bm, part, col):
 
 
 def ball(part, c, r, col, sc=(1, 1, 1), sub=3, bump=None):
-    bump = (0.12 if FELT else 0.0) if bump is None else bump
+    bump = 0.12 if bump is None else bump   # feltro: superfície fofa e irregular
     bm = bmesh.new()
     bmesh.ops.create_icosphere(bm, subdivisions=sub, radius=r)
     for v in bm.verts:
@@ -90,12 +83,7 @@ def tube(part, a, b, r0, r1, col, seg=14):
     m = Matrix.Translation((a + b) / 2) @ q.to_matrix().to_4x4()
     for v in bm.verts:
         v.co = m @ v.co
-    o = _mesh_obj(bm, part, col)
-    if not FELT:
-        bv = o.modifiers.new("b", "BEVEL")
-        bv.width = min(r0, r1, 0.06) * 0.6 + 0.01
-        bv.segments = 3
-    return o
+    return _mesh_obj(bm, part, col)
 
 
 def block(part, lo, hi, col, bevel=0.05):
@@ -108,19 +96,6 @@ def block(part, lo, hi, col, bevel=0.05):
     bv = o.modifiers.new("b", "BEVEL")
     bv.width = bevel
     bv.segments = 3
-    return o
-
-
-def disc(part, c, r, t, col, axis="X", seg=20):
-    bm = bmesh.new()
-    bmesh.ops.create_cone(bm, cap_ends=True, segments=seg, radius1=r, radius2=r, depth=t)
-    rot = {"X": Matrix.Rotation(math.pi / 2, 4, "Y"), "Y": Matrix.Rotation(math.pi / 2, 4, "X"), "Z": Matrix.Identity(4)}[axis]
-    for v in bm.verts:
-        v.co = Matrix.Translation(c) @ rot @ v.co
-    o = _mesh_obj(bm, part, col)
-    bv = o.modifiers.new("b", "BEVEL")
-    bv.width = min(t * 0.35, 0.04)
-    bv.segments = 2
     return o
 
 
@@ -158,121 +133,111 @@ def eyes(part, x, y, z, r):
 # ---------------------------------------------------------------- rato
 
 def rat():
+    """Ratazana das cartas: corpo de gota corpulento cinza-azulado, barriga mais clara, orelhas grandes rosa por
+    dentro, focinho rosa, olhos de ponto, rabo rosa comprido em curva e patinhas rosa."""
     reset()
-    # corpo em gota, frente para -Y
-    PIVOT["body"] = (0, 0, 0.45)
-    ball("body", (0, 0.05, 0.45), 0.42, P["rat"], (0.85, 1.25, 0.82))
-    ball("body", (0, -0.05, 0.36), 0.3, P["rat2"], (0.75, 1.0, 0.6))   # barriga clara
-    PIVOT["head"] = (0, -0.4, 0.55)
-    ball("head", (0, -0.6, 0.58), 0.28, P["rat"], (0.9, 1.15, 0.9))
-    ball("head", (0, -0.88, 0.55), 0.07, P["pink"], (1, 1, 1), 2, 0.0)   # nariz
-    for s in (-1, 1):
-        disc("head", (s * 0.2, -0.5, 0.86), 0.16, 0.05, P["rat"], "Y")
-        disc("head", (s * 0.2, -0.53, 0.86), 0.1, 0.03, P["pink"], "Y")
-    eyes("head", 0.12, -0.8, 0.66, 0.045)
-    PIVOT["tail"] = (0, 0.5, 0.4)
-    pts = [(0, 0.5, 0.4), (0, 0.8, 0.5), (0, 1.0, 0.68), (0, 1.08, 0.88)]
+    PIVOT["body"] = (0, 0, 0.42)
+    ball("body", (0, 0.08, 0.46), 0.46, P["rat"], (0.92, 1.3, 0.86))
+    ball("body", (0, 0.28, 0.6), 0.34, P["rat"], (0.95, 1.0, 0.8))        # lombo alto atrás, como na carta
+    ball("body", (0, -0.12, 0.3), 0.3, P["rat2"], (0.8, 1.05, 0.55))      # barriga clara
+    PIVOT["head"] = (0, -0.38, 0.52)
+    ball("head", (0, -0.62, 0.5), 0.3, P["rat"], (0.95, 1.05, 0.9))
+    ball("head", (0, -0.86, 0.43), 0.17, P["rat"], (0.85, 1.25, 0.8))     # focinho
+    ball("head", (0, -0.86, 0.36), 0.12, P["rat2"], (0.85, 1.1, 0.6))
+    ball("head", (0, -1.04, 0.45), 0.06, P["pink"], (1.2, 1, 0.9), 2, 0.0)         # nariz
+    ball("head", (0, -0.98, 0.3), 0.045, P["tooth"], (1.3, 0.5, 1.3), 2, 0.0)      # dentes da frente
+    for sx in (-1, 1):
+        # orelha: concha grande, cinza por fora e rosa por dentro, virada para a frente e para o lado
+        ball("head", (sx * 0.22, -0.5, 0.8), 0.17, P["rat"], (1.0, 0.35, 1.15), 3, 0.0)
+        ball("head", (sx * 0.22, -0.56, 0.8), 0.12, P["pink"], (0.95, 0.25, 1.05), 3, 0.0)
+    eyes("head", 0.14, -0.83, 0.59, 0.05)
+    PIVOT["tail"] = (0, 0.6, 0.42)
+    pts = [(0, 0.6, 0.42), (0, 0.92, 0.33), (0.14, 1.24, 0.3), (0.34, 1.52, 0.36), (0.5, 1.74, 0.48), (0.56, 1.88, 0.62)]
     for i in range(len(pts) - 1):
-        tube("tail", pts[i], pts[i + 1], 0.045 - i * 0.01, 0.035 - i * 0.01, P["pink"], 8)
-    if not FELT:
-        # carrinho de puxar: base de tábua e quatro rodas
-        PIVOT["body"] = (0, 0, 0.45)
-        block("body", (-0.3, -0.5, 0.12), (0.3, 0.45, 0.2), P["axle"], 0.03)
-        for y, part in ((-0.32, "wheel_f"), (0.3, "wheel_b")):
-            PIVOT[part] = (0, y, 0.13)
-            for s in (-1, 1):
-                disc(part, (s * 0.33, y, 0.13), 0.13, 0.07, P["wheel"], "X")
-            tube(part, (-0.36, y, 0.13), (0.36, y, 0.13), 0.025, 0.025, P["axle"], 8)
-        # cordinha de puxar com bolinha
-        tube("head", (0, -0.9, 0.5), (0, -1.15, 0.2), 0.012, 0.012, P["axle"], 6)
-        ball("head", (0, -1.17, 0.18), 0.05, P["wheel"], (1, 1, 1), 2, 0.0)
-    else:
-        for x, y, part in ((-0.2, -0.28, "leg_fl"), (0.2, -0.28, "leg_fr"), (-0.2, 0.3, "leg_bl"), (0.2, 0.3, "leg_br")):
-            PIVOT[part] = (x, y, 0.3)
-            ball(part, (x, y, 0.1), 0.11, P["rat"], (1, 1.3, 0.8))
+        tube("tail", pts[i], pts[i + 1], 0.07 - i * 0.012, 0.06 - i * 0.012, P["pink"], 10)
+        if i > 0:
+            ball("tail", pts[i], 0.065 - i * 0.012, P["pink"], (1, 1, 1), 2, 0.0)       # emenda lisa
+    for x, y, part in ((-0.24, -0.3, "leg_fl"), (0.24, -0.3, "leg_fr"), (-0.26, 0.36, "leg_bl"), (0.26, 0.36, "leg_br")):
+        PIVOT[part] = (x, y, 0.3)
+        ball(part, (x, y, 0.18), 0.12, P["rat"], (0.9, 1.1, 1.1))
+        ball(part, (x, y - 0.06, 0.04), 0.08, P["pink"], (1.1, 1.5, 0.5), 2, 0.0)
     finish("rat")
 
 
-# ---------------------------------------------------------------- lobo
+# ---------------------------------------------------------------- escudeiro (herói)
 
-def wolf():
-    reset()
-    PIVOT["body"] = (0, 0, 0.75)
-    if FELT:
-        ball("body", (0, 0.05, 0.78), 0.45, P["wolf"], (0.85, 1.5, 0.85))
-        ball("body", (0, -0.25, 0.68), 0.32, P["wolf2"], (0.8, 0.9, 0.75))
-    else:
-        tube("body", (0, 0.5, 0.78), (0, -0.45, 0.8), 0.33, 0.36, P["wolf"], 18)
-        ball("body", (0, 0.5, 0.78), 0.33, P["wolf"], (1, 0.6, 1), 3, 0.0)
-        ball("body", (0, -0.45, 0.8), 0.36, P["wolf"], (1, 0.6, 1), 3, 0.0)
-        ball("body", (0, -0.42, 0.68), 0.26, P["wolf2"], (1, 0.8, 0.9), 3, 0.0)
-    PIVOT["head"] = (0, -0.55, 1.0)
-    ball("head", (0, -0.75, 1.15), 0.3, P["wolf"], (0.95, 1.0, 0.9))
-    if FELT:
-        ball("head", (0, -1.0, 1.06), 0.17, P["wolf2"], (0.85, 1.2, 0.75))
-    else:
-        tube("head", (0, -0.85, 1.07), (0, -1.15, 1.05), 0.16, 0.12, P["wolf2"], 14)
-    ball("head", (0, -1.17 if not FELT else -1.17, 1.08), 0.06, P["nose"], (1, 1, 1), 2, 0.0)
-    for s in (-1, 1):
+def kite(part, c, w, h, t, col, col2):
+    """Escudo de bico (como o da carta): arredondado em cima e em ponta embaixo, no plano YZ, com borda."""
+    def shape(sc, dx, colr, th):
         bm = bmesh.new()
-        bmesh.ops.create_cone(bm, cap_ends=True, segments=4 if not FELT else 10, radius1=0.12, radius2=0.0, depth=0.28)
-        for v in bm.verts:
-            v.co = Vector((v.co.x + s * 0.17, v.co.y - 0.68, v.co.z + 1.47))
-        _mesh_obj(bm, "head", P["wolf3"])
-    eyes("head", 0.13, -0.98, 1.24, 0.045)
-    PIVOT["tail"] = (0, 0.6, 0.9)
-    if FELT:
-        ball("tail", (0, 0.85, 1.05), 0.16, P["wolf"], (0.9, 1.7, 0.9))
-    else:
-        tube("tail", (0, 0.6, 0.9), (0, 0.95, 1.25), 0.1, 0.05, P["wolf3"], 10)
-    for x, y, part in ((-0.2, -0.4, "leg_fl"), (0.2, -0.4, "leg_fr"), (-0.2, 0.42, "leg_bl"), (0.2, 0.42, "leg_br")):
-        PIVOT[part] = (x, y, 0.62)
-        if FELT:
-            ball(part, (x, y, 0.32), 0.12, P["wolf"], (1, 1, 2.4))
-            ball(part, (x, y - 0.03, 0.06), 0.1, P["wolf2"], (1, 1.2, 0.7))
-        else:
-            tube(part, (x, y, 0.62), (x, y, 0.08), 0.1, 0.09, P["wolf"], 12)
-            ball(part, (x, y - 0.02, 0.08), 0.1, P["wolf3"], (1, 1.2, 0.7), 2, 0.0)
-    finish("wolf")
+        pts = []
+        for i in range(9):
+            a = math.pi * i / 8
+            pts.append((math.cos(a) * w * 0.5 * sc, h * 0.1 + math.sin(a) * h * 0.22 * sc))
+        pts.append((-w * 0.47 * sc, -h * 0.12 * sc))
+        pts.append((-w * 0.3 * sc, -h * 0.42 * sc))
+        pts.append((0.0, -h * 0.62 * sc))
+        pts.append((w * 0.3 * sc, -h * 0.42 * sc))
+        pts.append((w * 0.47 * sc, -h * 0.12 * sc))
+        pts = [pts[0]] + list(reversed(pts[1:]))
+        front = [bm.verts.new((c[0] + dx - th / 2, c[1] + u, c[2] + v)) for (u, v) in pts]
+        back = [bm.verts.new((c[0] + dx + th / 2, c[1] + u, c[2] + v)) for (u, v) in pts]
+        bm.faces.new(front)
+        bm.faces.new(list(reversed(back)))
+        n = len(pts)
+        for i in range(n):
+            bm.faces.new((front[i], front[(i + 1) % n], back[(i + 1) % n], back[i]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        o = _mesh_obj(bm, part, colr)
+        bv = o.modifiers.new("b", "BEVEL")
+        bv.width = th * 0.3
+        bv.segments = 2
+        bv.limit_method = "ANGLE"
+        return o
+    shape(1.0, 0.0, col2, t)
+    shape(0.84, -t * 0.55, col, t * 0.4)
 
-
-# ---------------------------------------------------------------- cavaleiro (herói)
 
 def knight():
+    """Escudeiro das cartas: armadura de aço inteira, tabardo azul com cinto de couro, elmo fechado com o visor
+    escuro (sem olhos), escudo de bico azulado no braço esquerdo e espada longa na mão direita. Um pouco cabeçudo."""
     global SRGB_OUT
     reset()
     SRGB_OUT = True
-    # boneco de pino: corpo em sino, cabeça redonda com elmo, braços de pino, pernas curtas
-    PIVOT["body"] = (0, 0, 0.75)
-    tube("body", (0, 0, 0.55), (0, 0, 1.35), 0.42, 0.3, P["tunic"], 20)
-    ball("body", (0, 0, 1.35), 0.3, P["tunic"], (1, 1, 0.5), 3, 0.0)
-    tube("body", (0, 0, 0.95), (0, 0, 1.05), 0.4, 0.38, P["boot"], 20)   # cinto
-    ball("body", (0, -0.38, 1.0), 0.06, P["gold"], (1, 0.6, 1), 2, 0.0)   # fivela
+    PIVOT["body"] = (0, 0, 0.78)
+    tube("body", (0, 0, 0.66), (0, 0, 1.36), 0.3, 0.34, P["steel"], 20)            # peitoral
+    ball("body", (0, 0, 1.36), 0.34, P["steel"], (1, 0.9, 0.45))
+    tube("body", (0, 0, 0.5), (0, 0, 1.28), 0.37, 0.33, P["tabard"], 20)            # tabardo azul
+    tube("body", (0, 0, 0.46), (0, 0, 0.52), 0.375, 0.37, P["tabard2"], 20)         # barra do tabardo
+    tube("body", (0, 0, 0.9), (0, 0, 0.99), 0.36, 0.355, P["leather"], 20)          # cinto
+    block("body", (-0.07, -0.38, 0.89), (0.07, -0.33, 1.0), P["gold"], 0.012)       # fivela
+    for sx in (-1, 1):
+        ball("body", (sx * 0.38, 0, 1.3), 0.17, P["steel"], (1.1, 1.0, 0.85))   # ombreiras
     PIVOT["head"] = (0, 0, 1.45)
-    ball("head", (0, 0, 1.78), 0.34, P["steel"], (1, 1, 1.05))
-    tube("head", (0, 0, 1.62), (0, 0, 1.7), 0.36, 0.36, P["steel2"], 20)   # aba do elmo
-    block("head", (-0.2, -0.36, 1.74), (0.2, -0.26, 1.8), P["eye"], 0.015)   # fresta do visor
-    ball("head", (0, 0, 2.14), 0.07, P["gold"], (1, 1, 1), 2, 0.0)
-    tube("head", (0, 0.05, 2.1), (0, 0.18, 2.35), 0.05, 0.08, P["tunic"], 10)   # pluma
+    tube("head", (0, 0, 1.5), (0, 0, 1.98), 0.3, 0.3, P["steel"], 20)               # elmo de balde, um pouco grande
+    ball("head", (0, 0, 1.96), 0.3, P["steel"], (1, 1, 0.72), 3, 0.0)   # topo do elmo em cúpula
+    tube("head", (0, 0, 1.46), (0, 0, 1.53), 0.33, 0.33, P["steel2"], 20)           # gorjal
+    block("head", (-0.19, -0.31, 1.72), (0.19, -0.24, 1.81), P["visor"], 0.015)     # fresta do visor
+    block("head", (-0.035, -0.32, 1.56), (0.035, -0.26, 1.85), P["steel2"], 0.012)  # nervura do nariz
     for s, part in ((-1, "arm_l"), (1, "arm_r")):
-        PIVOT[part] = (s * 0.42, 0, 1.25)
-        tube(part, (s * 0.42, 0, 1.25), (s * 0.5, -0.05, 0.85), 0.11, 0.1, P["tunic"], 12)
-        ball(part, (s * 0.5, -0.06, 0.8), 0.11, P["skin"], (1, 1, 1), 2, 0.0)
-    # espada na mão direita (aponta para a frente), escudo redondo no braço esquerdo
-    block("arm_r", (0.46, -0.85, 0.76), (0.54, -0.15, 0.84), P["steel"], 0.02)
-    block("arm_r", (0.4, -0.18, 0.74), (0.6, -0.12, 0.86), P["gold"], 0.02)
-    block("arm_r", (0.47, -0.12, 0.77), (0.53, 0.05, 0.83), P["wood"], 0.015)
-    disc("arm_l", (-0.62, -0.08, 0.95), 0.36, 0.08, P["shield"], "X")
-    disc("arm_l", (-0.67, -0.08, 0.95), 0.12, 0.06, P["gold"], "X")
+        PIVOT[part] = (s * 0.4, 0, 1.25)
+        tube(part, (s * 0.42, 0, 1.24), (s * 0.48, -0.04, 0.86), 0.1, 0.09, P["steel2"], 12)
+        ball(part, (s * 0.49, -0.06, 0.8), 0.1, P["steel3"], (1, 1, 1), 2, 0.0)    # manopla
+    # espada longa na mão direita (aponta para a frente), guarda e punho de couro
+    block("arm_r", (0.46, -1.15, 0.77), (0.52, -0.2, 0.83), P["blade"], 0.015)
+    block("arm_r", (0.36, -0.2, 0.74), (0.62, -0.14, 0.86), P["steel3"], 0.015)
+    block("arm_r", (0.465, -0.14, 0.775), (0.515, 0.08, 0.825), P["leather"], 0.01)
+    ball("arm_r", (0.49, 0.1, 0.8), 0.04, P["steel3"], (1, 1, 1), 2, 0.0)
+    kite("arm_l", (-0.62, -0.06, 0.92), 0.62, 0.95, 0.07, P["shield"], P["shield2"])
     for s, part in ((-1, "leg_l"), (1, "leg_r")):
-        PIVOT[part] = (s * 0.17, 0, 0.55)
-        tube(part, (s * 0.17, 0, 0.55), (s * 0.17, 0, 0.12), 0.11, 0.1, P["steel2"], 12)
-        ball(part, (s * 0.17, -0.06, 0.1), 0.13, P["boot"], (1, 1.4, 0.7), 2, 0.0)
+        PIVOT[part] = (s * 0.16, 0, 0.55)
+        tube(part, (s * 0.16, 0, 0.55), (s * 0.16, 0, 0.12), 0.11, 0.1, P["steel2"], 12)
+        ball(part, (s * 0.16, -0.02, 0.36), 0.1, P["steel"], (1, 1, 0.8), 2, 0.0)  # joelheira
+        ball(part, (s * 0.16, -0.06, 0.08), 0.12, P["boot"], (1, 1.45, 0.65), 2, 0.0)
     SRGB_OUT = False
     finish("knight")
 
 
 os.makedirs(OUT, exist_ok=True)
 rat()
-wolf()
 knight()
