@@ -4,7 +4,7 @@ shader_type spatial;
 // de fresnel puxado para a cor do céu, nada de faixas de toon. A forma vem da silhueta e da cor, não do traço.
 // Animação: se a malha tem VAT (use_vat), a posição e a normal de cada vértice vêm da textura (andar + ataque),
 // por instância; senão, a animação procedural dos outros looks (anim.gdshaderinc).
-render_mode diffuse_lambert_wrap, specular_disabled;
+render_mode diffuse_lambert_wrap;
 #include "res://game/art/anim.gdshaderinc"
 // Unidades: a cor dos fundos das cartas (paint_cor) não vale aqui; a cor fica no personagem, como nas cartas.
 #define PAINT_UNIT

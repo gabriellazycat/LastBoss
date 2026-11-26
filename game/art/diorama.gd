@@ -1,21 +1,21 @@
 class_name Diorama
 extends RefCounted
-## Versão A do diorama (branch diorama-a, 26/11/2026): "maquete de dia", na linha do Holy Sheep. O mundo parece uma
-## miniatura sobre a mesa: câmera de lente longa com tilt-shift, luz de sol suave com sombra macia, luz quente rebatida
-## na sombra (game/art/paint.gdshaderinc, DIO), oclusão forte, sem névoa, céu em degradê radial atrás do chão.
+## Versão B do diorama (branch diorama-b, 26/11/2026): "brinquedo de madeira ao pôr do sol". O mundo é um tabuleiro
+## de tábuas pintadas com brinquedos de torno em cima: herói de pino, rato de puxar com rodas, lobo de madeira, casas de
+## bloco. Luz dourada baixa com sombras longas, verniz (brilho largo de laca, dio_specular), tilt-shift mais forte.
 ## Vale para todos os atos (o ato 1 é o afinado); chamado pelo main depois do look de cada ato.
 
 const FOV := 30.0                 # lente longa: a perspectiva achata como numa foto de miniatura
-const PITCH := 55.0               # graus para baixo
+const PITCH := 52.0               # graus para baixo
 ## A câmera do jogo foi pensada com FOV 40: a distância cresce para mostrar a mesma área no chão.
 const DIST_K := 1.36              # tan(20°) / tan(15°)
 const SKY_SHADER := preload("res://game/art/dio_backdrop.gdshader")
 
 # Sol, ambiente e céu por ato (o 1 é a maquete de meio da manhã; 2 e 3 só puxam a cor do ato).
 const ACTS := [
-	{"sun_rot": Vector3(-42, -35, 0), "sun_col": Color(1.0, 0.95, 0.86), "sun_e": 1.35,
-		"amb": Color(0.78, 0.8, 0.84), "amb_e": 0.72, "top": Color(0.45, 0.65, 0.9), "hor": Color(0.86, 0.88, 0.86),
-		"haze": Color(0.92, 0.88, 0.78), "sat": 1.14},
+	{"sun_rot": Vector3(-26, -62, 0), "sun_col": Color(1.0, 0.78, 0.55), "sun_e": 1.75,
+		"amb": Color(0.74, 0.64, 0.8), "amb_e": 0.62, "top": Color(0.4, 0.33, 0.58), "hor": Color(1.0, 0.7, 0.52),
+		"haze": Color(1.0, 0.82, 0.62), "sat": 1.1},
 	{"sun_rot": Vector3(-34, -55, 0), "sun_col": Color(1.0, 0.84, 0.66), "sun_e": 1.3,
 		"amb": Color(0.82, 0.74, 0.7), "amb_e": 0.7, "top": Color(0.5, 0.55, 0.75), "hor": Color(0.95, 0.8, 0.66),
 		"haze": Color(0.96, 0.84, 0.7), "sat": 1.12},
@@ -33,7 +33,7 @@ static func setup_camera(cam: Camera3D) -> void:
 	_attrs = CameraAttributesPractical.new()
 	_attrs.dof_blur_far_enabled = true
 	_attrs.dof_blur_near_enabled = true
-	_attrs.dof_blur_amount = 0.055
+	_attrs.dof_blur_amount = 0.08
 	cam.attributes = _attrs
 
 
@@ -51,9 +51,9 @@ static func focus(cam: Camera3D, d: float) -> void:
 	var on := int(Settings.v.get("quality", 2)) >= 2
 	_attrs.dof_blur_far_enabled = on
 	_attrs.dof_blur_near_enabled = on
-	_attrs.dof_blur_far_distance = d * 1.16
-	_attrs.dof_blur_far_transition = d * 0.3
-	_attrs.dof_blur_near_distance = d * 0.9
+	_attrs.dof_blur_far_distance = d * 1.1
+	_attrs.dof_blur_far_transition = d * 0.25
+	_attrs.dof_blur_near_distance = d * 0.92
 	_attrs.dof_blur_near_transition = d * 0.1
 
 
@@ -86,11 +86,11 @@ static func apply_env(env: Environment, sun: DirectionalLight3D, rim: Directiona
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 0.97
-	env.glow_intensity = 0.5
-	env.glow_strength = 1.05
-	env.glow_bloom = 0.07
+	env.glow_intensity = 0.7
+	env.glow_strength = 1.1
+	env.glow_bloom = 0.1
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
-	env.glow_hdr_threshold = 0.9
+	env.glow_hdr_threshold = 0.85
 	env.adjustment_enabled = true
 	env.adjustment_contrast = 1.08
 	env.adjustment_brightness = 1.0
@@ -118,7 +118,7 @@ static func apply_env(env: Environment, sun: DirectionalLight3D, rim: Directiona
 ## Vinheta da tela: leve e quente (a de antes era roxa a 0,82 e escurecia a maquete).
 static func vignette_code() -> String:
 	return "shader_type canvas_item;
-void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.95, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.16, 0.1, 0.06, v * 0.22); }"
+void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.95, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.22, 0.1, 0.12, v * 0.32); }"
 
 
 # ---------------------------------------------------------------- modelos
@@ -126,8 +126,10 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.95, lengt
 ## Modelos do diorama (tools/art/import_dio.gd + tools/art/dio_a.json): cor nos vértices, sem atlas. Passam na frente
 ## das peças de sempre em Models.prop, GroundLooks.prop_mesh, Arvores (ato 1) e Looks.unit_mesh.
 const DIR := "res://assets/models/dio/"
-## Tinta do herói (KayKit): a versão A mantém as cores do modelo, sem o aço azulado do guache.
-const HERO_TINT := Color(1.0, 0.98, 0.95)
+## Tinta do herói: o escudeiro de madeira já vem pintado.
+const HERO_TINT := Color(1.0, 1.0, 1.0)
+## Escudeiro de madeira (tools/art/blender_dio/characters.py, partes animadas pelo import_dio "@biped").
+const HERO_SCENE := "res://assets/models/dio/hero_escudeiro.scn"
 static var _cache: Dictionary = {}
 
 

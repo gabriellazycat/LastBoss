@@ -253,7 +253,7 @@ static func hero_material(emit: float) -> ShaderMaterial:
 	if lk == 0 or HeroRig.has_rig(own):
 		lk = own
 	var m := material(lk, emit) if lk > 0 else Models.glow_material(emit)
-	if HeroRig.has_rig(own):
+	if HeroRig.has_rig(own) and not ResourceLoader.exists(Diorama.HERO_SCENE):
 		var t := HeroRig.texture(own)
 		if t:
 			m.set_shader_parameter("use_tex", true)

@@ -178,6 +178,26 @@ void fragment() {
 	}
 	col = mix(col, dcol, dirt * 0.6);   // relva gasta, nunca a cor cheia da estrada
 	col = mix(col, mix(col, rcol * 0.72, 0.55), rock);   // cascalho: pedra misturada à relva, não uma placa clara
+	if (estilo == 6) {
+		// Brinquedo de madeira (diorama B): o chão é um tabuleiro de tábuas pintadas de verde. Tábuas de 1,6 m ao
+		// longo de x, emendas finas e escuras, tom de cada tábua, veio da madeira aparecendo por baixo da tinta e
+		// a tinta gasta perto das emendas (madeira clara).
+		float pw = 1.6;
+		float row = floor(p.y / pw);
+		float fy = fract(p.y / pw);
+		float px = p.x + hash(vec2(row, 3.0)) * 40.0;
+		float seg = floor(px / 9.0);
+		float fx = fract(px / 9.0);
+		float tone = hash(vec2(row, seg));
+		col *= 0.93 + tone * 0.14;
+		float grain = vnoise(vec2(px * 0.35, p.y * 9.0)) * 0.6 + vnoise(vec2(px * 0.12, p.y * 22.0)) * 0.4;
+		col *= 0.95 + grain * 0.1;
+		float seam = min(min(fy, 1.0 - fy) * pw, min(fx, 1.0 - fx) * 9.0);
+		vec3 wood = vec3(0.78, 0.58, 0.38) * (0.9 + grain * 0.2);
+		float wear = (1.0 - smoothstep(0.03, 0.16, seam)) * smoothstep(0.45, 0.8, vnoise(p * 1.3 + row));
+		col = mix(col, wood, wear * 0.7);
+		col *= mix(0.45, 1.0, smoothstep(0.0, 0.035, seam));
+	}
 	if (estilo == 5) {
 		// Diorama (como o chão do Holy Sheep): manchado em três escalas presas ao mundo e manchas de sol quentes,
 		// macio, sem pincelada.

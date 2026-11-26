@@ -203,6 +203,9 @@ func _unit(id: String) -> void:
 	await process_frame
 	var mis := _meshes(scene)
 	var ap := _anim_player(scene)
+	if str(cfg[1]).begins_with("@"):
+		ap = _proc_anims(scene, str(cfg[1]).substr(1))
+		cfg = [cfg[0], "walk", "atk", cfg[3], cfg[4]]
 	var anims: Array = []
 	if ap and cfg[1] != "":
 		for a in [cfg[1], cfg[2]]:
@@ -315,9 +318,12 @@ func _prop(id: String) -> void:
 
 
 func _hero(id: String) -> void:
-	var scene := _load(HEROES[id])
+	var hc = HEROES[id]
+	var scene := _load(hc[0] if hc is Array else hc)
 	if scene == null:
 		return
+	if hc is Array and str(hc[1]).begins_with("@"):
+		_proc_anims(scene, str(hc[1]).substr(1))
 	for c in scene.find_children("*", "", true, false):
 		c.owner = scene
 	var ps := PackedScene.new()
@@ -328,3 +334,143 @@ func _hero(id: String) -> void:
 		names.append("%s%s" % [mi.name, "" if mi.visible else "(oculto)"])
 	print("dio herói %s: malhas %s" % [id, names])
 	scene.free()
+
+
+# ---------------------------------------------------------------- animação procedural das partes rígidas
+
+## Bonecos de partes (tools/art/blender_dio/characters.py): cada parte é um nó com a origem na junta. Monta um
+## AnimationPlayer com as animações pelo nome das partes: "quad" (quatro patas), "pulltoy" (carrinho de rodas),
+## "biped" (herói: Idle, Walking_A, Running_A, Blocking e o golpe do escudeiro). Frente = +Z.
+func _proc_anims(scene: Node3D, kind: String) -> AnimationPlayer:
+	var ap := AnimationPlayer.new()
+	ap.name = "AnimationPlayer"
+	scene.add_child(ap)
+	ap.owner = scene
+	var parts := {}
+	for n in scene.find_children("*", "Node3D", true, false):
+		if n != ap:
+			parts[String(n.name)] = n
+	var lib := AnimationLibrary.new()
+	var clips: Dictionary = {}
+	match kind:
+		"quad":
+			clips = {"walk": [0.55, true], "atk": [0.5, false]}
+		"pulltoy":
+			clips = {"walk": [0.5, true], "atk": [0.5, false]}
+		_:
+			clips = {"Idle": [1.6, true], "Walking_A": [0.8, true], "Running_A": [0.5, true], "Blocking": [1.0, true],
+				"1H_Melee_Attack_Slice_Diagonal": [0.7, false]}
+	for cname in clips:
+		var length: float = clips[cname][0]
+		var anim := Animation.new()
+		anim.length = length
+		anim.loop_mode = Animation.LOOP_LINEAR if clips[cname][1] else Animation.LOOP_NONE
+		for pn in parts:
+			var node: Node3D = parts[pn]
+			var path := scene.get_path_to(node)
+			var tp := anim.add_track(Animation.TYPE_POSITION_3D)
+			anim.track_set_path(tp, path)
+			var tr := anim.add_track(Animation.TYPE_ROTATION_3D)
+			anim.track_set_path(tr, path)
+			var steps := 24
+			for k in steps + 1:
+				var t := length * k / float(steps)
+				var u := t / length
+				var o: Array = _pose(kind, cname, String(pn), u)
+				anim.position_track_insert_key(tp, t, node.position + (o[0] as Vector3))
+				anim.rotation_track_insert_key(tr, t, node.quaternion * Quaternion.from_euler(o[1]))
+		lib.add_animation(cname, anim)
+	ap.add_animation_library("", lib)
+	return ap
+
+
+## [deslocamento, rotação (euler)] da parte no instante u (0..1) da animação.
+func _pose(kind: String, clip: String, part: String, u: float) -> Array:
+	var w := TAU * u
+	var pos := Vector3.ZERO
+	var rot := Vector3.ZERO
+	var lunge := sin(PI * clampf(u / 0.45, 0.0, 1.0)) if u < 0.45 else 0.0   # bote rápido e volta
+	var wind := smoothstep(0.0, 0.3, u) * (1.0 - smoothstep(0.3, 0.45, u))      # preparo
+	match kind:
+		"quad":
+			if clip == "walk":
+				var sw := 0.55
+				match part:
+					"leg_fl", "leg_br": rot.x = sin(w) * sw
+					"leg_fr", "leg_bl": rot.x = -sin(w) * sw
+					"body":
+						pos.y = absf(sin(w)) * 0.07
+						rot.x = sin(2.0 * w) * 0.04
+					"head":
+						pos.y = absf(sin(w)) * 0.07
+						rot.x = sin(2.0 * w + 0.6) * 0.07
+					"tail":
+						pos.y = absf(sin(w)) * 0.07
+						rot.y = sin(w) * 0.45
+			else:
+				var fwd := lunge * 0.45 - wind * 0.15
+				match part:
+					"body": pos.z = fwd; rot.x = lunge * 0.12 - wind * 0.1
+					"head": pos.z = fwd * 1.2; rot.x = lunge * 0.45 - wind * 0.25; pos.y = -lunge * 0.06
+					"tail": pos.z = fwd; rot.x = -wind * 0.5
+					"leg_fl", "leg_fr": pos.z = fwd; rot.x = -lunge * 0.7
+					"leg_bl", "leg_br": pos.z = fwd * 0.6; rot.x = lunge * 0.4
+		"pulltoy":
+			if clip == "walk":
+				var bob: float = absf(sin(2.0 * w)) * 0.05
+				match part:
+					"wheel_f", "wheel_b": rot.x = w
+					"body": pos.y = bob; rot.z = sin(w) * 0.06
+					"head": pos.y = bob; rot.z = sin(w) * 0.06; rot.x = sin(2.0 * w) * 0.06
+					"tail": pos.y = bob; rot.y = sin(w) * 0.5
+			else:
+				var fwd := lunge * 0.4 - wind * 0.12
+				match part:
+					"wheel_f", "wheel_b": pos.z = fwd; rot.x = fwd * 3.0
+					"body": pos.z = fwd; rot.x = lunge * 0.15
+					"head": pos.z = fwd * 1.15; rot.x = lunge * 0.5 - wind * 0.3; pos.y = lunge * 0.05
+					"tail": pos.z = fwd; rot.x = -wind * 0.6
+		_:
+			match clip:
+				"Idle":
+					var br := sin(w) * 0.025
+					match part:
+						"body", "head": pos.y = br
+						"arm_l", "arm_r": pos.y = br; rot.x = sin(w) * 0.05
+				"Walking_A", "Running_A":
+					var run := clip == "Running_A"
+					var sw := 0.75 if run else 0.5
+					var bob: float = absf(sin(w)) * (0.12 if run else 0.07)
+					var roll := sin(w) * (0.05 if run else 0.09)   # bamboleio de boneco
+					var lean := 0.12 if run else 0.04
+					match part:
+						"leg_l": rot.x = sin(w) * sw
+						"leg_r": rot.x = -sin(w) * sw
+						"body": pos.y = bob; rot.z = roll; rot.x = lean
+						"head": pos.y = bob; rot.z = roll * 1.2; rot.x = lean
+						"arm_l": pos.y = bob; rot.x = -sin(w) * sw * 0.8; rot.z = roll
+						"arm_r": pos.y = bob; rot.x = sin(w) * sw * 0.6; rot.z = roll
+				"Blocking":
+					match part:
+						"arm_l": rot.x = -1.25; rot.y = 0.5
+						"body": pos.y = -0.05 + sin(w) * 0.015; rot.x = 0.08
+						"head": pos.y = -0.05 + sin(w) * 0.015
+						"arm_r": rot.x = 0.4
+						"leg_l": rot.x = 0.25
+						"leg_r": rot.x = -0.25
+				_:
+					# Golpe: braço da espada sobe atrás (preparo) e desce cortando na diagonal, com o corpo girando.
+					var up := smoothstep(0.0, 0.35, u)
+					var cut := smoothstep(0.35, 0.55, u)
+					var back := smoothstep(0.7, 1.0, u)
+					var a := lerpf(lerpf(0.0, 2.3, up), -1.3, cut)
+					a = lerpf(a, 0.0, back)
+					var twist := lerpf(lerpf(0.0, -0.35, up), 0.45, cut)
+					twist = lerpf(twist, 0.0, back)
+					match part:
+						"arm_r": rot.x = a; rot.z = -0.35 * cut * (1.0 - back); pos.z = cut * 0.15 * (1.0 - back)
+						"body", "head": rot.y = twist; pos.z = cut * 0.12 * (1.0 - back)
+						"arm_l": rot.y = twist; rot.x = -0.3 * cut * (1.0 - back)
+						"leg_l": rot.x = -0.3 * cut * (1.0 - back)
+						"leg_r": rot.x = 0.3 * cut * (1.0 - back)
+	return [pos, rot]

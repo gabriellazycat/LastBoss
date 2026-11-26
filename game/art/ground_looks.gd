@@ -8,11 +8,11 @@ const PRESETS := {
 	# Ato 1: primavera de dia. Cenário de Models.prop() vem de assets/models/v2 quando existe.
 	10: {
 		"wshader": 5, "props_dir": "v2", "props_sfx": "",
-		# Diorama A (26/11/2026): verdes saturados de prado ao sol (paleta do Holy Sheep) e caminho de areia clara.
-		"params": {"c_grass": Color(0.31, 0.42, 0.15), "c_grass2": Color(0.45, 0.52, 0.2), "c_dirt": Color(0.66, 0.56, 0.32),
-			"c_rock": Color(0.55, 0.55, 0.5), "c_fleck": Color(1.0, 0.88, 0.55), "dirt_amount": 0.2, "rock_amount": 0.0, "bump": 0.0},
-		"road_c": Color(0.86, 0.74, 0.52), "road_dark": Color(0.76, 0.63, 0.42), "road_edge": Color(0.5, 0.5, 0.26), "bands": 0.0,
-		"grass_base": Color(0.2, 0.3, 0.08), "grass_tip": Color(0.55, 0.66, 0.24), "grass": 0.8,
+		# Diorama B (26/11/2026): tabuleiro de tábuas pintadas de verde-brinquedo e estrada de madeira crua; sem tufos.
+		"params": {"c_grass": Color(0.38, 0.6, 0.3), "c_grass2": Color(0.46, 0.66, 0.32), "c_dirt": Color(0.5, 0.66, 0.34),
+			"c_rock": Color(0.55, 0.55, 0.5), "c_fleck": Color(1.0, 0.88, 0.55), "dirt_amount": 0.0, "rock_amount": 0.0, "bump": 0.0},
+		"road_c": Color(0.97, 0.88, 0.7), "road_dark": Color(0.9, 0.79, 0.6), "road_edge": Color(0.7, 0.56, 0.4), "bands": 0.0,
+		"grass_base": Color(0.2, 0.3, 0.08), "grass_tip": Color(0.55, 0.66, 0.24), "grass": 0.0,
 		"trees": [Color(1.0, 1.0, 1.0), Color(0.92, 1.04, 0.95), Color(1.06, 1.0, 0.88)],
 		"sun_rot": Vector3(-46, -38, 0), "sun_col": Color(1.0, 0.9, 0.76), "sun_e": 1.8,
 		"amb": Color(0.55, 0.66, 0.9), "amb_e": 0.68, "rim_col": Color(1.0, 0.82, 0.7), "rim_e": 0.35,
@@ -122,7 +122,8 @@ static func ground_material() -> ShaderMaterial:
 	m.shader = load("res://game/art/ground_tela.gdshader")
 	for k in P["params"]:
 		m.set_shader_parameter(k, P["params"][k])
-	m.set_shader_parameter("estilo", 5)
+	m.set_shader_parameter("estilo", 6)
+	m.set_shader_parameter("dio_sheen", 0.06)
 	return m
 
 
@@ -132,9 +133,9 @@ static func road_material() -> ShaderMaterial:
 	m.shader = load("res://game/art/road_tela.gdshader")
 	for k in [["c_road", "road_c"], ["c_road_dark", "road_dark"], ["c_edge", "road_edge"], ["bands", "bands"]]:
 		m.set_shader_parameter(k[0], P[k[1]])
-	m.set_shader_parameter("estilo", 4)
+	m.set_shader_parameter("estilo", 6 if look() == 10 else 4)
 	# Ocre dos caminhos das cartas na primavera e no outono; a terra amaldiçoada fica no roxo acinzentado dela.
-	m.set_shader_parameter("sand", {10: 0.15, 11: 0.55}.get(look(), 0.0))
+	m.set_shader_parameter("sand", {10: 0.0, 11: 0.55}.get(look(), 0.0))
 	return m
 
 
