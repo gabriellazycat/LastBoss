@@ -1,7 +1,9 @@
 class_name Minimap
 extends Control
-## Mapa da rota em tela cheia (M, Select, uma bifurcação sem escolha ou o Incêndio selecionado), no estilo A
-## "pergaminho sépia clássico" escolhido na revisão de 11/11/2026.
+## Mapa da rota em tela cheia (M, Select, uma bifurcação sem escolha ou o Incêndio selecionado), em colcha de
+## feltro (escolhida em 26/11/2026): a terra são retalhos sálvia e oliva costurados (o shader map_cloth.gdshader,
+## como o chão do jogo), mar e rios de feltro azul, copas e montanhas em feltro chapado, locais em botões creme
+## com o desenho a tinta, e as placas nos painéis de feltro do kit (UiParch).
 ## Um mapa longo e vertical para a run inteira: os atos empilhados de baixo para cima, rolável com a roda do mouse,
 ## arrastando, setas/PgUp/PgDn ou o direcional e o analógico esquerdo do controle. Abre com o herói em vista.
 ## O ato atual aparece inteiro; os atos futuros ainda não existem no Sim (cada ato gera a sua estrada ao começar),
@@ -20,14 +22,20 @@ signal close_requested
 
 const HERO_COL := Color(0.62, 0.1, 0.08)       # o herói em tinta vermelha (a faixa de rota usa a mesma cor)
 # Paleta do estilo A (mapa.html): papel, papel escuro, mar, tinta, vermelho e os preenchimentos dos ícones.
-const BG := Color("e6d3a3")
-const BG2 := Color("d2b87e")
-const SEA := Color("d6c08c")
-const INK := Color("3a2916")
-const ACC := Color("8e2f27")
-const F1 := Color("efe0b6")
-const F2 := Color("c9a768")
-const F3 := Color("dcc28a")
+const BG := Color("9db07f")       # terra (o shader troca essa cor pelos retalhos costurados)
+const BG2 := Color("c9a46a")      # faixa ocre dos cartuchos
+const SEA := Color("6d8db0")      # mar, rios e lagos
+const INK := Color("2f3a2a")      # linha escura dos contornos e textos
+const ACC := Color("b5473a")      # linha vermelha da rota
+const F1 := Color("efe4cf")
+const F2 := Color("c9a46a")
+const F3 := Color("d8c39a")
+const PAPER := Color("efe4cf")    # botões dos locais, placas dos atos e a linha das costuras
+const LEAF := Color("5d7b4a")     # copas
+const PINE := Color("3f5f45")     # pinheiros e abetos
+const MTN := Color("b3a68c")      # montanhas
+const HILL := Color("8ba06c")     # colinas
+const FOG := Color("d3d8cc")      # névoa dos atos que ainda não chegaram (fora da cor da terra: não vira retalho)
 # Geometria em "unidades de desenho" de uma tela 1920x1080; a escala k leva para pixels.
 const W := 1920.0
 const ROW_GAP := 180.0             # distância entre fileiras de locais
@@ -61,6 +69,7 @@ var lay_key := ""
 var bake_key := ""
 var vp: SubViewport                # o terreno pintado uma vez
 var canvas: Node2D
+var post: ColorRect
 var kt := 1.0                      # escala da textura do terreno
 var drag := false
 var drag_from := Vector2.ZERO
@@ -93,6 +102,14 @@ func _ready() -> void:
 	canvas.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	canvas.draw.connect(func(): _paint_terrain(canvas))
 	vp.add_child(canvas)
+	post = ColorRect.new()
+	var sm := ShaderMaterial.new()
+	sm.shader = load("res://game/art/map_cloth.gdshader")
+	sm.set_shader_parameter("land", BG)
+	sm.set_shader_parameter("thread", PAPER)
+	post.material = sm
+	post.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vp.add_child(post)
 	add_child(vp)
 
 
@@ -563,16 +580,18 @@ func _draw_hero(p: Vector2) -> void:
 ## Moldura, cabeçalho, ato em vista, legenda, trilho de rolagem e o botão de fechar (fixos na tela).
 func _draw_overlay() -> void:
 	var u := maxf(k, 0.62)
-	# Bordas escurecidas do papel e moldura dupla.
+	# Bordas escurecidas (hora azul) e moldura costurada.
 	var vw := 120.0 * k
-	var dark := Color(0.29, 0.17, 0.06, 0.32)
-	var clear := Color(0.29, 0.17, 0.06, 0.0)
+	var dark := Color(0.05, 0.07, 0.14, 0.34)
+	var clear := Color(0.05, 0.07, 0.14, 0.0)
 	draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(vw + ox, 0), Vector2(vw + ox, size.y), Vector2(0, size.y)]), PackedColorArray([dark, clear, clear, dark]))
 	draw_polygon(PackedVector2Array([Vector2(size.x - vw - ox, 0), Vector2(size.x, 0), Vector2(size.x, size.y), Vector2(size.x - vw - ox, size.y)]), PackedColorArray([clear, dark, dark, clear]))
 	draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(size.x, 0), Vector2(size.x, 70 * k), Vector2(0, 70 * k)]), PackedColorArray([dark, dark, clear, clear]))
 	draw_polygon(PackedVector2Array([Vector2(0, size.y - 70 * k), Vector2(size.x, size.y - 70 * k), Vector2(size.x, size.y), Vector2(0, size.y)]), PackedColorArray([clear, clear, dark, dark]))
-	draw_rect(Rect2(Vector2(14, 14) * k, size - Vector2(28, 28) * k), INK, false, 4.0 * k)
-	draw_rect(Rect2(Vector2(26, 26) * k, size - Vector2(52, 52) * k), INK, false, maxf(1.6 * k, 1.0))
+	var fr := Rect2(Vector2(20, 20) * k, size - Vector2(40, 40) * k)
+	var fp := PackedVector2Array([fr.position, Vector2(fr.end.x, fr.position.y), fr.end, Vector2(fr.position.x, fr.end.y), fr.position])
+	_dashed(self, _offs(Vector2(0, 1.5), Array(fp)), Color(0, 0, 0, 0.3), 3.0 * maxf(k, 0.7), 14.0 * k, 9.0 * k, 0.0)
+	_dashed(self, fp, PAPER, 3.0 * maxf(k, 0.7), 14.0 * k, 9.0 * k, 0.0)
 	# Ato em vista (o do meio da tela), num cartucho no canto de cima.
 	var cy := (scroll + size.y * 0.5) / k
 	var av := 0
@@ -599,7 +618,7 @@ func _draw_overlay() -> void:
 		var lw := fell.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, int(22 * u)).x + 36 * u
 		close_rect = Rect2(Vector2(size.x - 80 * u - lw, 40 * u), Vector2(lw, 48 * u))
 		var over := close_rect.has_point(get_local_mouse_position())
-		_plate(close_rect, BG2 if over else BG)
+		_plate(close_rect, over)
 		draw_string(fell, close_rect.position + Vector2(0, 32 * u), label, HORIZONTAL_ALIGNMENT_CENTER, lw, int(22 * u), INK)
 	# Legenda dos traços, no canto de baixo.
 	var items := [["past", tr("UI_MAP_LEG_DONE")], ["plan", tr("UI_MAP_LEG_PLAN")], ["open", tr("UI_MAP_LEG_OPEN")], ["shut", tr("UI_MAP_LEG_SHUT")]]
@@ -625,7 +644,7 @@ func _draw_overlay() -> void:
 	# Trilho de rolagem: os atos, a janela da tela e o herói.
 	rail_rect = Rect2(Vector2(size.x - 46 * u, 150 * u), Vector2(18 * u, size.y - 150 * u - lr.size.y - 90 * u))
 	if rail_rect.size.y > 60.0:
-		draw_rect(rail_rect, BG)
+		draw_rect(rail_rect, PAPER)
 		for a in range(1, lay.size()):
 			var yy := rail_rect.position.y + float(lay[a - 1]["end"]) / H * rail_rect.size.y
 			_dashed(self, PackedVector2Array([Vector2(rail_rect.position.x, yy), Vector2(rail_rect.end.x, yy)]), Color(INK, 0.6), 2.0, 4.0, 3.0, 0.0)
@@ -643,11 +662,10 @@ func _draw_overlay() -> void:
 		draw_arc(Vector2(rail_rect.get_center().x, hy), 6.0 * u, 0, TAU, 16, INK, 2.0, true)
 
 
-func _plate(r: Rect2, fill := BG) -> void:
-	draw_rect(Rect2(r.position + Vector2(4, 6), r.size), Color(0, 0, 0, 0.28))
-	draw_rect(r, fill)
-	draw_rect(r, INK, false, 3.0)
-	draw_rect(r.grow(-5.0), INK, false, 1.2)
+## Placa da tela (ato, título, fechar, legenda): painel de feltro do kit, com sombra macia.
+func _plate(r: Rect2, hot := false) -> void:
+
+	draw_style_box(UiParch.box("gold" if hot else "ink", 10.0), r)
 
 
 ## De onde a party saiu (mapa da campanha, 16/11/2026): "Saída: Floresta de Ramagris" no começo do Ato I.
@@ -681,6 +699,7 @@ func _bake() -> void:
 		kt *= 16000.0 / float(px.y)
 		px = Vector2i(int(ceil(W * kt)), int(ceil(H * kt)))
 	vp.size = px
+	post.size = Vector2(px)
 	bake_key = _bake_id()
 	canvas.queue_redraw()
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
@@ -805,12 +824,7 @@ func _paint_terrain(ci: CanvasItem) -> void:
 	r.seed = _seed(0) + 101
 	# Papel: cor de fundo, manchas e a textura do grão.
 	ci.draw_rect(Rect2(0, 0, W, H), BG)
-	var stain := _puff_tex()
-	for i in int(H / 140.0):
-		var c := Vector2(r.randf() * W, r.randf() * H)
-		var rad := r.randf_range(60.0, 240.0)
-		ci.draw_texture_rect(stain, Rect2(c - Vector2(rad, rad), Vector2(rad, rad) * 2.0), false, Color(0.54, 0.42, 0.19, 0.16))
-	ci.draw_texture_rect(_grain_tex(), Rect2(0, 0, W, H), true, Color(1, 1, 1, 0.22))
+	# Sem manchas nem grão: a textura de feltro vem do shader map_cloth por cima do terreno.
 	# Ocupação: locais, trilhas, nomes e cartuchos.
 	BL.clear()
 	BL2.clear()
@@ -1522,8 +1536,8 @@ func _paint_fog(ci: CanvasItem, a: int) -> void:
 		_dots(ci, _fake_curve(a, i, f["links"][i][0], f["links"][i][1]), Color(INK, 0.5), 3.0, 12.0)
 	var top := 0.0 if a == lay.size() - 1 else float(lay[a]["end"]) - 60.0
 	var bot := float(lay[a - 1]["end"]) - 70.0
-	var fogc := Color(BG, 0.86)
-	var edge := Color(BG, 0.0)
+	var fogc := Color(FOG, 0.86)
+	var edge := Color(FOG, 0.0)
 	if a - 1 > sim.act:
 		# O ato de baixo também está na névoa: as duas emendam sem borda (a borda macia só no limite com o ato atual).
 		ci.draw_rect(Rect2(0, top, W, float(lay[a - 1]["end"]) - 60.0 - top), fogc)
@@ -1536,13 +1550,13 @@ func _paint_fog(ci: CanvasItem, a: int) -> void:
 	for i in int((bot - top) / 40.0):
 		var c := Vector2(r.randf() * W, r.randf_range(top, bot))
 		var rad := r.randf_range(110, 290)
-		ci.draw_texture_rect(puff, Rect2(c - Vector2(rad * 1.5, rad), Vector2(rad * 3.0, rad * 2.0)), false, Color(BG.lightened(0.15), 0.55))
+		ci.draw_texture_rect(puff, Rect2(c - Vector2(rad * 1.5, rad), Vector2(rad * 3.0, rad * 2.0)), false, Color(FOG.lightened(0.15), 0.55))
 	for i in 14:
 		var c := Vector2(r.randf() * W, bot - 30.0)
-		ci.draw_texture_rect(puff, Rect2(c - Vector2(260, 120), Vector2(520, 240)), false, Color(BG.lightened(0.1), 0.7))
+		ci.draw_texture_rect(puff, Rect2(c - Vector2(260, 120), Vector2(520, 240)), false, Color(FOG.lightened(0.1), 0.7))
 	for row in f["rows"]:
 		for p in row:
-			ci.draw_circle(p, 30.0, Color(BG, 0.9))
+			ci.draw_circle(p, 30.0, Color(FOG, 0.9))
 			_dashed_arc(ci, p, 30.0, Color(INK, 0.6), 2.5)
 			ci.draw_string(fell, p + Vector2(-60, 13), "?", HORIZONTAL_ALIGNMENT_CENTER, 120, 38, Color(INK, 0.6))
 
@@ -1551,7 +1565,7 @@ func _paint_fog(ci: CanvasItem, a: int) -> void:
 
 ## Selo do local: halo de papel, anel a tinta e um anel tracejado por dentro.
 func _badge(ci: CanvasItem, p: Vector2, s: float, alpha: float) -> void:
-	ci.draw_circle(p, 38.0 * s, Color(BG, 0.92))
+	ci.draw_circle(p, 38.0 * s, Color(PAPER, 0.96))
 	ci.draw_arc(p, 36.0 * s, 0, TAU, 44, Color(INK, alpha), 2.5, true)
 	_dashed_arc(ci, p, 32.0 * s, Color(INK, alpha * 0.9), 1.0)
 
@@ -1598,7 +1612,7 @@ func _icon(ci: CanvasItem, c: Vector2, ty: String, s: float, alpha: float) -> vo
 	if ART_ICONS.has(ty):
 		_art(ci).icon(ART_ICONS[ty], tf_live if ci == self else tf_bake, c, s * 0.85, hash(ty) ^ hash(Vector2i(c)))
 		if alpha < 0.99:
-			ci.draw_circle(c, 34.0 * s, Color(BG, (1.0 - alpha) * 0.85))
+			ci.draw_circle(c, 34.0 * s, Color(PAPER, (1.0 - alpha) * 0.85))
 		return
 	var ink := Color(INK, alpha)
 	var f1 := Color(F1, alpha)
@@ -1719,7 +1733,7 @@ func _cartouche(ci: CanvasItem, c: Vector2, a: int, fogged: bool) -> void:
 		c + Vector2(320, 30), c + Vector2(320, 40), c + Vector2(-320, 40), c + Vector2(-320, 30), c + Vector2(-354, 30), c + Vector2(-338, 0), c + Vector2(-354, -30), c + Vector2(-320, -30)])
 	_shape(ci, band, Color(BG2, al), 3.0, ink)
 	var plate := Rect2(c + Vector2(-300, -48), Vector2(600, 96))
-	ci.draw_rect(plate, Color(BG, al))
+	ci.draw_rect(plate, Color(PAPER, al))
 	ci.draw_rect(plate, ink, false, 3.0)
 	ci.draw_rect(plate.grow(-8.0), ink, false, 1.6)
 	ci.draw_string(fell_it, c + Vector2(-300, -10), tr("UI_ACT").format({"n": a + 1}), HORIZONTAL_ALIGNMENT_CENTER, 600, 28, Color(INK, 0.85 * al))
@@ -1759,10 +1773,10 @@ func _ship(ci: CanvasItem, c: Vector2, s: float, r: RandomNumberGenerator) -> vo
 			out.append(c + (q as Vector2) * s)
 		return out
 	var hull := _poly(_quad(c + Vector2(-30, 0) * s, c + Vector2(0, 22) * s, c + Vector2(30, 0) * s), [c + Vector2(24, -8) * s, c + Vector2(-24, -8) * s])
-	_shape(ci, hull, BG, 2.4)
+	_shape(ci, hull, PAPER, 2.4)
 	ci.draw_line(c + Vector2(0, -8) * s, c + Vector2(0, -52) * s, INK, 2.4, true)
-	_shape(ci, _poly(_quad(c + Vector2(0, -50) * s, c + Vector2(22, -40) * s, c + Vector2(20, -20) * s), [c + Vector2(0, -20) * s]), BG, 2.4)
-	_shape(ci, _poly(_quad(c + Vector2(0, -44) * s, c + Vector2(-18, -36) * s, c + Vector2(-16, -20) * s), [c + Vector2(0, -20) * s]), BG, 2.4)
+	_shape(ci, _poly(_quad(c + Vector2(0, -50) * s, c + Vector2(22, -40) * s, c + Vector2(20, -20) * s), [c + Vector2(0, -20) * s]), PAPER, 2.4)
+	_shape(ci, _poly(_quad(c + Vector2(0, -44) * s, c + Vector2(-18, -36) * s, c + Vector2(-16, -20) * s), [c + Vector2(0, -20) * s]), PAPER, 2.4)
 	for i in 3:
 		var x := -38.0 + i * 20.0
 		ci.draw_polyline(_quad(c + Vector2(x, 12) * s, c + Vector2(x + 10, 18) * s, c + Vector2(x + 20, 12) * s), INK, 1.8, true)
@@ -1779,10 +1793,10 @@ func _serpent(ci: CanvasItem, c: Vector2, s: float, flip: bool) -> void:
 		if x0 > -10 and x0 < 0:
 			w = 36.0
 		var pts := _cubic(T.call(Vector2(x0, 10)), T.call(Vector2(x0, 10 - hh)), T.call(Vector2(x0 + w, 10 - hh)), T.call(Vector2(x0 + w, 10)), 12)
-		_shape(ci, pts, BG, 2.4)
+		_shape(ci, pts, PAPER, 2.4)
 	var head := _poly(_quad(T.call(Vector2(-90, 8)), T.call(Vector2(-96, -22)), T.call(Vector2(-116, -26))), _quad(T.call(Vector2(-116, -26)), T.call(Vector2(-142, -22)), T.call(Vector2(-136, -10))),
 		_quad(T.call(Vector2(-136, -10)), T.call(Vector2(-120, -14)), T.call(Vector2(-114, -4))), _quad(T.call(Vector2(-114, -4)), T.call(Vector2(-100, 4)), T.call(Vector2(-92, 18))))
-	_shape(ci, head, BG, 2.4)
+	_shape(ci, head, PAPER, 2.4)
 	ci.draw_circle(T.call(Vector2(-124, -16)), 2.0 * s, INK)
 	for i in 5:
 		var x := -110.0 + i * 40.0
@@ -2012,29 +2026,7 @@ static func _puff_tex() -> GradientTexture2D:
 # ---------------------------------------------------------------- variações dos elementos internos (15/11/2026)
 
 func _tree(ci: CanvasItem, kind: String, p: Vector2, s: float, r: RandomNumberGenerator) -> void:
-	_tree0(ci, kind, p, s, r, BG, INK)
-	_tree_hatch(ci, kind, p, s)
-
-
-## Gravura: sombra hachurada no lado direito da copa e no chão.
-func _tree_hatch(ci: CanvasItem, kind: String, p: Vector2, s: float) -> void:
-	var x := p.x
-	var y := p.y
-	match kind:
-		"d", "r":
-			for i in 4:
-				var a := Vector2(x + (1 + i * 2.2) * s, y - 21 * s + i * 1.5 * s)
-				ci.draw_line(a, a + Vector2(-3 * s, 9 * s - i * 1.2 * s), INK, 1.0, true)
-		"p", "f":
-			var h := 30.0 * s if kind == "f" else 22.0 * s
-			for i in 5:
-				var a := Vector2(x + 1.5 * s, y - 6 * s - h * (0.15 + i * 0.16))
-				ci.draw_line(a, a + Vector2(3.5 * s * (1.0 + i * 0.25), 3 * s), INK, 1.0, true)
-		"x":
-			return
-	for i in 3:
-		var g := Vector2(x + 3 * s + i * 3.5 * s, y + 1 + i * 0.6)
-		ci.draw_line(g, g + Vector2(7 * s - i * 1.5 * s, 0), INK, 1.0, true)
+	_tree0(ci, kind, p, s, r, PINE if kind in ["p", "f"] else LEAF, (PINE if kind in ["p", "f"] else LEAF).darkened(0.3))
 
 
 ## Montanha nas variações 1 a 4 (pico com ombros, ou nevada em triângulo).
@@ -2058,27 +2050,15 @@ func _mtn(ci: CanvasItem, x: float, y: float, w: float, h: float, snowy: bool, r
 		var tt := 1.0 - i / 4.0
 		cap.append(cap_l.lerp(cap_r, tt) + Vector2(0, 5.0 if i % 2 == 1 else -1.0))
 	cap.append(cap_l)
-	# gravura
-	_fill(ci, pts, BG)
-	var n := 13
-	for i in range(1, n):
-		var tt := float(i) / n
-		if snowy and tt < 0.36:
-			continue
-		var a := top.lerp(base, tt)
-		var b := top.lerp(right_edge, tt)
-		ci.draw_line(a, a.lerp(b, 0.92), INK, 1.0, true)
-	for i in 3:
-		var tt := 0.3 + i * 0.2
-		var a := top.lerp(Vector2(x - w, y), tt)
-		ci.draw_line(a + Vector2(4, 1), a + Vector2(9, 4), INK, 1.0, true)
+	# feltro chapado, com o lado da sombra mais escuro
+	_fill(ci, pts, MTN)
+	_fill(ci, shade, MTN.darkened(0.18))
+	if snowy:
+		_fill(ci, PackedVector2Array(Array(cap)), PAPER)
 	if snowy:
 		ci.draw_polyline(cap.slice(1), INK, 1.4, true)
 	ci.draw_line(top, base, INK, 1.4, true)
 	ci.draw_polyline(pts, INK, 2.6, true)
-	for i in 4:
-		var g := Vector2(x + w * 0.3 + i * 7.0, y + 2 + i)
-		ci.draw_line(g, g + Vector2(14 - i * 3, 0), INK, 1.0, true)
 
 
 func _hill_v(ci: CanvasItem, x: float, y: float, w: float, r: RandomNumberGenerator) -> void:
@@ -2087,10 +2067,8 @@ func _hill_v(ci: CanvasItem, x: float, y: float, w: float, r: RandomNumberGenera
 	for i in range(5, 11):
 		sh.append(_along(arc, i / 10.0))
 	sh.append(Vector2(x + w * 0.08, y))
-	_fill(ci, arc, BG)
-	for i in 5:
-		var a := _along(arc, 0.5 + i * 0.1)
-		ci.draw_line(a + Vector2(-1, 2), a + Vector2(-5, 9 - i), INK, 1.0, true)
+	_fill(ci, arc, HILL)
+	_fill(ci, sh, HILL.darkened(0.12))
 	ci.draw_polyline(arc, INK, 2.2, true)
 
 

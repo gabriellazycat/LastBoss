@@ -3,11 +3,14 @@ extends Control
 ## Menu principal (pele "Mapa aberto", maquete aprovada "Menu A · o menu é o mapa"): um mapa grande aberto sobre a mesa, cada opção é um lugar ligado por estradas tracejadas.
 ## Nova run = o covil (no centro, anel vermelho), Coleção = a biblioteca, Compêndio = a torre, Configurações = o
 ## moinho, Sair = o barco na costa; "Continuar run" = a estrada vermelha que chega ao covil (só com run salva).
-## O fundo desenhado (papel, estradas, bosques, rio, mar, rosa dos ventos, faixa do título vazia) vem pronto de
-## assets/ui/map/bg_menuA.png (tools/art/ui_kit/export_map_art.py); aqui ficam os lugares, os textos e os botões.
+## O fundo é uma colcha de feltro (26/11/2026), desenhada uma vez numa SubViewport com os mesmos traços e o mesmo
+## shader do mapa da rota (Minimap, map_cloth.gdshader): retalhos costurados, rio e mar de feltro azul, bosques,
+## montanhas, trilhas de areia com pesponto, rosa dos ventos e a faixa do título; aqui ficam os lugares, os textos
+## e os botões.
 
 const MAP := "res://assets/ui/map/"
-const M := 24.0   # margem do PNG em volta do papel
+const M := 24.0   # margem em volta do feltro (a mesa aparece nela)
+const BG_SIZE := Vector2(1688, 1008)
 # Lugares nas coordenadas do papel da maquete (1640x960): [id, desenho, chave do texto, chave da legenda, tamanho]
 const PLACES := [
 	["covil", "m-lair", "UI_MENU_COVIL", "UI_MAP_LAIR", 150.0, Vector2(846, 540)],   # o covil: roda de melhorias; a legenda mostra recorde e Almas
@@ -29,12 +32,16 @@ var badges := {}           # id -> selo com número, até o lugar ser visitado
 var balloons := {}         # id -> balão de fala sobre o lugar
 
 
+var _vp: SubViewport
+var _mm: Minimap          # só empresta os traços do mapa (árvores, montanhas, rio, rosa dos ventos); fora da árvore
+
+
 func build(villain_portrait: Texture2D) -> void:
 	var bg := TextureRect.new()
-	bg.texture = load(MAP + "bg_menuA.png")
+	bg.texture = _felt_bg()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	custom_minimum_size = bg.texture.get_size()
+	custom_minimum_size = BG_SIZE
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Título na faixa do fundo (faixa em 520,34 com 600 de largura).
@@ -192,3 +199,138 @@ func set_status(text: String) -> void:
 	var cap: Label = captions.get("covil")
 	if cap:
 		cap.text = text
+
+
+func _exit_tree() -> void:
+	if _mm != null:
+		_mm.free()
+		_mm = null
+
+
+# ---------------------------------------------------------------- fundo de feltro
+
+func _felt_bg() -> Texture2D:
+	_mm = Minimap.new()
+	_mm.fell = UiDiario.font("fell")
+	_mm.fell_it = UiDiario.font("fell_it")
+	_vp = SubViewport.new()
+	_vp.disable_3d = true
+	_vp.transparent_bg = true
+	_vp.size = Vector2i(BG_SIZE)
+	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var cv := Node2D.new()
+	cv.draw.connect(func(): _paint_bg(cv))
+	_vp.add_child(cv)
+	var post := ColorRect.new()
+	var sm := ShaderMaterial.new()
+	sm.shader = load("res://game/art/map_cloth.gdshader")
+	sm.set_shader_parameter("land", Minimap.BG)
+	sm.set_shader_parameter("thread", Minimap.PAPER)
+	sm.set_shader_parameter("cell", 230.0)
+	sm.set_shader_parameter("rect_size", BG_SIZE - Vector2(M, M) * 2.0)
+	sm.set_shader_parameter("radius", 26.0)
+	post.material = sm
+	post.position = Vector2(M, M)
+	post.size = BG_SIZE - Vector2(M, M) * 2.0
+	post.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_vp.add_child(post)
+	add_child(_vp)
+	return _vp.get_texture()
+
+
+func _paint_bg(ci: CanvasItem) -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = 4242
+	var o := Vector2(M, M)
+	var paper := Rect2(o, BG_SIZE - o * 2.0)
+	# sombra na mesa e o retalho grande de feltro, de cantos redondos
+	var sh := StyleBoxFlat.new()
+	sh.bg_color = Color(0.02, 0.03, 0.08, 0.45)
+	sh.set_corner_radius_all(30)
+	sh.shadow_color = Color(0.02, 0.03, 0.08, 0.35)
+	sh.shadow_size = 14
+	ci.draw_style_box(sh, Rect2(paper.position + Vector2(4, 8), paper.size))
+	var base := StyleBoxFlat.new()
+	base.bg_color = Minimap.BG
+	base.set_corner_radius_all(26)
+	ci.draw_style_box(base, paper)
+	# mar à direita, com a costa tremida
+	var coast: Array = []
+	var y := paper.position.y
+	while y <= paper.end.y + 1.0:
+		coast.append(Vector2(o.x + 1430 + sin(y / 70.0) * 12.0 + sin(y / 23.0) * 4.0, y))
+		y += 24.0
+	var sea := PackedVector2Array(coast)
+	sea.append(Vector2(paper.end.x, paper.end.y))
+	sea.append(Vector2(paper.end.x, paper.position.y))
+	var sea_sb := StyleBoxFlat.new()
+	sea_sb.bg_color = Minimap.SEA
+	sea_sb.set_corner_radius_all(26)
+	ci.draw_style_box(sea_sb, Rect2(Vector2(o.x + 1380, paper.position.y), Vector2(paper.end.x - o.x - 1380, paper.size.y)))
+	var land := PackedVector2Array([Vector2(o.x + 1380, paper.position.y)])
+	land.append_array(sea.slice(0, coast.size()))
+	land.append(Vector2(o.x + 1380, paper.end.y))
+	ci.draw_colored_polygon(land, Minimap.BG)
+	ci.draw_polyline(Minimap._smooth(coast, false, 3), Minimap.INK, 2.6, true)
+	for i in range(1, 3):
+		var wl: Array = []
+		for q in coast:
+			wl.append(q + Vector2(14 * i, 0))
+		_mm._dashed(ci, Minimap._smooth(wl, false, 3), Color(Minimap.PAPER, 0.55 - i * 0.15), 2.0, 9.0, 8.0, i * 4.0)
+	_mm._serpent(ci, o + Vector2(1530, 440), 0.55, false)
+	# rio à esquerda, do alto até embaixo
+	var rv: Array = []
+	for i in 9:
+		var t := i / 8.0
+		rv.append(o + Vector2(300 + sin(t * 5.0) * 28.0 - t * 40.0, 2 + t * 956))
+	_mm._river(ci, Minimap._wob(rv, r, 6.0), r)
+	# trilhas de areia com pesponto do covil a cada lugar; a vermelha vem da bandeira de continuar
+	var hub := o + Vector2(846, 540)
+	for pl in PLACES:
+		if pl[0] == "covil":
+			continue
+		var to: Vector2 = o + pl[5]
+		var d := (to - hub)
+		var a := hub + d.normalized() * 90.0
+		var b := to - d.normalized() * (float(pl[4]) * 0.5 + 22.0)
+		var mid := (a + b) * 0.5 + Vector2(-d.y, d.x).normalized() * 26.0
+		var path := Minimap._quad(a, mid, b, 16)
+		ci.draw_polyline(path, Color("c9a46a"), 16.0, true)
+		ci.draw_polyline(path, Color("b08a55"), 2.0, true)
+		_mm._dashed(ci, path, Minimap.PAPER, 2.4, 10.0, 8.0, 0.0)
+	var red := Minimap._quad(o + Vector2(846, 920), o + Vector2(840, 780), hub + Vector2(0, 80), 16)
+	ci.draw_polyline(red, Color("c9a46a"), 16.0, true)
+	_mm._dashed(ci, red, Minimap.ACC, 4.0, 12.0, 8.0, 0.0)
+	# bosques, montanhas e colinas (os mesmos desenhos do mapa)
+	var groves := [[Vector2(180, 300), 7], [Vector2(1060, 270), 3], [Vector2(700, 820), 4], [Vector2(560, 470), 3], [Vector2(1180, 560), 3], [Vector2(150, 520), 5]]
+	for gv in groves:
+		for i in int(gv[1]):
+			var p: Vector2 = o + gv[0] + Vector2(r.randf_range(-70, 70), r.randf_range(-40, 40))
+			_mm._tree(ci, ["d", "r", "p", "f"][r.randi() % 4], p, r.randf_range(1.6, 2.1), r)
+	_mm._mtn(ci, o.x + 1180, o.y + 260, 80, 90, false, r)
+	_mm._mtn(ci, o.x + 1300, o.y + 270, 95, 120, true, r)
+	_mm._mtn(ci, o.x + 1390, o.y + 275, 60, 70, false, r)
+	for hl in [Vector2(220, 900), Vector2(320, 905), Vector2(1170, 890), Vector2(1270, 900)]:
+		_mm._hill_v(ci, o.x + hl.x, o.y + hl.y, 70, r)
+	_mm._lake(ci, o + Vector2(1080, 760), 60, 26, r)
+	_mm._compass(ci, o + Vector2(1515, 150))
+	# faixa do título: pontas ocre e placa creme costurada (os textos ficam por cima, em _place)
+	var c := Vector2(o.x + 820, o.y + 109)
+	var band := PackedVector2Array([c + Vector2(-330, -34), c + Vector2(330, -34), c + Vector2(330, -24), c + Vector2(372, -24), c + Vector2(352, 14), c + Vector2(372, 52),
+		c + Vector2(330, 52), c + Vector2(330, 62), c + Vector2(-330, 62), c + Vector2(-330, 52), c + Vector2(-372, 52), c + Vector2(-352, 14), c + Vector2(-372, -24), c + Vector2(-330, -24)])
+	ci.draw_colored_polygon(band, Color("c9a46a"))
+	var plate := StyleBoxFlat.new()
+	plate.bg_color = Minimap.PAPER
+	plate.set_corner_radius_all(14)
+	plate.shadow_color = Color(0.05, 0.07, 0.12, 0.25)
+	plate.shadow_size = 6
+	plate.shadow_offset = Vector2(0, 3)
+	var pr := Rect2(c + Vector2(-300, -75), Vector2(600, 150))
+	ci.draw_style_box(plate, pr)
+	var q := pr.grow(-9.0)
+	_mm._dashed(ci, PackedVector2Array([q.position, Vector2(q.end.x, q.position.y), q.end, Vector2(q.position.x, q.end.y), q.position]), Color("8a6a50"), 2.2, 9.0, 7.0, 0.0)
+	# costura em volta do retalho grande
+	var e := paper.grow(-14.0)
+	var rim := PackedVector2Array([e.position, Vector2(e.end.x, e.position.y), e.end, Vector2(e.position.x, e.end.y), e.position])
+	_mm._dashed(ci, Minimap._offs(Vector2(0, 1.5), Array(rim)), Color(0, 0, 0, 0.3), 3.0, 14.0, 9.0, 0.0)
+	_mm._dashed(ci, rim, Minimap.PAPER, 3.0, 14.0, 9.0, 0.0)

@@ -149,7 +149,9 @@ Cada sistema tem um visual só. As variantes que não foram escolhidas saíram d
 - **Interface "Mapa aberto" em feltro:**
   - Painéis e botões em retalhos de feltro com costura tracejada, nas mesmas margens do kit (`tools/art/ui_kit/make_felt_kit.py`; o kit fica em `game/ui_parch.gd`). Barras de feltro, versos das pilhas em feltro costurado com botão e marcas no chão em costura (`ring.gdshader`). Vida, experiência e "bom" nas cores das cartas.
   - HUD na disposição 7 (`game/hud.gd`): missão no canto, vida do grupo no alto, elixir na coluna direita, sem minimapa fixo e sem relógio.
-  - O mapa (M) é o minimapa em gravura (`game/minimap.gd`), com os desenhos Nórdicos (`game/campaign_art.gd`).
+  - O mapa (M) é uma colcha de feltro (`game/minimap.gd`): retalhos sálvia e oliva costurados como o chão do jogo (`game/art/map_cloth.gdshader`), mar e rios de feltro azul, copas e montanhas em feltro chapado, névoa clara nos atos que ainda não chegaram, locais em botões creme com os desenhos Nórdicos a tinta (`game/campaign_art.gd`) e as placas nos painéis de feltro do kit.
+  - O menu principal (`game/map_menu.gd`) é o mesmo mapa em feltro, desenhado no jogo com os traços do Minimap: o covil no centro, trilhas de areia com pesponto até cada lugar, a trilha vermelha de continuar, a faixa do título e os lugares em botões de feltro (`--mapicons` gera os PNG de `assets/ui/map`).
+  - A mesa do menu (`game/desk_scene.gd`) é uma toalha de feltro azul-noite com pesponto creme (`game/art/desk_felt.gdshader`), à luz fria da hora azul e das velas; os objetos são de cor chapada, sem pinceladas.
 - **Cartas:**
   - Arte gerada por IA em guache leve, um pincel só (skill `cartas-ia`). Os arquivos ficam em `assets/cards/` e o mapa id → arte em `data/card_art.json`.
   - Moldura em `game/card_mold.gd`.

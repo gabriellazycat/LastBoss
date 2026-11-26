@@ -68,9 +68,10 @@ func _mood(on: bool) -> void:
 		saved = {"bg": env.background_mode, "bgc": env.background_color, "amb": env.ambient_light_color, "ambe": env.ambient_light_energy,
 			"fog": env.fog_enabled, "vfog": env.volumetric_fog_enabled, "fov": cam.fov if cam else 40.0, "exp": env.tonemap_exposure}
 		env.background_mode = Environment.BG_COLOR
-		env.background_color = Color(0.012, 0.008, 0.006)
-		env.ambient_light_color = Color(0.55, 0.42, 0.32)
-		env.ambient_light_energy = 0.32
+		# hora azul (26/11/2026): quarto azul-noite, ambiente frio e as velas aquecendo o feltro
+		env.background_color = Color(0.01, 0.014, 0.03)
+		env.ambient_light_color = Color(0.38, 0.5, 0.76)
+		env.ambient_light_energy = 0.42
 		env.fog_enabled = false
 		env.volumetric_fog_enabled = false
 		env.tonemap_exposure = 1.1
@@ -100,7 +101,7 @@ func _mood(on: bool) -> void:
 
 
 func _mat(col: Color, rough := 0.8, metal := 0.0) -> Material:
-	# Mundo pintado: os objetos da mesa também levam o guache dos materiais.
+	# Cor chapada, sem pinceladas (26/11/2026: nada de manchas no mundo 3D).
 	var pm := ShaderMaterial.new()
 	pm.shader = preload("res://game/art/paint_std.gdshader")
 	pm.set_shader_parameter("albedo", col)
@@ -123,18 +124,21 @@ func _mesh(mesh: Mesh, mat: Material, pos: Vector3, rot := Vector3.ZERO, scl := 
 func _table() -> void:
 	var top := BoxMesh.new()
 	top.size = Vector3(3.2, 0.09, 2.2)
+	# Toalha de feltro azul-noite com pesponto creme perto da borda (26/11/2026).
 	var wm := ShaderMaterial.new()
-	wm.shader = preload("res://game/art/desk_wood.gdshader")
+	wm.shader = preload("res://game/art/desk_felt.gdshader")
 	wm.set_shader_parameter("origin", ORIGIN)
+	wm.set_shader_parameter("half_size", Vector2(1.6, 1.1))
+	wm.set_shader_parameter("center", Vector2(0, -0.2))
 	_mesh(top, wm, Vector3(0, -0.045, -0.2))
 	# Quarto escuro em volta (o céu do bosque não pode aparecer).
 	var room := BoxMesh.new()
 	room.size = Vector3(9, 5, 9)
 	room.flip_faces = true
-	_mesh(room, _mat(Color(0.03, 0.022, 0.018), 1.0), Vector3(0, 1.0, -1.0))
+	_mesh(room, _mat(Color(0.012, 0.016, 0.035), 1.0), Vector3(0, 1.0, -1.0))
 	var moon := DirectionalLight3D.new()
 	moon.light_color = Color(0.55, 0.6, 0.85)
-	moon.light_energy = 0.18
+	moon.light_energy = 0.3
 	moon.rotation_degrees = Vector3(-60, -35, 0)
 	add_child(moon)
 

@@ -1580,7 +1580,7 @@ func _g_shots() -> void:
 	get_tree().quit(0)
 
 
-## --mapicons=1: desenha no traço Nórdico (CampaignArt) os ícones das construções do menu, da
+## --mapicons=1: desenha no traço Nórdico (CampaignArt) os ícones das construções do menu (em botões de feltro), da
 ## loja e do fim da run e salva em assets/ui/map/ como PNG (icon_<s>.png, node_<s>.png e node_<s>_hot.png, com o
 ## anel do lugar); o jogo prefere o PNG ao SVG antigo (CampaignArt.map_tex).
 func _map_icons() -> void:
@@ -1603,9 +1603,13 @@ func _map_icons() -> void:
 					a.icon(kind, Transform2D.IDENTITY, Vector2(128, 136), 2.85, 7)
 					return
 				var hot := m == "node_hot"
-				cv.draw_circle(Vector2(120, 120), 112.0, Color("e8d6a8"))
-				cv.draw_arc(Vector2(120, 120), 112.0, 0.0, TAU, 96, Color("a8323a") if hot else CampaignArt.INK, 10.0 if hot else 8.0, true)
-				cv.draw_arc(Vector2(120, 120), 94.0, 0.0, TAU, 96, CampaignArt.INK, 4.0, true)
+				# botão de feltro creme com costura (26/11/2026); o do lugar em foco ganha o aro terracota
+				cv.draw_circle(Vector2(120, 123), 112.0, Color(0.05, 0.07, 0.12, 0.3))
+				cv.draw_circle(Vector2(120, 120), 112.0, Minimap.PAPER)
+				cv.draw_arc(Vector2(120, 120), 108.0, 0.0, TAU, 96, Minimap.ACC if hot else Color("b8a07e"), 9.0 if hot else 4.0, true)
+				for i in 40:
+					var a0 := TAU * i / 40.0
+					cv.draw_arc(Vector2(120, 120), 95.0, a0, a0 + TAU / 40.0 * 0.55, 6, Color("8a6a50"), 3.0, true)
 				a.icon(kind, Transform2D.IDENTITY, Vector2(120, 124), 2.05, 7))
 			vp.add_child(cv)
 			add_child(vp)
