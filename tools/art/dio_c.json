@@ -3,8 +3,8 @@
 	"out": "res://assets/models/dio/",
 	"units": {
 		"rat": [
-			"res://tools/art/out/dio_b/rat.glb",
-			"@pulltoy",
+			"res://tools/art/out/dio_c/rat.glb",
+			"@quad",
 			"",
 			0.75,
 			[
@@ -14,8 +14,8 @@
 			]
 		],
 		"rat_horde": [
-			"res://tools/art/out/dio_b/rat.glb",
-			"@pulltoy",
+			"res://tools/art/out/dio_c/rat.glb",
+			"@quad",
 			"",
 			0.66,
 			[
@@ -25,18 +25,18 @@
 			]
 		],
 		"rat_brute": [
-			"res://tools/art/out/dio_b/rat.glb",
-			"@pulltoy",
+			"res://tools/art/out/dio_c/rat.glb",
+			"@quad",
 			"",
 			1.15,
 			[
-				0.86,
-				0.82,
-				0.9
+				0.85,
+				0.8,
+				0.86
 			]
 		],
 		"wolf_pack": [
-			"res://tools/art/out/dio_b/wolf.glb",
+			"res://tools/art/out/dio_c/wolf.glb",
 			"@quad",
 			"",
 			1.45,
@@ -49,27 +49,27 @@
 	},
 	"props": {
 		"tree_s5": [
-			"res://tools/art/out/dio_b/tree_s5.glb",
+			"res://tools/art/out/dio_c/tree_s5.glb",
 			5.6
 		],
 		"tree_round_s5": [
-			"res://tools/art/out/dio_b/tree_round_s5.glb",
+			"res://tools/art/out/dio_c/tree_round_s5.glb",
 			4.6
 		],
 		"tree_s6": [
-			"res://tools/art/out/dio_b/tree_s6.glb",
+			"res://tools/art/out/dio_c/tree_s6.glb",
 			6.0
 		],
 		"tree_round_s6": [
-			"res://tools/art/out/dio_b/tree_round_s6.glb",
+			"res://tools/art/out/dio_c/tree_round_s6.glb",
 			5.4
 		],
 		"bush": [
-			"res://tools/art/out/dio_b/bush.glb",
+			"res://tools/art/out/dio_c/bush.glb",
 			1.3
 		],
 		"rock": [
-			"res://tools/art/out/dio_b/rock.glb",
+			"res://tools/art/out/dio_c/rock.glb",
 			1.0
 		],
 		"mushroom": [
@@ -97,24 +97,24 @@
 			1.0
 		],
 		"tavern": [
-			"res://tools/art/out/dio_b/tavern.glb",
+			"res://tools/art/out/dio_c/tavern.glb",
 			6.6,
 			true
 		],
 		"house": [
-			"res://tools/art/out/dio_b/house.glb",
+			"res://tools/art/out/dio_c/house.glb",
 			4.4,
 			true
 		],
 		"house_b": [
-			"res://tools/art/out/dio_b/house_b.glb",
+			"res://tools/art/out/dio_c/house_b.glb",
 			4.4,
 			true
 		]
 	},
 	"heroes": {
 		"hero_escudeiro": [
-			"res://tools/art/out/dio_b/knight.glb",
+			"res://tools/art/out/dio_c/knight.glb",
 			"@biped"
 		]
 	}

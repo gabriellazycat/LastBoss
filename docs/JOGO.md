@@ -154,18 +154,18 @@ Cada sistema tem um visual só. As variantes que não foram escolhidas saíram d
   - Arte gerada por IA em guache leve, um pincel só (skill `cartas-ia`). Os arquivos ficam em `assets/cards/` e o mapa id → arte em `data/card_art.json`.
   - Moldura em `game/card_mold.gd`.
   - O efeito de melhoria da carta fica em `game/card_fx.gd`.
-- **Mundo em diorama ("brinquedo de madeira ao pôr do sol", branch `diorama-b`, 26/11/2026):** a estrada é um tabuleiro de tábuas pintadas com brinquedos de torno em cima (`game/art/diorama.gd`).
-  - **Câmera:** lente de 30° a 52° para baixo, com a distância corrigida para mostrar a mesma área (`Diorama.cam_offset`), e tilt-shift forte por profundidade de campo na qualidade alta (`Diorama.focus`).
-  - **Luz:** sol dourado baixo com sombras longas, luz quente rebatida e verniz de laca (`DIO` em `paint.gdshaderinc`: `dio_diffuse` e `dio_specular`; a mesa do menu e as cartas não definem `DIO`), AgX, SSAO e SSIL, sem névoa, fundo em degradê radial (`dio_backdrop.gdshader`). Vale nos 3 atos; o ato 1 é o afinado.
-  - **Chão:** no ato 1, tábuas pintadas de verde com emendas e tinta gasta (`ground_tela.gdshader`, estilo 6), estrada de madeira crua (`road_tela`, estilo 6) e sem tufos de grama.
-  - **Cenário:** regiões por ato, vento e bosques (`game/art/cenario.gd`, `mundo_vivo.gd`). No ato 1, árvores de torno (esfera, cone, ovo), arbustos de bolas e seixos (`assets/models/dio`); nos atos 2 e 3 ficam as pinceladas `arv5`/`arv6`.
-  - **Taverna e casas da disputa:** blocos de brinquedo pintados com telhado em prisma (`tools/art/blender_dio/buildings.py`, estilo b); a frente da taverna vira para a estrada e a câmera.
+- **Mundo em diorama ("feltro e lanternas ao anoitecer", branch `diorama-c`, 26/11/2026):** a estrada é uma colcha de retalhos de feltro costurados, com bichos e casas de lã (`game/art/diorama.gd`).
+  - **Câmera:** lente de 30° a 54° para baixo, com a distância corrigida para mostrar a mesma área (`Diorama.cam_offset`), e tilt-shift forte por profundidade de campo na qualidade alta (`Diorama.focus`).
+  - **Luz:** hora azul (luar fraco e frio, céu fundo) e as luzes quentes fazendo o aconchego: lanternas, locais e a luz do herói 3,4x mais fortes e 1,35x mais largas (`Diorama.LIGHT_K`, `LIGHT_R`), janelas acesas e brilho aditivo. Feltro: penugem nas bordas e fibra no material (`DIO` em `paint.gdshaderinc`: `dio_fuzz`, `dio_fiber`; a mesa do menu e as cartas não definem `DIO`). AgX, SSAO e SSIL, fundo em degradê radial (`dio_backdrop.gdshader`). Vale nos 3 atos; o ato 1 é o afinado.
+  - **Chão:** no ato 1, retalhos de feltro verde com emendas e pesponto tracejado (`ground_tela.gdshader`, estilo 7), estrada de feltro bege com pesponto na borda (`road_tela`, estilo 7) e sem tufos de grama.
+  - **Cenário:** regiões por ato, vento e bosques (`game/art/cenario.gd`, `mundo_vivo.gd`). No ato 1, árvores, arbustos e pedras de lã fofos e irregulares (`assets/models/dio`); nos atos 2 e 3 ficam as pinceladas `arv5`/`arv6`.
+  - **Taverna e casas da disputa:** casinhas fofas de feltro com telhado de palha e janelas bem acesas (`tools/art/blender_dio/buildings.py`, estilo c); a frente da taverna vira para a estrada e a câmera.
   - **Arena:** cripta (`arena_look.gd`).
   - **Efeitos:** golpes em `golpes.gd`, efeitos em `fx2.gd`.
 - **Modelos:**
   - Monstros e estruturas em miniaturas de pincel seco (`assets/models/g_n_a` e as texturas `g_tex/dry_n`), mais os modelos feitos à mão de 21/11 (`m2_a`, `v2`). O código fica em `game/art/looks.gd` e `models.gd`.
-  - **Diorama** (`assets/models/dio`, passa na frente de todos): rato, Ratazana e Horda de Ratos (rato de puxar com rodas), Matilha de Lobos (lobo de madeira) e as peças de cenário, feitos em partes no Blender (`tools/art/blender_dio/characters.py`) e animados pelo `tools/art/import_dio.gd` (animação procedural gravada em textura) com a lista `tools/art/dio_b.json`; créditos em `assets/models/dio/CREDITOS.md`.
-  - Heróis com modelos KayKit (`assets/models/cc0`), menos o escudeiro, que é um boneco de pino de madeira (`assets/models/dio/hero_escudeiro.scn`, `Diorama.HERO_SCENE`).
+  - **Diorama** (`assets/models/dio`, passa na frente de todos): rato, Ratazana e Horda de Ratos (ratinho de feltro), Matilha de Lobos (lobo de feltro) e as peças de cenário, feitos em partes no Blender (`tools/art/blender_dio/characters.py`) e animados pelo `tools/art/import_dio.gd` (animação procedural gravada em textura) com a lista `tools/art/dio_c.json`; créditos em `assets/models/dio/CREDITOS.md`.
+  - Heróis com modelos KayKit (`assets/models/cc0`), menos o escudeiro, que é um boneco de feltro (`assets/models/dio/hero_escudeiro.scn`, `Diorama.HERO_SCENE`).
   - **Regra dos modelos novos:** usar as cores da arte da carta e fazer olhos sem pupila.
 - **Áudio** (`game/audio.gd`; tudo CC0, com licenças em `assets/audio/LICENSES.txt`):
   - Música por contexto (menu, estrada, arena), trocada com crossfade.

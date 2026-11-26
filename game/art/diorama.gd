@@ -1,21 +1,24 @@
 class_name Diorama
 extends RefCounted
-## Versão B do diorama (branch diorama-b, 26/11/2026): "brinquedo de madeira ao pôr do sol". O mundo é um tabuleiro
-## de tábuas pintadas com brinquedos de torno em cima: herói de pino, rato de puxar com rodas, lobo de madeira, casas de
-## bloco. Luz dourada baixa com sombras longas, verniz (brilho largo de laca, dio_specular), tilt-shift mais forte.
+## Versão C do diorama (branch diorama-c, 26/11/2026): "feltro e lanternas ao anoitecer". O mundo é uma colcha de
+## retalhos de feltro costurados, com bichos e casas de lã: hora azul, céu fundo, e as luzes quentes (lanternas,
+## janelas, a luz do herói) fazem o aconchego. Fibra e brilho de veludo nas bordas (dio_fuzz, dio_fiber).
 ## Vale para todos os atos (o ato 1 é o afinado); chamado pelo main depois do look de cada ato.
 
 const FOV := 30.0                 # lente longa: a perspectiva achata como numa foto de miniatura
-const PITCH := 52.0               # graus para baixo
+const PITCH := 54.0
+## Luzes pontuais (lanternas, locais, herói): mais fortes e largas à noite.
+const LIGHT_K := 3.4
+const LIGHT_R := 1.35               # graus para baixo
 ## A câmera do jogo foi pensada com FOV 40: a distância cresce para mostrar a mesma área no chão.
 const DIST_K := 1.36              # tan(20°) / tan(15°)
 const SKY_SHADER := preload("res://game/art/dio_backdrop.gdshader")
 
 # Sol, ambiente e céu por ato (o 1 é a maquete de meio da manhã; 2 e 3 só puxam a cor do ato).
 const ACTS := [
-	{"sun_rot": Vector3(-26, -62, 0), "sun_col": Color(1.0, 0.78, 0.55), "sun_e": 1.75,
-		"amb": Color(0.74, 0.64, 0.8), "amb_e": 0.62, "top": Color(0.4, 0.33, 0.58), "hor": Color(1.0, 0.7, 0.52),
-		"haze": Color(1.0, 0.82, 0.62), "sat": 1.1},
+	{"sun_rot": Vector3(-38, 150, 0), "sun_col": Color(0.62, 0.7, 1.0), "sun_e": 0.7,
+		"amb": Color(0.46, 0.5, 0.82), "amb_e": 0.6, "top": Color(0.08, 0.09, 0.22), "hor": Color(0.32, 0.3, 0.52),
+		"haze": Color(0.42, 0.36, 0.55), "sat": 1.08},
 	{"sun_rot": Vector3(-34, -55, 0), "sun_col": Color(1.0, 0.84, 0.66), "sun_e": 1.3,
 		"amb": Color(0.82, 0.74, 0.7), "amb_e": 0.7, "top": Color(0.5, 0.55, 0.75), "hor": Color(0.95, 0.8, 0.66),
 		"haze": Color(0.96, 0.84, 0.7), "sat": 1.12},
@@ -85,12 +88,12 @@ static func apply_env(env: Environment, sun: DirectionalLight3D, rim: Directiona
 	env.ambient_light_energy = A["amb_e"]
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 0.97
-	env.glow_intensity = 0.7
-	env.glow_strength = 1.1
-	env.glow_bloom = 0.1
-	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
-	env.glow_hdr_threshold = 0.85
+	env.tonemap_exposure = 1.12
+	env.glow_intensity = 0.85
+	env.glow_strength = 1.15
+	env.glow_bloom = 0.12
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+	env.glow_hdr_threshold = 0.75
 	env.adjustment_enabled = true
 	env.adjustment_contrast = 1.08
 	env.adjustment_brightness = 1.0
@@ -118,7 +121,7 @@ static func apply_env(env: Environment, sun: DirectionalLight3D, rim: Directiona
 ## Vinheta da tela: leve e quente (a de antes era roxa a 0,82 e escurecia a maquete).
 static func vignette_code() -> String:
 	return "shader_type canvas_item;
-void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.95, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.22, 0.1, 0.12, v * 0.32); }"
+void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.95, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.03, 0.03, 0.1, v * 0.42); }"
 
 
 # ---------------------------------------------------------------- modelos
@@ -126,9 +129,9 @@ void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.95, lengt
 ## Modelos do diorama (tools/art/import_dio.gd + tools/art/dio_a.json): cor nos vértices, sem atlas. Passam na frente
 ## das peças de sempre em Models.prop, GroundLooks.prop_mesh, Arvores (ato 1) e Looks.unit_mesh.
 const DIR := "res://assets/models/dio/"
-## Tinta do herói: o escudeiro de madeira já vem pintado.
+## Tinta do herói: o escudeiro de feltro já vem colorido.
 const HERO_TINT := Color(1.0, 1.0, 1.0)
-## Escudeiro de madeira (tools/art/blender_dio/characters.py, partes animadas pelo import_dio "@biped").
+## Escudeiro de feltro (tools/art/blender_dio/characters.py, partes animadas pelo import_dio "@biped").
 const HERO_SCENE := "res://assets/models/dio/hero_escudeiro.scn"
 static var _cache: Dictionary = {}
 

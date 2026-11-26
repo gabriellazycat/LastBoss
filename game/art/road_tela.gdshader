@@ -162,6 +162,14 @@ void fragment() {
 		vec3 t1 = a.z < 0.3 ? vec3(1.08, 1.04, 0.92) : (a.z < 0.6 ? vec3(0.94, 0.96, 1.03) : vec3(1.05));
 		c = mix(c, c * t1, a.y);
 	}
+	if (estilo == 7) {
+		// Faixa de feltro (diorama C): fibra e pesponto tracejado junto da borda.
+		float fib = vnoise(p * 8.0) * 0.6 + vnoise(p * 21.0 + 5.0) * 0.4;
+		c *= 0.92 + fib * 0.14;
+		float dash = step(0.5, fract(UV.y * 2.4));
+		float st = (1.0 - smoothstep(0.04, 0.09, abs(across - 2.75))) * dash;
+		c = mix(c, vec3(0.96, 0.92, 0.82), st * 0.85);
+	}
 	if (estilo == 6) {
 		// Madeira crua (diorama B): veio ao longo da estrada e linhas de tábua.
 		float g1 = vnoise(vec2(UV.x * 6.0, UV.y * 0.35)) * 0.6 + vnoise(vec2(UV.x * 14.0, UV.y * 0.8)) * 0.4;

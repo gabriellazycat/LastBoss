@@ -178,6 +178,38 @@ void fragment() {
 	}
 	col = mix(col, dcol, dirt * 0.6);   // relva gasta, nunca a cor cheia da estrada
 	col = mix(col, mix(col, rcol * 0.72, 0.55), rock);   // cascalho: pedra misturada à relva, não uma placa clara
+	if (estilo == 7) {
+		// Feltro (diorama C): colcha de retalhos verdes em células, cada retalho num tom, costura tracejada perto da
+		// borda e fibra miúda. A célula é a de Voronoi (distância à borda ~ F2 - F1).
+		vec2 q = w * 0.16;
+		vec2 c0 = floor(q);
+		float f1 = 9.0;
+		float f2 = 9.0;
+		vec2 id = vec2(0.0);
+		for (int j = -1; j <= 1; j++) {
+			for (int i = -1; i <= 1; i++) {
+				vec2 cell = c0 + vec2(float(i), float(j));
+				vec2 pt = cell + 0.5 + (vec2(hash(cell + 1.3), hash(cell + 7.9)) - 0.5) * 0.85;
+				float d = length(q - pt);
+				if (d < f1) {
+					f2 = f1;
+					f1 = d;
+					id = cell;
+				} else if (d < f2) {
+					f2 = d;
+				}
+			}
+		}
+		float edge_d = (f2 - f1) / 0.16;
+		float t = hash(id + 2.2);
+		col = mix(c_grass, c_grass2, t) * (0.9 + hash(id + 5.1) * 0.18);
+		float fib = vnoise(p * 9.0) * 0.6 + vnoise(p * 23.0 + 3.0) * 0.4;
+		col *= 0.92 + fib * 0.14;
+		col *= mix(0.62, 1.0, smoothstep(0.02, 0.12, edge_d));
+		float dash = step(0.45, fract(dot(p, vec2(0.7, 0.7)) * 2.2));
+		float stitch = (1.0 - smoothstep(0.03, 0.07, abs(edge_d - 0.28))) * dash;
+		col = mix(col, vec3(0.93, 0.88, 0.74), stitch * 0.8);
+	}
 	if (estilo == 6) {
 		// Brinquedo de madeira (diorama B): o chão é um tabuleiro de tábuas pintadas de verde. Tábuas de 1,6 m ao
 		// longo de x, emendas finas e escuras, tom de cada tábua, veio da madeira aparecendo por baixo da tinta e

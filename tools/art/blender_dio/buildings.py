@@ -159,7 +159,7 @@ def export(name):
     print("dio-build:", name)
 
 
-WIN = (PAL["win"], 0.72)   # alfa 0,72: brilho quente na janela
+WIN = (PAL["win"], 0.72 if STYLE != "c" else 0.45)   # alfa 0,72: brilho quente na janela
 
 
 def window(x, y, z, w, h, face_y):

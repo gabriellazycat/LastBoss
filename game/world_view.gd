@@ -216,8 +216,9 @@ func _mi(mesh: Mesh, pos: Vector3, mat: Material = null, rot_y := 0.0) -> MeshIn
 func _light(pos: Vector3, col: Color, energy: float, rng_m: float) -> OmniLight3D:
 	var l := OmniLight3D.new()
 	l.light_color = col
-	l.light_energy = energy
-	l.omni_range = rng_m
+	l.light_energy = energy * Diorama.LIGHT_K
+	l.omni_range = rng_m * Diorama.LIGHT_R
+	l.omni_attenuation = 1.2
 	l.position = pos
 	l.light_volumetric_fog_energy = 0.2
 	return l
@@ -2002,7 +2003,7 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	for hm in mats:
 		hm.set_shader_parameter("emission_boost", 0.0 if h.petrify_t > 0.0 else glow)
 		hm.set_shader_parameter("flash", fl)
-	hero_light.light_energy = 1.0 + h.level * 0.06
+	hero_light.light_energy = (1.0 + h.level * 0.06) * Diorama.LIGHT_K
 	fireflies.position = p
 	if presence != null:
 		presence.track(hero_root, h.cls(), true)
