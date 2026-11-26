@@ -16,16 +16,20 @@ O jogador é o **vilão**, que defende o próprio covil contra uma fila de grupo
 Fluxo das telas:
 
 ```
-Menu -> Covil (árvore radial) <-> Biblioteca -> Escolher vilão -> Run -> Fim da run -> Covil
+Menu -> Covil (árvore radial) -> Escolher vilão -> Run -> Fim da run -> Menu (abre o Covil sozinho se dá para comprar algo)
 ```
 
-O menu (`game/map_menu.gd`) tem Continuar, Covil, Biblioteca, Compêndio, Tutorial, Configurações e Sair. O tutorial é a fase 0 de `data/campaign.json`: 2 parties de escudeiro, sem Almas nem desafios.
+O menu (`game/map_menu.gd`) tem Continuar, Covil, Biblioteca, Compêndio, Tutorial, Configurações e Sair. O lugar Covil abre a árvore de melhorias; "Começar run" dela leva à escolha de vilão, onde o clique só seleciona e o botão Começar inicia a run.
+- **Volta da run:** as Almas contam até o saldo. Balões no Covil ("X Almas, N melhorias compráveis") e na Biblioteca ("N cartas novas") e selos com número que ficam até o lugar ser visitado (`MetaSave`: `almas_shown`, `covil_new`, `lib_seen`). Se há algo comprável, a árvore abre sozinha. As Almas têm cor própria (`UiParch.SOUL`), diferente do roxo do elixir. O tutorial é a fase 0 de `data/campaign.json`: 2 parties de escudeiro, sem Almas nem desafios.
 
 ## 2. A run
 
 - **Uma fase de 15 parties** numa fila fixa (`data/campaign.json`, fase 1). Os tamanhos são 1, 1, 2, 2, 2, 3, 3, 3, 3 e depois 4 seis vezes. As classes entram aos poucos; da party 10 em diante as 8 se misturam.
 - **Força:** a party 1 tem `hp_mult` 2,8 e `damage_mult` 1,0. Cada party seguinte multiplica os dois por `rules.party.step` = 1,17. A vida total da party é dividida entre os membros.
-- **3 atos de estrada, depois a arena.** As estradas medem 500, 800 e 1100 m (`rules.acts[].road`).
+- **3 atos de estrada, depois a arena.** As estradas medem 340, 544 e 748 m, com 7 a 8 fileiras por ato (`rules.acts[].road`).
+  - **O mundo é contínuo:** o cenário dos atos anteriores fica no mapa, estático (sem luz, partícula nem animação; cenário pequeno com `visibility_range` de 300 m). O castelo do covil já está visível no começo do ato 3.
+  - No fim de cada ato a velocidade do jogo volta a 1×.
+  - Unidades a mais de 150 m do herói que perseguem somem (`rules.sim.despawn_distance`).
   - **Estrada** (`sim/road.gd`): ramificada em fileiras. Nas bifurcações o jogador escolhe a rota (`Sim.choose_route`). O mapa é o minimapa em gravura, aberto com M.
   - **Rios** (`sim/rivers.gd`): 1 a 2 por ato, no máximo 5 pontes. O rio só cruza a estrada em locais, e todo local cruzado vira Ponte.
 - **Arena** (`sim/arena.gd`, `data/boss_lorde.json`): ao fim do ato 3 o herói entra no covil.
@@ -45,7 +49,7 @@ Depois de cada local roda a **cena do local**: câmera lenta a 30 %, os selos do
 
 | Local | Disputa | Recompensa |
 |---|---|---|
-| Taverna | derrubar as casas na janela de tempo | modificador para uma carta |
+| Taverna | derrubar as casas na janela de tempo (perdendo, as casas de pé continuam no mapa) | modificador para uma carta |
 | Fonte | interromper o herói enquanto ele bebe (um guarda o protege) | remover cartas do baralho |
 | Ritual | matar N criaturas na janela | elixir ×2 durante o ritual e melhoria de carta |
 | Santuário | não deixar o herói ficar no santuário pelo tempo de vencer | carta rara ou melhor |
@@ -66,6 +70,8 @@ Depois de cada local roda a **cena do local**: câmera lenta a 30 %, os selos do
   - A carta jogada vai para o descarte, e a vaga fica vazia por um tempo antes de comprar a próxima.
   - Quando a pilha de compra acaba, o descarte é embaralhado e vira a nova pilha.
   - Só se joga a partir de `rules.ring.min` = 3 m do herói; feitiços ignoram esse limite.
+  - **Mira:** feitiço é só o que mira um ponto, uma área ou um número limitado de alvos. Os de alvo único acertam o herói mais perto de onde a carta é solta (sem raio; nunca o líder automaticamente), e durante a mira esse herói ganha um anel dourado. Monstros jogados atacam o herói mais perto de onde nasceram e só trocam se ele cair ou passar de `engage_radius`; estruturas mantêm a regra própria.
+  - **Temporário** (`lair`): efeito global, mas também é arrastado e solto no chão. Só a Finalização sai no clique. Viraram Temporário: Chamado do Bando, Grito de Guerra, Colheita de Almas, Instinto de Caça, Praga Bubônica, Pestilência Negra, Pedágio, Mensageiro Sombrio, Taxa de Sangue e Troca do Dragão. Eles não contam como feitiço para o Eco, o Apocalipse, descontos de feitiço nem as passivas do Lich.
 - **Deck:** 19 cartas por vilão, até 3 cópias de cada (`MetaSave.DECK_SIZE`). É montado na Biblioteca com cartas do vilão e comuns liberadas. Ao longo da run cresce com as ofertas, a loja e os locais.
 - **118 cartas:**
 
@@ -86,6 +92,11 @@ Depois de cada local roda a **cena do local**: câmera lenta a 30 %, os selos do
   - O efeito especial `n3` só aparece no VI.
   - Os níveis permanentes são comprados com Almas na Biblioteca. Dentro da run há melhorias que somam a eles.
 - **Modificadores** (`data/modifiers.json`): Veterano, Barato, Explosivo, Amaldiçoado, Sombrio e Rouba-vida.
+  - **Explosivo:** ao morrer, acerta todos os heróis no raio (anel no chão do tamanho exato, evento `EXPLOSIVE_BOOM`). Tudo que a carta gera (spawn e `summon`) também explode.
+  - As telas de modificar, melhorar, remover, transformar e copiar mostram a carta com os modificadores e o custo reais.
+- **Peste** (Praga): cada acúmulo faz o herói receber +3,5 % de dano, até 30 acúmulos. Depois de 8 s sem golpe, cai 1 acúmulo por segundo. A Pestilência Negra põe no máximo.
+- **Teia:** o herói dentro da zona fica lento e imune a empurrão.
+- **Rei dos Ratos:** aura de 6 m (anel no chão) com +50 % de dano para todo o Bando, morcegos inclusive; as unidades buffadas brilham.
 - **Vilões** (`data/villains.json`): **Rainha da Praga** (`plague`, com a regra de infestação), **Dragão Avarento** (`dragon`) e **Lich** (`lich`).
   - O Dragão é liberado ao derrotar a party 3 pela primeira vez; o Lich, ao derrotar a party 6.
   - `start_deck` é o deck inicial antes de o jogador montar o seu.
@@ -93,10 +104,14 @@ Depois de cada local roda a **cena do local**: câmera lenta a 30 %, os selos do
 ## 4. Heróis e poderes de party
 
 - **8 classes** (`data/hero_classes.json`): escudeiro, arqueira, clériga, mago, assassino, bárbaro, besteiro e guardião. A IA fica em `sim/hero.gd`, e os modelos são KayKit (`game/art/hero_rig.gd`).
+  - A arqueira tem `damage_mult` 1,2. Heróis à distância escolhem alvo até o próprio alcance (na arena e na impaciência também), e o seguidor à distância fica no alcance do alvo em vez de voltar para a coleira.
 - **Poderes de party** (`data/hero_powers.json`, 21 poderes; motor em `sim/hero_powers.gd`):
   - Quando uma party inteira cai, a seguinte ganha 1 poder novo ou uma evolução (níveis 1 a 3; chance de evolução de 34 %).
   - O sorteio pesa mais os poderes que rebatem o tipo de dano que a party mais sofreu.
-  - Os poderes acumulam na run toda.
+  - Os poderes acumulam na run toda. A evolução mostra cada número que mudou como "antes → depois".
+  - **Grito de Guerra:** a barreira é completada até 12/18/26 % da vida máxima (não soma), recarga fixa de 18 s, +20 % de dano.
+  - **Curandeira:** só cura em combate, a cada 20/18/16 s.
+  - Os companheiros (rato, cão de guerra) usam os modelos de rato e lobo dos monstros, tingidos pela classe.
   - Gatilhos possíveis: contato com o primeiro inimigo, a próxima criatura, a próxima estrutura, o próximo feitiço, uma reação ao dano (maldição, vida baixa, controle, fogo, projétil, golpe forte) ou um intervalo de tempo (aliados).
   - Depois de qualquer disparo há um intervalo de 1,5 s, e cada poder tem a própria recarga.
   - O dano escala com o golpe do herói da party atual.
@@ -113,8 +128,8 @@ Depois de cada local roda a **cena do local**: câmera lenta a 30 %, os selos do
   - Roda radial com **48 nós em 6 setores**: Atributos (elixir, mão, recarga), Locais, Arena (vida do chefe, braço, estruturas), Relíquias, Troca de ato (abre na 1ª vez que o jogador chega ao ato 2) e Geral (ouro, Almas, desconto, oferta por herói).
   - Cada nó tem pai.
   - O reembolso total é grátis.
-- **Biblioteca:**
-  - Álbum de cartas com abas por vilão e uma de comuns, e filtro por custo.
+- **Biblioteca** (estilo Hearthstone):
+  - Tela 1: escolher o vilão (retratos, deck n/19, cartas liberadas). Tela 2: grade de 5 colunas com rolagem contínua (2 fileiras à vista), filtros de tipo (Comuns é um deles) e de custo, e o deck à direita em barrinhas. Clicar na carta adiciona, clicar na barrinha remove.
   - Compra de nível I a VI. Preço: `card_level_costs` × multiplicador de raridade.
   - Edição do deck de 19.
 - **Relíquias** (`data/relics.json`, 52; ícones SVG em `assets/ui/relics/`):
@@ -122,7 +137,7 @@ Depois de cada local roda a **cena do local**: câmera lenta a 30 %, os selos do
   - Níveis 1 a 3 comprados com Almas.
   - Ofertas de 3, com opções a mais pelo Covil.
 - **Desafios** (`data/unlocks.json`, gerado por `tools/gerar_unlocks.py` a partir de `tools/desbloqueios.json`; editor em `tools/desafios_editor`, porta 8768):
-  - 41 cartas livres e 53 desafios.
+  - 41 cartas livres e 53 desafios. Os fáceis pedem ~3× mais ou 2 a 4 runs; os de party pedem 8 e 11. As relíquias de party seguem 7/8/9/10/11/12/14.
   - Tipos: chegar à party N (recorde), total entre runs, em N runs, numa mesma run e jogada específica.
   - O progresso é gravado no fim de cada run, e a tela de fim mostra a revelação do que foi liberado (`game/unlock_reveal.gd`).
 - **Saves:** `MetaSave` v5 fica em `user://meta.save`; um save mais antigo é zerado. A run em andamento usa `sim/save_game.gd` (v8). Os testes sempre usam caminho temporário.

@@ -646,17 +646,19 @@ func t_unlock_challenges() -> void:
 	var s := _sim(3, "plague")
 	var T: UnlockTrack = s.track
 	var stats := {"heroes_fallen": 5, "gold_end": 0.0, "gold_earned": 0.0, "gold_spent": 0, "spent_act": [10.0, 5.0]}
-	stats["parties_beaten"] = 8
+	stats["parties_beaten"] = 11
 	var ctx := {"won": false, "villain": "plague", "phase": 1, "best_party": 0, "best_by_villain": {"plague": 0}, "heroes_total": 26}
 	var ids := ["ruin_titan", "sewer_flood", "alpha_beast", "fallen_healer"]
 	var r: Dictionary = T.check(stats, ctx, ids)
 	var done: Array = r["done"].map(func(p): return p["id"])
-	check(done.has("sewer_flood") and not done.has("ruin_titan") and not done.has("alpha_beast"), "desafios: derrubar a party 8 com o vilão cumpre (party 10 e 30 ratos não) (%s)" % str(done))
-	T.t["peak"]["rat"] = 30
+	check(done.has("sewer_flood") and done.has("ruin_titan") and not done.has("alpha_beast"), "desafios: derrubar a party 11 com o vilão cumpre (40 ratos não) (%s)" % str(done))
+	T.t["peak"]["rat"] = 40
 	T.t["min_loss"] = 3
+	ctx["runs_done"] = {"alpha_beast": 1, "fallen_healer": 2}
 	r = T.check(stats, ctx, ids)
+	ctx.erase("runs_done")
 	done = r["done"].map(func(p): return p["id"])
-	check(done.has("alpha_beast") and done.has("fallen_healer"), "desafios numa run: 30 ratos de uma vez e perdendo até 5 monstros (%s)" % str(done))
+	check(done.has("alpha_beast") and done.has("fallen_healer"), "desafios em N runs: 40 ratos de uma vez (2ª run) e perdendo até 3 monstros (3ª run) (%s)" % str(done))
 	# A maior parte dos desafios é entre runs ("no total", "em N runs"); o gerador (cross_run) conta assim. Plano 21/11: ~70%+.
 	var cross := 0
 	for k in data.unlock_challenges:
@@ -664,15 +666,15 @@ func t_unlock_challenges() -> void:
 		if ch.get("total", false) or ch.has("runs"):
 			cross += 1
 	var frac := float(cross) / float(data.unlock_challenges.size())
-	check(frac >= 0.70 and frac <= 0.80, "desafios: ~75%% entre runs (%d de %d)" % [cross, data.unlock_challenges.size()])
+	check(frac >= 0.75 and frac <= 0.95, "desafios: ~85%% entre runs (%d de %d)" % [cross, data.unlock_challenges.size()])
 	# Relíquias por desafio (ids "r:<id>"): o rastreador conhece todas e a de party cumpre como a das cartas.
 	var rch := 0
 	for rid in data.relics:
 		if T.challenge("r:" + str(rid)).size() > 0:
 			rch += 1
-	stats["parties_beaten"] = 5
-	var rr: Dictionary = T.check(stats, ctx, ["r:cracked_hourglass", "r:opening_gambit"])
-	check(rch >= 30 and rr["done"].size() == 1 and rr["done"][0]["id"] == "r:cracked_hourglass", "desafios de relíquia: %d com desafio; party 5 cumpre, party 6 não" % rch)
+	stats["parties_beaten"] = 8
+	var rr: Dictionary = T.check(stats, ctx, ["r:cracked_hourglass", "r:shortcut_stone"])
+	check(rch >= 30 and rr["done"].size() == 1 and rr["done"][0]["id"] == "r:cracked_hourglass", "desafios de relíquia: %d com desafio; party 8 cumpre, party 11 não" % rch)
 	stats["parties_beaten"] = 8
 	# "no total": carta comum soma o acumulado de todos os vilões (Ogro: 600 monstros)
 	T.t["plays"]["monster"] = 40
@@ -688,13 +690,13 @@ func t_unlock_challenges() -> void:
 	r = T.check(stats, ctx, ["bone_dragon"])
 	check(r["done"].is_empty() and absf(float(r["near"][0]["v"]) - 15.0) < 0.01, "no total: carta de vilão usa só o acumulado dele (10 + 5 = 15/35)")
 	# "em N fases diferentes": Ninho de Morcegos = 3 estruturas de uma vez em 3 fases
-	T.t["peak"]["structure"] = 3
+	T.t["peak"]["structure"] = 5
 	ctx["runs_done"] = {"bat_nest": 1}
 	r = T.check(stats, ctx, ["bat_nest"])
-	check(r["done"].is_empty() and r["near"][0].get("hit", false) and int(r["near"][0]["v"]) == 2, "em N fases: cumpriu nesta fase, 2/3")
-	ctx["runs_done"] = {"bat_nest": 2}
+	check(r["done"].is_empty() and r["near"][0].get("hit", false) and int(r["near"][0]["v"]) == 2, "em N fases: cumpriu nesta fase, 2/4")
+	ctx["runs_done"] = {"bat_nest": 3}
 	r = T.check(stats, ctx, ["bat_nest"])
-	check(r["done"].size() == 1, "em N fases: a 3ª fase libera")
+	check(r["done"].size() == 1, "em N fases: a 4ª fase libera")
 	# desafio de party vale também perdendo (conta as parties derrubadas), mas só com a party certa
 	ctx["won"] = false
 	stats["parties_beaten"] = 7
@@ -704,10 +706,10 @@ func t_unlock_challenges() -> void:
 	var s2 := _sim(4, "plague")
 	var c := Sim.CardInst.new()
 	c.def = data.card("web")
-	for i in 5:
-		s2.t = 10.0 + i
+	for i in 7:
+		s2.t = 10.0 + i * 0.8
 		s2.track.on_play(s2, c)
-	check(int(s2.track.t["win_peak"].get("any|5.0", 0)) == 5, "desafios: 5 cartas em 5 segundos (janela deslizante)")
+	check(int(s2.track.t["win_peak"].get("any|6.0", 0)) == 7, "desafios: 7 cartas em 6 segundos (janela deslizante)")
 	# a run de verdade rastreia: joga uma carta e anda um pouco
 	var s3 := _sim(6, "plague")
 	s3.elixir = 10.0
@@ -720,19 +722,19 @@ func t_unlock_challenges() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var m := MetaSave.load_or_new(data, path)
 	s3.track.t["plays"]["monster"] = 400
-	s3.track.t["peak"]["rat"] = 12
-	s3.track.t["peak"]["structure"] = 3
+	s3.track.t["peak"]["rat"] = 40
+	s3.track.t["peak"]["structure"] = 5
 	m.apply_unlocks(s3, false, path)
 	check(not m.is_unlocked("ogre") and float(m.progress["ogre"]["v"]) == 400.0 and float(m.totals["plague"]["plays|monster"]) == 400.0, "apply_unlocks: run perdida soma no total (Ogro 400/600)")
-	check(int(m.runs_done.get("bat_nest", 0)) == 1 and float(m.progress["bat_nest"]["v"]) == 1.0, "apply_unlocks: conta a fase do feito (Ninho 1/3)")
-	check(float(m.progress["alpha_beast"]["v"]) == 12.0, "apply_unlocks: guarda o melhor progresso numa run (12/30 ratos)")
+	check(int(m.runs_done.get("bat_nest", 0)) == 1 and float(m.progress["bat_nest"]["v"]) == 1.0, "apply_unlocks: conta a fase do feito (Ninho 1/4)")
+	check(int(m.runs_done.get("alpha_beast", 0)) == 1, "apply_unlocks: conta a run do feito de pico (40 ratos, 1/2)")
 	var s4 := _sim(7, "dragon")
 	s4.track.t["plays"]["monster"] = 250
 	var res := m.apply_unlocks(s4, false, path)
 	check(m.is_unlocked("ogre") and res["done"].any(func(p): return p["id"] == "ogre"), "apply_unlocks: carta comum soma as fases de outro vilão (400 + 250 libera o Ogro)")
 	check(not m.totals.get("dragon", {}).is_empty() and float(m.totals["plague"]["plays|monster"]) == 400.0, "apply_unlocks: acumulado separado por vilão")
 	var m2 := MetaSave.load_or_new(data, path)
-	check(m2.is_unlocked("ogre") and m2.progress.has("alpha_beast") and int(m2.runs_done.get("bat_nest", 0)) == 1 and float(m2.totals_all().get("plays|monster", 0.0)) == 650.0, "desbloqueio, acumulados e fases contadas sobrevivem ao salvar")
+	check(m2.is_unlocked("ogre") and int(m2.runs_done.get("alpha_beast", 0)) == 1 and int(m2.runs_done.get("bat_nest", 0)) == 1 and float(m2.totals_all().get("plays|monster", 0.0)) == 650.0, "desbloqueio, acumulados e fases contadas sobrevivem ao salvar")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
@@ -1491,7 +1493,7 @@ func t_world_append() -> void:
 	a.step()
 	w.build(a, cam, true)
 	check(n0 > 0 and w.static_nodes.size() > 0, "WorldView guarda o cenário do ato (%d nós)" % n0)
-	check(w.old_act_root != null and w.old_act_root.get_child_count() == n0, "o cenário do ato antigo fica num nó à parte (%d)" % (w.old_act_root.get_child_count() if w.old_act_root else -1))
+	check(w.old_acts.size() == 1 and (w.old_acts[0] as Node).get_child_count() > 0, "o cenário do ato antigo fica num nó à parte e continua no mapa (%d)" % ((w.old_acts[0] as Node).get_child_count() if w.old_acts.size() > 0 else -1))
 	check(w.cam_pos.is_equal_approx(Vector3(123, 0, -45)), "anexar o ato não teleporta a câmera")
 	w.build(a, cam, true)
 	w.build(a, cam)   # reconstrução limpa
@@ -3019,14 +3021,18 @@ func t_plague_cards() -> void:
 	var d5 := _hit(s, br[0])
 	check(CardsPlague.peste_of(s, s.hero) == 6 and d5 > d0 * 1.15, "Peste: cada acúmulo aumenta o dano recebido (%.1f → %.1f)" % [d0, d5])
 	CardsPlague.add_peste(s, s.hero, 40)
-	check(CardsPlague.peste_of(s, s.hero) == 15, "Peste: teto de 15 acúmulos")
+	check(CardsPlague.peste_of(s, s.hero) == 30, "Peste: teto de 30 acúmulos")
 	s.kill_unit(br[0], K.Death.EXPIRE)
 	for i in int(round(7.0 / s.dt)):
 		s.step()
-	check(CardsPlague.peste_of(s, s.hero) == 15, "Peste: ainda vale antes de 8 s sem mordida")
-	for i in int(round(2.0 / s.dt)):
+	check(CardsPlague.peste_of(s, s.hero) == 30, "Peste: ainda vale antes de 8 s sem mordida")
+	for i in int(round(3.0 / s.dt)):
 		s.step()
-	check(CardsPlague.peste_of(s, s.hero) == 0, "Peste: some 8 s depois da última mordida")
+	var pd := CardsPlague.peste_of(s, s.hero)
+	check(pd >= 27 and pd <= 29, "Peste: depois de 8 s cai 1 acúmulo por segundo (%d)" % pd)
+	for i in int(round(32.0 / s.dt)):
+		s.step()
+	check(CardsPlague.peste_of(s, s.hero) == 0, "Peste: some aos poucos até zerar")
 	# Matilha de Lobos: +10% de dano por acúmulo de Peste.
 	s = _sim(5, "plague")
 	_pl_still(s)
@@ -3444,7 +3450,7 @@ func t_round_2026_11_13() -> void:
 	CardsPlague.add_peste(s, s.hero, 5.0)
 	var pb0 := CardsPlague.hero_damage_bonus(s, s.hero, 0, 0)
 	s._apply(_inst("black_pestilence"), s.hero.x, s.hero.y)
-	check(CardsPlague.peste_of(s, s.hero) == 15 and CardsPlague.hero_damage_bonus(s, s.hero, 0, 0) > pb0 * 5.0, "Pestilência Negra: Peste no máximo e dói mais (%.2f)" % CardsPlague.hero_damage_bonus(s, s.hero, 0, 0))
+	check(CardsPlague.peste_of(s, s.hero) == 30 and CardsPlague.hero_damage_bonus(s, s.hero, 0, 0) > pb0 * 5.0, "Pestilência Negra: Peste no máximo e dói mais (%.2f)" % CardsPlague.hero_damage_bonus(s, s.hero, 0, 0))
 	# --- Toca da Matilha e Besta Primordial.
 	s = _sim(5, "plague")
 	_pl_still(s)

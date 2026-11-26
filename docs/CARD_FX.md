@@ -40,7 +40,7 @@ Em feitiço, dano é multiplicado por `smult × vet` e duração por `vet`; a ma
 | `pay_gold` | `amount` | Paga ouro (conta em `gold_spent`). |
 | `draw` | `n` (1) | Compra `n` cartas para a mão (até `HAND_MAX`). |
 
-`target`: `"hero"` (o da vez), `"group"` (todos de pé), `"area"` (todos no raio, do mais perto ao mais longe), `"nearest"` (o mais perto no raio em grupo; ninguém perto ou sozinho = o da vez).
+`target`: `"hero"` (o herói mais perto de onde a carta foi solta, sem raio: `Sim.hero_nearest`), `"group"` (todos de pé), `"area"` (todos no raio, do mais perto ao mais longe), `"nearest"` (o mais perto no raio; ninguém no raio = o herói mais perto do ponto).
 
 Cartas existentes já em ops (prova, replay idêntico): `pack_call`, `soul_harvest`, `shadow_mark`, `toll`.
 

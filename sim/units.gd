@@ -202,7 +202,8 @@ func update(dt: float) -> void:
 			if arch[i] == K.Arch.STRUCTURE:
 				hero = _nearest_hero(px[i], py[i], helper, pull2)
 			else:
-				var cur: SimHero = tgt[i]
+				var raw = tgt[i]
+				var cur: SimHero = raw if is_instance_valid(raw) and raw is SimHero else null
 				if cur == null or cur.hp <= 0.0 or not _in_play(cur, helper) 						or Vector2(cur.x - px[i], cur.y - py[i]).length() > engage:
 					cur = _nearest_hero(px[i], py[i], helper, pull2)
 					tgt[i] = cur
