@@ -64,6 +64,7 @@ func _mood(on: bool) -> void:
 	if env == null:
 		return
 	if on:
+		Diorama.suspend(cam)   # o menu fica com a luz e a lente de antes do diorama
 		saved = {"bg": env.background_mode, "bgc": env.background_color, "amb": env.ambient_light_color, "ambe": env.ambient_light_energy,
 			"fog": env.fog_enabled, "vfog": env.volumetric_fog_enabled, "fov": cam.fov if cam else 40.0, "exp": env.tonemap_exposure}
 		env.background_mode = Environment.BG_COLOR
@@ -95,6 +96,7 @@ func _mood(on: bool) -> void:
 		if is_instance_valid(cam):
 			cam.fov = saved["fov"]
 		saved.clear()
+		Diorama.resume(cam)
 
 
 func _mat(col: Color, rough := 0.8, metal := 0.0) -> Material:

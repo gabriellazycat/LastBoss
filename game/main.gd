@@ -117,6 +117,9 @@ func _ready() -> void:
 	var vm := ShaderMaterial.new()
 	vm.shader = vs
 	vignette.material = vm
+	# O menu (mesa) volta para a vinheta de antes do diorama (Diorama.suspend).
+	Diorama.set_vignette(vm, "shader_type canvas_item;
+void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.02, 0.0, 0.05, v * 0.82); }")
 	fx_layer.add_child(vignette)
 	flash_rect = ColorRect.new()
 	flash_rect.set_anchors_preset(Control.PRESET_FULL_RECT)

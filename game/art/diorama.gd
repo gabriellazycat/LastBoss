@@ -61,6 +61,9 @@ static func focus(cam: Camera3D, d: float) -> void:
 
 
 static func apply_env(env: Environment, sun: DirectionalLight3D, rim: DirectionalLight3D, act: int) -> void:
+	_remember(env, sun, rim, act)
+	if suspended:
+		return
 	var A: Dictionary = ACTS[clampi(act, 0, ACTS.size() - 1)]
 	sun.rotation_degrees = A["sun_rot"]
 	sun.light_color = A["sun_col"]
@@ -151,3 +154,80 @@ static func unit_id(card: String) -> String:
 		return card
 	var base := CardModel.of(card)
 	return base if base != card and mesh(base) and mesh(base).has_meta("vat") else ""
+
+
+# ---------------------------------------------------------------- menu (mesa do Lorde)
+
+## O ambiente, o sol e a câmera são os mesmos do menu: a mesa (DeskScene._mood) chama suspend() ao entrar e
+## resume() ao sair, para o menu continuar com a luz e a lente de antes do diorama.
+const ENV_KEYS := ["background_mode", "ambient_light_source", "ambient_light_color", "ambient_light_energy",
+	"reflected_light_source", "tonemap_mode", "tonemap_exposure", "glow_intensity", "glow_strength", "glow_bloom",
+	"glow_blend_mode", "glow_hdr_threshold", "adjustment_enabled", "adjustment_contrast", "adjustment_brightness",
+	"adjustment_saturation", "adjustment_color_correction", "ssao_radius", "ssao_intensity", "ssao_power", "ssao_detail",
+	"ssao_horizon", "ssao_light_affect", "ssil_enabled", "ssil_radius", "ssil_intensity", "ssil_sharpness",
+	"ssil_normal_rejection", "fog_density", "fog_enabled", "volumetric_fog_density"]
+const SUN_KEYS := ["rotation_degrees", "light_color", "light_energy", "shadow_opacity", "shadow_blur",
+	"light_angular_distance", "shadow_normal_bias", "directional_shadow_max_distance", "light_specular"]
+static var _base: Dictionary = {}
+static var _refs: Array = []          # [env, sun, rim, cam]
+static var _last_act := 0
+static var _vig: ShaderMaterial
+static var _vig_old := ""
+static var suspended := false
+
+
+## Guarda o ambiente de antes do diorama (uma vez) e as referências; chamado no começo de apply_env.
+static func _remember(env: Environment, sun: DirectionalLight3D, rim: DirectionalLight3D, act: int) -> void:
+	_last_act = act
+	if not _base.is_empty():
+		return
+	var e := {}
+	for k in ENV_KEYS:
+		e[k] = env.get(k)
+	e["sky"] = env.sky.sky_material if env.sky else null
+	var s := {}
+	for k in SUN_KEYS:
+		s[k] = sun.get(k)
+	_base = {"env": e, "sun": s, "rim": rim.light_energy if rim else 0.0}
+	_refs = [env, sun, rim, null]
+
+
+static func set_vignette(m: ShaderMaterial, old_code: String) -> void:
+	_vig = m
+	_vig_old = old_code
+
+
+static func suspend(cam: Camera3D) -> void:
+	if suspended or _base.is_empty():
+		return
+	suspended = true
+	var env: Environment = _refs[0]
+	var sun: DirectionalLight3D = _refs[1]
+	var rim: DirectionalLight3D = _refs[2]
+	for k in ENV_KEYS:
+		env.set(k, _base["env"][k])
+	if env.sky:
+		env.sky.sky_material = _base["env"]["sky"]
+	for k in SUN_KEYS:
+		sun.set(k, _base["sun"][k])
+	if rim:
+		rim.light_energy = _base["rim"]
+	if cam:
+		cam.attributes = null
+		cam.fov = 40.0
+	if _vig and _vig_old != "":
+		_vig.shader.code = _vig_old
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM
+		if int(Settings.v.get("quality", 2)) >= 2 else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
+
+
+static func resume(cam: Camera3D) -> void:
+	if not suspended:
+		return
+	suspended = false
+	if cam:
+		cam.fov = FOV
+		cam.attributes = _attrs
+	if _vig:
+		_vig.shader.code = vignette_code()
+	apply_env(_refs[0], _refs[1], _refs[2], _last_act)
