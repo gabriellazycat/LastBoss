@@ -6,7 +6,7 @@ extends RefCounted
 ## ícones das telas (main.gd --mapicons gera os PNG de assets/ui/map). map_tex() carrega esses ícones.
 
 const INK := Minimap.INK
-const BG := Minimap.BG
+const BG := Minimap.PAPER
 const STYLE := {"name": "Nórdico", "wob": 0.9, "line": 1.9, "lean": 0.0, "pitch": 1.25, "roof": "long", "body": "planks",
 	"win": "none", "shade": "vert", "top": "stacked", "tbody": "planks", "wall": "palisade", "castle": "hall",
 	"lair": "maw", "chimney": 0.0, "dormer": 0.0, "church": "stacked"}
