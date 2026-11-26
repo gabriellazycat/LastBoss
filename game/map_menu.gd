@@ -32,10 +32,6 @@ var badges := {}           # id -> selo com número, até o lugar ser visitado
 var balloons := {}         # id -> balão de fala sobre o lugar
 
 
-var _vp: SubViewport
-var _mm: Minimap          # só empresta os traços do mapa (árvores, montanhas, rio, rosa dos ventos); fora da árvore
-
-
 func build(villain_portrait: Texture2D) -> void:
 	var bg := TextureRect.new()
 	bg.texture = _felt_bg()
@@ -201,59 +197,17 @@ func set_status(text: String) -> void:
 		cap.text = text
 
 
-func _exit_tree() -> void:
-	if _mm != null:
-		_mm.free()
-		_mm = null
-
-
-# ---------------------------------------------------------------- fundo de feltro
-
 func _felt_bg() -> Texture2D:
-	_mm = Minimap.new()
-	_mm.fell = UiDiario.font("fell")
-	_mm.fell_it = UiDiario.font("fell_it")
-	_vp = SubViewport.new()
-	_vp.disable_3d = true
-	_vp.transparent_bg = true
-	_vp.size = Vector2i(BG_SIZE)
-	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
-	var cv := Node2D.new()
-	cv.draw.connect(func(): _paint_bg(cv))
-	_vp.add_child(cv)
-	var post := ColorRect.new()
-	var sm := ShaderMaterial.new()
-	sm.shader = load("res://game/art/map_cloth.gdshader")
-	sm.set_shader_parameter("land", Minimap.BG)
-	sm.set_shader_parameter("thread", Minimap.PAPER)
-	sm.set_shader_parameter("cell", 230.0)
-	sm.set_shader_parameter("rect_size", BG_SIZE - Vector2(M, M) * 2.0)
-	sm.set_shader_parameter("radius", 26.0)
-	post.material = sm
-	post.position = Vector2(M, M)
-	post.size = BG_SIZE - Vector2(M, M) * 2.0
-	post.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_vp.add_child(post)
-	add_child(_vp)
-	return _vp.get_texture()
+	var paper := Rect2(Vector2(M, M), BG_SIZE - Vector2(M, M) * 2.0)
+	return FeltMap.make(self, BG_SIZE, paper, func(ci: CanvasItem, mm: Minimap): _paint_bg(ci, mm))
 
 
-func _paint_bg(ci: CanvasItem) -> void:
+func _paint_bg(ci: CanvasItem, _mm: Minimap) -> void:
 	var r := RandomNumberGenerator.new()
 	r.seed = 4242
 	var o := Vector2(M, M)
 	var paper := Rect2(o, BG_SIZE - o * 2.0)
-	# sombra na mesa e o retalho grande de feltro, de cantos redondos
-	var sh := StyleBoxFlat.new()
-	sh.bg_color = Color(0.02, 0.03, 0.08, 0.45)
-	sh.set_corner_radius_all(30)
-	sh.shadow_color = Color(0.02, 0.03, 0.08, 0.35)
-	sh.shadow_size = 14
-	ci.draw_style_box(sh, Rect2(paper.position + Vector2(4, 8), paper.size))
-	var base := StyleBoxFlat.new()
-	base.bg_color = Minimap.BG
-	base.set_corner_radius_all(26)
-	ci.draw_style_box(base, paper)
+	FeltMap.base(ci, paper)
 	# mar à direita, com a costa tremida
 	var coast: Array = []
 	var y := paper.position.y
@@ -294,13 +248,8 @@ func _paint_bg(ci: CanvasItem) -> void:
 		var a := hub + d.normalized() * 90.0
 		var b := to - d.normalized() * (float(pl[4]) * 0.5 + 22.0)
 		var mid := (a + b) * 0.5 + Vector2(-d.y, d.x).normalized() * 26.0
-		var path := Minimap._quad(a, mid, b, 16)
-		ci.draw_polyline(path, Color("c9a46a"), 16.0, true)
-		ci.draw_polyline(path, Color("b08a55"), 2.0, true)
-		_mm._dashed(ci, path, Minimap.PAPER, 2.4, 10.0, 8.0, 0.0)
-	var red := Minimap._quad(o + Vector2(846, 920), o + Vector2(840, 780), hub + Vector2(0, 80), 16)
-	ci.draw_polyline(red, Color("c9a46a"), 16.0, true)
-	_mm._dashed(ci, red, Minimap.ACC, 4.0, 12.0, 8.0, 0.0)
+		FeltMap.trail(ci, _mm, Minimap._quad(a, mid, b, 16))
+	FeltMap.trail(ci, _mm, Minimap._quad(o + Vector2(846, 920), o + Vector2(840, 780), hub + Vector2(0, 80), 16), Minimap.ACC)
 	# bosques, montanhas e colinas (os mesmos desenhos do mapa)
 	var groves := [[Vector2(180, 300), 7], [Vector2(1060, 270), 3], [Vector2(700, 820), 4], [Vector2(560, 470), 3], [Vector2(1180, 560), 3], [Vector2(150, 520), 5]]
 	for gv in groves:
@@ -314,23 +263,6 @@ func _paint_bg(ci: CanvasItem) -> void:
 		_mm._hill_v(ci, o.x + hl.x, o.y + hl.y, 70, r)
 	_mm._lake(ci, o + Vector2(1080, 760), 60, 26, r)
 	_mm._compass(ci, o + Vector2(1515, 150))
-	# faixa do título: pontas ocre e placa creme costurada (os textos ficam por cima, em _place)
-	var c := Vector2(o.x + 820, o.y + 109)
-	var band := PackedVector2Array([c + Vector2(-330, -34), c + Vector2(330, -34), c + Vector2(330, -24), c + Vector2(372, -24), c + Vector2(352, 14), c + Vector2(372, 52),
-		c + Vector2(330, 52), c + Vector2(330, 62), c + Vector2(-330, 62), c + Vector2(-330, 52), c + Vector2(-372, 52), c + Vector2(-352, 14), c + Vector2(-372, -24), c + Vector2(-330, -24)])
-	ci.draw_colored_polygon(band, Color("c9a46a"))
-	var plate := StyleBoxFlat.new()
-	plate.bg_color = Minimap.PAPER
-	plate.set_corner_radius_all(14)
-	plate.shadow_color = Color(0.05, 0.07, 0.12, 0.25)
-	plate.shadow_size = 6
-	plate.shadow_offset = Vector2(0, 3)
-	var pr := Rect2(c + Vector2(-300, -75), Vector2(600, 150))
-	ci.draw_style_box(plate, pr)
-	var q := pr.grow(-9.0)
-	_mm._dashed(ci, PackedVector2Array([q.position, Vector2(q.end.x, q.position.y), q.end, Vector2(q.position.x, q.end.y), q.position]), Color("8a6a50"), 2.2, 9.0, 7.0, 0.0)
-	# costura em volta do retalho grande
-	var e := paper.grow(-14.0)
-	var rim := PackedVector2Array([e.position, Vector2(e.end.x, e.position.y), e.end, Vector2(e.position.x, e.end.y), e.position])
-	_mm._dashed(ci, Minimap._offs(Vector2(0, 1.5), Array(rim)), Color(0, 0, 0, 0.3), 3.0, 14.0, 9.0, 0.0)
-	_mm._dashed(ci, rim, Minimap.PAPER, 3.0, 14.0, 9.0, 0.0)
+	# faixa do título (os textos ficam por cima, em _place) e a costura em volta
+	FeltMap.banner(ci, _mm, Vector2(o.x + 820, o.y + 109), 600, 150)
+	FeltMap.rim(ci, _mm, paper)
