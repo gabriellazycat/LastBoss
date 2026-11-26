@@ -24,6 +24,7 @@ uniform float mundo = 0.0;
 
 varying vec3 wp;
 varying vec3 paint_p;
+#define DIO
 #include "res://game/art/paint.gdshaderinc"
 
 float hash(vec2 p) {
@@ -177,6 +178,66 @@ void fragment() {
 	}
 	col = mix(col, dcol, dirt * 0.6);   // relva gasta, nunca a cor cheia da estrada
 	col = mix(col, mix(col, rcol * 0.72, 0.55), rock);   // cascalho: pedra misturada à relva, não uma placa clara
+	if (estilo == 7) {
+		// Feltro (diorama C): colcha de retalhos verdes em células, cada retalho num tom, costura tracejada perto da
+		// borda e fibra miúda. A célula é a de Voronoi (distância à borda ~ F2 - F1).
+		vec2 q = w * 0.16;
+		vec2 c0 = floor(q);
+		float f1 = 9.0;
+		float f2 = 9.0;
+		vec2 id = vec2(0.0);
+		for (int j = -1; j <= 1; j++) {
+			for (int i = -1; i <= 1; i++) {
+				vec2 cell = c0 + vec2(float(i), float(j));
+				vec2 pt = cell + 0.5 + (vec2(hash(cell + 1.3), hash(cell + 7.9)) - 0.5) * 0.85;
+				float d = length(q - pt);
+				if (d < f1) {
+					f2 = f1;
+					f1 = d;
+					id = cell;
+				} else if (d < f2) {
+					f2 = d;
+				}
+			}
+		}
+		float edge_d = (f2 - f1) / 0.16;
+		float t = hash(id + 2.2);
+		col = mix(c_grass, c_grass2, t) * (0.9 + hash(id + 5.1) * 0.18);
+		float fib = vnoise(p * 9.0) * 0.6 + vnoise(p * 23.0 + 3.0) * 0.4;
+		col *= 0.92 + fib * 0.14;
+		col *= mix(0.62, 1.0, smoothstep(0.02, 0.12, edge_d));
+		float dash = step(0.45, fract(dot(p, vec2(0.7, 0.7)) * 2.2));
+		float stitch = (1.0 - smoothstep(0.03, 0.07, abs(edge_d - 0.28))) * dash;
+		col = mix(col, vec3(0.93, 0.88, 0.74), stitch * 0.8);
+	}
+	if (estilo == 6) {
+		// Brinquedo de madeira (diorama B): o chão é um tabuleiro de tábuas pintadas de verde. Tábuas de 1,6 m ao
+		// longo de x, emendas finas e escuras, tom de cada tábua, veio da madeira aparecendo por baixo da tinta e
+		// a tinta gasta perto das emendas (madeira clara).
+		float pw = 1.6;
+		float row = floor(p.y / pw);
+		float fy = fract(p.y / pw);
+		float px = p.x + hash(vec2(row, 3.0)) * 40.0;
+		float seg = floor(px / 9.0);
+		float fx = fract(px / 9.0);
+		float tone = hash(vec2(row, seg));
+		col *= 0.93 + tone * 0.14;
+		float grain = vnoise(vec2(px * 0.35, p.y * 9.0)) * 0.6 + vnoise(vec2(px * 0.12, p.y * 22.0)) * 0.4;
+		col *= 0.95 + grain * 0.1;
+		float seam = min(min(fy, 1.0 - fy) * pw, min(fx, 1.0 - fx) * 9.0);
+		vec3 wood = vec3(0.78, 0.58, 0.38) * (0.9 + grain * 0.2);
+		float wear = (1.0 - smoothstep(0.03, 0.16, seam)) * smoothstep(0.45, 0.8, vnoise(p * 1.3 + row));
+		col = mix(col, wood, wear * 0.7);
+		col *= mix(0.45, 1.0, smoothstep(0.0, 0.035, seam));
+	}
+	if (estilo == 5) {
+		// Diorama (como o chão do Holy Sheep): manchado em três escalas presas ao mundo e manchas de sol quentes,
+		// macio, sem pincelada.
+		float mn = vnoise(p * 0.8) * 0.55 + vnoise(p * 2.7 + 13.0) * 0.3 + vnoise(p * 7.0) * 0.15;
+		col *= 1.0 + (mn - 0.5) * 0.34;
+		float sunp = smoothstep(0.5, 0.85, vnoise(p * 0.07 + 5.0));
+		col = mix(col, col * vec3(1.08, 1.04, 0.86), sunp * 0.6);
+	}
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	ALBEDO = pt_flat_card(col);
 	PAINT_PAPER

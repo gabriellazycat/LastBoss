@@ -113,11 +113,13 @@ func _ready() -> void:
 	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
 	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var vs := Shader.new()
-	vs.code = "shader_type canvas_item;
-void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.02, 0.0, 0.05, v * 0.82); }"
+	vs.code = Diorama.vignette_code()
 	var vm := ShaderMaterial.new()
 	vm.shader = vs
 	vignette.material = vm
+	# O menu (mesa) volta para a vinheta de antes do diorama (Diorama.suspend).
+	Diorama.set_vignette(vm, "shader_type canvas_item;
+void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.32, 0.85, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.02, 0.0, 0.05, v * 0.82); }")
 	fx_layer.add_child(vignette)
 	flash_rect = ColorRect.new()
 	flash_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -294,8 +296,7 @@ func _space_scan(tag: String) -> void:
 
 func _env() -> void:
 	cam = Camera3D.new()
-	cam.fov = 40
-	cam.far = 900
+	Diorama.setup_camera(cam)
 	add_child(cam)
 	cam.position = Vector3(0, 20, 14)
 	PaintLook.apply()
@@ -362,6 +363,7 @@ func _env() -> void:
 	GroundLooks.apply_env(env, moon, rim)
 	LuzLook.apply(env, moon, rim)
 	Settings.apply_quality(env, moon, get_viewport())
+	Diorama.apply_env(env, moon, rim, 0)
 
 
 ## Capturas: põe o herói no primeiro local da rota, trocado para o tipo pedido, e começa a disputa.
@@ -403,6 +405,7 @@ func _apply_act_look(s: Sim, blend := false) -> void:
 			sun.shadow_opacity = ACT_SHADOW_OP[s.act]
 		else:
 			sun.shadow_opacity = 1.0
+		Diorama.apply_env(world_env, sun, rim_light, s.act)
 		if blend and not old.is_empty():
 			var nw := _env_snapshot()
 			_env_apply(old, nw, 0.0)

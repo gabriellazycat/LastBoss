@@ -85,6 +85,7 @@ void road_field(vec3 world, out float d, out float edge_a, out float dimv, out f
 }
 
 varying vec3 paint_p;
+#define DIO
 #include "res://game/art/paint.gdshaderinc"
 
 vec3 dabs(vec2 q, float ang0, float jit, vec2 sz) {
@@ -161,6 +162,21 @@ void fragment() {
 		vec3 t1 = a.z < 0.3 ? vec3(1.08, 1.04, 0.92) : (a.z < 0.6 ? vec3(0.94, 0.96, 1.03) : vec3(1.05));
 		c = mix(c, c * t1, a.y);
 	}
+	if (estilo == 7) {
+		// Faixa de feltro (diorama C): fibra e pesponto tracejado junto da borda.
+		float fib = vnoise(p * 8.0) * 0.6 + vnoise(p * 21.0 + 5.0) * 0.4;
+		c *= 0.92 + fib * 0.14;
+		float dash = step(0.5, fract(UV.y * 2.4));
+		float st = (1.0 - smoothstep(0.04, 0.09, abs(across - 2.75))) * dash;
+		c = mix(c, vec3(0.96, 0.92, 0.82), st * 0.85);
+	}
+	if (estilo == 6) {
+		// Madeira crua (diorama B): veio ao longo da estrada e linhas de tábua.
+		float g1 = vnoise(vec2(UV.x * 6.0, UV.y * 0.35)) * 0.6 + vnoise(vec2(UV.x * 14.0, UV.y * 0.8)) * 0.4;
+		c *= 0.9 + g1 * 0.2;
+		float lane = abs(fract(UV.x / 1.1 + 0.5) - 0.5) * 1.1;
+		c *= mix(0.72, 1.0, smoothstep(0.0, 0.03, lane));
+	}
 	float e = clamp(ea + (vnoise(p * 0.8) - 0.5) * 0.35 + (vnoise(p * 2.6) - 0.5) * 0.12, 0.0, 1.0);
 	float a = crisp ? smoothstep(0.42, 0.47, e) : smoothstep(0.25, 0.5, e);
 	// Beirada: um tom mais escuro e frio, estreito (a sombra da relva sobre a terra), sem contorno preto.
@@ -178,16 +194,5 @@ void fragment() {
 }
 
 void light() {
-	float ndl = dot(NORMAL, LIGHT);
-	if (bands > 0.0) {
-		float k = ndl * ATTENUATION;
-		float band = smoothstep(0.0, 0.03, k) * 0.62 + smoothstep(0.55, 0.58, k) * 0.38;
-		if (!LIGHT_IS_DIRECTIONAL) {
-			band = smoothstep(0.0, 0.35, k);
-		}
-		DIFFUSE_LIGHT += mix(shadow_tint * 0.55, vec3(1.0), band) * LIGHT_COLOR / PI * (LIGHT_IS_DIRECTIONAL ? 1.0 : ATTENUATION);
-	} else {
-		float l = smoothstep(-0.6, 1.0, ndl) * ATTENUATION;
-		DIFFUSE_LIGHT += mix(cool * 0.75 * (LIGHT_IS_DIRECTIONAL ? 1.0 : 0.0), warm, l) * LIGHT_COLOR / PI;
-	}
+	DIFFUSE_LIGHT += dio_diffuse(NORMAL, LIGHT, ATTENUATION, LIGHT_COLOR, LIGHT_IS_DIRECTIONAL);
 }

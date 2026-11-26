@@ -11,6 +11,11 @@
 // Regra do designer: nada escuro salpicado por cima (o filtro de tela "parecia um noise preto"). As pinceladas aqui
 // clareiam mais do que escurecem e são do tamanho de um pincel largo, nunca grão fino.
 
+#ifdef DIO
+#define DIO_ON true
+#else
+#define DIO_ON false
+#endif
 global uniform bool paint_on;
 global uniform int paint_light;
 global uniform int paint_tex;
@@ -174,6 +179,9 @@ vec3 pt_card_ground(vec3 lin) {
 // C · papel das cartas, projetado no mundo pelos três planos. `wp`/`wn` em espaço do mundo.
 // Manchas macias de papel de aquarela (16/11: o grão de 1 px de 15/11 lia como ruído digital).
 vec3 paint_paper(vec3 c, vec3 pw_pos, vec3 pw_nrm) {
+	if (DIO_ON) {
+		return c;
+	}
 	if (!paint_on || !paint_papel) {
 		return c;
 	}
@@ -194,6 +202,9 @@ vec3 paint_paper(vec3 c, vec3 pw_pos, vec3 pw_nrm) {
 
 // Cor final do material. `size` = largura do pincel em metros (no espaço de `p`).
 vec3 paint_albedo(vec3 lin, vec3 p, vec3 n, int kind, float size) {
+	if (DIO_ON) {
+		return lin;
+	}
 	if (!paint_on) {
 		return lin;
 	}
@@ -254,10 +265,53 @@ vec3 paint_diffuse(vec3 N, vec3 L, vec3 V, float atten, vec3 lcol, vec3 pp, bool
 	return lcol * k * (fill + (1.0 - fill) * lit) / PI;
 }
 
+// Diorama (26/11/2026): os shaders do mundo definem DIO antes de incluir este arquivo e trocam o
+// guache pela luz de maquete (a do Holy Sheep, shaders/crayon.gdshaderinc): Lambert envolvido com borda macia, a
+// sombra do mapa como vem, e luz quente rebatida no lado oposto ao sol. A mesa do menu e as cartas não definem DIO.
+uniform float dio_wrap = 0.35;
+uniform float dio_fill = 0.24;
+uniform vec3 dio_bounce : source_color = vec3(1.0, 0.78, 0.55);
+uniform float dio_sheen = 0.0;    // sem verniz: feltro é fosco
+uniform float dio_velvet = 0.55;  // feltro (diorama C): a fibra acende nas bordas viradas para a luz
+vec3 dio_specular(vec3 N, vec3 L, vec3 V, float atten, vec3 lcol, bool directional) {
+	if (!directional) {
+		return vec3(0.0);
+	}
+	vec3 h = normalize(L + V);
+	float s = pow(clamp(dot(N, h), 0.0, 1.0), 36.0) + pow(clamp(dot(N, h), 0.0, 1.0), 6.0) * 0.12;
+	return lcol * atten * s * dio_sheen;
+}
+// Veludo/feltro: luz rasante nas bordas da silhueta (a penugem das fibras), mais forte do lado da luz.
+vec3 dio_fuzz(vec3 N, vec3 L, vec3 V, float atten, vec3 lcol) {
+	float rim = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 2.2);
+	float facing = clamp(dot(N, L) * 0.5 + 0.5, 0.0, 1.0);
+	return lcol / PI * rim * facing * atten * dio_velvet;
+}
+// Fibra do feltro: ruído miúdo preso ao objeto, que só mexe um pouco no valor (nunca salpico escuro forte).
+float dio_fiber(vec3 p) {
+	float a = pt_noise(p * 22.0);
+	float b = pt_noise(p * 61.0 + 7.0);
+	return 0.93 + a * 0.09 + b * 0.05;
+}
+vec3 dio_diffuse(vec3 N, vec3 L, float atten, vec3 lcol, bool directional) {
+	float ndl = dot(N, L);
+	float wrap = clamp((ndl + dio_wrap) / (1.0 + dio_wrap), 0.0, 1.0);
+	wrap = mix(wrap, wrap * wrap * (3.0 - 2.0 * wrap), 0.35);
+	if (!directional) {
+		return lcol / PI * wrap * smoothstep(0.0, 1.0, atten);
+	}
+	float lit = wrap * atten;
+	float edge = wrap * (1.0 - wrap) * 4.0 * atten;
+	return lcol / PI * (lit + dio_bounce * dio_fill * (1.0 - lit) + edge * 0.06 * vec3(1.0, 0.7, 0.45));
+}
+
 // Corpo padrão do light(): o material que inclui define `varying vec3 paint_p;` com a posição usada nas pinceladas.
 // Só a paleta das cartas (sem as pinceladas do shader): para os chãos que já trazem a pincelada própria
 // (ground_tela.gdshader, road_tela.gdshader, 22/11/2026).
 vec3 pt_flat_card(vec3 lin) {
+	if (DIO_ON) {
+		return lin;
+	}
 	if (!paint_on) {
 		return lin;
 	}
@@ -269,8 +323,8 @@ vec3 pt_flat_card(vec3 lin) {
 #endif
 	return c;
 }
-#define PAINT_LIGHT DIFFUSE_LIGHT += paint_diffuse(NORMAL, LIGHT, VIEW, ATTENUATION, LIGHT_COLOR, paint_p, LIGHT_IS_DIRECTIONAL); \
-	if (!paint_on || paint_light == 0) { \
-		vec3 h = normalize(LIGHT + VIEW); \
-		SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * pow(clamp(dot(NORMAL, h), 0.0, 1.0), 24.0) * SPECULAR_AMOUNT * 0.12; \
-	}
+#define PAINT_LIGHT DIFFUSE_LIGHT += paint_diffuse(NORMAL, LIGHT, VIEW, ATTENUATION, LIGHT_COLOR, paint_p, LIGHT_IS_DIRECTIONAL); if (!paint_on || paint_light == 0) { vec3 h = normalize(LIGHT + VIEW); SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * pow(clamp(dot(NORMAL, h), 0.0, 1.0), 24.0) * SPECULAR_AMOUNT * 0.12; }
+#ifdef DIO
+#undef PAINT_LIGHT
+#define PAINT_LIGHT DIFFUSE_LIGHT += dio_diffuse(NORMAL, LIGHT, ATTENUATION, LIGHT_COLOR, LIGHT_IS_DIRECTIONAL) + dio_fuzz(NORMAL, LIGHT, VIEW, ATTENUATION, LIGHT_COLOR);
+#endif

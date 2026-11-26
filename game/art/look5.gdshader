@@ -4,10 +4,11 @@ shader_type spatial;
 // de fresnel puxado para a cor do céu, nada de faixas de toon. A forma vem da silhueta e da cor, não do traço.
 // Animação: se a malha tem VAT (use_vat), a posição e a normal de cada vértice vêm da textura (andar + ataque),
 // por instância; senão, a animação procedural dos outros looks (anim.gdshaderinc).
-render_mode diffuse_lambert_wrap, specular_schlick_ggx;
+render_mode diffuse_lambert_wrap, specular_disabled;
 #include "res://game/art/anim.gdshaderinc"
 // Unidades: a cor dos fundos das cartas (paint_cor) não vale aqui; a cor fica no personagem, como nas cartas.
 #define PAINT_UNIT
+#define DIO
 #include "res://game/art/paint.gdshaderinc"
 
 uniform float emission_boost = 0.0;
@@ -26,6 +27,7 @@ uniform float pose_lunge = 0.0;    // fora da MultiMesh: quanto do ataque (0..1)
 uniform vec3 rim_color : source_color = vec3(0.75, 0.82, 1.0);
 uniform float rim_strength = 0.35;
 uniform vec3 tint : source_color = vec3(1.0);
+uniform float atlas_lod = 3.5;   // mipmap do atlas, sem as pinceladas (mais alto = cor mais lisa)
 uniform bool atlas = false;       // a textura é um atlas pintado: sem pinceladas do shader por cima
 uniform float ink = 0.0;          // contorno de tinta (0..1)
 
@@ -79,27 +81,35 @@ void vertex() {
 void fragment() {
 	vec3 base = pow(clamp(COLOR.rgb, vec3(0.0), vec3(1.0)), vec3(2.2)) * tint;
 	if (use_tex && UV.x >= 0.0) {
-		base *= texture(albedo_tex, UV).rgb;
+		// Versões D e E (26/11/2026): o atlas pintado traz as manchas de pincel na própria textura; lido num mipmap
+		// borrado (atlas_lod), fica só a cor média de cada parte do modelo.
+		base *= atlas ? textureLod(albedo_tex, UV, atlas_lod).rgb : texture(albedo_tex, UV).rgb;
 	}
 	// Atlas pintado (rodada de 15/11, tools/art/blender_g): a pincelada já está na textura, a do shader sai.
 	if (!atlas) {
 		base = paint_albedo(base, paint_p, paint_n, -1, 0.35);
 	}
+	// G (26/11/2026): os modelos de hoje (atlas pintado) chegam perto da paleta das cartas, como os modelos novos.
+	if (atlas) {
+		// G: só meia paleta (no anoitecer, a paleta inteira deixava as copas azul-marinho, quase pretas).
+		base = mix(base, pt_palette(base), 0.5);
+	}
 	// A · cor dos fundos das cartas só no cenário (modelos parados, sem VAT); as unidades animadas mantêm a cor.
 	if (paint_on && paint_cor && !use_vat) {
 		base = pt_card_ground(base);
 	}
+	base *= dio_fiber(paint_p);
 	float f = clamp(max(custom.x, flash), 0.0, 1.0);
 	ALBEDO = mix(base, vec3(1.0, 0.96, 0.92), f);
 	// Contorno de tinta (só no tratamento "flat"): borda escura onde a superfície vira de lado.
 	ALBEDO = mix(ALBEDO, vec3(0.05, 0.04, 0.07), ink * smoothstep(0.55, 0.85, 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0)));
 	PAINT_PAPER
-	ROUGHNESS = 0.72;
-	SPECULAR = 0.3;
+	ROUGHNESS = 1.0;
+	SPECULAR = 0.0;
 	// Contorno de céu: fresnel suave, mais forte no alto do modelo (luz que vem de cima).
 	float fr = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0);
 	float up = clamp((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y * 0.5 + 0.5, 0.0, 1.0);
-	EMISSION = base * (emission_boost + glow * glow_strength) + rim_color * fr * up * rim_strength * (paint_on ? 0.08 : 0.25)
+	EMISSION = base * (emission_boost + glow * glow_strength) + rim_color * fr * up * rim_strength * 0.06
 		+ vec3(1.0, 0.9, 0.85) * f * 1.2;
 }
 

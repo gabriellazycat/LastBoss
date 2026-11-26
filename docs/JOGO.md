@@ -146,23 +146,27 @@ Depois de cada local roda a **cena do local**: câmera lenta a 30 %, os selos do
 
 Cada sistema tem um visual só. As variantes que não foram escolhidas saíram do código em 24/11/2026.
 
-- **Interface "Mapa aberto":**
-  - Pergaminho, tinta e selos; o kit fica em `game/ui_parch.gd`.
+- **Interface "Mapa aberto" em feltro:**
+  - Painéis e botões em retalhos de feltro com costura tracejada, nas mesmas margens do kit (`tools/art/ui_kit/make_felt_kit.py`; o kit fica em `game/ui_parch.gd`). Barras de feltro, versos das pilhas em feltro costurado com botão e marcas no chão em costura (`ring.gdshader`). Vida, experiência e "bom" nas cores das cartas.
   - HUD na disposição 7 (`game/hud.gd`): missão no canto, vida do grupo no alto, elixir na coluna direita, sem minimapa fixo e sem relógio.
   - O mapa (M) é o minimapa em gravura (`game/minimap.gd`), com os desenhos Nórdicos (`game/campaign_art.gd`).
 - **Cartas:**
   - Arte gerada por IA em guache leve, um pincel só (skill `cartas-ia`). Os arquivos ficam em `assets/cards/` e o mapa id → arte em `data/card_art.json`.
   - Moldura em `game/card_mold.gd`.
   - O efeito de melhoria da carta fica em `game/card_fx.gd`.
-- **Mundo em guache chapado:** materiais pintados em `game/art/paint_look.gd`. Os escuros vão para a paleta das cartas por uma LUT (`assets/textures/paint/lut_escuro.png`).
-  - **Chão:** looks por ato (`game/art/ground_looks.gd`), relva pincelada (`ground_tela.gdshader`).
-  - **Cenário:** regiões por ato, vento e bosques (`game/art/cenario.gd`, `mundo_vivo.gd`). Árvores em pinceladas, modelos `arv5` e `arv6` (`game/art/arvores.gd`).
-  - **Luz e arena:** luz de fim de tarde (`luz_look.gd`), arena em cripta (`arena_look.gd`).
+- **Mundo em feltro nas cores das cartas (escolhido em 26/11/2026):** uma colcha de retalhos de feltro ao anoitecer, com o chão e os modelos novos na paleta das cartas e nenhuma mancha de pincel no mundo 3D (`game/art/diorama.gd`).
+  - **Câmera:** a do jogo (FOV 40) com tilt-shift por profundidade de campo na qualidade alta: a faixa nítida vai de 0,82 a 1,25 da distância do alvo (`Diorama.focus`).
+  - **Luz:** hora azul, com as luzes quentes (lanternas, locais e herói) mais fortes e largas (`Diorama.LIGHT_K`, `LIGHT_R`), janelas acesas e o brilho de feltro (`dio_fuzz`, `dio_fiber` em `paint.gdshaderinc`). O ato 1 é o afinado.
+  - **Chão:** retalhos de feltro sálvia, oliva e ocre com pesponto tracejado (`ground_tela`, estilo 7) e estrada de feltro areia (`road_tela`, estilo 7), sem tufos e sem os borrões de cor (`mundo` 0).
+  - **Cenário:** `game/art/cenario.gd`, `mundo_vivo.gd` e as árvores `arv5`/`arv6`, com o atlas pintado lido num mipmap borrado (sem as manchas de pincel, `atlas_lod` no `look5`) e meia paleta das cartas; lanternas e cerca de feltro.
+  - **Taverna e casas da disputa:** enxaimel de feltro fofo nas cores das cartas, com telha de terracota (`tools/art/blender_dio/buildings.py`).
+  - **Arena:** cripta (`arena_look.gd`).
   - **Efeitos:** golpes em `golpes.gd`, efeitos em `fx2.gd`.
 - **Modelos:**
-  - Monstros e estruturas em miniaturas de pincel seco (`assets/models/g_n_a` e as texturas `g_tex/dry_n`), mais os modelos feitos à mão de 21/11 (`m2_a`, `v2`). O código fica em `game/art/looks.gd` e `models.gd`.
-  - Heróis com modelos KayKit (`assets/models/cc0`).
-  - **Regra dos modelos novos:** usar as cores da arte da carta e fazer olhos sem pupila.
+  - Monstros e estruturas em miniaturas de pincel seco (`assets/models/g_n_a` e as texturas `g_tex/dry_n`), mais os modelos feitos à mão de 21/11 (`m2_a`, `v2`), sem as manchas. O código fica em `game/art/looks.gd` e `models.gd`.
+  - **Feitos a partir das cartas, em feltro** (`assets/models/dio`, passam na frente de todos os outros): rato, Ratazana e Horda de Ratos, escudeiro (aço, tabardo azul, escudo de bico e espada longa), taverna, casas, lanterna e cerca. Rato, escudeiro e construções saem de `tools/art/blender_dio/characters.py` e `buildings.py`; tudo é convertido e animado pelo `tools/art/import_dio.gd` com a lista `tools/art/dio.json` (créditos em `assets/models/dio/CREDITOS.md`).
+  - Os outros heróis usam modelos KayKit (`assets/models/cc0`).
+  - **Regra dos modelos novos:** usar as cores da arte da carta e fazer olhos sem pupila, sem manchas de pincel.
 - **Áudio** (`game/audio.gd`; tudo CC0, com licenças em `assets/audio/LICENSES.txt`):
   - Música por contexto (menu, estrada, arena), trocada com crossfade.
   - Os ônibus `Music` e `SFX` têm volume nas Configurações.

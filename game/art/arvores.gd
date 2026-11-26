@@ -21,7 +21,7 @@ static func bush_mesh(act: int) -> Mesh:
 	var m: Mesh = load(base + ".res") if ResourceLoader.exists(base + ".res") else null
 	if m:
 		if not m.has_meta("gtex") and ResourceLoader.exists(base + ".png"):
-			m.set_meta("gtex", load(base + ".png"))
+			m.set_meta("gtex", Looks.atlas_tex(base + ".png"))
 		m.set_meta("gink", 0.0)
 	_mesh[key] = m
 	return m
@@ -39,7 +39,7 @@ static func mesh(id: String, act: int, style := -1) -> Mesh:
 	var m: Mesh = load(base + ".res") if ResourceLoader.exists(base + ".res") else null
 	if m:
 		if not m.has_meta("gtex") and ResourceLoader.exists(base + ".png"):
-			m.set_meta("gtex", load(base + ".png"))
+			m.set_meta("gtex", Looks.atlas_tex(base + ".png"))
 		m.set_meta("gink", 0.0)
 	_mesh[key] = m
 	return m

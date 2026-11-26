@@ -1,0 +1,238 @@
+class_name Diorama
+extends RefCounted
+## Mundo em feltro nas cores das cartas (escolhido em 26/11/2026): uma colcha de retalhos de feltro costurados ao
+## anoitecer, com o chão, a taverna, as casas, o rato e o escudeiro nas cores da arte das cartas e o resto do cenário
+## sem manchas. Hora azul, céu fundo, e as luzes quentes (lanternas, janelas, a luz do herói) fazem o aconchego;
+## fibra e brilho de veludo nas bordas (dio_fuzz, dio_fiber). A câmera é a do jogo (FOV 40) com tilt-shift.
+## Vale para todos os atos (o ato 1 é o afinado); chamado pelo main depois do look de cada ato.
+
+const FOV := 40.0                 # a lente do jogo, com tilt-shift
+const PITCH := 54.0
+## Luzes pontuais (lanternas, locais, herói): mais fortes e largas à noite.
+const LIGHT_K := 3.4
+const LIGHT_R := 1.35               # graus para baixo
+## A câmera do jogo foi pensada com FOV 40: a distância cresce para mostrar a mesma área no chão.
+const DIST_K := 1.0               # FOV 40: a mesma distância do jogo
+const SKY_SHADER := preload("res://game/art/dio_backdrop.gdshader")
+
+# Sol, ambiente e céu por ato (o 1 é a hora azul afinada; 2 e 3 só puxam a cor do ato).
+const ACTS := [
+	{"sun_rot": Vector3(-38, 150, 0), "sun_col": Color(0.62, 0.7, 1.0), "sun_e": 0.7,
+		"amb": Color(0.46, 0.5, 0.82), "amb_e": 0.6, "top": Color(0.08, 0.09, 0.22), "hor": Color(0.32, 0.3, 0.52),
+		"haze": Color(0.42, 0.36, 0.55), "sat": 1.08},
+	{"sun_rot": Vector3(-34, -55, 0), "sun_col": Color(1.0, 0.84, 0.66), "sun_e": 1.3,
+		"amb": Color(0.82, 0.74, 0.7), "amb_e": 0.7, "top": Color(0.5, 0.55, 0.75), "hor": Color(0.95, 0.8, 0.66),
+		"haze": Color(0.96, 0.84, 0.7), "sat": 1.12},
+	{"sun_rot": Vector3(-30, 140, 0), "sun_col": Color(1.0, 0.7, 0.7), "sun_e": 1.15,
+		"amb": Color(0.6, 0.55, 0.78), "amb_e": 0.7, "top": Color(0.2, 0.16, 0.32), "hor": Color(0.62, 0.42, 0.55),
+		"haze": Color(0.7, 0.55, 0.66), "sat": 1.04},
+]
+
+static var _attrs: CameraAttributesPractical
+
+
+static func setup_camera(cam: Camera3D) -> void:
+	cam.fov = FOV
+	cam.far = 900
+	_attrs = CameraAttributesPractical.new()
+	_attrs.dof_blur_far_enabled = true
+	_attrs.dof_blur_near_enabled = true
+	_attrs.dof_blur_amount = 0.06
+	cam.attributes = _attrs
+
+
+## Deslocamento da câmera a partir do alvo para a distância do jogo (pensada com FOV 40 e ~53°).
+static func cam_offset(dist: float) -> Vector3:
+	var d := dist * DIST_K
+	var a := deg_to_rad(PITCH)
+	return Vector3(0, sin(a) * d, cos(a) * d)
+
+
+## Tilt-shift: só a faixa da distância do alvo fica nítida (números do Holy Sheep, relativos à distância).
+static func focus(cam: Camera3D, d: float) -> void:
+	if _attrs == null or cam.attributes != _attrs:
+		return
+	var on := int(Settings.v.get("quality", 2)) >= 2
+	_attrs.dof_blur_far_enabled = on
+	_attrs.dof_blur_near_enabled = on
+	# Com FOV 40 o chão na tela vai de ~0,79 d (pé) a ~1,36 d (topo). A faixa nítida vai de 0,82 d a 1,25 d (~75% da
+	# tela): só as bordas desfocam.
+	_attrs.dof_blur_far_distance = d * 1.25
+	_attrs.dof_blur_far_transition = d * 0.2
+	_attrs.dof_blur_near_distance = d * 0.82
+	_attrs.dof_blur_near_transition = d * 0.08
+
+
+static func apply_env(env: Environment, sun: DirectionalLight3D, rim: DirectionalLight3D, act: int) -> void:
+	_remember(env, sun, rim, act)
+	if suspended:
+		return
+	var A: Dictionary = ACTS[clampi(act, 0, ACTS.size() - 1)]
+	sun.rotation_degrees = A["sun_rot"]
+	sun.light_color = A["sun_col"]
+	sun.light_energy = A["sun_e"]
+	sun.shadow_opacity = 1.0
+	sun.shadow_blur = 1.4
+	sun.light_angular_distance = 1.2
+	sun.shadow_normal_bias = 1.2
+	sun.directional_shadow_max_distance = 140.0
+	sun.light_specular = 0.0
+	if rim:
+		rim.light_energy = 0.0
+	var sm := ShaderMaterial.new()
+	sm.shader = SKY_SHADER
+	var top: Color = A["top"]
+	var hor: Color = A["hor"]
+	sm.set_shader_parameter("top_color", top)
+	sm.set_shader_parameter("horizon_color", hor)
+	sm.set_shader_parameter("center_color", hor.lerp(A["haze"], 0.25))
+	sm.set_shader_parameter("edge_color", hor.lerp(top, 0.4).darkened(0.25))
+	env.sky.sky_material = sm
+	env.background_mode = Environment.BG_SKY
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = A["amb"]
+	env.ambient_light_energy = A["amb_e"]
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+	env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	env.tonemap_exposure = 1.12
+	env.glow_intensity = 0.85
+	env.glow_strength = 1.15
+	env.glow_bloom = 0.12
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+	env.glow_hdr_threshold = 0.75
+	env.adjustment_enabled = true
+	env.adjustment_contrast = 1.08
+	env.adjustment_brightness = 1.0
+	env.adjustment_saturation = A["sat"]
+	env.adjustment_color_correction = null
+	env.ssao_radius = 1.4
+	env.ssao_intensity = 2.4
+	env.ssao_power = 1.5
+	env.ssao_detail = 0.7
+	env.ssao_horizon = 0.06
+	env.ssao_light_affect = 0.12
+	env.ssil_enabled = int(Settings.v.get("quality", 2)) >= 2
+	env.ssil_radius = 5.0
+	env.ssil_intensity = 1.25
+	env.ssil_sharpness = 0.98
+	env.ssil_normal_rejection = 1.0
+	# Sem névoa: a miniatura é nítida e limpa; a distância some pelo tilt-shift.
+	env.fog_density = 0.0
+	env.fog_enabled = false
+	env.volumetric_fog_density = 0.0
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH
+		if int(Settings.v.get("quality", 2)) >= 2 else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
+
+
+## Vinheta da tela: leve e quente (a de antes era roxa a 0,82 e escurecia a maquete).
+static func vignette_code() -> String:
+	return "shader_type canvas_item;
+void fragment(){ vec2 d = UV - vec2(0.5); float v = smoothstep(0.35, 0.95, length(d * vec2(1.0, 0.8))); COLOR = vec4(0.03, 0.03, 0.1, v * 0.42); }"
+
+
+# ---------------------------------------------------------------- modelos
+
+## Modelos do diorama (tools/art/import_dio.gd + tools/art/dio.json): cor nos vértices, sem atlas. Passam na frente
+## das peças de sempre em Models.prop, GroundLooks.prop_mesh, Arvores (ato 1) e Looks.unit_mesh.
+const DIR := "res://assets/models/dio/"
+## Tinta do herói: o escudeiro de feltro já vem colorido.
+const HERO_TINT := Color(1.0, 1.0, 1.0)
+## Escudeiro de feltro (tools/art/blender_dio/characters.py, partes animadas pelo import_dio "@biped").
+const HERO_SCENE := "res://assets/models/dio/hero_escudeiro.scn"
+static var _cache: Dictionary = {}
+
+
+## Taverna, casas, rato (rat, rat_horde, rat_brute) e escudeiro de feltro nas cores das cartas
+## (tools/art/blender_dio), lanterna e cerca de feltro. Os outros ids não têm modelo aqui e usam o de sempre.
+static func mesh(id: String) -> Mesh:
+	if id == "":
+		return null
+	if not _cache.has(id):
+		var p := DIR + id + ".res"
+		_cache[id] = load(p) if ResourceLoader.exists(p) else null
+	return _cache[id]
+
+
+## Monstro do diorama da carta: o da própria carta, senão o do modelo que ela usa (CardModel); "" se não houver.
+static func unit_id(card: String) -> String:
+	if mesh(card) and mesh(card).has_meta("vat"):
+		return card
+	var base := CardModel.of(card)
+	return base if base != card and mesh(base) and mesh(base).has_meta("vat") else ""
+
+
+# ---------------------------------------------------------------- menu (mesa do Lorde)
+
+## O ambiente, o sol e a câmera são os mesmos do menu: a mesa (DeskScene._mood) chama suspend() ao entrar e
+## resume() ao sair, para o menu continuar com a luz e a lente de antes do diorama.
+const ENV_KEYS := ["background_mode", "ambient_light_source", "ambient_light_color", "ambient_light_energy",
+	"reflected_light_source", "tonemap_mode", "tonemap_exposure", "glow_intensity", "glow_strength", "glow_bloom",
+	"glow_blend_mode", "glow_hdr_threshold", "adjustment_enabled", "adjustment_contrast", "adjustment_brightness",
+	"adjustment_saturation", "adjustment_color_correction", "ssao_radius", "ssao_intensity", "ssao_power", "ssao_detail",
+	"ssao_horizon", "ssao_light_affect", "ssil_enabled", "ssil_radius", "ssil_intensity", "ssil_sharpness",
+	"ssil_normal_rejection", "fog_density", "fog_enabled", "volumetric_fog_density"]
+const SUN_KEYS := ["rotation_degrees", "light_color", "light_energy", "shadow_opacity", "shadow_blur",
+	"light_angular_distance", "shadow_normal_bias", "directional_shadow_max_distance", "light_specular"]
+static var _base: Dictionary = {}
+static var _refs: Array = []          # [env, sun, rim, cam]
+static var _last_act := 0
+static var _vig: ShaderMaterial
+static var _vig_old := ""
+static var suspended := false
+
+
+## Guarda o ambiente de antes do diorama (uma vez) e as referências; chamado no começo de apply_env.
+static func _remember(env: Environment, sun: DirectionalLight3D, rim: DirectionalLight3D, act: int) -> void:
+	_last_act = act
+	if not _base.is_empty():
+		return
+	var e := {}
+	for k in ENV_KEYS:
+		e[k] = env.get(k)
+	e["sky"] = env.sky.sky_material if env.sky else null
+	var s := {}
+	for k in SUN_KEYS:
+		s[k] = sun.get(k)
+	_base = {"env": e, "sun": s, "rim": rim.light_energy if rim else 0.0}
+	_refs = [env, sun, rim, null]
+
+
+static func set_vignette(m: ShaderMaterial, old_code: String) -> void:
+	_vig = m
+	_vig_old = old_code
+
+
+static func suspend(cam: Camera3D) -> void:
+	if suspended or _base.is_empty():
+		return
+	suspended = true
+	var env: Environment = _refs[0]
+	var sun: DirectionalLight3D = _refs[1]
+	var rim: DirectionalLight3D = _refs[2]
+	for k in ENV_KEYS:
+		env.set(k, _base["env"][k])
+	if env.sky:
+		env.sky.sky_material = _base["env"]["sky"]
+	for k in SUN_KEYS:
+		sun.set(k, _base["sun"][k])
+	if rim:
+		rim.light_energy = _base["rim"]
+	if cam:
+		cam.attributes = null
+		cam.fov = 40.0
+	if _vig and _vig_old != "":
+		_vig.shader.code = _vig_old
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM
+		if int(Settings.v.get("quality", 2)) >= 2 else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
+
+
+static func resume(cam: Camera3D) -> void:
+	if not suspended:
+		return
+	suspended = false
+	if cam:
+		cam.fov = FOV
+		cam.attributes = _attrs
+	if _vig:
+		_vig.shader.code = vignette_code()
+	apply_env(_refs[0], _refs[1], _refs[2], _last_act)

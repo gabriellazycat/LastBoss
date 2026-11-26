@@ -95,7 +95,7 @@ static func m2_mesh(id: String) -> Mesh:
 	if m:
 		var tp := "res://assets/models/g_tex/m2/%s.png" % id
 		if not m.has_meta("gtex") and ResourceLoader.exists(tp):
-			m.set_meta("gtex", load(tp))
+			m.set_meta("gtex", atlas_tex(tp))
 		m.set_meta("gink", 0.0)
 	_mesh[key] = m
 	return m
@@ -121,10 +121,23 @@ static func g_mesh(id: String) -> Mesh:
 	if m:
 		var tp := "res://assets/models/g_tex/dry_n/%s.png" % id
 		if m.has_meta("gtex") == false and ResourceLoader.exists(tp):
-			m.set_meta("gtex", load(tp))
+			m.set_meta("gtex", atlas_tex(tp))
 		m.set_meta("gink", 0.0)
 	_mesh[key] = m
 	return m
+
+
+## Atlas pintado com mipmaps (versões D e E, 26/11/2026): o look5 lê o atlas num mipmap borrado (atlas_lod) para
+## tirar as manchas de pincel da textura. Os .png vêm importados sem mipmap, então eles são gerados aqui.
+static func atlas_tex(path: String) -> Texture2D:
+	var t: Texture2D = load(path)
+	var img := t.get_image() if t else null
+	if img == null:
+		return t
+	if img.is_compressed():
+		img.decompress()
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
 
 
 ## Material de uma malha com atlas (a base, se não tiver: parâmetros como o vento ficam).
@@ -180,13 +193,17 @@ static func set_param(m: ShaderMaterial, k: String, val: Variant) -> void:
 # ---------------------------------------------------------------- atalhos usados pelo jogo
 
 static func scale_of(id: String) -> float:
-	if m2_unit_id(id) != "":
+	if m2_unit_id(id) != "" or Diorama.unit_id(id) != "":
 		return 1.0
 	return float(VARIANTS[id]["scale"]) if VARIANTS.has(id) and enemies() > 0 else 1.0
 
 
 static func unit_mesh(id: String) -> Mesh:
 	_last_card = id
+	var dio := Diorama.unit_id(id)
+	if dio != "":
+		_last_unit = "dio:" + dio
+		return Diorama.mesh(dio)
 	var m2 := m2_unit_id(id)
 	if m2 != "":
 		_last_unit = "m2:" + m2
@@ -202,6 +219,9 @@ static func unit_mesh(id: String) -> Mesh:
 
 static func unit_material(emit: float, multimesh: bool, id := "") -> ShaderMaterial:
 	var card := id if id != "" else _last_card
+	var dio := Diorama.unit_id(card) if id != "" else (_last_unit.trim_prefix("dio:") if _last_unit.begins_with("dio:") else "")
+	if dio != "":
+		return material(7, emit, multimesh, Diorama.mesh(dio))
 	var m2 := m2_unit_id(card) if id != "" else (_last_unit.trim_prefix("m2:") if _last_unit.begins_with("m2:") else "")
 	if m2 != "":
 		# Modelo refeito: shader do look 7 (lê VAT e atlas), sem a tinta do VARIANTS.
@@ -246,13 +266,13 @@ static func hero_material(emit: float) -> ShaderMaterial:
 	if lk == 0 or HeroRig.has_rig(own):
 		lk = own
 	var m := material(lk, emit) if lk > 0 else Models.glow_material(emit)
-	if HeroRig.has_rig(own):
+	if HeroRig.has_rig(own) and not ResourceLoader.exists(Diorama.HERO_SCENE):
 		var t := HeroRig.texture(own)
 		if t:
 			m.set_shader_parameter("use_tex", true)
 			m.set_shader_parameter("albedo_tex", t)
 	# Mundo pintado: aço azulado do cavaleiro das cartas (o modelo KayKit é quase branco e some no guache claro).
-	m.set_shader_parameter("tint", Color(0.66, 0.72, 0.86))
+	m.set_shader_parameter("tint", Diorama.HERO_TINT)
 	return m
 
 

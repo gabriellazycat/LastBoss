@@ -1,0 +1,70 @@
+{
+ "src": "C:/Users/gabri/Desktop/Dog/pastor/assets/models",
+ "out": "res://assets/models/dio/",
+ "units": {
+  "rat": [
+   "res://tools/art/out/dio/rat.glb",
+   "@quad",
+   "",
+   0.75,
+   [
+    1,
+    1,
+    1
+   ]
+  ],
+  "rat_horde": [
+   "res://tools/art/out/dio/rat.glb",
+   "@quad",
+   "",
+   0.66,
+   [
+    1,
+    1,
+    1
+   ]
+  ],
+  "rat_brute": [
+   "res://tools/art/out/dio/rat.glb",
+   "@quad",
+   "",
+   1.15,
+   [
+    0.92,
+    0.92,
+    0.95
+   ]
+  ]
+ },
+ "props": {
+  "tavern": [
+   "res://tools/art/out/dio/tavern.glb",
+   6.6,
+   true
+  ],
+  "house": [
+   "res://tools/art/out/dio/house.glb",
+   4.4,
+   true
+  ],
+  "house_b": [
+   "res://tools/art/out/dio/house_b.glb",
+   4.4,
+   true
+  ],
+  "fence": [
+   "farm_fence.glb",
+   1.15
+  ],
+  "lantern": [
+   "market_lamp.glb",
+   2.4
+  ]
+ },
+ "heroes": {
+  "hero_escudeiro": [
+   "res://tools/art/out/dio/knight.glb",
+   "@biped"
+  ]
+ }
+}

@@ -16,8 +16,9 @@ const MASK := Color(0.89, 0.83, 0.63, 0.94)
 const PAL := {
 	"BG": Color(0.86, 0.81, 0.7, 0.97), "BG_SOFT": Color(0.86, 0.81, 0.7, 0.9), "EDGE": Color(0.3, 0.22, 0.15),
 	"GOLD": Color(0.5, 0.09, 0.05), "TEXT": Color(0.12, 0.095, 0.075), "MUTED": Color(0.34, 0.29, 0.24),
-	"HERO_HP": Color(0.62, 0.1, 0.07), "HERO_XP": Color(0.62, 0.42, 0.08), "POWER": Color(0.36, 0.21, 0.62),
-	"ELIXIR": Color(0.4, 0.23, 0.74), "GOOD": Color(0.14, 0.42, 0.18), "BAD": Color(0.6, 0.09, 0.05),
+	# Vida, experiência e "bom" nas cores das cartas (terracota, ocre, sálvia), 26/11/2026.
+	"HERO_HP": Color(0.68, 0.24, 0.19), "HERO_XP": Color(0.74, 0.54, 0.22), "POWER": Color(0.36, 0.21, 0.62),
+	"ELIXIR": Color(0.4, 0.23, 0.74), "GOOD": Color(0.27, 0.46, 0.27), "BAD": Color(0.62, 0.16, 0.1),
 }
 const RARITY := [Color(0.34, 0.32, 0.29), Color(0.18, 0.42, 0.2), Color(0.15, 0.3, 0.58), Color(0.48, 0.2, 0.58)]
 ## Fita (faixa da carta), tinta do desenho e cor do nome sobre a fita, por tipo.

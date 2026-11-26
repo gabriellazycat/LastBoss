@@ -59,6 +59,8 @@ static func texture(look: int) -> Texture2D:
 
 
 static func scene_path(look: int, cls_: String) -> String:
+	if cls_ == "escudeiro" and ResourceLoader.exists(Diorama.HERO_SCENE):
+		return Diorama.HERO_SCENE
 	if cls_ == "escudeiro" or not CLASS_SCENE.has(cls_):
 		return SCENES[look]
 	return "res://assets/models/cc0/%s.scn" % CLASS_SCENE[cls_]

@@ -55,8 +55,9 @@ var tip_t := 0.0
 func _init() -> void:
 	custom_minimum_size = Vector2(QUEUE_W * 2.0 + STEP * 5 + CARD.x + 24, CARD.y + 30 + DROOP * 6.25)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	deck_pile = _make_pile("draw", Color(0.42, 0.18, 0.14))
-	disc_pile = _make_pile("discard", Color(0.2, 0.22, 0.34))
+	# Terracota e azul-acinzentado das cartas.
+	deck_pile = _make_pile("draw", Color(0.66, 0.38, 0.29))
+	disc_pile = _make_pile("discard", Color(0.4, 0.48, 0.6))
 	deck_head = _pile_head("UI_PILE_DRAW")
 	disc_head = _pile_head("UI_PILE_DISCARD")
 	deck_count = _pile_count(deck_pile)
@@ -674,7 +675,7 @@ func _fly_shuffle() -> void:
 		var b := Control.new()
 		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.size = DECK_BACK
-		b.draw.connect(func(): _draw_back(b, Rect2(Vector2.ZERO, DECK_BACK), Color(0.42, 0.18, 0.14)))
+		b.draw.connect(func(): _draw_back(b, Rect2(Vector2.ZERO, DECK_BACK), Color(0.66, 0.38, 0.29)))
 		b.position = from
 		b.z_index = 3
 		b.modulate.a = 0.0
@@ -703,29 +704,38 @@ func _draw_pile(pile: Control) -> void:
 		_draw_back(pile, Rect2(base - Vector2(i, i) * 2.4, DECK_BACK), tint)
 
 
-static var _back_frame: StyleBoxTexture = null
-
-
+## Verso das cartas do monte (26/11/2026): retalho de feltro na cor do monte, com costura creme tracejada a 5 px da
+## borda e um botão no meio.
 func _draw_back(ci: CanvasItem, r: Rect2, tint: Color) -> void:
-	# Verso no desenho das cartas (13/11/2026): fundo na cor do monte, moldura dourada do molde e losango de ouro.
-	if _back_frame == null:
-		_back_frame = StyleBoxTexture.new()
-		_back_frame.texture = UiParch.tex("frame_gold")
-		for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
-			_back_frame.set_texture_margin(side, 34.0)
-		_back_frame.draw_center = false
-	ci.draw_rect(Rect2(r.position + Vector2(2, 3), r.size), Color(0, 0, 0, 0.3))
-	ci.draw_rect(r, tint.darkened(0.35))
-	ci.draw_rect(r.grow(-2.0), tint)
-	ci.draw_set_transform(r.position, 0.0, Vector2(0.4, 0.4))
-	ci.draw_style_box(_back_frame, Rect2(Vector2.ZERO, r.size / 0.4))
-	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var rad := 8
+	var sh := StyleBoxFlat.new()
+	sh.bg_color = Color(0.12, 0.08, 0.1, 0.22)
+	sh.set_corner_radius_all(rad)
+	ci.draw_style_box(sh, Rect2(r.position + Vector2(2, 3), r.size))
+	var sb := StyleBoxFlat.new()
+	sb.anti_aliasing = true
+	sb.set_corner_radius_all(rad)
+	sb.bg_color = tint
+	sb.border_color = tint.darkened(0.25)
+	sb.set_border_width_all(1)
+	ci.draw_style_box(sb, r)
+	var cream := Color("f2e9d7")
+	var q := r.grow(-5.0)
+	var pts := [q.position, Vector2(q.end.x, q.position.y), q.end, Vector2(q.position.x, q.end.y), q.position]
+	for k in 4:
+		var a: Vector2 = pts[k]
+		var b: Vector2 = pts[k + 1]
+		var n := int(a.distance_to(b) / 7.0)
+		for i in n:
+			var t0 := float(i) / n
+			var t1 := t0 + 0.55 / n
+			ci.draw_line(a.lerp(b, t0) + Vector2(0, 0.8), a.lerp(b, t1) + Vector2(0, 0.8), Color(0, 0, 0, 0.25), 2.0, true)
+			ci.draw_line(a.lerp(b, t0), a.lerp(b, t1), cream, 2.0, true)
 	var cc := r.get_center()
-	var ss := 12.0
-	ci.draw_colored_polygon(PackedVector2Array([cc + Vector2(0, -ss), cc + Vector2(ss * 0.7, 0), cc + Vector2(0, ss), cc + Vector2(-ss * 0.7, 0)]), UiParch.GOLD)
-	ci.draw_colored_polygon(PackedVector2Array([cc + Vector2(0, -ss * 0.5), cc + Vector2(ss * 0.35, 0), cc + Vector2(0, ss * 0.5), cc + Vector2(-ss * 0.35, 0)]), UiParch.GOLD_LIGHT)
-	ci.draw_rect(r, Color(0.1, 0.05, 0.04), false, 1.0)
-	return
+	ci.draw_circle(cc + Vector2(0, 1), 7.5, Color(0, 0, 0, 0.22))
+	ci.draw_circle(cc, 7.0, cream)
+	for o in [Vector2(-2.2, -2.2), Vector2(2.2, -2.2), Vector2(-2.2, 2.2), Vector2(2.2, 2.2)]:
+		ci.draw_circle(cc + o, 1.1, tint.darkened(0.3))
 
 
 func _sorted_cards(which: String) -> Array:

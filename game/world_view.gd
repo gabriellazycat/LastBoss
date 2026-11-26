@@ -216,8 +216,9 @@ func _mi(mesh: Mesh, pos: Vector3, mat: Material = null, rot_y := 0.0) -> MeshIn
 func _light(pos: Vector3, col: Color, energy: float, rng_m: float) -> OmniLight3D:
 	var l := OmniLight3D.new()
 	l.light_color = col
-	l.light_energy = energy
-	l.omni_range = rng_m
+	l.light_energy = energy * Diorama.LIGHT_K
+	l.omni_range = rng_m * Diorama.LIGHT_R
+	l.omni_attenuation = 1.2
 	l.position = pos
 	l.light_volumetric_fog_energy = 0.2
 	return l
@@ -578,7 +579,7 @@ func _build_ground_look() -> void:
 	pm.subdivide_width = int(b.size.x / 12.0)
 	pm.subdivide_depth = int(b.size.y / 12.0)
 	var gmat := GroundLooks.ground_material()
-	gmat.set_shader_parameter("mundo", MundoVivo.ground_amount())
+	gmat.set_shader_parameter("mundo", 0.0)   # 26/11/2026: sem os borrões de cor do chão (manchas)
 	var g := _mi(pm, Vector3(b.get_center().x, -0.03, b.get_center().y), gmat)
 	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	g.layers = GROUND_LAYER
@@ -1051,7 +1052,9 @@ func _build_locations() -> void:
 				n.add_child(_mi(Models.prop("coins"), off * 4.6 + fwd * 1.2 + Vector3(0, 0.6, 0)))
 				n.add_child(_mi(Models.prop("lantern"), off * 4.0 + fwd * 3.5, null, yaw))
 			"tavern":
-				n.add_child(_mi(Models.prop("tavern"), off * 7.0, null, yaw + PI * 0.5))
+				# Diorama: a frente da taverna (porta, placa, barris) vira para a estrada e para a câmera (+z).
+				var tf := (-off).lerp(Vector3(0, 0, 1), 0.55).normalized()
+				n.add_child(_mi(Models.prop("tavern"), off * 7.0, null, atan2(tf.x, tf.z)))
 				n.add_child(_mi(Models.prop("fence"), off * 4.0 + fwd * 4.0, null, yaw))
 			"fountain":
 				n.add_child(_mi(Models.prop("fountain"), off * 5.0))
@@ -2000,7 +2003,7 @@ func _draw_hero(alpha: float, delta: float) -> void:
 	for hm in mats:
 		hm.set_shader_parameter("emission_boost", 0.0 if h.petrify_t > 0.0 else glow)
 		hm.set_shader_parameter("flash", fl)
-	hero_light.light_energy = 1.0 + h.level * 0.06
+	hero_light.light_energy = (1.0 + h.level * 0.06) * Diorama.LIGHT_K
 	fireflies.position = p
 	if presence != null:
 		presence.track(hero_root, h.cls(), true)
@@ -2693,7 +2696,7 @@ func _camera(alpha: float, delta: float) -> void:
 		dist += CAM_ARENA
 	arrive_pull = maxf(0.0, arrive_pull - delta)
 	dist += 5.0 * sin(clampf(arrive_pull / 3.0, 0.0, 1.0) * PI)
-	var off := Vector3(0, dist * 0.8, dist * 0.6)
+	var off := Diorama.cam_offset(dist)
 	trauma = maxf(0.0, trauma - delta * 1.6)
 	var sh := trauma * trauma
 	var t := Time.get_ticks_msec() / 1000.0
@@ -2703,6 +2706,7 @@ func _camera(alpha: float, delta: float) -> void:
 	# atrás dele sai de baixo do leque de cartas (era 8 a 12% das jogadas pensadas no --humantest).
 	cam.look_at(target + Vector3(0, 0, CAM_LOOK_Z) + shake * 0.3, UP)
 	cam.rotation.z += sin(t * 31.0) * sh * 0.03
+	Diorama.focus(cam, off.length())
 
 
 ## Para onde o mouse puxa a câmera: fora da zona morta do meio, até LOOK_MAX metros na direção dele. Fora da
@@ -2889,7 +2893,9 @@ func _draw_houses() -> void:
 		var key := "%d:%d" % [li, k]
 		var h: Dictionary = hs[k]
 		if not house_nodes.has(key):
-			var n := _mi(Models.prop("house"), Vector3(h["x"], 0, h["y"]), null, randf() * TAU)
+			# Diorama: duas casas diferentes, de frente para a câmera (com um giro pequeno).
+			var hid := "house_b" if k % 2 == 1 and Diorama.mesh("house_b") else "house"
+			var n := _mi(Models.prop(hid), Vector3(h["x"], 0, h["y"]), null, randf_range(-0.7, 0.7))
 			n.scale = Vector3.ONE * 0.75
 			add_child(n)
 			house_nodes[key] = n
