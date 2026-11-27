@@ -25,6 +25,7 @@ var selected := -1
 var pad := false                   # o jogador está no controle (o balão fica visível)
 var hover := -1
 var panels := {}                   # uid -> carta compacta
+var launched := {}                 # uid das cartas que voaram para o mundo (CardDrop): somem da mão na hora
 var panel_sig := {}                # uid -> "mods" (refaz a carta quando ganha modificador)
 var held_panels := {}              # uid -> miniatura da carta em vigor
 var locale := ""
@@ -221,7 +222,11 @@ func refresh(delta: float) -> void:
 	last_discard = sim.discard.size()
 	for uid in panels.keys():
 		if not seen.has(uid):
-			_discard(panels[uid], to_discard)
+			if launched.has(uid):
+				panels[uid].queue_free()
+				launched.erase(uid)
+			else:
+				_discard(panels[uid], to_discard)
 			panels.erase(uid)
 			panel_sig.erase(uid)
 	var a := clampf(delta * 14.0, 0.0, 1.0)
@@ -437,6 +442,15 @@ func _make_card(ci: Sim.CardInst, k: int) -> PanelContainer:
 	var p := UiKit.mini_card(ci.def, sim.card_cost(ci), UiKit.mod_names(ci), str(k + 1), CARD.x, CARD.y, true, ci.level)
 	add_child(p)
 	return p
+
+
+## Retângulo na tela da carta da mão com esse uid (vazio se ela não está desenhada).
+func panel_rect(uid: int) -> Rect2:
+	var p: Control = panels.get(uid)
+	if p == null:
+		return Rect2()
+	var r := p.get_global_rect()
+	return Rect2(r.get_center() - CARD * p.scale * 0.5, CARD * p.scale)
 
 
 ## A carta jogada voa ao monte de descarte (ou, se não foi para lá, sobe e some).

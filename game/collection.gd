@@ -15,6 +15,8 @@ extends VBoxContainer
 
 signal closed
 
+var _direct := false   # aberta direto no deck de um vilão (open_deck): o Esc fecha em vez de voltar à tela 1
+
 const BOARD := Vector2(1688, 1008)        # espaço de desenho: papel de 1640x960 com 24 px de margem (como a Coleção do Mapa aberto)
 const PAPER := Vector2(24, 24)
 const PAPER_SIZE := Vector2(1640, 960)
@@ -133,6 +135,7 @@ func _ready() -> void:
 
 func open() -> void:
 	_close_zoom()
+	_direct = false
 	stage = "pick"
 	type_filter = "all"
 	cost_filter = -1
@@ -262,9 +265,17 @@ func set_tab(id: String) -> void:
 	_focus_first()
 
 
+## Abre direto na coleção do vilão vindo de fora (botão "Editar deck" da escolha de vilão): o Esc fecha a
+## Biblioteca e volta para quem abriu, em vez de cair na escolha de vilão da própria Biblioteca.
+func open_deck(id: String) -> void:
+	set_tab(id)
+	_direct = true
+
+
 ## Volta à escolha do vilão (tela 1).
 func to_pick() -> void:
 	_close_zoom()
+	_direct = false
 	stage = "pick"
 	refresh()
 	_focus_first()
@@ -1477,7 +1488,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		if zoom_id != "":
 			_close_zoom()
-		elif stage == "deck":
+		elif stage == "deck" and not _direct:
 			to_pick()
 		else:
 			_close()

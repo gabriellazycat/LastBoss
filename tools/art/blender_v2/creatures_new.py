@@ -22,6 +22,7 @@ import creatures_dragon as CD
 UNITS_NEW = {
     "ash_salamander": (0.8, 2600), "drakeling": (1.9, 3000), "brown_bear": (1.7, 3000), "spitting_viper": (1.1, 2200),
     "ash_phoenix": (3.0, 3200), "bone_dragon": (3.2, 3400), "magma_golem": (2.9, 3400),
+    "crow_flock": (0.32, 1600),
 }
 TOOTH = (1, 0.97, 0.86)
 EMBER = (1.0, 0.5, 0.12)
@@ -256,13 +257,13 @@ def _phoenix_anim():
     return {"anim": anim}
 
 
-# =============================================================== Dragão de Ossos e Dragãozinho (geometria do Dragão Ancião)
+# =============================================================== Dragão de Ossos e Dragãozinho (geometria do antigo Dragão Ancião)
 
 def _elder_with(rs, rsd, belly, mem, eye, skel=False, name="elder_dragon"):
     old = (CD.RS, CD.RSD, CD.BELLY, CD.MEM, CD.EYEC, CD.SKEL)
     CD.RS, CD.RSD, CD.BELLY, CD.MEM, CD.EYEC, CD.SKEL = rs, rsd, belly, mem, eye, skel
     try:
-        root = CD.elder_dragon()
+        root = CD.winged_dragon()
     finally:
         CD.RS, CD.RSD, CD.BELLY, CD.MEM, CD.EYEC, CD.SKEL = old
     root.name = name
@@ -275,6 +276,77 @@ def bone_dragon():
 
 def drakeling():
     return _elder_with((0.8, 0.16, 0.1), (0.42, 0.07, 0.08), (0.96, 0.78, 0.5), (0.9, 0.35, 0.14), (1.0, 0.8, 0.2), False, "drakeling")
+
+
+# =============================================================== Revoada de Corvos (27/11/2026)
+
+# Cores da carta: corvos cinza-ardósia escuros, penas das pontas mais claras, bico cinza.
+CR = (0.13, 0.13, 0.15); CR_D = (0.05, 0.05, 0.07); CR_L = (0.24, 0.24, 0.27); BEAK = (0.26, 0.26, 0.28)
+CR_SH = (0.12, -0.1, 0.6)   # ombro do lado +x
+
+
+def crow_flock():
+    """Um corvo de asas abertas (o enxame põe vários): corpo e cabeça escuros, bico grosso, asas largas com as penas
+    das pontas separadas como dedos, cauda em leque. Penas de cada asa numa peça só (o simplify apaga as soltas)."""
+    P = []
+    feather = mat("crfeather", vcol=True, rough=0.7, bump=0.15, bump_scale=90)
+
+    def col(p, n):
+        return mix(CR_D, CR, smoothstep(-0.6, 0.8, n.z) * 0.75 + 0.15)
+    B = []
+    body = fuse([sph((0, 0.0, 0.56), 1, (0.17, 0.26, 0.16), (-6, 0, 0)), sph((0, -0.28, 0.64), 1, (0.16, 0.17, 0.16)),
+                 sph((0, 0.2, 0.53), 1, (0.1, 0.14, 0.08))], "crbody", 0.008, 0.6, 5)
+    paint(body, col); setmat(body, feather); B.append(body)
+    beak = fuse([box((0, -0.5, 0.61), (0.09, 0.26, 0.1), (8, 0, 0), bevel=0.01, taper=(0.15, 0.5)),
+                 sph((0, -0.42, 0.63), 1, (0.06, 0.08, 0.06))], "crbeak", 0.006, 0.4, 2)
+    setmat(beak, mat("crbeak_m", BEAK, 0.45)); B.append(beak)
+    for sx in (-1, 1):
+        B += yellow_eye((sx * 0.1, -0.37, 0.69), 0.032, 10, sx, (0.2, 0.2, 0.25), CR_D)
+    tail = []
+    for k in range(5):   # cauda em leque
+        a = (k - 2) * 14
+        tail.append(box((math.sin(math.radians(a)) * 0.12, 0.42 + math.cos(math.radians(a)) * 0.08, 0.5), (0.07, 0.28, 0.02), (4, 0, -a), bevel=0.005, taper=(1.0, 0.7)))
+    tj = join(tail, "crtail"); paint(tj, lambda p, n: mix(CR_D, CR, 0.5)); setmat(tj, feather); B.append(tj)
+    tag(B, "body"); P += B
+    # asas abertas, um pouco erguidas (diedro), penas primárias separadas nas pontas
+    for sx, bone in ((1, "wing_l"), (-1, "wing_r")):
+        sh = Vector((sx * CR_SH[0], CR_SH[1], CR_SH[2]))
+        parts = [sph((sx * 0.32, 0.02, 0.64), 1, (0.25, 0.22, 0.03), (0, sx * -10, 0)),
+                 sph((sx * 0.58, 0.04, 0.7), 1, (0.2, 0.19, 0.025), (0, sx * -12, 0))]
+        inner = fuse(parts, "crwing", 0.008, 0.5, 3)
+        prim = []
+        for k in range(6):   # primárias: lâminas em leque na ponta
+            a = -20 + k * 14
+            ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+            L = 0.34 - abs(k - 2) * 0.02
+            cx = sx * (0.72 + ca * L * 0.5); cy = 0.02 + sa * L * 0.5
+            prim.append(box((cx, cy, 0.73 + (0.02 if k < 3 else 0.0)), (L, 0.075, 0.015), (0, sx * -12, sx * a), bevel=0.004, taper=(1.0, 0.55)))
+        for k in range(4):   # secundárias: borda de trás da asa
+            prim.append(box((sx * (0.22 + k * 0.13), 0.25, 0.64 + k * 0.02), (0.12, 0.26, 0.015), (0, sx * -10, sx * (8 - k * 4)), bevel=0.004, taper=(1.0, 0.6)))
+        w = join([inner] + prim, "crwing")
+        paint(w, lambda p, n, sx=sx: mix(mix(CR_D, CR, smoothstep(-0.5, 0.8, n.z) * 0.7 + 0.2), CR_L, smoothstep(0.55, 0.95, abs(p.x)) * 0.5))
+        setmat(w, feather)
+        tag([w], bone); P.append(w)
+    return group("crow_flock", P)
+
+
+def _crow_anim():
+    shl, shr = Vector(CR_SH), Vector((-CR_SH[0], CR_SH[1], CR_SH[2]))
+    TAU = math.tau
+
+    def anim(kind, t):
+        if kind == "walk":
+            ph = TAU * t
+            f = math.sin(ph)
+            B = tr(0, 0, 0.05 * math.sin(ph + 1.2))
+            return {"body": B, "wing_l": B @ rot_about(shl, 'Y', -math.radians(28) * f),
+                    "wing_r": B @ rot_about(shr, 'Y', math.radians(28) * f)}
+        e = anims.ease
+        go = e(t / 0.35) if t < 0.35 else 1.0 - e((t - 0.6) / 0.4)   # mergulho de bico para a frente
+        B = tr(0, -0.35 * go, -0.12 * go) @ rot_about(Vector((0, 0, 0.6)), 'X', math.radians(22 * go))
+        return {"body": B, "wing_l": B @ rot_about(shl, 'Y', -math.radians(55) * (1 - go) + math.radians(25) * go),
+                "wing_r": B @ rot_about(shr, 'Y', math.radians(55) * (1 - go) - math.radians(25) * go)}
+    return {"anim": anim}
 
 
 # =============================================================== exportação
@@ -290,6 +362,8 @@ def _cfg(i):
         return {"anim": anims.biped(2.2, (0.3, 0.02, 0.6), (0.82, 0.0, 1.75), (0, 0, 1.95), stride=18, swing=14, atk="smash", atk_arm="arm_l", bob=0.02, lean=8)}
     if i == "ash_phoenix":
         return _phoenix_anim()
+    if i == "crow_flock":
+        return _crow_anim()
     if i in ("bone_dragon", "drakeling"):
         return CD._dragon_anim()
     return {}

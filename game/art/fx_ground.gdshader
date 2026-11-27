@@ -2,7 +2,9 @@ shader_type spatial;
 // Marcas no chão dos efeitos novos (rodada visual 20/11/2026): substituem o anel genérico (ring.gdshader) quando
 // Efeitos no chão (fx2.gd). Um PlaneMesh 2x2 escalado pelo raio; kind escolhe o desenho:
 //   0 onda de choque (age 0..1 vinda do script), 1 teia, 2 óleo em chamas, 3 chão em brasa, 4 fonte/água,
-//   5 círculo de feitiço (age 0..1), 6 área genérica (borda pintada).
+//   5 círculo de feitiço (age 0..1), 6 área genérica (borda pintada), 7 marca que fica depois do impacto (variant:
+//   1 sombra, 2 morte, 3 controle, 4 ouro), 8 raio do feitiço enquanto a carta voa (age 0..1), 9 zona de moedas.
+// life (0..1) apaga a marca/zona inteira (entrada e saída animadas pelo script).
 // paint = 1: bordas duras e faixas (guache); 0: macio e com brilho.
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled;
 
@@ -12,6 +14,8 @@ uniform float age = 0.0;
 uniform float paint = 0.0;
 uniform float glow = 1.0;
 uniform float seed = 0.0;
+uniform int variant = 0;
+uniform float life = 1.0;
 
 float g_h21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -51,16 +55,22 @@ void fragment() {
 	float a = 0.0;
 	float hot = 0.0;
 	if (kind == 0) {
-		// Onda de choque: anel que corre para fora, quebrado por ruído, e um véu de poeira por dentro.
+		// Onda de choque (27/11/2026): clarão no centro, frente rápida e brilhante, segunda onda de poeira mais lenta
+		// e riscos que saem do centro.
 		float k = age;
-		float r = mix(0.15, 1.0, 1.0 - pow(1.0 - k, 3.0));
+		float r = mix(0.1, 1.0, 1.0 - pow(1.0 - k, 3.0));
+		float r2 = mix(0.05, 0.82, 1.0 - pow(1.0 - k, 2.0));
 		float n = g_fbm(vec2(ang * 2.2 + seed * 9.0, d * 3.0 + seed));
-		float w = mix(0.16, 0.035, k) * (0.6 + n * 0.8);
+		float w = mix(0.22, 0.03, k) * (0.6 + n * 0.8);
 		float ring = hard ? step(abs(d - r), w) : smoothstep(w, 0.0, abs(d - r));
-		float dust = smoothstep(r, r * 0.4, d) * 0.25 * (1.0 - k) * step(0.45, n);
-		a = (ring + dust) * (1.0 - k);
-		c = mix(tint.rgb, vec3(1.0), ring * 0.35);
-		hot = ring;
+		float ring2 = (hard ? step(abs(d - r2), w * 0.7) : smoothstep(w * 0.7, 0.0, abs(d - r2))) * 0.45 * step(0.4, n);
+		float rays = smoothstep(0.72, 0.95, g_vn(vec2(ang * 9.0 + seed * 5.0, seed))) * step(d, r) * smoothstep(r * 0.15, r * 0.9, d);
+		if (hard) rays = step(0.5, rays);
+		float flash = smoothstep(r, 0.0, d) * (1.0 - smoothstep(0.0, 0.3, k));
+		float dust = smoothstep(r, r * 0.4, d) * 0.3 * step(0.45, n);
+		a = (max(ring, ring2) + dust + rays * 0.55 + flash * 0.65) * (1.0 - k * k);
+		c = mix(tint.rgb, vec3(1.0), max(ring * 0.45, flash * 0.7));
+		hot = max(ring, flash);
 	} else if (kind == 1) {
 		// Teia: raios e espiral poligonal entre eles, fios finos com gotas de orvalho.
 		if (d > 1.0) discard;
@@ -140,6 +150,64 @@ void fragment() {
 		a = th * in_a + smoothstep(1.0, 0.0, d) * 0.12 * in_a;
 		c = mix(tint.rgb, vec3(1.0), th * 0.4);
 		hot = th;
+	} else if (kind == 7) {
+		// Marca do impacto: chão marcado na cor da família, com rachaduras acesas que esfriam (life vai a 0).
+		float n = g_fbm(q * 2.2 + seed * 3.0);
+		float edge = 0.9 + (n - 0.5) * (variant == 3 ? 0.55 : 0.28);
+		float m = edge - d;
+		if (m < 0.0) discard;
+		float cr = abs(g_vn(vec2(ang * 5.0 + seed * 3.0, d * 2.5 + seed)) - 0.5) * 2.0;
+		float crack = smoothstep(0.09, 0.0, cr) * smoothstep(0.08, 0.3, d) * smoothstep(0.0, 0.15, m);
+		float rim = smoothstep(0.1, 0.0, abs(d - 0.7 - (n - 0.5) * 0.1));
+		vec3 base = mix(vec3(0.06, 0.05, 0.06), tint.rgb * 0.25, 0.5);
+		float heat = life * life;
+		if (variant == 1) {
+			// Sombra: anel de runas queimado e rachaduras roxas.
+			float seg = fract((ang + PI) / TAU * 14.0 + seed);
+			float glyph = step(0.3, g_h21(vec2(floor((ang + PI) / TAU * 14.0 + seed), seed))) * step(0.2, seg) * step(seg, 0.8) * smoothstep(0.05, 0.0, abs(d - 0.7));
+			crack = max(crack, max(glyph, rim * 0.6));
+		} else if (variant == 2) {
+			// Morte: mancha tóxica com bolhas claras.
+			float bub = step(0.93, g_h21(floor(q * 9.0 + seed))) * smoothstep(0.35, 0.1, length(fract(q * 9.0 + seed) - 0.5));
+			crack = max(crack, bub);
+			base = mix(base, tint.rgb * 0.35, 0.5);
+		} else if (variant == 3) {
+			// Controle: piche brilhante, sem rachadura acesa; reflexo claro em manchas.
+			crack = smoothstep(0.84, 0.9, g_vn(q * 5.0 + seed)) * 0.6;
+			base = vec3(0.04, 0.035, 0.05);
+			heat = 1.0;
+		} else if (variant == 4) {
+			// Ouro: purpurina dourada que pisca.
+			float gl = step(0.9, g_h21(floor(q * 14.0 + seed))) * (0.5 + 0.5 * sin(TIME * 9.0 + g_h21(floor(q * 14.0)) * 30.0));
+			crack = max(crack * 0.5, gl);
+			base = mix(base, tint.rgb * 0.5, 0.4);
+		}
+		if (hard) crack = step(0.5, crack);
+		c = mix(base, mix(tint.rgb, vec3(1.0), 0.25), crack * heat);
+		a = mix(0.6, 0.95, crack) * smoothstep(0.0, 0.1, m);
+		hot = crack * heat;
+	} else if (kind == 8) {
+		// Raio exato do feitiço enquanto a carta voa: borda firme na distância do raio, uma frente que fecha para o
+		// centro e marcas que giram; acende conforme age vai a 1 (pouso).
+		if (d > 1.0) discard;
+		float k = age;
+		float rim = g_line(abs(d - 0.965), 0.03);
+		float sweep = smoothstep(0.14, 0.0, abs(d - mix(1.0, 0.0, k)));
+		float tick = step(0.5, fract((ang + PI) / TAU * 24.0 + TIME * 0.6)) * step(0.87, d) * step(d, 0.92);
+		float fill = (0.1 + 0.25 * k) * step(d, 0.95);
+		a = rim + sweep * 0.7 + tick * 0.55 + fill;
+		c = mix(tint.rgb, vec3(1.0), max(rim * 0.35, sweep * 0.5));
+		hot = max(rim, sweep);
+	} else if (kind == 9) {
+		// Zona das moedas amaldiçoadas: borda dourada e purpurina.
+		if (d > 1.0) discard;
+		float n = g_fbm(vec2(ang * 3.0 + seed * 7.0, TIME * 0.2));
+		float edge = 0.93 + (n - 0.5) * 0.08;
+		float rim = hard ? step(abs(d - edge), 0.04) : smoothstep(0.06, 0.0, abs(d - edge));
+		float gl = step(0.92, g_h21(floor(q * 12.0 + seed))) * (0.5 + 0.5 * sin(TIME * 7.0 + g_h21(floor(q * 12.0)) * 40.0)) * step(d, edge);
+		a = rim * 0.9 + gl * 0.9 + smoothstep(edge, 0.0, d) * 0.16 * step(d, edge);
+		c = mix(tint.rgb, vec3(1.0, 0.95, 0.75), gl);
+		hot = max(rim, gl);
 	} else {
 		// Área genérica: preenchimento leve e borda pintada irregular.
 		float n = g_fbm(vec2(ang * 3.0 + seed * 7.0, TIME * 0.2));
@@ -149,7 +217,7 @@ void fragment() {
 		a = rim * 0.9 + smoothstep(edge, 0.0, d) * 0.14 * step(d, edge);
 		hot = rim;
 	}
-	a *= tint.a;
+	a *= tint.a * life;
 	if (a < 0.01) discard;
 	ALBEDO = c * (hard ? 1.0 : mix(1.0, glow, hot));
 	ALPHA = clamp(a, 0.0, 1.0);

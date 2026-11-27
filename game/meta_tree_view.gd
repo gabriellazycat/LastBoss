@@ -482,7 +482,8 @@ func _draw() -> void:
 	draw_arc(c, hr, 0, TAU, 64, UiParch.GOLD, maxf(2.0, 3.5 * z), true)
 	if z >= 0.45:
 		_label(fb, c + Vector2(0, hr + 22.0 * z), tr("UI_COVIL_CENTER"), int(clampf(18.0 * z, 11, 26)), UiParch.BLOOD, 260.0)
-	# Rótulos dos setores.
+	# Rótulos dos setores (o lugar deles fica ocupado para os nomes dos nós).
+	sector_rects.clear()
 	for w in wedges:
 		var sid := str(w["id"])
 		var am := (float(w["a0"]) + float(w["a1"])) * 0.5
@@ -490,19 +491,29 @@ func _draw() -> void:
 		var lp := c + Vector2(cos(am), sin(am)) * rr
 		var col: Color = SEC_COLORS.get(sid, UiParch.INK).darkened(0.25)
 		var fs := int(clampf(24.0 * z, 13, 34))
+		# o nome inteiro dentro da folha (perto da borda ele saía cortado)
+		var tw := ft.get_string_size(sector_name(sid), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		lp.x = clampf(lp.x, tw * 0.5 + 12.0, size.x - tw * 0.5 - 12.0)
+		lp.y = clampf(lp.y, float(fs) + 8.0, size.y - 12.0)
 		_label(ft, lp, sector_name(sid), fs, col, 300.0)
+		sector_rects.append(Rect2(lp.x - tw * 0.5 - 4.0, lp.y - float(fs), tw + 8.0, float(fs) + 8.0))
 		if sector_locked(sid):
 			var lt := _icon("lock")
 			if lt:
 				draw_texture_rect(lt, Rect2(lp + Vector2(-16, 8), Vector2(32, 32)) if z > 0.4 else Rect2(lp, Vector2.ZERO), false)
 			_label(fb, lp + Vector2(0, 54), tr("UI_COVIL_SEALED"), int(clampf(17.0 * z, 11, 24)), UiParch.BLOOD, 300.0)
-	# Nós (o destacado por cima).
+	# Nós (o destacado por cima) e depois todos os rótulos por cima dos nós (27/11/2026: o nó desenhado depois
+	# cobria o nome do vizinho), cada um num lugar livre.
+	var order: Array = []
 	for id in positions:
 		if id != selected and id != hovered:
-			_draw_node(id, fb)
+			order.append(id)
 	for id in [selected, hovered]:
-		if id != "" and positions.has(id):
-			_draw_node(id, fb)
+		if id != "" and positions.has(id) and not order.has(id):
+			order.append(id)
+	for id in order:
+		_draw_node(id, fb)
+	_draw_labels(order, fb)
 
 
 func _label(f: Font, p: Vector2, t: String, fs: int, col: Color, w: float) -> void:
@@ -564,15 +575,112 @@ func _draw_node(id: String, fb: Font) -> void:
 			var pp := c + Vector2((float(k) - (mx - 1) * 0.5) * pr * 2.9, r + pr * 0.4)
 			draw_circle(pp, pr + 1.2, UiParch.INK)
 			draw_circle(pp, pr, UiParch.GOLD_LIGHT if k < lv else UiParch.PARCH_DARK)
-	if zoom >= 0.62 or hot:
+
+
+## Rótulos dos nós (nome e custo), depois de todos os nós: cada um vai para baixo do nó, ou para cima, ou para um
+## dos lados, no primeiro lugar que não encosta em outro rótulo nem em outro nó. O destacado escolhe primeiro e é
+## desenhado por último.
+var sector_rects: Array = []
+
+
+func _draw_labels(order: Array, fb: Font) -> void:
+	var c0 := size * 0.5 + pan
+	var segs: Array = []      # arestas na tela [a, b]
+	for id in order:
+		var pid := str(data.meta_nodes[id].get("parent", ""))
+		var sa: Vector2 = _w2s(positions[pid]) if (pid != "" and positions.has(pid)) else c0
+		var sb := _w2s(positions[id])
+		segs.append([sa, sb, Rect2(sa, Vector2.ZERO).expand(sb)])   # a caixa descarta rápido as arestas longe
+	var circles: Array = []   # [centro, raio] dos nós na tela
+	for id in order:
+		var hot: bool = id == hovered or id == selected
+		circles.append([_w2s(positions[id]), NODE_R * zoom * (1.12 if hot else 1.0) + 3.0, id])
+	var placed: Array = []    # Rect2 já ocupados
+	var jobs: Array = []
+	var prio: Array = order.duplicate()
+	prio.reverse()   # o destacado (último a desenhar) escolhe o lugar primeiro
+	for id in prio:
+		var hot: bool = id == hovered or id == selected
+		if not (zoom >= 0.62 or hot):
+			continue
+		var c := _w2s(positions[id])
+		if c.x < -80 or c.y < -80 or c.x > size.x + 80 or c.y > size.y + 80:
+			continue
+		var n: Dictionary = data.meta_nodes[id]
+		var st := state_of(id)
+		var r := NODE_R * zoom * (1.12 if hot else 1.0)
+		var mx: int = (n["costs"] as Array).size()
 		var fs := int(clampf(15.0 * zoom, 11, 22))
-		var ty := c.y + r + _pr_off(mx) + float(fs) + 4.0
-		_label(fb, Vector2(c.x, ty), node_name(id), fs, UiParch.INK if st != "locked" and st != "sealed" else UiParch.INK_SOFT, 170.0 * maxf(zoom, 0.8))
+		var lines: Array = [[node_name(id), UiParch.INK if st != "locked" and st != "sealed" else UiParch.INK_SOFT]]
 		if st == "available" or st == "bought":
 			var cost := meta.node_cost(id)
 			if cost >= 0:
-				var afford := meta.almas >= cost
-				_label(fb, Vector2(c.x, ty + float(fs) + 1.0), str(cost), fs, UiParch.GOOD if afford else UiParch.BLOOD, 100.0)
+				lines.append([str(cost), UiParch.GOOD if meta.almas >= cost else UiParch.BLOOD])
+		var w := 0.0
+		for l in lines:
+			w = maxf(w, fb.get_string_size(str(l[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+		w += 6.0
+		var h := float(fs + 1) * lines.size() + 4.0
+		var below := r + _pr_off(mx) + 2.0
+		# topo do bloco em cada lugar candidato (baixo, cima, direita, esquerda)
+		var cands: Array = [
+			Rect2(c.x - w * 0.5, c.y + below, w, h),
+			Rect2(c.x - w * 0.5, c.y - r - 4.0 - h, w, h),
+			Rect2(c.x + r + 6.0, c.y - h * 0.5, w, h),
+			Rect2(c.x - r - 6.0 - w, c.y - h * 0.5, w, h)]
+		var best: Rect2 = cands[0]
+		var best_hits := 1 << 30
+		for cand in cands:
+			var hits := 0
+			if not Rect2(Vector2.ZERO, size).encloses(cand):
+				hits += 3   # fora da folha o nome some
+			for q in sector_rects:
+				if (q as Rect2).intersects(cand):
+					hits += 5   # o nome do setor vale mais que o do nó (pior caso: o nó da borda fica sem nome)
+			for q in placed:
+				if (q as Rect2).intersects(cand):
+					hits += 2
+			var cg: Rect2 = cand.grow(-2.0)
+			for ci in circles:
+				var cc: Vector2 = ci[0]
+				var cr: float = ci[1]
+				if absf(cc.x - cand.get_center().x) > cand.size.x * 0.5 + cr or absf(cc.y - cand.get_center().y) > cand.size.y * 0.5 + cr:
+					continue
+				if ci[2] != id and _rect_hits_circle(cand, cc, cr):
+					hits += 2
+			for sg in segs:
+				if (sg[2] as Rect2).intersects(cg, true) and _rect_hits_seg(cg, sg[0], sg[1]):
+					hits += 1
+			if hits < best_hits:
+				best_hits = hits
+				best = cand
+			if hits == 0:
+				break
+		placed.append(best)
+		jobs.append([best, lines, fs])
+	jobs.reverse()
+	for j in jobs:
+		var rc: Rect2 = j[0]
+		var fs: int = j[2]
+		var y := rc.position.y + float(fs) + 1.0
+		for l in j[1]:
+			_label(fb, Vector2(rc.get_center().x, y), str(l[0]), fs, l[1], rc.size.x + 40.0)
+			y += float(fs) + 1.0
+
+
+static func _rect_hits_seg(rc: Rect2, a: Vector2, b: Vector2) -> bool:
+	if rc.has_point(a) or rc.has_point(b):
+		return true
+	var p := [rc.position, Vector2(rc.end.x, rc.position.y), rc.end, Vector2(rc.position.x, rc.end.y)]
+	for i in 4:
+		if Geometry2D.segment_intersects_segment(a, b, p[i], p[(i + 1) % 4]) != null:
+			return true
+	return false
+
+
+static func _rect_hits_circle(rc: Rect2, c: Vector2, r: float) -> bool:
+	var q := Vector2(clampf(c.x, rc.position.x, rc.end.x), clampf(c.y, rc.position.y, rc.end.y))
+	return q.distance_squared_to(c) < r * r
 
 
 func _pr_off(mx: int) -> float:

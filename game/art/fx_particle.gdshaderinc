@@ -6,7 +6,7 @@
 // axis_mode: 0 billboard (gira com INSTANCE_CUSTOM.x); 1 alinhado ao eixo Y do nó (partícula com align_y = velocidade);
 // 2 alinhado ao eixo Z do nó (rastro de projétil: o nó olha para o alvo).
 
-uniform int shape = 0;          // 0 chama, 1 fumaça, 2 faísca, 3 brasa, 4 estrela, 5 lasca, 6 cruz, 7 anel, 8 fio
+uniform int shape = 0;          // 0 chama, 1 fumaça, 2 faísca, 3 brasa, 4 estrela, 5 lasca, 6 cruz, 7 anel, 8 fio, 9 núcleo, 10 moeda
 uniform float paint = 0.0;
 uniform float glow = 1.0;
 uniform int axis_mode = 0;
@@ -17,6 +17,7 @@ varying vec2 vq;
 varying float age;
 varying float seed;
 varying vec4 vcol;
+varying float spin;
 
 float fx_h21(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -44,6 +45,7 @@ float fx_fbm(vec2 p) {
 
 void vertex() {
 	age = INSTANCE_CUSTOM.y;
+	spin = INSTANCE_CUSTOM.x;
 	seed = fract(float(INSTANCE_ID) * 0.618034 + MODEL_MATRIX[3].x * 0.137);
 	vcol = COLOR * tint;
 	vq = VERTEX.xy * 2.0;
@@ -153,6 +155,24 @@ void fragment() {
 		float rd = abs(d - 0.8);
 		a = hard ? step(rd, 0.08) : smoothstep(0.16, 0.0, rd);
 		hot = 0.7;
+	} else if (shape == 9) {
+		// Núcleo de impacto (27/11/2026): bola de luz macia com miolo quase branco; a borda tremula com ruído.
+		float n = fx_vn(vec2(atan(q.y, q.x) * 2.5 + seed * 11.0, TIME * 6.0));
+		float m = 1.0 - d / (0.82 + n * 0.18);
+		float core = smoothstep(0.35, 0.85, m);
+		a = hard ? step(0.0, m) : clamp(pow(max(m, 0.0), 1.6) * 1.4, 0.0, 1.0);
+		c = mix(vcol.rgb, vec3(1.0, 0.98, 0.92), core * 0.8);
+		hot = 0.7 + core * 0.3;
+	} else if (shape == 10) {
+		// Moeda: disco dourado que gira (a largura acompanha o giro), borda escura e brilho.
+		float sx = abs(cos(spin * 3.0 + seed * 6.0)) * 0.85 + 0.15;
+		vec2 p = vec2(q.x / sx, q.y);
+		float r = length(p);
+		a = hard ? step(r, 0.8) : smoothstep(0.82, 0.74, r);
+		float rim = smoothstep(0.6, 0.72, r);
+		c = mix(vec3(1.0, 0.84, 0.35), vec3(0.62, 0.4, 0.1), rim) * vcol.rgb;
+		c += vec3(1.0, 0.95, 0.7) * smoothstep(0.85, 1.0, sx) * (1.0 - rim) * 0.5;
+		hot = 0.5 * (1.0 - rim);
 	} else {
 		// Fio (seda de teia): linha fina vertical.
 		a = smoothstep(0.25, 0.0, abs(q.x)) * smoothstep(1.0, 0.7, abs(q.y));

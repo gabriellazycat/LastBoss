@@ -20,6 +20,7 @@ CARD = {
     "arqueira": "hero_arqueira", "cleriga": "hero_cleriga",
     "ash_salamander": "ash_salamander", "drakeling": "drakeling", "brown_bear": "brown_bear", "spitting_viper": "spitting_viper",
     "ash_phoenix": "ash_phoenix", "bone_dragon": "bone_dragon", "magma_golem": "magma_golem",
+    "crow_flock": "crow_flock", "hoard_dragon": "hoard_dragon",   # modelos próprios de 27/11/2026
     "villain_plague": "villain_plague", "villain_dragon": "villain_dragon", "villain_lich": "villain_lich",
 }
 # cenário: média das paletas de cinco cartas de terra (o chão e os fundos das cartas são sálvia, lavanda e areia)

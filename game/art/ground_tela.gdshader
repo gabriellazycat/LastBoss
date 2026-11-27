@@ -21,6 +21,11 @@ uniform float fleck_amount = 0.5;
 uniform float bump = 0.6;
 uniform float roughness = 0.95;
 uniform float mundo = 0.0;
+// Território (27/11/2026, world_view._territory): branco = retalho deste ato, preto = de um ato anterior (o chão dele,
+// por baixo, aparece ali). Decidido pelo centro do retalho inteiro, então a divisa segue as costuras.
+uniform bool use_terr = false;
+uniform sampler2D territory : filter_nearest, repeat_disable;
+uniform vec4 terr_rect = vec4(0.0, 0.0, 1.0, 1.0);
 
 varying vec3 wp;
 varying vec3 paint_p;
@@ -105,10 +110,14 @@ void vertex() {
 	paint_p = wp;
 }
 
+vec2 warp(vec2 p) {
+	return vec2(fbm(p * 0.018 + 3.0), fbm(p * 0.018 + 11.0)) * 16.0;
+}
+
 void fragment() {
 	vec2 p = wp.xz;
 	// Coordenada torcida: os campos têm borda orgânica, não de ruído redondo.
-	vec2 w = p + vec2(fbm(p * 0.018 + 3.0), fbm(p * 0.018 + 11.0)) * 16.0;
+	vec2 w = p + warp(p);
 	float zone = fbm(w * 0.012);
 	float val = fbm(w * 0.028 + 7.0);
 	float dz = fbm(w * 0.02 + 41.0);
@@ -186,6 +195,8 @@ void fragment() {
 		float f1 = 9.0;
 		float f2 = 9.0;
 		vec2 id = vec2(0.0);
+		vec2 p1 = vec2(0.0);
+		vec2 p2 = vec2(0.0);
 		for (int j = -1; j <= 1; j++) {
 			for (int i = -1; i <= 1; i++) {
 				vec2 cell = c0 + vec2(float(i), float(j));
@@ -193,20 +204,37 @@ void fragment() {
 				float d = length(q - pt);
 				if (d < f1) {
 					f2 = f1;
+					p2 = p1;
 					f1 = d;
+					p1 = pt;
 					id = cell;
 				} else if (d < f2) {
 					f2 = d;
+					p2 = pt;
 				}
 			}
 		}
-		float edge_d = (f2 - f1) / 0.16;
+		// distância exata (m) à borda entre os dois retalhos mais próximos e a direção dessa borda: a costura fica a
+		// uma distância só da borda e os pontos têm o mesmo passo em qualquer ângulo
+		if (use_terr) {
+			// centro do retalho no mundo: desfaz a torção (ela muda devagar; duas voltas bastam)
+			vec2 wc = p1 / 0.16;
+			vec2 pc = wc - warp(wc);
+			pc = wc - warp(pc);
+			vec2 tuv = (pc - terr_rect.xy) / terr_rect.zw;
+			if (all(greaterThanEqual(tuv, vec2(0.0))) && all(lessThan(tuv, vec2(1.0))) && texture(territory, tuv).r < 0.5) {
+				discard;
+			}
+		}
+		vec2 nb = normalize(p2 - p1);
+		float edge_d = dot(0.5 * (p1 + p2) - q, nb) / 0.16;
+		float along_m = dot(q, vec2(-nb.y, nb.x)) / 0.16;
 		float t = hash(id + 2.2);
 		col = mix(c_grass, c_grass2, t) * (0.9 + hash(id + 5.1) * 0.18);
 		float fib = vnoise(p * 9.0) * 0.6 + vnoise(p * 23.0 + 3.0) * 0.4;
 		col *= 0.92 + fib * 0.14;
 		col *= mix(0.62, 1.0, smoothstep(0.02, 0.12, edge_d));
-		float dash = step(0.45, fract(dot(p, vec2(0.7, 0.7)) * 2.2));
+		float dash = step(0.45, fract(along_m * 2.2));
 		float stitch = (1.0 - smoothstep(0.03, 0.07, abs(edge_d - 0.28))) * dash;
 		col = mix(col, vec3(0.93, 0.88, 0.74), stitch * 0.8);
 	}

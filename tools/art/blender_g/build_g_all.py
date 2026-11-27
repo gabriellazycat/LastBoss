@@ -10,7 +10,7 @@ V2 = os.path.abspath(os.path.join(HERE, "..", "blender_v2"))
 sys.path.insert(0, V2)
 sys.path.insert(0, HERE)
 import bpy
-import mk, vat, vat_g, treat
+import mk, vat, vat_g, treat, recolor
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 which, out = argv[0], os.path.abspath(argv[1])
@@ -20,7 +20,7 @@ PULL = float(os.environ.get("LBG_PULL", "0.65"))
 GAIN_SC = float(os.environ.get("LBG_GAIN_SC", "0.6"))
 PULL_SCENERY = float(os.environ.get("LBG_PULL_SC", "0.45"))
 SAT = float(os.environ.get("LBG_SAT", "1.15"))
-EYE = {"rat_king": (0.62, 0.13, 0.16)}
+EYE = {"rat_king": (0.62, 0.13, 0.16), "elder_dragon": (0.95, 0.72, 0.22)}   # Ancião: olho amarelo da carta (27/11/2026)
 COOL = (0.30, 0.32, 0.42)
 
 
@@ -32,6 +32,7 @@ def export_g(root, path, height, budget=2500, anim=None, deform=None, rig=None, 
     objs = vat_g.prepare(root, int(budget * 0.7))
     key = treat.pal_key(i)
     grade = treat.make_grade(key, pull=PULL if key != "scenery" else PULL_SCENERY, lift=0.04, sat=SAT, gain=GAIN if key != "scenery" else GAIN_SC)
+    grade = recolor.wrap(i, grade)   # matiz da carta (recolor.RECOLOR, 27/11/2026)
     os.makedirs(os.path.join(out, "n"), exist_ok=True)
     d = vat_g.export(root, os.path.join(out, "n", i + ".lbm"), height, objs, grade, anim, deform, rig, recenter)
     C, P, N, M = treat.raster(d)

@@ -20,6 +20,9 @@ DATA = os.path.join(ROOT, "data")
 HERE = os.path.dirname(os.path.abspath(__file__))
 FILES = ["cards", "cards_common", "cards_plague", "cards_dragon", "cards_lich"]
 REQUESTS = os.path.join(ROOT, "balance_reports", "pedidos_cartas.json")
+# Propostas verificadas: duelo dos monstros (tools/duel_tune.py) e esquadrão dos feitiços (tools/spell_tune.py).
+DUEL = [os.path.join(ROOT, "balance_reports", n) for n in ("pedidos_duelo.json", "pedidos_feiticos.json")]
+DUEL_MD = [os.path.join(ROOT, "balance_reports", n) for n in ("duelo.md", "feiticos.md")]
 ART = os.path.join(ROOT, "assets", "cards")
 PORT = 8767
 # Campos da carta que a página pode mudar; o resto do JSON fica intocado.
@@ -63,6 +66,15 @@ def _save_requests(items):
         json.dump({"pedidos": items}, f, indent=1, ensure_ascii=False)
 
 
+def _duel():
+    out = []
+    for path in DUEL:
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                out += json.load(f).get("pedidos", [])
+    return out
+
+
 def _num(v):
     x = float(v)
     return int(x) if x.is_integer() else x
@@ -89,7 +101,7 @@ def load_all():
     rarity = {k[7:]: v for k, v in s.items() if k.startswith("RARITY_")}
     return {"cards": cards, "kw": kw, "decks": decks, "types": types, "rarity": rarity,
             "growth": rules.get("card_levels", {}).get("growth", 0.25),
-            "requests": _requests()}
+            "requests": _requests(), "duel": _duel()}
 
 
 def apply_changes(changes):
@@ -125,6 +137,56 @@ def apply_changes(changes):
     return done
 
 
+def duel_page():
+    """balance_reports/duelo.md e feiticos.md como página: tabelas com cor pela razão valor/peso."""
+    import html
+    lines = []
+    for path in DUEL_MD:
+        if os.path.exists(path):
+            lines += open(path, encoding="utf-8").read().splitlines() + [""]
+    if not lines:
+        return "<p>Sem duelo ainda: rode tools/duel_tune.py e tools/spell_tune.py.</p>"
+    s = _strings()
+    out, head = [], None
+    for line in lines:
+        if line.startswith("|---"):
+            continue
+        if line.startswith("|"):
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if head is None or cells[0] == "carta":
+                if head is not None and not out[-1].endswith("</table>"):
+                    out.append("</tbody></table>")
+                head = cells
+                out.append("<table><thead><tr>%s</tr></thead><tbody>" % "".join("<th>%s</th>" % html.escape(c) for c in cells))
+                continue
+            # Cor pela razão final: "razão depois" (tools/duel_tune.py) ou "razão" (tools/duel_report.py).
+            rc = head.index("razão depois") if "razão depois" in head else head.index("razão")
+            try:
+                r = float(cells[rc])
+            except ValueError:
+                r = float(cells[rc - 1]) if rc and cells[rc - 1].replace(".", "", 1).isdigit() else 1.0
+            cls = "ok" if 0.8 <= r <= 1.2 else ("hi" if r > 1.2 else "lo")
+            cid = cells[0].split(" ")[0]
+            cells[0] = "<b>%s</b><br><small>%s</small>" % (html.escape(s.get("CARD_" + cid, cid)), html.escape(cells[0]))
+            out.append("<tr class='%s'>%s</tr>" % (cls, "".join(
+                "<td%s>%s</td>" % (" class='r'" if k == rc else "", c if k == 0 else html.escape(c))
+                for k, c in enumerate(cells))))
+        else:
+            if head is not None and not out[-1].endswith("</table>"):
+                out.append("</tbody></table>")
+                head = None
+            if line.startswith("# "):
+                out.append("<h1>%s</h1>" % html.escape(line[2:]))
+            elif line.strip():
+                out.append("<p>%s</p>" % html.escape(line))
+    return """<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Duelo</title>
+<style>body{font:14px system-ui;margin:20px;background:#f6f3ec;color:#222}table{border-collapse:collapse;width:100%%}
+th,td{padding:5px 8px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top}th{position:sticky;top:0;background:#e8e2d4}
+tr.hi td.r{background:#f3c1b5;font-weight:bold}tr.lo td.r{background:#b9d3ef;font-weight:bold}
+tr.ok td.r{background:#cfe8c4}small{color:#777}p{max-width:900px}a{color:#46c}</style>
+<p><a href="/">← editor</a> · vermelho = forte demais, azul = fraca, verde = no ponto (razão 0,80–1,20)</p>%s</html>""" % "\n".join(out)
+
+
 class H(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -148,6 +210,8 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, f.read(), "text/html; charset=utf-8")
         if p == "/api/cards":
             return self._send(200, load_all())
+        if p == "/duelo":
+            return self._send(200, duel_page(), "text/html; charset=utf-8")
         if p.startswith("/art/"):
             name = os.path.basename(p[5:])
             path = os.path.join(ART, name)

@@ -49,7 +49,7 @@ func setup(d: GameData, m: MetaSave) -> void:
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Sombra à esquerda para o texto ler bem sobre a cena.
 	var g := Gradient.new()
@@ -585,7 +585,7 @@ func _build_villains_parch() -> void:
 			focus_pref = v_focus
 			lib_return = "decks"
 			show_screen("collection")
-			collection.set_tab(v_focus))
+			collection.open_deck(v_focus))
 	btns.add_child(v_edit)
 	v_pick = Button.new()
 	v_pick.text = "UI_MENU_START"

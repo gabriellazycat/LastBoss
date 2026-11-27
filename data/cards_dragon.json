@@ -1094,7 +1094,6 @@
    "family": "greed",
    "owner": "dragon",
    "fly": true,
-   "model": "elder_dragon",
    "ai": {
     "keys": [
      "big"

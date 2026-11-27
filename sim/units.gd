@@ -403,12 +403,28 @@ func _step(i: int, tx: float, ty: float, speed: float, dt: float) -> void:
 	py[i] += vy / l * s
 
 
+## Tempo de vida (s) da estrutura i, ou 0 se ela não some pelo tempo: geradora (spawn_duration), Veio de Ouro e Totem
+## (duration, com a relíquia de estrutura) e as que só declaram "duration" (Estandarte). A carta no mundo mostra o
+## timer com isso.
+func life_s(i: int) -> float:
+	if arch[i] != K.Arch.STRUCTURE:
+		return 0.0
+	var c: CardDef = sim.data.cards[def[i]]
+	var smult := 1.0 + sim.rv("structure")
+	if c.fx.has("spawn"):
+		return c.fxv("spawn_duration", lvl[i], 15.0) * smult
+	if c.fx.has("gold_per_s") or def[i] == d_totem:
+		return c.fxv("duration", lvl[i], 20.0) * smult
+	if c.fx.has("duration"):
+		return c.fxv("duration", lvl[i])
+	return 0.0
+
+
 func _structure(i: int, di: int, d: float, dt: float, nose: bool) -> void:
 	var c: CardDef = sim.data.cards[di]
 	var hr := sim.hero.radius
-	var smult := 1.0 + sim.rv("structure")
 	if c.fx.has("spawn"):
-		var dur := c.fxv("spawn_duration", lvl[i], 15.0) * smult
+		var dur := life_s(i)
 		if timer[i] > dur:
 			# Acabou o tempo de gerar criaturas: a estrutura some junto (como o Totem).
 			sim.kill_unit(i, K.Death.EXPIRE)
@@ -419,13 +435,13 @@ func _structure(i: int, di: int, d: float, dt: float, nose: bool) -> void:
 			sim.spawn_child(bat, px[i] + cos(a) * 1.2, py[i] + sin(a) * 1.2, i)
 	elif c.fx.has("gold_per_s"):
 		# Veio de Ouro: rende ouro por segundo enquanto dura (timer2 = próximo pagamento).
-		if timer[i] > c.fxv("duration", lvl[i], 20.0) * smult:
+		if timer[i] > life_s(i):
 			sim.kill_unit(i, K.Death.EXPIRE)
 		elif timer[i] >= timer2[i]:
 			timer2[i] += 1.0
 			sim._earn_gold(c.fxv("gold_per_s", lvl[i]))
 	elif di == d_totem:
-		if timer[i] > c.fxv("duration", lvl[i], 20.0) * smult:
+		if timer[i] > life_s(i):
 			sim.kill_unit(i, K.Death.EXPIRE)
 	elif di == d_mimic:
 		if not nose and not (flags[i] & K.F_BITTEN) and timer[i] >= timer2[i] and d <= hr + rad[i] + 0.5:

@@ -418,8 +418,7 @@
     "pierce": true
    },
    "owner": "common",
-   "fly": true,
-   "model": "bat"
+   "fly": true
   },
   {
    "id": "fallen_healer",

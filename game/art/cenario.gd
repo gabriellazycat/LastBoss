@@ -312,12 +312,12 @@ static func _flower(bag: MundoVivo.Bag, w: Node3D, p: Vector2, col: Color, mat: 
 		if w._near_water(q, 1.0):
 			continue
 		var s := rng.randf_range(1.2, 1.9) * sc
-		bag.add("flower_" + col.to_html(), MundoVivo.flower_mesh(col), mat, false, q, rng.randf() * TAU, Vector3(s, s * rng.randf_range(0.9, 1.25), s), Color.WHITE)
+		bag.add("flower_" + col.to_html(), MundoVivo.flower_mesh(col), mat, true, q, rng.randf() * TAU, Vector3(s, s * rng.randf_range(0.9, 1.25), s), Color.WHITE)
 
 
 static func _bush(bag: MundoVivo.Bag, A: Dictionary, C: Dictionary, p: Vector2, yaw: float, rng: RandomNumberGenerator) -> void:
 	var s := rng.randf_range(0.8, 1.4)
-	bag.add("bush", A["bush"][0], A["bush"][1], false, p, yaw, Vector3(s, s * rng.randf_range(0.8, 1.1), s), Color.WHITE)   # já tem a cor do ato
+	bag.add("bush", A["bush"][0], A["bush"][1], true, p, yaw, Vector3(s, s * rng.randf_range(0.8, 1.1), s), Color.WHITE)   # já tem a cor do ato
 
 
 static func _tree(bag: MundoVivo.Bag, A: Dictionary, tint: Array, p: Vector2, yaw: float, rng: RandomNumberGenerator, dead: bool, style: int) -> void:

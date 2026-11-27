@@ -85,9 +85,17 @@ static func box(kind := "gold", margin := 18.0) -> StyleBoxTexture:
 	sb.texture_margin_right = m
 	sb.texture_margin_top = m
 	sb.texture_margin_bottom = m
+	_tile(sb)
 	# margin <= 0: caixa "crua" (o chamador põe as margens e usa UiKit.fit_margins); senão a margem conta a moldura desenhada.
 	sb.set_content_margin_all(margin if margin <= 0.0 else maxf(margin, UiKit.paper_clean(kind)))
 	return sb
+
+
+## Feltro (26/11/2026): o miolo das bordas se repete em vez de esticar, então a costura tem o mesmo passo em
+## qualquer tamanho de caixa (as peças têm dois pontos de costura no miolo; make_felt_kit.py).
+static func _tile(sb: StyleBoxTexture) -> void:
+	sb.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE_FIT
+	sb.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE_FIT
 
 
 ## Botão de papel com traço fino; acende em dourado no foco/mouse, afunda ao apertar.
@@ -107,6 +115,7 @@ static func button_box(state: String, pad := Vector4(20, 11, 20, 12)) -> StyleBo
 	sb.texture = tex("button_gold" if state in ["hover", "pressed"] else "button_ink")
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
 		sb.set_texture_margin(side, 17.0 if state in ["hover", "pressed"] else 9.0)
+	_tile(sb)
 	sb.content_margin_left = pad.x
 	sb.content_margin_top = pad.y
 	sb.content_margin_right = pad.z

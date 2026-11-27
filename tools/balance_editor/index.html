@@ -74,6 +74,10 @@ details.pending li { margin: 3px 0; }
     <span class="hint" id="count"></span>
     <span class="hint">Números do nível 1 · DPS e vida são de <b>uma</b> unidade · clique ▸ para efeitos e pedidos de texto</span>
   </div>
+  <details class="pending" id="duelBox"><summary id="duelSum"></summary>
+    <p class="hint">Monstros: duelo contra o Escudeiro da fase 1; feitiços e Temporários: ganho sobre o esquadrão (<a href="/duelo" target="_blank">tabelas completas</a>). "Pôr na tabela" só preenche os campos; nada é gravado até você clicar em Salvar.
+      <button id="duelAll">Pôr todas na tabela</button></p>
+    <ul id="duelList"></ul></details>
   <details class="pending" id="pendingBox"><summary id="pendingSum"></summary><ul id="pendingList"></ul></details>
 </header>
 <main>
@@ -196,6 +200,7 @@ function render() {
   $("#foot").classList.toggle("on", n > 0);
   $("#nChanges").textContent = `${n} ${n === 1 ? "mudança" : "mudanças"} em ${Object.keys(edits).length} ${Object.keys(edits).length === 1 ? "carta" : "cartas"} sem salvar`;
   renderPending();
+  renderDuel();
 }
 
 function detailRow(r) {
@@ -232,6 +237,24 @@ function renderPending() {
   $("#pendingList").innerHTML = p.map(q => `<li><b>${esc(nm(q.id))}</b>: ${esc(q.texto)}</li>`).join("");
 }
 
+function renderDuel() {
+  // Proposta já salva (os dados já têm os valores dela) some da lista.
+  const saved = q => { const r = rows.find(x => x.card.id === q.id); return r && Object.entries(q.mudancas).every(([k, v]) => +orig(r, k) === +v); };
+  const p = (DB.duel || []).filter(q => q.status === "pendente" && Object.keys(q.mudancas).length && !saved(q));
+  $("#duelBox").style.display = p.length ? "" : "none";
+  $("#duelSum").textContent = `${p.length} ${p.length === 1 ? "proposta" : "propostas"} de balanço (duelo e esquadrão)`;
+  const nm = id => (rows.find(r => r.card.id === id) || {}).name || id;
+  $("#duelList").innerHTML = p.map(q => {
+    const ch = Object.entries(q.mudancas).map(([k, v]) => `${k} ${fmt(q.antes[k])} → ${fmt(v)}`).join(", ");
+    const on = Object.entries(q.mudancas).every(([k, v]) => edits[q.id] && +edits[q.id][k] === +v);
+    return `<li><b>${esc(nm(q.id))}</b>: ${esc(ch)} <span class="hint">(${esc(q.motivo)})</span> ` +
+      `<button data-duel="${q.id}">${on ? "Tirar da tabela" : "Pôr na tabela"}</button></li>`;
+  }).join("");
+}
+function duelApply(q, on) {
+  for (const [k, v] of Object.entries(q.mudancas)) setEdit(q.id, k, on ? v : orig(rows.find(x => x.card.id === q.id), k));
+}
+
 function setEdit(id, key, raw) {
   const r = rows.find(x => x.card.id === id);
   const s = String(raw).replace(",", ".").trim();
@@ -264,6 +287,12 @@ document.addEventListener("click", async e => {
   const t = e.target.closest("button, th");
   if (!t) return;
   if (t.tagName === "TH" && t.dataset.k) { if (sortKey === t.dataset.k) sortDir = -sortDir; else { sortKey = t.dataset.k; sortDir = 1; } render(); return; }
+  if (t.id === "duelAll") { for (const q of DB.duel.filter(q => q.status === "pendente")) duelApply(q, true); render(); toast("Propostas na tabela: confira e clique em Salvar"); return; }
+  if (t.dataset.duel) {
+    const q = DB.duel.find(x => x.id === t.dataset.duel);
+    const on = Object.entries(q.mudancas).every(([k, v]) => edits[q.id] && +edits[q.id][k] === +v);
+    duelApply(q, !on); render(); return;
+  }
   if (t.dataset.open) { const id = t.dataset.open; open.has(id) ? open.delete(id) : open.add(id); render(); return; }
   if (t.dataset.sendreq || t.dataset.delreq) {
     const id = t.dataset.sendreq || t.dataset.delreq;

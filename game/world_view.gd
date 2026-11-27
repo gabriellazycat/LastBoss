@@ -9,6 +9,7 @@ const FX2 := preload("res://game/art/fx2.gd")   # efeitos do mundo (pintados e b
 var fx2: Node3D = null
 var presence: HeroPresence = null   # anel, sombra e aura dos heróis
 var gol: Golpes = null              # golpes dos monstros com peso (game/art/golpes.gd)
+var drop: CardDrop = null           # carta jogada caindo no mundo e soltando os monstros (game/art/card_drop.gd)
 const STRIDE := 20
 const LOC_COLORS := {
 	"shop": Color(0.95, 0.75, 0.35), "tavern": Color(0.9, 0.55, 0.25), "fountain": Color(0.35, 0.75, 1.0),
@@ -133,6 +134,8 @@ const SURF_MAX := 0.6               # acima disso é corrimão ou pedra da marge
 var lanterns: Array = []
 var lantern_lights: Array = []
 var zone_pool: Array = []
+var zone_born := {}   # zona (tipo:x:y) -> sim.t em que apareceu (entrada animada das zonas, só visual)
+var zone_seen := {}
 var number_pool: Array = []
 var number_i := 0
 var burst_pool: Array = []
@@ -238,6 +241,11 @@ var ground_nodes: Array = []
 ## e com visibility_range para não pesar. Cada um é um nó "OldAct".
 var old_acts: Array = []
 const OLD_RANGE := 300.0   # m: além disso o cenário velho (pedaços pequenos) não é desenhado
+## Linhas das estradas cujo chão está NESTE mundo (atos aposentados em OldAct). O território só cede retalhos a elas:
+## num mundo montado do zero no meio da run (save retomado, --skip) não há chão velho por baixo, e o recorte abriria
+## buracos. `act_lines` são as do ato vivo (vão para cá quando ele se aposenta).
+var held_lines: Array = []
+var act_lines: Array = []
 
 
 ## `append` (C17, 19/11/2026): troca de ato contínua. O cenário do ato anterior fica no lugar (estático) e o ato novo é
@@ -259,8 +267,11 @@ func build(s: Sim, camera: Camera3D, append := false) -> void:
 		_retire_old_act()
 	else:
 		build_empty()
+		held_lines.clear()
 	sim = s
 	cam = camera
+	if drop != null and is_instance_valid(drop) and not cont:
+		drop.clear()   # run nova: as cartas jogadas saem do chão (na troca de ato elas ficam)
 	road_field = null
 	road_piece_of.clear()
 	road_state_last = PackedByteArray()
@@ -303,6 +314,7 @@ func build(s: Sim, camera: Camera3D, append := false) -> void:
 		soft_tex.width = 64
 		soft_tex.height = 64
 	fall_party = sim.cur_party
+	act_lines = sim.road.all_lines()
 	var before := get_children()
 	_build_ground()
 	ground_nodes = get_children().filter(func(c): return not before.has(c))
@@ -312,6 +324,8 @@ func build(s: Sim, camera: Camera3D, append := false) -> void:
 	_build_locations()
 	_build_lair()
 	static_nodes = get_children().filter(func(c): return not before.has(c))
+	if cont:
+		_clear_old_on_road()
 	_ensure_lair_visible()
 	if not cont:
 		_build_units()
@@ -333,9 +347,10 @@ func _ensure_lair_visible() -> void:
 ## Tira o cenário do ato anterior da cena viva: vai para um nó à parte (OldAct), um pouco abaixo, e fica ali parado
 ## para sempre. Unidades, herói e pools continuam onde estão.
 func _retire_old_act(_static_only := true) -> void:
+	held_lines.append_array(act_lines)
+	act_lines = []
 	var old := Node3D.new()
 	old.name = "OldAct"
-	old.position = Vector3(0, -0.02, 0)
 	var skip: Array = ground_nodes.duplicate()
 	skip.append_array(road_meshes)
 	var keep: Array = static_nodes.filter(func(c): return is_instance_valid(c) and c.get_parent() == self)
@@ -354,8 +369,67 @@ func _retire_old_act(_static_only := true) -> void:
 			hn.reparent(old, true)
 		elif hn.get_parent() == self:
 			hn.queue_free()
+	# Desce só depois do reparent: o reparent guarda a posição global, então com o nó já abaixado o chão velho ficava
+	# na mesma altura do novo e os dois brigavam no depth (faixas retas do ato anterior por cima do chão do ato novo).
+	old.position = Vector3(0, -0.02, 0)
 	_freeze_act(old, skip)
 	old_acts.append(old)
+
+
+## O cenário velho foi montado sem saber da estrada do ato novo, que pode cruzar o território dele: tira de cima da
+## estrada nova (e da margem dela) as árvores, moitas, flores, grama e casas dos atos anteriores, senão o herói anda
+## escondido debaixo da mata do ato passado. Uma vez por troca de ato; só as instâncias perto da estrada pagam a conta.
+func _clear_old_on_road() -> void:
+	if old_acts.is_empty() or sim == null:
+		return
+	var t0 := Time.get_ticks_usec()
+	var idx := Cenario.RoadIndex.new(sim)
+	const REACH_M := 14.0   # nada do cenário velho conta além disso do eixo
+	var k := ceili(REACH_M / Cenario.SEG_CELL)
+	var hot := {}
+	for c in idx.cells:
+		for dy in range(-k, k + 1):
+			for dx in range(-k, k + 1):
+				hot[c + Vector2i(dx, dy)] = true
+	var hidden := 0
+	for o in old_acts:
+		if not is_instance_valid(o):
+			continue
+		for n in (o as Node).find_children("*", "", true, false):
+			if n is MultiMeshInstance3D:
+				var mmi := n as MultiMeshInstance3D
+				var mm := mmi.multimesh
+				if mm == null or mm.mesh == null:
+					continue
+				var mb := mm.mesh.get_aabb()
+				var r0 := maxf(mb.size.x, mb.size.z) * 0.5
+				var gx := mmi.global_transform
+				for i in mm.instance_count:
+					var t: Transform3D = gx * mm.get_instance_transform(i)
+					var p := Vector2(t.origin.x, t.origin.z)
+					# no território do ato novo o chão é o dele: o cenário velho ali ficaria sobre o feltro da cor errada
+					var gone := _terr_own(p)
+					if not gone and hot.has(Vector2i(int(floor(p.x / Cenario.SEG_CELL)), int(floor(p.y / Cenario.SEG_CELL)))):
+						var sc := t.basis.get_scale()
+						# copa larga e coisa alta pedem mais folga (a alta, do lado da câmera, cobre o herói)
+						var need := Cenario.CLEAR + r0 * maxf(sc.x, sc.z) + (2.0 if mb.size.y * sc.y > 2.0 else 0.0)
+						gone = float(idx.near(p, minf(need, REACH_M))[0]) < need
+					if gone:
+						mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ZERO), mm.get_instance_transform(i).origin))
+						hidden += 1
+			elif n is Node3D and n.get_parent() == o and not (n is MultiMeshInstance3D):
+				# casas e locais soltos (o chão, a estrada e os rios são grandes e ficam)
+				var n3 := n as Node3D
+				var bb: Vector3 = (n3 as VisualInstance3D).get_aabb().size if n3 is VisualInstance3D else Vector3.ONE * 6.0
+				# malha já em coordenadas do mundo (estrada, rio): o nó fica na origem e não diz onde ela está
+				if maxf(bb.x, bb.z) >= 30.0 or Vector2(n3.position.x, n3.position.z).length() < 0.01:
+					continue
+				var p2 := Vector2(n3.global_position.x, n3.global_position.z)
+				if _terr_own(p2) or float(idx.near(p2, REACH_M)[0]) < Cenario.CLEAR + 3.0:
+					n3.visible = false
+					hidden += 1
+	if pre_log:
+		print("cenário velho fora da estrada nova: %d em %.1f ms" % [hidden, (Time.get_ticks_usec() - t0) / 1000.0])
 
 
 ## Deixa o cenário velho estático: sem luz, partícula nem animação, e os pedaços pequenos com visibility_range.
@@ -384,7 +458,7 @@ func _freeze_act(root: Node3D, skip: Array) -> void:
 
 const ACT_STATE := ["road_meshes", "road_field", "road_piece_of", "road_state_img", "road_state_tex", "road_state_last",
 	"barricades", "loc_nodes", "surf_fields", "lanterns", "lantern_lights", "house_nodes", "lair_pos", "lair_node",
-	"ground_nodes", "static_nodes"]
+	"ground_nodes", "static_nodes", "act_lines"]
 const PRE_STAGES := ["_build_ground", "_build_road", "_build_rivers", "_scatter_sample", "k:tree", "k:tree_round", "k:dead_tree", "k:rock",
 	"k:grass", "k:mushroom", "k:bush", "k:flowers", "k:gravestone", "k:road_stone", "k:lantern", "_scatter_mundo", "_scatter_lights", "_build_locations", "_build_lair"]
 const PRE_START_D := 320.0    # m do portão em que começa a montagem
@@ -417,7 +491,7 @@ func _act_state_put(d: Dictionary) -> void:
 func _act_state_blank() -> Dictionary:
 	return {"road_meshes": [], "road_field": null, "road_piece_of": [], "road_state_img": null, "road_state_tex": null,
 		"road_state_last": PackedByteArray(), "barricades": [], "loc_nodes": [], "surf_fields": [], "lanterns": [],
-		"lantern_lights": [], "house_nodes": {}, "lair_pos": Vector3.ZERO, "lair_node": null, "ground_nodes": [], "static_nodes": []}
+		"lantern_lights": [], "house_nodes": {}, "lair_pos": Vector3.ZERO, "lair_node": null, "ground_nodes": [], "static_nodes": [], "act_lines": []}
 
 
 func _pre_reset() -> void:
@@ -481,6 +555,7 @@ func _pre_begin() -> void:
 	pre_act = sim.act + 1
 	pre_road = sim.next_road()
 	pre_state = _act_state_blank()
+	pre_state["act_lines"] = pre_road.all_lines()
 	pre_root = Node3D.new()
 	pre_root.name = "NextAct"
 	pre_root.position = Vector3(0, 0.02, 0)   # um pouco acima do chão do ato vivo: sem brigar com ele
@@ -539,6 +614,7 @@ func commit_next() -> void:
 			c.reparent(self, false)
 	pre_root.queue_free()
 	pre_root = null
+	_clear_old_on_road()
 	pre_state = {}
 	pre_stage = -1
 	pre_road = null
@@ -570,6 +646,87 @@ func _build_ground() -> void:
 	_build_ground_look()
 
 
+const TERR_TEXEL := 4.0   # m por texel do mapa de território
+
+
+## Território do ato (27/11/2026): o chão do ato novo cobre o retângulo inteiro dele, que pode pegar o território dos
+## atos anteriores (o cenário velho fica no mapa para sempre). Este mapa diz, por texel, se o lugar está mais perto da
+## estrada deste ato (branco) ou da de um ato anterior (preto); o chão novo some nos retalhos do ato velho e o chão
+## velho aparece ali com as cores e o cenário dele, com a divisa nas costuras dos retalhos. null se não há ato anterior.
+func _territory(b: Rect2) -> Image:
+	var olds: Array = held_lines.duplicate()
+	if other_road != null:
+		olds.append_array(other_road.all_lines())
+	if olds.is_empty():
+		return null
+	var w := maxi(1, ceili(b.size.x / TERR_TEXEL))
+	var h := maxi(1, ceili(b.size.y / TERR_TEXEL))
+	var lab := PackedByteArray()
+	lab.resize(w * h)
+	lab.fill(0)
+	var queue := PackedInt32Array()
+	# Sementes: os pontos das estradas (as do ato novo primeiro: onde as duas passam no mesmo texel, ele é do novo).
+	for pass_i in 2:
+		var lines: Array = sim.road.all_lines() if pass_i == 0 else olds
+		var v := 1 if pass_i == 0 else 2
+		for pts in lines:
+			for i in range(1, pts.size()):
+				var a: Vector2 = pts[i - 1]
+				var c: Vector2 = pts[i]
+				var n := maxi(1, ceili(a.distance_to(c) / (TERR_TEXEL * 0.5)))
+				for k in n + 1:
+					var q := (a.lerp(c, float(k) / n) - b.position) / TERR_TEXEL
+					var x := int(q.x)
+					var y := int(q.y)
+					if x < 0 or y < 0 or x >= w or y >= h:
+						continue
+					var id := y * w + x
+					if lab[id] == 0:
+						lab[id] = v
+						queue.append(id)
+	if queue.is_empty():
+		return null
+	# Cada texel fica com a estrada mais perto (frente de onda em 8 vizinhos a partir das sementes).
+	var head := 0
+	while head < queue.size():
+		var id := queue[head]
+		head += 1
+		var x := id % w
+		var y := id / w
+		var v := lab[id]
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				var nx := x + dx
+				var ny := y + dy
+				if nx < 0 or ny < 0 or nx >= w or ny >= h:
+					continue
+				var nid := ny * w + nx
+				if lab[nid] == 0:
+					lab[nid] = v
+					queue.append(nid)
+	var px := PackedByteArray()
+	px.resize(w * h)
+	for i in w * h:
+		px[i] = 255 if lab[i] == 1 else 0
+	return Image.create_from_data(w, h, false, Image.FORMAT_L8, px)
+
+
+## O ponto é do território do ato vivo pelo mapa do chão dele? (sem mapa, tudo é dele)
+func _terr_own(p: Vector2) -> bool:
+	for g in ground_nodes:
+		if is_instance_valid(g) and (g as Node).has_meta("terr"):
+			var m: Array = (g as Node).get_meta("terr")
+			var img: Image = m[0]
+			var r: Rect2 = m[1]
+			var q := (p - r.position) / TERR_TEXEL
+			var x := int(floor(q.x))
+			var y := int(floor(q.y))
+			if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height():
+				return false
+			return img.get_pixel(x, y).r > 0.5
+	return false
+
+
 ## Chão do ato (GroundLooks): plano com o shader pintado + grama com vento perto da estrada.
 func _build_ground_look() -> void:
 	var b := _road_bounds()
@@ -580,7 +737,17 @@ func _build_ground_look() -> void:
 	pm.subdivide_depth = int(b.size.y / 12.0)
 	var gmat := GroundLooks.ground_material()
 	gmat.set_shader_parameter("mundo", 0.0)   # 26/11/2026: sem os borrões de cor do chão (manchas)
+	var tt0 := Time.get_ticks_usec()
+	var terr := _territory(b)
+	if pre_log:
+		print("território do chão: %.1f ms" % ((Time.get_ticks_usec() - tt0) / 1000.0))
+	if terr != null:
+		gmat.set_shader_parameter("use_terr", true)
+		gmat.set_shader_parameter("territory", ImageTexture.create_from_image(terr))
+		gmat.set_shader_parameter("terr_rect", Vector4(b.position.x, b.position.y, b.size.x, b.size.y))
 	var g := _mi(pm, Vector3(b.get_center().x, -0.03, b.get_center().y), gmat)
+	if terr != null:
+		g.set_meta("terr", [terr, b])
 	g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	g.layers = GROUND_LAYER
 	add_child(g)
@@ -830,6 +997,7 @@ func _bridge_mesh(yaw: float) -> MeshInstance3D:
 
 func _build_rivers() -> void:
 	var hw := float(sim.data.rules["road"].get("river", {}).get("half_width", RIVER_HW))
+	var rivers_built := 0
 	for rv in sim.road.rivers:
 		var mat := ShaderMaterial.new()
 		mat.shader = load("res://game/art/river_paint.gdshader")
@@ -837,7 +1005,8 @@ func _build_rivers() -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = _river_ribbon(rv["pts"], hw + RIVER_BANK)
 		mi.material_override = mat
-		mi.position = Vector3(0, 0.035, 0)
+		mi.position = Vector3(0, 0.035 + 0.006 * rivers_built, 0)   # dois rios que se cruzam não brigam no depth
+		rivers_built += 1
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mi.layers = GROUND_LAYER
 		add_child(mi)
@@ -860,8 +1029,18 @@ func _river_ribbon(pts: PackedVector2Array, half: float) -> ArrayMesh:
 		if i < n - 1:
 			d += (pts[i + 1] - pts[i]).normalized()
 		var o := d.normalized().orthogonal()
-		L.append(pts[i] + o * half)
-		R.append(pts[i] - o * half)
+		var l := pts[i] + o * half
+		var r := pts[i] - o * half
+		# Curva mais fechada que a meia largura: a beira de dentro andaria para trás e a fita dobraria sobre si
+		# mesma (triângulos na mesma altura brigando no depth = rio piscando). Ali a beira fica parada.
+		if i > 0:
+			var t := d.normalized()
+			if (l - L[i - 1]).dot(t) < 0.05:
+				l = L[i - 1]
+			if (r - R[i - 1]).dot(t) < 0.05:
+				r = R[i - 1]
+		L.append(l)
+		R.append(r)
 		acc.append(s)
 	for i in n - 1:
 		var quad := [[L[i], -1.0, acc[i]], [L[i + 1], -1.0, acc[i + 1]], [R[i], 1.0, acc[i]], [R[i], 1.0, acc[i]], [L[i + 1], -1.0, acc[i + 1]], [R[i + 1], 1.0, acc[i + 1]]]
@@ -995,7 +1174,7 @@ func _scatter_kind(k: String) -> void:
 		Looks.set_param(sm, "sway", 1.0)
 		mat = sm
 	mat = Looks.g_material(mesh, mat)
-	_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern"], k in ["tree", "tree_round", "dead_tree"] )
+	_scatter_mm(mesh, sets[k], mat, k in ["tree", "tree_round", "dead_tree", "rock", "gravestone", "lantern", "bush", "flowers"], k in ["tree", "tree_round", "dead_tree"] )
 
 
 func _scatter_tail() -> void:
@@ -1668,6 +1847,11 @@ func draw(alpha: float, delta: float) -> void:
 		return
 	frame += 1
 	budget = {"hit": 6, "death": 6, "num": 10}
+	if drop == null or not is_instance_valid(drop):
+		drop = CardDrop.new()
+		drop.setup(self)
+		add_child(drop)
+	drop.tick(sim.t + alpha * sim.dt)
 	_draw_units(alpha, delta)
 	_draw_bars(alpha)
 	_draw_hero(alpha, delta)
@@ -1700,6 +1884,8 @@ func _draw_units(alpha: float, delta: float) -> void:
 	var rb := ring_buf
 	ring_buf = PackedFloat32Array()
 	var rn := 0
+	var now := sim.t + alpha * sim.dt
+	var dropping := drop != null and is_instance_valid(drop) and not drop.units.is_empty()
 	for k in mm_by_def:
 		var e: Dictionary = mm_by_def[k]
 		var mm: MultiMesh = e["mm"]
@@ -1762,13 +1948,25 @@ func _draw_units(alpha: float, delta: float) -> void:
 				sy = s * gol.sy
 				ca *= gol.sxz
 				sa *= gol.sxz
+			var pop := 1.0
+			if dropping and drop.units.has(i):
+				# Ainda dentro da carta jogada, ou saltando dela (game/art/card_drop.gd).
+				var dp: Array = drop.unit_pose(i, x, z, now)
+				if not dp.is_empty():
+					x = dp[0]
+					z = dp[1]
+					y += dp[2]
+					pop = dp[3]
+					ca *= pop
+					sa *= pop
+					sy *= pop
 			var o := q * STRIDE
 			buf[o] = ca; buf[o + 1] = 0.0; buf[o + 2] = sa; buf[o + 3] = x
 			buf[o + 4] = 0.0; buf[o + 5] = sy; buf[o + 6] = 0.0; buf[o + 7] = y
 			buf[o + 8] = -sa; buf[o + 9] = 0.0; buf[o + 10] = ca; buf[o + 11] = z
 			buf[o + 12] = col.r; buf[o + 13] = col.g; buf[o + 14] = col.b; buf[o + 15] = 1.0
 			buf[o + 16] = flash[i]; buf[o + 17] = hop * maxf(moving, 0.25 if hop > 0.0 else 0.0); buf[o + 18] = float(i) * 1.7; buf[o + 19] = lunge
-			var rr: float = e["rad"] * s
+			var rr: float = e["rad"] * s * pop
 			var acc: Color = e["acc"]
 			if U.sh[i] > 0.0:
 				# Escudo de vida do Sombrio: anel azul-violeta que pulsa (some quando o escudo quebra).
@@ -2082,6 +2280,16 @@ func _draw_road_state() -> void:
 
 
 func _draw_zones() -> void:
+	zone_born = zone_seen
+	zone_seen = {}
+	if fx2 != null:
+		fx2.zones_begin()
+	_draw_zone_list()
+	if fx2 != null:
+		fx2.zones_end()
+
+
+func _draw_zone_list() -> void:
 	var k := 0
 	for z in sim.zones:
 		if k >= zone_pool.size():
@@ -2104,8 +2312,17 @@ func _draw_zones() -> void:
 			disc.scale = Vector3(r, 1, r)
 			var mat: ShaderMaterial = disc.material_override
 			if fx2 != null:
-				fx2.zone_params(mat, kind)
-				fx2.zone_tick(kind, pos, r, k)
+				# Entrada e saída (27/11/2026): cresce do centro em 0,35 s e apaga no último meio segundo.
+				var zkey := "%s:%.2f:%.2f" % [kind, z["x"], z["y"]]
+				var born := float(zone_born.get(zkey, sim.t))
+				zone_seen[zkey] = born
+				var grow := clampf((sim.t - born) / 0.35, 0.0, 1.0)
+				grow = 1.0 - pow(1.0 - grow, 3.0)
+				disc.scale = Vector3(r, 1, r) * maxf(grow, 0.05)
+				var zlife := clampf(float(z.get("t", 9.0)) / 0.5, 0.0, 1.0) * minf(grow * 1.5, 1.0)
+				fx2.zone_params(mat, kind, zlife)
+				if zlife > 0.3:
+					fx2.zone_tick(kind, pos, r * grow, k)
 				k += 1
 				continue
 			var web := kind == "web"
@@ -2815,6 +3032,9 @@ func explosive_boom(pos: Vector3, r: float) -> void:
 	e["T"] = 0.7
 	e["exact"] = true
 	e["r"] = r
+	if fx2 != null:
+		fx2.explosion(_ground_at(pos), r * 0.8)
+		return
 	light_flash(pos, Color(1, 0.7, 0.3))
 	emit_fx("spark", pos + Vector3(0, 0.6, 0), clampf(r / 2.5, 0.6, 3.0))
 	emit_fx("fire", pos + Vector3(0, 0.6, 0), clampf(r / 3.0, 0.6, 2.5))
@@ -2917,6 +3137,9 @@ func ability_tell(idx: int) -> void:
 
 
 func light_flash(pos: Vector3, col: Color) -> void:
+	if fx2 != null:
+		fx2.flash(Vector3(pos.x, surface_y(pos.x, pos.z), pos.z), col, 9.0, 0.45, 16.0)
+		return
 	flash_light.position = pos + Vector3(0, 2, 0)
 	flash_light.light_color = col
 	flash_t = 0.3
@@ -2943,6 +3166,37 @@ func _stop(t: float) -> void:
 	hitstop = maxf(hitstop, t)
 
 
+## Família do efeito de um feitiço (27/11/2026, FX2.FAMILY_COL): controle (teia, rede de piche), ouro (moedas e
+## dardo/avalanche de ouro sem fogo), fogo (tag fogo), morte (morto-vivo, almas, praga e veneno), sombra (o resto).
+func spell_family(c: CardDef) -> String:
+	if c.id in ["web", "tar_net"]:
+		return "control"
+	if not (c.tags & K.TAG_FIRE) and (c.id == "cursed_coins" or c.id.begins_with("gold_")):
+		return "gold"
+	if c.tags & K.TAG_FIRE:
+		return "fire"
+	if (c.tags & (K.TAG_UNDEAD | K.TAG_PACK)) or c.id in ["soul_feast", "corpse_blast", "poison_dart", "devour", "mother_nest"]:
+		return "death"
+	return "shadow"
+
+
+## Ponto no chão (altura do terreno) sob p.
+func _ground_at(p: Vector3) -> Vector3:
+	return Vector3(p.x, surface_y(p.x, p.z), p.z)
+
+
+## Raio exato do feitiço no chão enquanto a carta voa (card_drop.hold_spell). Devolve o índice ou -1 (sem raio).
+func spell_telegraph(ev: Array, dur: float) -> int:
+	var di := int(ev[3])
+	if fx2 == null or di < 0 or di >= sim.data.cards.size():
+		return -1
+	var c: CardDef = sim.data.cards[di]
+	if not c.is_spell or not c.fx.has("radius"):
+		return -1
+	var col: Color = FX2.FAMILY_COL.get(spell_family(c), Color.WHITE)
+	return fx2.telegraph(_ground_at(Vector3(float(ev[1]), 0, float(ev[2]))), float(c.fx["radius"]), col, dur)
+
+
 ## Estilo dos efeitos novos por evento (modo misto, aprovado em 20/11/2026 na página de revisão): 1 pintado,
 ## 2 brilhante, -1 = o padrão do tipo (Fx2.KIND_STYLE).
 func _fx_ctx(k: int, ev: Array) -> int:
@@ -2962,7 +3216,8 @@ func _fx_ctx(k: int, ev: Array) -> int:
 	return -1
 
 
-func handle_events(evs: Array) -> void:
+## `replay`: eventos que esperaram a carta pousar (CardDrop), sem segurar de novo.
+func handle_events(evs: Array, replay := false) -> void:
 	var U := sim.units
 	# Evento do Explosivo (x, y, raio): o nome ainda pode não existir no K.Ev (outro agente o cria); sem ele, fica inerte.
 	var boom_ev: int = int(K.Ev.get("EXPLOSIVE_BOOM", -1))
@@ -2971,6 +3226,8 @@ func handle_events(evs: Array) -> void:
 		var p := Vector3(ev[1], 0, ev[2])
 		if boom_ev >= 0 and k == boom_ev:
 			explosive_boom(p, float(ev[3]))
+			continue
+		if k == K.Ev.SPELL and not replay and drop != null and is_instance_valid(drop) and drop.hold_spell(ev):
 			continue
 		if fx2 != null:
 			fx2.ctx = _fx_ctx(k, ev)
@@ -3028,6 +3285,12 @@ func handle_events(evs: Array) -> void:
 						emit_fx("soul", p + Vector3(0, 0.6, 0), 0.8)
 			K.Ev.EXPLOSION:
 				var r := float(ev[3])
+				if fx2 != null:
+					fx2.explosion(_ground_at(p), r)
+					scorch(p, r * 1.8)
+					add_trauma(clampf(0.2 + r * 0.07, 0.25, 0.6))
+					_stop(0.06 if r >= 3.0 else 0.04)
+					continue
 				emit_fx("fire", p + Vector3(0, 0.6, 0), r / 2.2)
 				emit_fx("smoke", p + Vector3(0, 0.8, 0), r / 2.2)
 				emit_fx("spark", p + Vector3(0, 0.6, 0), r / 2.5)
@@ -3108,13 +3371,24 @@ func handle_events(evs: Array) -> void:
 						say("SAY_BOSS_FIN", 2, true, Color(1.0, 0.85, 0.4))
 						screen_flash = Color(1, 0.9, 0.5, 0.4)
 						add_trauma(0.5)
-					if fx2 != null and c.is_spell and (c.tags & K.TAG_FIRE):
-						# Efeitos novos: feitiço de fogo explode em chamas, não no círculo roxo de magia.
-						var rr := float(c.fx.get("radius", 2.0))
-						emit_fx("fire", p + Vector3(0, 0.3, 0), clampf(rr / 2.0, 1.0, 2.5))
-						emit_fx("spark", p + Vector3(0, 0.6, 0), 1.0)
-						ring_burst(p, rr, Color(1.0, 0.55, 0.15))
-						scorch(p, rr * 1.6)
+					if fx2 != null and (c.is_spell or c.category == "finisher"):
+						# Impacto por família (27/11/2026): fogo, sombra, morte, controle, ouro; o tamanho segue o raio.
+						var fam := spell_family(c)
+						var rr := float(c.fx.get("radius", 1.6))
+						var gp := _ground_at(p)
+						if c.id == "shadow_bolt":
+							var bh = sim.hero_nearest(Vector2(p.x, p.z))
+							var bd := Vector2(bh.x - p.x, bh.y - p.z)
+							bd = bd.normalized() if bd.length() > 0.1 else Vector2(0, -1)
+							var bl := float(c.fx.get("length", 10.0))
+							fx2.beam(gp + Vector3(0, 1.0, 0), _ground_at(p + Vector3(bd.x, 0, bd.y) * bl) + Vector3(0, 1.0, 0), FX2.FAMILY_COL["shadow"])
+							rr = 1.2
+						fx2.impact(fam, gp, rr)
+						if fam == "fire":
+							scorch(p, rr * 1.6)
+						add_trauma(clampf(0.06 + rr * 0.05, 0.08, 0.4))
+						if rr >= 3.0:
+							_stop(0.04)
 					elif c.is_spell or c.category == "finisher":
 						emit_fx("magic", p + Vector3(0, 0.5, 0), 1.3)
 						ring_burst(p, float(c.fx.get("radius", 2.0)), Color(0.75, 0.35, 1.0))

@@ -837,6 +837,68 @@ func _process(delta: float) -> void:
 		world.cam_lair = true
 	# Contado no tempo da run (sim.t), não do processo: a carga varia e a foto não pode pegar o menu.
 	# --fxshot=<s>: depois do último feitiço, espera s segundos de run, salva <out>fx.png e fecha.
+	# --droptest=<id>[,<id>...] --out=<pasta>: a partir dos 2 s de jogo, uma carta a cada 1,2 s vai para a mão e é jogada
+	# pela entrada real (_play_at) diante do herói; salva um quadro a cada 0,08 s de jogo, para ver a carta caindo, os
+	# monstros saindo e as cartas que ficam no chão (game/art/card_drop.gd).
+	if auto_args.has("droptest") and sim.t >= 2.0:
+		var d_ids: PackedStringArray = str(auto_args["droptest"]).split(",", false)
+		if not auto_args.has("_dropt"):
+			auto_args["_dropt"] = str(sim.t)
+			auto_args["_dropn"] = "0"
+			auto_args["_dropk"] = "0"
+		var dk := int(auto_args["_dropk"])
+		if dk < d_ids.size() and sim.t >= float(auto_args["_dropt"]) + dk * 1.2:
+			auto_args["_dropk"] = str(dk + 1)
+			sim.hand[0] = sim._new_inst(sim.data.card(d_ids[dk]))
+			sim.elixir = sim.elixir_max
+			hud.selected = 0
+			hud.fan.refresh(0.0)
+			var ahead := sim.road.point_at(sim.hero.s_max + 9.0)
+			var fwd := (ahead - Vector2(sim.hero.x, sim.hero.y)).normalized()
+			_play_at(ahead + fwd.orthogonal() * (3.0 + 5.5 * dk))
+		var dn := int(auto_args["_dropn"])
+		if sim.t >= float(auto_args["_dropt"]) + dn * 0.08 and auto_args.has("out"):
+			get_viewport().get_texture().get_image().save_png(str(auto_args["out"]) + "drop_%02d.png" % dn)
+			auto_args["_dropn"] = str(dn + 1)
+			if dn >= int(auto_args.get("dropframes", 18 + (d_ids.size() - 1) * 15 + 12)):   # --dropframes=N: mais quadros
+				get_tree().quit()
+	# --fxlab=<item>,<item>... --out=<pasta>: laboratório dos efeitos (27/11/2026). A partir dos 2 s de jogo o herói
+	# para; um item a cada --labgap s (3): id de carta (jogada pela entrada real, com a carta voando, 2 m à frente do
+	# herói), "ex:<raio>" (explosão) ou "fx:<tipo>[:escala]" (emit_fx). Salva 16 quadros a cada 0,07 s de jogo depois
+	# de cada item (lab_<item>_<quadro>.png) e fecha. Só capturas.
+	if auto_args.has("fxlab") and sim.t >= 2.0:
+		var lab_ids: PackedStringArray = str(auto_args["fxlab"]).split(",", false)
+		var lab_gap := float(auto_args.get("labgap", "3"))
+		if not auto_args.has("_labt"):
+			auto_args["_labt"] = str(sim.t)
+			auto_args["_labk"] = "0"
+			auto_args["_labn"] = "0"
+			auto_args["herostop"] = str(sim.t)
+		var lt0 := float(auto_args["_labt"])
+		var lk := int(auto_args["_labk"])
+		var lpos := Vector2(sim.hero.x, sim.hero.y) + Vector2(0, -2.0)
+		if lk < lab_ids.size() and sim.t >= lt0 + lk * lab_gap:
+			auto_args["_labk"] = str(lk + 1)
+			auto_args["_labn"] = "0"
+			var it := lab_ids[lk]
+			if it.begins_with("ex:"):
+				world.handle_events([[K.Ev.EXPLOSION, lpos.x, lpos.y, float(it.substr(3)), 1]])
+			elif it.begins_with("fx:"):
+				var fp := it.substr(3).split(":")
+				world.emit_fx(fp[0], Vector3(lpos.x, 1.0, lpos.y), float(fp[1]) if fp.size() > 1 else 1.0)
+			else:
+				sim.hand[0] = sim._new_inst(sim.data.card(it))
+				sim.elixir = sim.elixir_max
+				hud.selected = 0
+				hud.fan.refresh(0.0)
+				_play_at(lpos)
+		var cur := lk - 1
+		var ln := int(auto_args["_labn"])
+		if cur >= 0 and ln < 16 and sim.t >= lt0 + cur * lab_gap + ln * 0.07 and auto_args.has("out"):
+			get_viewport().get_texture().get_image().save_png(str(auto_args["out"]) + "lab_%s_%02d.png" % [lab_ids[cur].replace(":", "-"), ln])
+			auto_args["_labn"] = str(ln + 1)
+		if lk >= lab_ids.size() and sim.t >= lt0 + lab_ids.size() * lab_gap:
+			get_tree().quit()
 	if auto_args.has("fxdemo") and sim.t >= float(auto_args.get("fxat", "2")):
 		var fx_t0 := float(auto_args.get("fxat", "2"))
 		var fx_ids: PackedStringArray = str(auto_args["fxdemo"]).split(",", false)
@@ -1901,7 +1963,18 @@ func _play_at(p: Vector2) -> void:
 	var i := hud.selected
 	if i < 0:
 		return
+	var ci: Sim.CardInst = sim.hand[i] if i < sim.hand.size() else null
+	var before := sim.units.alive.duplicate()
+	var zones_n := sim.zones.size()
+	var face: Control = null
+	if ci != null:
+		face = UiKit.card(ci.def, sim.card_cost(ci), UiKit.mod_names(ci), "", CardDrop.FACE_W, ci.level)
+		face.set_meta("drop_key", CardDrop.face_key(ci, sim.card_cost(ci)))
 	var b := sim.play(i, p.x, p.y)
+	if b == K.Block.OK and ci != null:
+		_card_to_world(ci, face, p, before, zones_n)
+	elif face != null:
+		face.free()
 	if b == K.Block.OK:
 		hud.selected = -1
 		if hud.minimap.visible:
@@ -1910,6 +1983,49 @@ func _play_at(p: Vector2) -> void:
 		hud.say(tr("UI_BLOCK_%d" % mini(b, 5)))
 		if b != K.Block.NO_ELIXIR and b != K.Block.BAD_TARGET:
 			hud.selected = -1
+
+
+## A carta jogada cai no mundo e solta as unidades que o `play` criou (game/art/card_drop.gd). Só visual.
+func _card_to_world(ci: Sim.CardInst, face: Control, p: Vector2, before: PackedByteArray, zones_n: int) -> void:
+	if world.drop == null or DisplayServer.get_name() == "headless":
+		face.free()
+		return
+	var U := sim.units
+	var fresh: Array = []
+	var structs := {}
+	for j in U.hi:
+		if U.alive[j] == 1 and (j >= before.size() or before[j] == 0):
+			fresh.append(j)
+			if U.arch[j] == K.Arch.STRUCTURE:
+				structs[j] = true
+	var r := hud.fan.panel_rect(ci.uid)
+	if r.size == Vector2.ZERO:
+		r = Rect2(get_viewport().get_mouse_position() - HandFan.CARD * 0.5, HandFan.CARD)
+	hud.fan.launched[ci.uid] = true
+	UiKit.ignore_mouse(face)
+	# uid que as unidades da carta levam (filhos e revividos herdam): a carta fica em branco quando nenhuma resta.
+	var cuid := ci.uid   # sem unidade agora: as que a carta invocar depois levam o uid dela
+	for j in fresh:
+		if U.uid[j] != 0:
+			cuid = U.uid[j]
+			break
+	# Efeitos que duram: a carta em vigor (sim.held) e as zonas que o play criou (fogo, teia, óleo...).
+	var lasting := {"cuid": cuid, "huid": -1, "zones": sim.zones.slice(mini(zones_n, sim.zones.size())),
+		"until": sim.t + _card_effect_s(ci), "burn": ci.def.id}
+	for e in sim.held:
+		if int(e["uid"]) == ci.uid:
+			lasting["huid"] = ci.uid
+	world.drop.launch(face, str(face.get_meta("drop_key")), r, p, fresh, ci.def.is_spell, structs, lasting)
+
+
+## Quanto dura o efeito que a carta declara ("duration" do fx ou de uma op), em s de jogo; 0 se nada dura. A
+## queimadura no herói (Tocha, Dardo Envenenado) só pega às vezes: essa é conferida no estado real (CardDrop).
+func _card_effect_s(ci: Sim.CardInst) -> float:
+	var d := ci.def.fxv("duration", ci.level, 0.0)
+	for o in ci.def.ops:
+		if typeof(o) == TYPE_DICTIONARY and typeof(o.get("duration")) in [TYPE_INT, TYPE_FLOAT]:
+			d = maxf(d, float(o["duration"]))
+	return d
 
 
 func _minimap_click(p: Vector2) -> void:

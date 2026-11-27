@@ -3214,7 +3214,8 @@ func t_unique_art() -> void:
 		if seen[k] > 1:
 			dup.append(k)
 	check(dup.is_empty(), "nenhuma imagem é compartilhada %s" % [dup])
-	var own := ["wolf_pack", "war_boar", "alpha_beast", "treasure_guard", "elder_dragon", "cave_troll", "death_knight", "bone_colossus", "ruin_titan"]
+	var own := ["wolf_pack", "war_boar", "alpha_beast", "treasure_guard", "elder_dragon", "cave_troll", "death_knight", "bone_colossus", "ruin_titan",
+		"crow_flock", "hoard_dragon"]   # 27/11/2026: corvos e Dragão do Tesouro deixaram o morcego e o Ancião
 	var miss: Array = []
 	for id in own:
 		if CardModel.of(id) != id or Looks.mesh(7, id) == null:
@@ -3222,7 +3223,7 @@ func t_unique_art() -> void:
 	for id in Looks.VARIANTS:
 		if CardModel.of(id) != id or Looks.mesh(7, Looks.VARIANTS[id]["base"]) == null:
 			miss.append(id)
-	check(miss.is_empty(), "9 modelos próprios e %d variantes registrados, sem model emprestado %s" % [Looks.VARIANTS.size(), miss])
+	check(miss.is_empty(), "%d modelos próprios e %d variantes registrados, sem model emprestado %s" % [own.size(), Looks.VARIANTS.size(), miss])
 
 ## Etapa E: em cada vilão e ato, toda oferta de raridade única fecha com 3 opções de uma raridade só (ou cai inteira
 ## para a vizinha), e nunca traz carta acima do custo liberado no ato.

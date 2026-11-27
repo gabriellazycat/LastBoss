@@ -139,6 +139,8 @@ def export(root, i, out):
     vat_g.flatten_eyes(root)
     objs = vat_g.prepare(root, int(budget * 0.7))
     grade = treat.make_grade(i, pull=PULL, lift=0.04, sat=SAT, gain=GAIN)
+    import recolor
+    grade = recolor.wrap(i, grade)   # matiz da carta (tools/art/blender_g/recolor.py, 27/11/2026)
     os.makedirs(os.path.join(out, "n"), exist_ok=True)
     d = vat_g.export(root, os.path.join(out, "n", i + ".lbm"), h, objs, grade, anim, deform, None, True)
     Cc, P, N, M = treat.raster(d)
