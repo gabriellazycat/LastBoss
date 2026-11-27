@@ -73,15 +73,16 @@ var fair_hover := -1                  # barraca sob o mouse (índice da opção)
 var fair_buy := Rect2()               # botão "Comprar" da ficha (quadro)
 var buy_hot := false
 const FAIR_PO := Vector2(140, 90)     # canto do papel da maquete na tela de 1920x1080
-const FAIR_BG := "res://assets/ui/map/bg_lojaB.png"   # o papel já desenhado (+24 px de margem): vai em (116, 66)
+const FAIR_BG_SIZE := Vector2(1688, 948)   # o fundo de feltro (+24 px de margem): vai em (116, 66)
 const FAIR_SPOTS := [Vector2(260, 350), Vector2(560, 300), Vector2(860, 360), Vector2(450, 590), Vector2(780, 650)]
 const FAIR_PURSE := Rect2(176, 106, 376, 116)   # a bolsa: sempre no mesmo canto (17/11/2026)
 const FAIR_FICHA := Rect2(1210, 300, 510, 330)
 const FAIR_RED := Color("a8323a")
 const FAIR_INK := Color("3a2a1c")
-const FAIR_PAPER := Color("e8d6a8")
+const FAIR_PAPER := Minimap.PAPER        # 26/11/2026: o creme dos botões de feltro
 const FAIR_ART_R := 66.0
 static var _fair_tex := {}
+var fair_bg: Texture2D
 
 
 func _init() -> void:
@@ -1168,9 +1169,9 @@ func _txt_halo(p: Vector2, s: String, f: Font, fs: float, col: Color) -> void:
 
 
 func _draw_fair() -> void:
-	var bg := _ftex(FAIR_BG)
-	if bg:
-		draw_texture(bg, FAIR_PO - Vector2(24, 24))
+	if fair_bg == null:
+		fair_bg = FeltMap.make(self, FAIR_BG_SIZE, Rect2(Vector2(24, 24), FAIR_BG_SIZE - Vector2(48, 48)), _paint_fair_bg)
+	draw_texture(fair_bg, FAIR_PO - Vector2(24, 24))
 	var foc := _focus_row()
 	# Título e subtítulo na faixa já desenhada no fundo.
 	var title := tr("UI_FAIR_TITLE")
@@ -1213,6 +1214,54 @@ func _draw_fair() -> void:
 	_txt(Vector2(lr.position.x, lr.position.y + 37), tr("UI_FAIR_LEAVE"), f_disp, 26, UiParch.BLOOD if seal_hot else FAIR_INK, HORIZONTAL_ALIGNMENT_CENTER, lr.size.x)
 
 
+## Fundo de feltro da feira (26/11/2026): retalhos costurados, a estrada das barracas em trilha de areia com
+## pesponto vermelho, morros, bosques, a costa embaixo à esquerda e a faixa do título.
+func _paint_fair_bg(ci: CanvasItem, mm: Minimap) -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = 777
+	var o := Vector2(24, 24)
+	var paper := Rect2(o, FAIR_BG_SIZE - o * 2.0)
+	FeltMap.base(ci, paper)
+	# mar embaixo à esquerda
+	var coast: Array = []
+	for i in 13:
+		var x := paper.position.x + i * 50.0
+		coast.append(Vector2(x, o.y + 812 + i * 2.2 + sin(i * 1.3) * 6.0))
+	var sea_sb := StyleBoxFlat.new()
+	sea_sb.bg_color = Minimap.SEA
+	sea_sb.set_corner_radius_all(int(FeltMap.RADIUS))
+	ci.draw_style_box(sea_sb, Rect2(Vector2(paper.position.x, o.y + 780), Vector2(640, paper.end.y - o.y - 780)))
+	var lp := PackedVector2Array([Vector2(paper.position.x, o.y + 780), Vector2(o.x + 640, o.y + 780), Vector2(o.x + 640, paper.end.y)])
+	var cr := coast.duplicate()
+	cr.reverse()
+	for q in cr:
+		lp.append(q)
+	ci.draw_colored_polygon(lp, Minimap.BG)
+	ci.draw_polyline(Minimap._smooth(coast, false, 3), Minimap.INK, 2.6, true)
+	var wl: Array = []
+	for q in coast:
+		wl.append(q + Vector2(0, 16))
+	mm._dashed(ci, Minimap._smooth(wl, false, 3), Color(Minimap.PAPER, 0.5), 2.0, 9.0, 8.0, 0.0)
+	# a estrada das barracas (a curva da maquete), em areia com pesponto vermelho
+	var road := Minimap._smooth([o + Vector2(80, 760), o + Vector2(250, 330), o + Vector2(450, 232), o + Vector2(700, 300),
+		o + Vector2(880, 360), o + Vector2(900, 440), o + Vector2(790, 570), o + Vector2(490, 590)], false, 6)
+	FeltMap.trail(ci, mm, road, Minimap.ACC, 18.0)
+	# morros, montanhas e bosques (a direita fica sob a ficha e os serviços; o canto de cima, sob a bolsa e o título)
+	mm._mtn(ci, o.x + 990, o.y + 520, 70, 80, false, r)
+	mm._mtn(ci, o.x + 1075, o.y + 530, 60, 95, true, r)
+	for hl in [Vector2(900, 850), Vector2(1000, 858)]:
+		mm._hill_v(ci, o.x + hl.x, o.y + hl.y, 60, r)
+	FeltMap.grove(ci, mm, r, o + Vector2(400, 440), 3, Vector2(40, 25))
+	FeltMap.grove(ci, mm, r, o + Vector2(700, 500), 3, Vector2(40, 25))
+	FeltMap.grove(ci, mm, r, o + Vector2(700, 780), 5)
+	FeltMap.grove(ci, mm, r, o + Vector2(980, 760), 4)
+	FeltMap.grove(ci, mm, r, o + Vector2(110, 520), 3, Vector2(40, 60))
+	mm._lake(ci, o + Vector2(1000, 230), 50, 22, r)
+	# faixa do título (Feira do Mascate fica por cima, em _draw_fair)
+	FeltMap.banner(ci, mm, Vector2(1252 + 219, 134 + 74) - FAIR_PO + Vector2(24, 24), 438, 148)
+	FeltMap.rim(ci, mm, paper)
+
+
 ## A bolsa: placa fixa no canto de cima com a moeda, o ouro em número grande (pisca em vermelho quando falta)
 ## e o tamanho do baralho.
 func _draw_fair_purse() -> void:
@@ -1244,8 +1293,11 @@ func _draw_stall(r: Dictionary, hot: bool, hover: bool) -> void:
 	else:
 		draw_circle(c, R + 11, Color(FAIR_RED, 0.85) if hover else FAIR_INK)
 	draw_circle(c, R + 9, FAIR_PAPER)
-	draw_circle(c, R + 4, FAIR_INK)
-	draw_circle(c, R, Color("f1e3bd"))
+	for i in 36:
+		var a0 := TAU * i / 36.0
+		draw_arc(c, R + 5, a0, a0 + TAU / 36.0 * 0.55, 4, Color("8a6a50"), 2.0, true)
+	draw_circle(c, R + 1, Color("b8a07e"))
+	draw_circle(c, R, FAIR_PAPER)
 	var cd: CardDef = r["cd"]
 	var tex := UiDiario.card_tex(cd.id)
 	if tex:
